@@ -762,6 +762,101 @@ impl SseDecode for bool {
     }
 }
 
+impl SseDecode for crate::ConfigDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_theme = <String>::sse_decode(deserializer);
+        let mut var_volume = <u32>::sse_decode(deserializer);
+        let mut var_playbackSpeed = <f64>::sse_decode(deserializer);
+        let mut var_playMode = <String>::sse_decode(deserializer);
+        let mut var_historyLimit = <u32>::sse_decode(deserializer);
+        let mut var_defaultSource = <String>::sse_decode(deserializer);
+        let mut var_enabledSources = <Vec<String>>::sse_decode(deserializer);
+        let mut var_jsSourcesFirst = <bool>::sse_decode(deserializer);
+        let mut var_downloadDir = <String>::sse_decode(deserializer);
+        let mut var_downloadQuality = <Option<String>>::sse_decode(deserializer);
+        let mut var_downloadConcurrency = <u32>::sse_decode(deserializer);
+        let mut var_showTranslation = <bool>::sse_decode(deserializer);
+        let mut var_showYrc = <bool>::sse_decode(deserializer);
+        let mut var_lyricOffsetMs = <i32>::sse_decode(deserializer);
+        let mut var_proxyUrl = <String>::sse_decode(deserializer);
+        let mut var_networkTimeoutSecs = <u64>::sse_decode(deserializer);
+        return crate::ConfigDto {
+            theme: var_theme,
+            volume: var_volume,
+            playback_speed: var_playbackSpeed,
+            play_mode: var_playMode,
+            history_limit: var_historyLimit,
+            default_source: var_defaultSource,
+            enabled_sources: var_enabledSources,
+            js_sources_first: var_jsSourcesFirst,
+            download_dir: var_downloadDir,
+            download_quality: var_downloadQuality,
+            download_concurrency: var_downloadConcurrency,
+            show_translation: var_showTranslation,
+            show_yrc: var_showYrc,
+            lyric_offset_ms: var_lyricOffsetMs,
+            proxy_url: var_proxyUrl,
+            network_timeout_secs: var_networkTimeoutSecs,
+        };
+    }
+}
+
+impl SseDecode for crate::CustomPlaylistSummaryDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_coverUrl = <Option<String>>::sse_decode(deserializer);
+        let mut var_songCount = <u32>::sse_decode(deserializer);
+        return crate::CustomPlaylistSummaryDto {
+            id: var_id,
+            name: var_name,
+            cover_url: var_coverUrl,
+            song_count: var_songCount,
+        };
+    }
+}
+
+impl SseDecode for crate::DownloadTaskDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <u64>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_singer = <String>::sse_decode(deserializer);
+        let mut var_source = <String>::sse_decode(deserializer);
+        let mut var_quality = <String>::sse_decode(deserializer);
+        let mut var_dest = <String>::sse_decode(deserializer);
+        let mut var_state = <String>::sse_decode(deserializer);
+        let mut var_active = <bool>::sse_decode(deserializer);
+        let mut var_downloaded = <u64>::sse_decode(deserializer);
+        let mut var_total = <Option<u64>>::sse_decode(deserializer);
+        let mut var_error = <Option<String>>::sse_decode(deserializer);
+        let mut var_triggerAutoCache = <bool>::sse_decode(deserializer);
+        return crate::DownloadTaskDto {
+            id: var_id,
+            name: var_name,
+            singer: var_singer,
+            source: var_source,
+            quality: var_quality,
+            dest: var_dest,
+            state: var_state,
+            active: var_active,
+            downloaded: var_downloaded,
+            total: var_total,
+            error: var_error,
+            trigger_auto_cache: var_triggerAutoCache,
+        };
+    }
+}
+
+impl SseDecode for f64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_f64::<NativeEndian>().unwrap()
+    }
+}
+
 impl SseDecode for crate::FfiCommand {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -822,10 +917,152 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
+            13 => {
+                return crate::FfiCommand::LibraryRefresh;
+            }
+            14 => {
+                let mut var_song = <crate::SongDto>::sse_decode(deserializer);
+                return crate::FfiCommand::FavoritesAdd { song: var_song };
+            }
+            15 => {
+                let mut var_song = <crate::SongDto>::sse_decode(deserializer);
+                return crate::FfiCommand::FavoritesRemove { song: var_song };
+            }
+            16 => {
+                let mut var_playlist = <crate::PlaylistDto>::sse_decode(deserializer);
+                return crate::FfiCommand::FavoritePlaylistAdd {
+                    playlist: var_playlist,
+                };
+            }
+            17 => {
+                let mut var_playlist = <crate::PlaylistDto>::sse_decode(deserializer);
+                return crate::FfiCommand::FavoritePlaylistRemove {
+                    playlist: var_playlist,
+                };
+            }
+            18 => {
+                let mut var_song = <crate::SongDto>::sse_decode(deserializer);
+                return crate::FfiCommand::HistoryRemove { song: var_song };
+            }
+            19 => {
+                return crate::FfiCommand::HistoryClear;
+            }
+            20 => {
+                let mut var_name = <String>::sse_decode(deserializer);
+                return crate::FfiCommand::CustomPlaylistCreate { name: var_name };
+            }
+            21 => {
+                let mut var_id = <String>::sse_decode(deserializer);
+                let mut var_name = <String>::sse_decode(deserializer);
+                return crate::FfiCommand::CustomPlaylistRename {
+                    id: var_id,
+                    name: var_name,
+                };
+            }
+            22 => {
+                let mut var_id = <String>::sse_decode(deserializer);
+                return crate::FfiCommand::CustomPlaylistDelete { id: var_id };
+            }
+            23 => {
+                let mut var_id = <String>::sse_decode(deserializer);
+                let mut var_songs = <Vec<crate::SongDto>>::sse_decode(deserializer);
+                return crate::FfiCommand::CustomPlaylistAddSongs {
+                    id: var_id,
+                    songs: var_songs,
+                };
+            }
+            24 => {
+                let mut var_id = <String>::sse_decode(deserializer);
+                let mut var_song = <crate::SongDto>::sse_decode(deserializer);
+                return crate::FfiCommand::CustomPlaylistRemoveSong {
+                    id: var_id,
+                    song: var_song,
+                };
+            }
+            25 => {
+                return crate::FfiCommand::ConfigGet;
+            }
+            26 => {
+                let mut var_config = <crate::ConfigDto>::sse_decode(deserializer);
+                return crate::FfiCommand::ConfigUpdate { config: var_config };
+            }
+            27 => {
+                let mut var_song = <crate::SongDto>::sse_decode(deserializer);
+                return crate::FfiCommand::DownloadEnqueue { song: var_song };
+            }
+            28 => {
+                let mut var_id = <u64>::sse_decode(deserializer);
+                return crate::FfiCommand::DownloadCancel { id: var_id };
+            }
+            29 => {
+                return crate::FfiCommand::DownloadClearFinished;
+            }
+            30 => {
+                let mut var_source = <String>::sse_decode(deserializer);
+                let mut var_kind = <String>::sse_decode(deserializer);
+                return crate::FfiCommand::QrLoginStart {
+                    source: var_source,
+                    kind: var_kind,
+                };
+            }
+            31 => {
+                return crate::FfiCommand::QrLoginCancel;
+            }
+            32 => {
+                let mut var_paths = <Vec<String>>::sse_decode(deserializer);
+                let mut var_maxDepth = <u32>::sse_decode(deserializer);
+                return crate::FfiCommand::LocalScan {
+                    paths: var_paths,
+                    max_depth: var_maxDepth,
+                };
+            }
             _ => {
                 unimplemented!("");
             }
         }
+    }
+}
+
+impl SseDecode for i32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_i32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for Vec<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<String>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::CustomPlaylistSummaryDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::CustomPlaylistSummaryDto>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::DownloadTaskDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::DownloadTaskDto>::sse_decode(deserializer));
+        }
+        return ans_;
     }
 }
 
@@ -920,11 +1157,44 @@ impl SseDecode for Option<String> {
     }
 }
 
+impl SseDecode for Option<crate::ConfigDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::ConfigDto>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::QrLoginSessionDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::QrLoginSessionDto>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::SongDto> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::SongDto>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<u64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u64>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -967,6 +1237,26 @@ impl SseDecode for crate::PlaylistDto {
             cover_url: var_coverUrl,
             song_count: var_songCount,
             description: var_description,
+        };
+    }
+}
+
+impl SseDecode for crate::QrLoginSessionDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_source = <String>::sse_decode(deserializer);
+        let mut var_kind = <String>::sse_decode(deserializer);
+        let mut var_key = <String>::sse_decode(deserializer);
+        let mut var_url = <String>::sse_decode(deserializer);
+        let mut var_imagePngBase64 = <Option<String>>::sse_decode(deserializer);
+        let mut var_expiresIn = <u64>::sse_decode(deserializer);
+        return crate::QrLoginSessionDto {
+            source: var_source,
+            kind: var_kind,
+            key: var_key,
+            url: var_url,
+            image_png_base64: var_imagePngBase64,
+            expires_in: var_expiresIn,
         };
     }
 }
@@ -1058,6 +1348,11 @@ impl SseDecode for crate::VoicefoxEvent {
         let mut var_items = <Vec<crate::SongDto>>::sse_decode(deserializer);
         let mut var_queue = <Vec<crate::SongDto>>::sse_decode(deserializer);
         let mut var_queueIndex = <u32>::sse_decode(deserializer);
+        let mut var_qrSession = <Option<crate::QrLoginSessionDto>>::sse_decode(deserializer);
+        let mut var_status = <Option<String>>::sse_decode(deserializer);
+        let mut var_userName = <Option<String>>::sse_decode(deserializer);
+        let mut var_warnings = <Vec<String>>::sse_decode(deserializer);
+        let mut var_config = <Option<crate::ConfigDto>>::sse_decode(deserializer);
         return crate::VoicefoxEvent {
             kind: var_kind,
             request_id: var_requestId,
@@ -1070,6 +1365,11 @@ impl SseDecode for crate::VoicefoxEvent {
             items: var_items,
             queue: var_queue,
             queue_index: var_queueIndex,
+            qr_session: var_qrSession,
+            status: var_status,
+            user_name: var_userName,
+            warnings: var_warnings,
+            config: var_config,
         };
     }
 }
@@ -1083,6 +1383,12 @@ impl SseDecode for crate::VoicefoxState {
         let mut var_search = <crate::SearchDto>::sse_decode(deserializer);
         let mut var_lyrics = <crate::LyricsDto>::sse_decode(deserializer);
         let mut var_playlists = <Vec<crate::PlaylistDto>>::sse_decode(deserializer);
+        let mut var_favorites = <Vec<crate::SongDto>>::sse_decode(deserializer);
+        let mut var_favoritePlaylists = <Vec<crate::PlaylistDto>>::sse_decode(deserializer);
+        let mut var_history = <Vec<crate::SongDto>>::sse_decode(deserializer);
+        let mut var_customPlaylists =
+            <Vec<crate::CustomPlaylistSummaryDto>>::sse_decode(deserializer);
+        let mut var_downloads = <Vec<crate::DownloadTaskDto>>::sse_decode(deserializer);
         return crate::VoicefoxState {
             playback: var_playback,
             queue: var_queue,
@@ -1090,14 +1396,12 @@ impl SseDecode for crate::VoicefoxState {
             search: var_search,
             lyrics: var_lyrics,
             playlists: var_playlists,
+            favorites: var_favorites,
+            favorite_playlists: var_favoritePlaylists,
+            history: var_history,
+            custom_playlists: var_customPlaylists,
+            downloads: var_downloads,
         };
-    }
-}
-
-impl SseDecode for i32 {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        deserializer.cursor.read_i32::<NativeEndian>().unwrap()
     }
 }
 
@@ -1182,6 +1486,85 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<VoicefoxEventStream>> for Voic
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::ConfigDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.theme.into_into_dart().into_dart(),
+            self.volume.into_into_dart().into_dart(),
+            self.playback_speed.into_into_dart().into_dart(),
+            self.play_mode.into_into_dart().into_dart(),
+            self.history_limit.into_into_dart().into_dart(),
+            self.default_source.into_into_dart().into_dart(),
+            self.enabled_sources.into_into_dart().into_dart(),
+            self.js_sources_first.into_into_dart().into_dart(),
+            self.download_dir.into_into_dart().into_dart(),
+            self.download_quality.into_into_dart().into_dart(),
+            self.download_concurrency.into_into_dart().into_dart(),
+            self.show_translation.into_into_dart().into_dart(),
+            self.show_yrc.into_into_dart().into_dart(),
+            self.lyric_offset_ms.into_into_dart().into_dart(),
+            self.proxy_url.into_into_dart().into_dart(),
+            self.network_timeout_secs.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::ConfigDto {}
+impl flutter_rust_bridge::IntoIntoDart<crate::ConfigDto> for crate::ConfigDto {
+    fn into_into_dart(self) -> crate::ConfigDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::CustomPlaylistSummaryDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.cover_url.into_into_dart().into_dart(),
+            self.song_count.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::CustomPlaylistSummaryDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::CustomPlaylistSummaryDto>
+    for crate::CustomPlaylistSummaryDto
+{
+    fn into_into_dart(self) -> crate::CustomPlaylistSummaryDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::DownloadTaskDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.singer.into_into_dart().into_dart(),
+            self.source.into_into_dart().into_dart(),
+            self.quality.into_into_dart().into_dart(),
+            self.dest.into_into_dart().into_dart(),
+            self.state.into_into_dart().into_dart(),
+            self.active.into_into_dart().into_dart(),
+            self.downloaded.into_into_dart().into_dart(),
+            self.total.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+            self.trigger_auto_cache.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::DownloadTaskDto {}
+impl flutter_rust_bridge::IntoIntoDart<crate::DownloadTaskDto> for crate::DownloadTaskDto {
+    fn into_into_dart(self) -> crate::DownloadTaskDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -1214,6 +1597,71 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
                 12.into_dart(),
                 keyword.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::FfiCommand::LibraryRefresh => [13.into_dart()].into_dart(),
+            crate::FfiCommand::FavoritesAdd { song } => {
+                [14.into_dart(), song.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::FavoritesRemove { song } => {
+                [15.into_dart(), song.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::FavoritePlaylistAdd { playlist } => {
+                [16.into_dart(), playlist.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::FavoritePlaylistRemove { playlist } => {
+                [17.into_dart(), playlist.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::HistoryRemove { song } => {
+                [18.into_dart(), song.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::HistoryClear => [19.into_dart()].into_dart(),
+            crate::FfiCommand::CustomPlaylistCreate { name } => {
+                [20.into_dart(), name.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::CustomPlaylistRename { id, name } => [
+                21.into_dart(),
+                id.into_into_dart().into_dart(),
+                name.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::FfiCommand::CustomPlaylistDelete { id } => {
+                [22.into_dart(), id.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::CustomPlaylistAddSongs { id, songs } => [
+                23.into_dart(),
+                id.into_into_dart().into_dart(),
+                songs.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::FfiCommand::CustomPlaylistRemoveSong { id, song } => [
+                24.into_dart(),
+                id.into_into_dart().into_dart(),
+                song.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::FfiCommand::ConfigGet => [25.into_dart()].into_dart(),
+            crate::FfiCommand::ConfigUpdate { config } => {
+                [26.into_dart(), config.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::DownloadEnqueue { song } => {
+                [27.into_dart(), song.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::DownloadCancel { id } => {
+                [28.into_dart(), id.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::DownloadClearFinished => [29.into_dart()].into_dart(),
+            crate::FfiCommand::QrLoginStart { source, kind } => [
+                30.into_dart(),
+                source.into_into_dart().into_dart(),
+                kind.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::FfiCommand::QrLoginCancel => [31.into_dart()].into_dart(),
+            crate::FfiCommand::LocalScan { paths, max_depth } => [
+                32.into_dart(),
+                paths.into_into_dart().into_dart(),
+                max_depth.into_into_dart().into_dart(),
             ]
             .into_dart(),
             _ => {
@@ -1305,6 +1753,26 @@ impl flutter_rust_bridge::IntoIntoDart<crate::PlaylistDto> for crate::PlaylistDt
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::QrLoginSessionDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.source.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.key.into_into_dart().into_dart(),
+            self.url.into_into_dart().into_dart(),
+            self.image_png_base64.into_into_dart().into_dart(),
+            self.expires_in.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::QrLoginSessionDto {}
+impl flutter_rust_bridge::IntoIntoDart<crate::QrLoginSessionDto> for crate::QrLoginSessionDto {
+    fn into_into_dart(self) -> crate::QrLoginSessionDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::SearchDto {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -1359,6 +1827,11 @@ impl flutter_rust_bridge::IntoDart for crate::VoicefoxEvent {
             self.items.into_into_dart().into_dart(),
             self.queue.into_into_dart().into_dart(),
             self.queue_index.into_into_dart().into_dart(),
+            self.qr_session.into_into_dart().into_dart(),
+            self.status.into_into_dart().into_dart(),
+            self.user_name.into_into_dart().into_dart(),
+            self.warnings.into_into_dart().into_dart(),
+            self.config.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1379,6 +1852,11 @@ impl flutter_rust_bridge::IntoDart for crate::VoicefoxState {
             self.search.into_into_dart().into_dart(),
             self.lyrics.into_into_dart().into_dart(),
             self.playlists.into_into_dart().into_dart(),
+            self.favorites.into_into_dart().into_dart(),
+            self.favorite_playlists.into_into_dart().into_dart(),
+            self.history.into_into_dart().into_dart(),
+            self.custom_playlists.into_into_dart().into_dart(),
+            self.downloads.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1440,6 +1918,63 @@ impl SseEncode for bool {
     }
 }
 
+impl SseEncode for crate::ConfigDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.theme, serializer);
+        <u32>::sse_encode(self.volume, serializer);
+        <f64>::sse_encode(self.playback_speed, serializer);
+        <String>::sse_encode(self.play_mode, serializer);
+        <u32>::sse_encode(self.history_limit, serializer);
+        <String>::sse_encode(self.default_source, serializer);
+        <Vec<String>>::sse_encode(self.enabled_sources, serializer);
+        <bool>::sse_encode(self.js_sources_first, serializer);
+        <String>::sse_encode(self.download_dir, serializer);
+        <Option<String>>::sse_encode(self.download_quality, serializer);
+        <u32>::sse_encode(self.download_concurrency, serializer);
+        <bool>::sse_encode(self.show_translation, serializer);
+        <bool>::sse_encode(self.show_yrc, serializer);
+        <i32>::sse_encode(self.lyric_offset_ms, serializer);
+        <String>::sse_encode(self.proxy_url, serializer);
+        <u64>::sse_encode(self.network_timeout_secs, serializer);
+    }
+}
+
+impl SseEncode for crate::CustomPlaylistSummaryDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.cover_url, serializer);
+        <u32>::sse_encode(self.song_count, serializer);
+    }
+}
+
+impl SseEncode for crate::DownloadTaskDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.singer, serializer);
+        <String>::sse_encode(self.source, serializer);
+        <String>::sse_encode(self.quality, serializer);
+        <String>::sse_encode(self.dest, serializer);
+        <String>::sse_encode(self.state, serializer);
+        <bool>::sse_encode(self.active, serializer);
+        <u64>::sse_encode(self.downloaded, serializer);
+        <Option<u64>>::sse_encode(self.total, serializer);
+        <Option<String>>::sse_encode(self.error, serializer);
+        <bool>::sse_encode(self.trigger_auto_cache, serializer);
+    }
+}
+
+impl SseEncode for f64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_f64::<NativeEndian>(self).unwrap();
+    }
+}
+
 impl SseEncode for crate::FfiCommand {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1491,9 +2026,126 @@ impl SseEncode for crate::FfiCommand {
                 <String>::sse_encode(keyword, serializer);
                 <u32>::sse_encode(page, serializer);
             }
+            crate::FfiCommand::LibraryRefresh => {
+                <i32>::sse_encode(13, serializer);
+            }
+            crate::FfiCommand::FavoritesAdd { song } => {
+                <i32>::sse_encode(14, serializer);
+                <crate::SongDto>::sse_encode(song, serializer);
+            }
+            crate::FfiCommand::FavoritesRemove { song } => {
+                <i32>::sse_encode(15, serializer);
+                <crate::SongDto>::sse_encode(song, serializer);
+            }
+            crate::FfiCommand::FavoritePlaylistAdd { playlist } => {
+                <i32>::sse_encode(16, serializer);
+                <crate::PlaylistDto>::sse_encode(playlist, serializer);
+            }
+            crate::FfiCommand::FavoritePlaylistRemove { playlist } => {
+                <i32>::sse_encode(17, serializer);
+                <crate::PlaylistDto>::sse_encode(playlist, serializer);
+            }
+            crate::FfiCommand::HistoryRemove { song } => {
+                <i32>::sse_encode(18, serializer);
+                <crate::SongDto>::sse_encode(song, serializer);
+            }
+            crate::FfiCommand::HistoryClear => {
+                <i32>::sse_encode(19, serializer);
+            }
+            crate::FfiCommand::CustomPlaylistCreate { name } => {
+                <i32>::sse_encode(20, serializer);
+                <String>::sse_encode(name, serializer);
+            }
+            crate::FfiCommand::CustomPlaylistRename { id, name } => {
+                <i32>::sse_encode(21, serializer);
+                <String>::sse_encode(id, serializer);
+                <String>::sse_encode(name, serializer);
+            }
+            crate::FfiCommand::CustomPlaylistDelete { id } => {
+                <i32>::sse_encode(22, serializer);
+                <String>::sse_encode(id, serializer);
+            }
+            crate::FfiCommand::CustomPlaylistAddSongs { id, songs } => {
+                <i32>::sse_encode(23, serializer);
+                <String>::sse_encode(id, serializer);
+                <Vec<crate::SongDto>>::sse_encode(songs, serializer);
+            }
+            crate::FfiCommand::CustomPlaylistRemoveSong { id, song } => {
+                <i32>::sse_encode(24, serializer);
+                <String>::sse_encode(id, serializer);
+                <crate::SongDto>::sse_encode(song, serializer);
+            }
+            crate::FfiCommand::ConfigGet => {
+                <i32>::sse_encode(25, serializer);
+            }
+            crate::FfiCommand::ConfigUpdate { config } => {
+                <i32>::sse_encode(26, serializer);
+                <crate::ConfigDto>::sse_encode(config, serializer);
+            }
+            crate::FfiCommand::DownloadEnqueue { song } => {
+                <i32>::sse_encode(27, serializer);
+                <crate::SongDto>::sse_encode(song, serializer);
+            }
+            crate::FfiCommand::DownloadCancel { id } => {
+                <i32>::sse_encode(28, serializer);
+                <u64>::sse_encode(id, serializer);
+            }
+            crate::FfiCommand::DownloadClearFinished => {
+                <i32>::sse_encode(29, serializer);
+            }
+            crate::FfiCommand::QrLoginStart { source, kind } => {
+                <i32>::sse_encode(30, serializer);
+                <String>::sse_encode(source, serializer);
+                <String>::sse_encode(kind, serializer);
+            }
+            crate::FfiCommand::QrLoginCancel => {
+                <i32>::sse_encode(31, serializer);
+            }
+            crate::FfiCommand::LocalScan { paths, max_depth } => {
+                <i32>::sse_encode(32, serializer);
+                <Vec<String>>::sse_encode(paths, serializer);
+                <u32>::sse_encode(max_depth, serializer);
+            }
             _ => {
                 unimplemented!("");
             }
+        }
+    }
+}
+
+impl SseEncode for i32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for Vec<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <String>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::CustomPlaylistSummaryDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::CustomPlaylistSummaryDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::DownloadTaskDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::DownloadTaskDto>::sse_encode(item, serializer);
         }
     }
 }
@@ -1568,12 +2220,42 @@ impl SseEncode for Option<String> {
     }
 }
 
+impl SseEncode for Option<crate::ConfigDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::ConfigDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::QrLoginSessionDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::QrLoginSessionDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::SongDto> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::SongDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<u64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u64>::sse_encode(value, serializer);
         }
     }
 }
@@ -1599,6 +2281,18 @@ impl SseEncode for crate::PlaylistDto {
         <Option<String>>::sse_encode(self.cover_url, serializer);
         <u32>::sse_encode(self.song_count, serializer);
         <Option<String>>::sse_encode(self.description, serializer);
+    }
+}
+
+impl SseEncode for crate::QrLoginSessionDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.source, serializer);
+        <String>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.key, serializer);
+        <String>::sse_encode(self.url, serializer);
+        <Option<String>>::sse_encode(self.image_png_base64, serializer);
+        <u64>::sse_encode(self.expires_in, serializer);
     }
 }
 
@@ -1676,6 +2370,11 @@ impl SseEncode for crate::VoicefoxEvent {
         <Vec<crate::SongDto>>::sse_encode(self.items, serializer);
         <Vec<crate::SongDto>>::sse_encode(self.queue, serializer);
         <u32>::sse_encode(self.queue_index, serializer);
+        <Option<crate::QrLoginSessionDto>>::sse_encode(self.qr_session, serializer);
+        <Option<String>>::sse_encode(self.status, serializer);
+        <Option<String>>::sse_encode(self.user_name, serializer);
+        <Vec<String>>::sse_encode(self.warnings, serializer);
+        <Option<crate::ConfigDto>>::sse_encode(self.config, serializer);
     }
 }
 
@@ -1688,13 +2387,11 @@ impl SseEncode for crate::VoicefoxState {
         <crate::SearchDto>::sse_encode(self.search, serializer);
         <crate::LyricsDto>::sse_encode(self.lyrics, serializer);
         <Vec<crate::PlaylistDto>>::sse_encode(self.playlists, serializer);
-    }
-}
-
-impl SseEncode for i32 {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
+        <Vec<crate::SongDto>>::sse_encode(self.favorites, serializer);
+        <Vec<crate::PlaylistDto>>::sse_encode(self.favorite_playlists, serializer);
+        <Vec<crate::SongDto>>::sse_encode(self.history, serializer);
+        <Vec<crate::CustomPlaylistSummaryDto>>::sse_encode(self.custom_playlists, serializer);
+        <Vec<crate::DownloadTaskDto>>::sse_encode(self.downloads, serializer);
     }
 }
 

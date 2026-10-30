@@ -22,42 +22,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   });
 
   CrossPlatformFinalizerArg
-      get rust_arc_decrement_strong_count_VoicefoxControllerPtr => wire
-          .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController;
+  get rust_arc_decrement_strong_count_VoicefoxControllerPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController;
 
   CrossPlatformFinalizerArg
-      get rust_arc_decrement_strong_count_VoicefoxEventStreamPtr => wire
-          .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream;
+  get rust_arc_decrement_strong_count_VoicefoxEventStreamPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream;
 
   @protected
   VoicefoxController
-      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          dynamic raw);
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    dynamic raw,
+  );
 
   @protected
   VoicefoxEventStream
-      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          dynamic raw);
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    dynamic raw,
+  );
 
   @protected
   VoicefoxEventStream
-      dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          dynamic raw);
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    dynamic raw,
+  );
 
   @protected
   VoicefoxController
-      dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          dynamic raw);
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    dynamic raw,
+  );
 
   @protected
   VoicefoxController
-      dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          dynamic raw);
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    dynamic raw,
+  );
 
   @protected
   VoicefoxEventStream
-      dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          dynamic raw);
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    dynamic raw,
+  );
 
   @protected
   String dco_decode_String(dynamic raw);
@@ -66,13 +72,51 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  ConfigDto dco_decode_box_autoadd_config_dto(dynamic raw);
+
+  @protected
   FfiCommand dco_decode_box_autoadd_ffi_command(dynamic raw);
+
+  @protected
+  PlaylistDto dco_decode_box_autoadd_playlist_dto(dynamic raw);
+
+  @protected
+  QrLoginSessionDto dco_decode_box_autoadd_qr_login_session_dto(dynamic raw);
 
   @protected
   SongDto dco_decode_box_autoadd_song_dto(dynamic raw);
 
   @protected
+  BigInt dco_decode_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  ConfigDto dco_decode_config_dto(dynamic raw);
+
+  @protected
+  CustomPlaylistSummaryDto dco_decode_custom_playlist_summary_dto(dynamic raw);
+
+  @protected
+  DownloadTaskDto dco_decode_download_task_dto(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
+
+  @protected
   FfiCommand dco_decode_ffi_command(dynamic raw);
+
+  @protected
+  int dco_decode_i_32(dynamic raw);
+
+  @protected
+  List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<CustomPlaylistSummaryDto> dco_decode_list_custom_playlist_summary_dto(
+    dynamic raw,
+  );
+
+  @protected
+  List<DownloadTaskDto> dco_decode_list_download_task_dto(dynamic raw);
 
   @protected
   List<LyricLineDto> dco_decode_list_lyric_line_dto(dynamic raw);
@@ -96,13 +140,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
+  ConfigDto? dco_decode_opt_box_autoadd_config_dto(dynamic raw);
+
+  @protected
+  QrLoginSessionDto? dco_decode_opt_box_autoadd_qr_login_session_dto(
+    dynamic raw,
+  );
+
+  @protected
   SongDto? dco_decode_opt_box_autoadd_song_dto(dynamic raw);
+
+  @protected
+  BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
   PlaybackDto dco_decode_playback_dto(dynamic raw);
 
   @protected
   PlaylistDto dco_decode_playlist_dto(dynamic raw);
+
+  @protected
+  QrLoginSessionDto dco_decode_qr_login_session_dto(dynamic raw);
 
   @protected
   SearchDto dco_decode_search_dto(dynamic raw);
@@ -133,33 +191,39 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   VoicefoxController
-      sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          SseDeserializer deserializer);
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    SseDeserializer deserializer,
+  );
 
   @protected
   VoicefoxEventStream
-      sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          SseDeserializer deserializer);
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    SseDeserializer deserializer,
+  );
 
   @protected
   VoicefoxEventStream
-      sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          SseDeserializer deserializer);
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    SseDeserializer deserializer,
+  );
 
   @protected
   VoicefoxController
-      sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          SseDeserializer deserializer);
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    SseDeserializer deserializer,
+  );
 
   @protected
   VoicefoxController
-      sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          SseDeserializer deserializer);
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    SseDeserializer deserializer,
+  );
 
   @protected
   VoicefoxEventStream
-      sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          SseDeserializer deserializer);
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    SseDeserializer deserializer,
+  );
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
@@ -168,17 +232,62 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  ConfigDto sse_decode_box_autoadd_config_dto(SseDeserializer deserializer);
+
+  @protected
   FfiCommand sse_decode_box_autoadd_ffi_command(SseDeserializer deserializer);
+
+  @protected
+  PlaylistDto sse_decode_box_autoadd_playlist_dto(SseDeserializer deserializer);
+
+  @protected
+  QrLoginSessionDto sse_decode_box_autoadd_qr_login_session_dto(
+    SseDeserializer deserializer,
+  );
 
   @protected
   SongDto sse_decode_box_autoadd_song_dto(SseDeserializer deserializer);
 
   @protected
+  BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  ConfigDto sse_decode_config_dto(SseDeserializer deserializer);
+
+  @protected
+  CustomPlaylistSummaryDto sse_decode_custom_playlist_summary_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DownloadTaskDto sse_decode_download_task_dto(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
   FfiCommand sse_decode_ffi_command(SseDeserializer deserializer);
 
   @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<CustomPlaylistSummaryDto> sse_decode_list_custom_playlist_summary_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<DownloadTaskDto> sse_decode_list_download_task_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<LyricLineDto> sse_decode_list_lyric_line_dto(
-      SseDeserializer deserializer);
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<PlaylistDto> sse_decode_list_playlist_dto(SseDeserializer deserializer);
@@ -199,13 +308,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
+  ConfigDto? sse_decode_opt_box_autoadd_config_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  QrLoginSessionDto? sse_decode_opt_box_autoadd_qr_login_session_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SongDto? sse_decode_opt_box_autoadd_song_dto(SseDeserializer deserializer);
+
+  @protected
+  BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
   PlaybackDto sse_decode_playback_dto(SseDeserializer deserializer);
 
   @protected
   PlaylistDto sse_decode_playlist_dto(SseDeserializer deserializer);
+
+  @protected
+  QrLoginSessionDto sse_decode_qr_login_session_dto(
+    SseDeserializer deserializer,
+  );
 
   @protected
   SearchDto sse_decode_search_dto(SseDeserializer deserializer);
@@ -235,37 +362,46 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   VoicefoxState sse_decode_voicefox_state(SseDeserializer deserializer);
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    VoicefoxController self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
-      sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          VoicefoxController self, SseSerializer serializer);
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    VoicefoxEventStream self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
-      sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          VoicefoxEventStream self, SseSerializer serializer);
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    VoicefoxEventStream self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
-      sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          VoicefoxEventStream self, SseSerializer serializer);
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    VoicefoxController self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
-      sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          VoicefoxController self, SseSerializer serializer);
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    VoicefoxController self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
-      sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          VoicefoxController self, SseSerializer serializer);
-
-  @protected
-  void
-      sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          VoicefoxEventStream self, SseSerializer serializer);
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    VoicefoxEventStream self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer);
@@ -274,26 +410,91 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_config_dto(
+    ConfigDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_ffi_command(
-      FfiCommand self, SseSerializer serializer);
+    FfiCommand self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_playlist_dto(
+    PlaylistDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_qr_login_session_dto(
+    QrLoginSessionDto self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_song_dto(SongDto self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_config_dto(ConfigDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_custom_playlist_summary_dto(
+    CustomPlaylistSummaryDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_download_task_dto(
+    DownloadTaskDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
   void sse_encode_ffi_command(FfiCommand self, SseSerializer serializer);
 
   @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_custom_playlist_summary_dto(
+    List<CustomPlaylistSummaryDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_download_task_dto(
+    List<DownloadTaskDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_lyric_line_dto(
-      List<LyricLineDto> self, SseSerializer serializer);
+    List<LyricLineDto> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_playlist_dto(
-      List<PlaylistDto> self, SseSerializer serializer);
+    List<PlaylistDto> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_8_strict(
-      Uint8List self, SseSerializer serializer);
+    Uint8List self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_song_dto(List<SongDto> self, SseSerializer serializer);
@@ -308,14 +509,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_config_dto(
+    ConfigDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_qr_login_session_dto(
+    QrLoginSessionDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_song_dto(
-      SongDto? self, SseSerializer serializer);
+    SongDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
   @protected
   void sse_encode_playback_dto(PlaybackDto self, SseSerializer serializer);
 
   @protected
   void sse_encode_playlist_dto(PlaylistDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_qr_login_session_dto(
+    QrLoginSessionDto self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_search_dto(SearchDto self, SseSerializer serializer);
@@ -343,9 +567,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_voicefox_state(VoicefoxState self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
 }
 
 // Section: wire_class
@@ -353,29 +574,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 class RustLibWire implements BaseWire {
   RustLibWire.fromExternalLibrary(ExternalLibrary lib);
 
-  void rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          int ptr) =>
-      wasmModule
-          .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-              ptr);
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+        ptr,
+      );
 
-  void rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          int ptr) =>
-      wasmModule
-          .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-              ptr);
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+        ptr,
+      );
 
-  void rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          int ptr) =>
-      wasmModule
-          .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-              ptr);
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+        ptr,
+      );
 
-  void rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          int ptr) =>
-      wasmModule
-          .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-              ptr);
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+        ptr,
+      );
 }
 
 @JS('wasm_bindgen')
@@ -385,18 +614,22 @@ external RustLibWasmModule get wasmModule;
 @anonymous
 extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void
-      rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          int ptr);
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    int ptr,
+  );
 
   external void
-      rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
-          int ptr);
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    int ptr,
+  );
 
   external void
-      rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          int ptr);
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    int ptr,
+  );
 
   external void
-      rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
-          int ptr);
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
+    int ptr,
+  );
 }

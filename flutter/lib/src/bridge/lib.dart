@@ -14,6 +14,178 @@ abstract class VoicefoxController implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxEventStream>>
 abstract class VoicefoxEventStream implements RustOpaqueInterface {}
 
+/// 配置的 FFI 子集镜像：只覆盖 GUI 设置页 v1 编辑面。
+/// 回写时打在「当前完整配置」上，未镜像字段（keybindings/local_music 等）原样保留。
+class ConfigDto {
+  final String theme;
+  final int volume;
+  final double playbackSpeed;
+  final String playMode;
+  final int historyLimit;
+  final String defaultSource;
+  final List<String> enabledSources;
+  final bool jsSourcesFirst;
+  final String downloadDir;
+  final String? downloadQuality;
+  final int downloadConcurrency;
+  final bool showTranslation;
+  final bool showYrc;
+  final int lyricOffsetMs;
+  final String proxyUrl;
+  final BigInt networkTimeoutSecs;
+
+  const ConfigDto({
+    required this.theme,
+    required this.volume,
+    required this.playbackSpeed,
+    required this.playMode,
+    required this.historyLimit,
+    required this.defaultSource,
+    required this.enabledSources,
+    required this.jsSourcesFirst,
+    required this.downloadDir,
+    this.downloadQuality,
+    required this.downloadConcurrency,
+    required this.showTranslation,
+    required this.showYrc,
+    required this.lyricOffsetMs,
+    required this.proxyUrl,
+    required this.networkTimeoutSecs,
+  });
+
+  @override
+  int get hashCode =>
+      theme.hashCode ^
+      volume.hashCode ^
+      playbackSpeed.hashCode ^
+      playMode.hashCode ^
+      historyLimit.hashCode ^
+      defaultSource.hashCode ^
+      enabledSources.hashCode ^
+      jsSourcesFirst.hashCode ^
+      downloadDir.hashCode ^
+      downloadQuality.hashCode ^
+      downloadConcurrency.hashCode ^
+      showTranslation.hashCode ^
+      showYrc.hashCode ^
+      lyricOffsetMs.hashCode ^
+      proxyUrl.hashCode ^
+      networkTimeoutSecs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConfigDto &&
+          runtimeType == other.runtimeType &&
+          theme == other.theme &&
+          volume == other.volume &&
+          playbackSpeed == other.playbackSpeed &&
+          playMode == other.playMode &&
+          historyLimit == other.historyLimit &&
+          defaultSource == other.defaultSource &&
+          enabledSources == other.enabledSources &&
+          jsSourcesFirst == other.jsSourcesFirst &&
+          downloadDir == other.downloadDir &&
+          downloadQuality == other.downloadQuality &&
+          downloadConcurrency == other.downloadConcurrency &&
+          showTranslation == other.showTranslation &&
+          showYrc == other.showYrc &&
+          lyricOffsetMs == other.lyricOffsetMs &&
+          proxyUrl == other.proxyUrl &&
+          networkTimeoutSecs == other.networkTimeoutSecs;
+}
+
+class CustomPlaylistSummaryDto {
+  final String id;
+  final String name;
+  final String? coverUrl;
+  final int songCount;
+
+  const CustomPlaylistSummaryDto({
+    required this.id,
+    required this.name,
+    this.coverUrl,
+    required this.songCount,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ name.hashCode ^ coverUrl.hashCode ^ songCount.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CustomPlaylistSummaryDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          coverUrl == other.coverUrl &&
+          songCount == other.songCount;
+}
+
+class DownloadTaskDto {
+  final BigInt id;
+  final String name;
+  final String singer;
+  final String source;
+  final String quality;
+  final String dest;
+  final String state;
+  final bool active;
+  final BigInt downloaded;
+  final BigInt? total;
+  final String? error;
+  final bool triggerAutoCache;
+
+  const DownloadTaskDto({
+    required this.id,
+    required this.name,
+    required this.singer,
+    required this.source,
+    required this.quality,
+    required this.dest,
+    required this.state,
+    required this.active,
+    required this.downloaded,
+    this.total,
+    this.error,
+    required this.triggerAutoCache,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      singer.hashCode ^
+      source.hashCode ^
+      quality.hashCode ^
+      dest.hashCode ^
+      state.hashCode ^
+      active.hashCode ^
+      downloaded.hashCode ^
+      total.hashCode ^
+      error.hashCode ^
+      triggerAutoCache.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DownloadTaskDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          singer == other.singer &&
+          source == other.source &&
+          quality == other.quality &&
+          dest == other.dest &&
+          state == other.state &&
+          active == other.active &&
+          downloaded == other.downloaded &&
+          total == other.total &&
+          error == other.error &&
+          triggerAutoCache == other.triggerAutoCache;
+}
+
 @freezed
 sealed class FfiCommand with _$FfiCommand {
   const FfiCommand._();
@@ -22,29 +194,72 @@ sealed class FfiCommand with _$FfiCommand {
   const factory FfiCommand.resume() = FfiCommand_Resume;
   const factory FfiCommand.toggle() = FfiCommand_Toggle;
   const factory FfiCommand.stop() = FfiCommand_Stop;
-  const factory FfiCommand.seekMs(
-    BigInt field0,
-  ) = FfiCommand_SeekMs;
-  const factory FfiCommand.playSong({
-    required SongDto song,
-  }) = FfiCommand_PlaySong;
+  const factory FfiCommand.seekMs(BigInt field0) = FfiCommand_SeekMs;
+  const factory FfiCommand.playSong({required SongDto song}) =
+      FfiCommand_PlaySong;
   const factory FfiCommand.queueAdd({
     required SongDto song,
     required bool next,
   }) = FfiCommand_QueueAdd;
-  const factory FfiCommand.queueRemove({
-    required int index,
-  }) = FfiCommand_QueueRemove;
+  const factory FfiCommand.queueRemove({required int index}) =
+      FfiCommand_QueueRemove;
   const factory FfiCommand.queueClear() = FfiCommand_QueueClear;
   const factory FfiCommand.next() = FfiCommand_Next;
   const factory FfiCommand.previous() = FfiCommand_Previous;
-  const factory FfiCommand.search({
-    required String keyword,
-  }) = FfiCommand_Search;
+  const factory FfiCommand.search({required String keyword}) =
+      FfiCommand_Search;
   const factory FfiCommand.searchMore({
     required String keyword,
     required int page,
   }) = FfiCommand_SearchMore;
+  const factory FfiCommand.libraryRefresh() = FfiCommand_LibraryRefresh;
+  const factory FfiCommand.favoritesAdd({required SongDto song}) =
+      FfiCommand_FavoritesAdd;
+  const factory FfiCommand.favoritesRemove({required SongDto song}) =
+      FfiCommand_FavoritesRemove;
+  const factory FfiCommand.favoritePlaylistAdd({
+    required PlaylistDto playlist,
+  }) = FfiCommand_FavoritePlaylistAdd;
+  const factory FfiCommand.favoritePlaylistRemove({
+    required PlaylistDto playlist,
+  }) = FfiCommand_FavoritePlaylistRemove;
+  const factory FfiCommand.historyRemove({required SongDto song}) =
+      FfiCommand_HistoryRemove;
+  const factory FfiCommand.historyClear() = FfiCommand_HistoryClear;
+  const factory FfiCommand.customPlaylistCreate({required String name}) =
+      FfiCommand_CustomPlaylistCreate;
+  const factory FfiCommand.customPlaylistRename({
+    required String id,
+    required String name,
+  }) = FfiCommand_CustomPlaylistRename;
+  const factory FfiCommand.customPlaylistDelete({required String id}) =
+      FfiCommand_CustomPlaylistDelete;
+  const factory FfiCommand.customPlaylistAddSongs({
+    required String id,
+    required List<SongDto> songs,
+  }) = FfiCommand_CustomPlaylistAddSongs;
+  const factory FfiCommand.customPlaylistRemoveSong({
+    required String id,
+    required SongDto song,
+  }) = FfiCommand_CustomPlaylistRemoveSong;
+  const factory FfiCommand.configGet() = FfiCommand_ConfigGet;
+  const factory FfiCommand.configUpdate({required ConfigDto config}) =
+      FfiCommand_ConfigUpdate;
+  const factory FfiCommand.downloadEnqueue({required SongDto song}) =
+      FfiCommand_DownloadEnqueue;
+  const factory FfiCommand.downloadCancel({required BigInt id}) =
+      FfiCommand_DownloadCancel;
+  const factory FfiCommand.downloadClearFinished() =
+      FfiCommand_DownloadClearFinished;
+  const factory FfiCommand.qrLoginStart({
+    required String source,
+    required String kind,
+  }) = FfiCommand_QrLoginStart;
+  const factory FfiCommand.qrLoginCancel() = FfiCommand_QrLoginCancel;
+  const factory FfiCommand.localScan({
+    required List<String> paths,
+    required int maxDepth,
+  }) = FfiCommand_LocalScan;
 }
 
 class LyricLineDto {
@@ -185,6 +400,45 @@ class PlaylistDto {
           description == other.description;
 }
 
+class QrLoginSessionDto {
+  final String source;
+  final String kind;
+  final String key;
+  final String url;
+  final String? imagePngBase64;
+  final BigInt expiresIn;
+
+  const QrLoginSessionDto({
+    required this.source,
+    required this.kind,
+    required this.key,
+    required this.url,
+    this.imagePngBase64,
+    required this.expiresIn,
+  });
+
+  @override
+  int get hashCode =>
+      source.hashCode ^
+      kind.hashCode ^
+      key.hashCode ^
+      url.hashCode ^
+      imagePngBase64.hashCode ^
+      expiresIn.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QrLoginSessionDto &&
+          runtimeType == other.runtimeType &&
+          source == other.source &&
+          kind == other.kind &&
+          key == other.key &&
+          url == other.url &&
+          imagePngBase64 == other.imagePngBase64 &&
+          expiresIn == other.expiresIn;
+}
+
 class SearchDto {
   final String keyword;
   final int page;
@@ -275,6 +529,11 @@ class VoicefoxEvent {
   final List<SongDto> items;
   final List<SongDto> queue;
   final int queueIndex;
+  final QrLoginSessionDto? qrSession;
+  final String? status;
+  final String? userName;
+  final List<String> warnings;
+  final ConfigDto? config;
 
   const VoicefoxEvent({
     required this.kind,
@@ -288,6 +547,11 @@ class VoicefoxEvent {
     required this.items,
     required this.queue,
     required this.queueIndex,
+    this.qrSession,
+    this.status,
+    this.userName,
+    required this.warnings,
+    this.config,
   });
 
   @override
@@ -302,7 +566,12 @@ class VoicefoxEvent {
       song.hashCode ^
       items.hashCode ^
       queue.hashCode ^
-      queueIndex.hashCode;
+      queueIndex.hashCode ^
+      qrSession.hashCode ^
+      status.hashCode ^
+      userName.hashCode ^
+      warnings.hashCode ^
+      config.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -319,7 +588,12 @@ class VoicefoxEvent {
           song == other.song &&
           items == other.items &&
           queue == other.queue &&
-          queueIndex == other.queueIndex;
+          queueIndex == other.queueIndex &&
+          qrSession == other.qrSession &&
+          status == other.status &&
+          userName == other.userName &&
+          warnings == other.warnings &&
+          config == other.config;
 }
 
 class VoicefoxState {
@@ -329,6 +603,11 @@ class VoicefoxState {
   final SearchDto search;
   final LyricsDto lyrics;
   final List<PlaylistDto> playlists;
+  final List<SongDto> favorites;
+  final List<PlaylistDto> favoritePlaylists;
+  final List<SongDto> history;
+  final List<CustomPlaylistSummaryDto> customPlaylists;
+  final List<DownloadTaskDto> downloads;
 
   const VoicefoxState({
     required this.playback,
@@ -337,6 +616,11 @@ class VoicefoxState {
     required this.search,
     required this.lyrics,
     required this.playlists,
+    required this.favorites,
+    required this.favoritePlaylists,
+    required this.history,
+    required this.customPlaylists,
+    required this.downloads,
   });
 
   @override
@@ -346,7 +630,12 @@ class VoicefoxState {
       queueIndex.hashCode ^
       search.hashCode ^
       lyrics.hashCode ^
-      playlists.hashCode;
+      playlists.hashCode ^
+      favorites.hashCode ^
+      favoritePlaylists.hashCode ^
+      history.hashCode ^
+      customPlaylists.hashCode ^
+      downloads.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -358,5 +647,10 @@ class VoicefoxState {
           queueIndex == other.queueIndex &&
           search == other.search &&
           lyrics == other.lyrics &&
-          playlists == other.playlists;
+          playlists == other.playlists &&
+          favorites == other.favorites &&
+          favoritePlaylists == other.favoritePlaylists &&
+          history == other.history &&
+          customPlaylists == other.customPlaylists &&
+          downloads == other.downloads;
 }

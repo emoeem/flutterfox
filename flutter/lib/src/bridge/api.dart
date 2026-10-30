@@ -26,10 +26,13 @@ Future<FfiCommand> commandPrevious() =>
 Future<FfiCommand> commandSearch({required String keyword}) =>
     RustLib.instance.api.crateApiCommandSearch(keyword: keyword);
 
-Future<FfiCommand> commandSearchMore(
-        {required String keyword, required int page}) =>
-    RustLib.instance.api
-        .crateApiCommandSearchMore(keyword: keyword, page: page);
+Future<FfiCommand> commandSearchMore({
+  required String keyword,
+  required int page,
+}) => RustLib.instance.api.crateApiCommandSearchMore(
+  keyword: keyword,
+  page: page,
+);
 
 Future<FfiCommand> commandPlay({required SongDto song}) =>
     RustLib.instance.api.crateApiCommandPlay(song: song);
@@ -51,15 +54,17 @@ Future<VoicefoxController> newDesktop() =>
 Future<VoicefoxState> state({required VoicefoxController controller}) =>
     RustLib.instance.api.crateApiState(controller: controller);
 
-Future<void> dispatch(
-        {required VoicefoxController controller,
-        required FfiCommand command}) =>
-    RustLib.instance.api
-        .crateApiDispatch(controller: controller, command: command);
+Future<void> dispatch({
+  required VoicefoxController controller,
+  required FfiCommand command,
+}) => RustLib.instance.api.crateApiDispatch(
+  controller: controller,
+  command: command,
+);
 
-Future<VoicefoxEventStream> subscribe(
-        {required VoicefoxController controller}) =>
-    RustLib.instance.api.crateApiSubscribe(controller: controller);
+Future<VoicefoxEventStream> subscribe({
+  required VoicefoxController controller,
+}) => RustLib.instance.api.crateApiSubscribe(controller: controller);
 
 Future<VoicefoxEvent> eventNext({required VoicefoxEventStream stream}) =>
     RustLib.instance.api.crateApiEventNext(stream: stream);
