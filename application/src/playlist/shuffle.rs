@@ -490,6 +490,8 @@ impl ShuffleScheduler {
     }
 
     /// 选出下一首并提交。列表为空或不在随机模式时返回 None。
+    // 返回 (下一首, 推进方式)，不是 Iterator::next 的语义；保留原命名。
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<(SongKey, Advance)> {
         self.revision += 1;
         if let Some(song) = self.stack.pop() {

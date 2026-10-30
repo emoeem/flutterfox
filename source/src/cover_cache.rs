@@ -337,11 +337,13 @@ mod tests {
     #[tokio::test]
     async fn sweep_evicts_down_to_the_limit_by_oldest_access() {
         let dir = temp_dir("sweep-limit");
+        let now = std::time::SystemTime::now();
         for index in 0..6 {
             let path = dir.join(format!("{index}.jpg"));
             store_bytes(&path, &png_bytes(2, 2)).unwrap();
-            let old =
-                std::time::SystemTime::now() - std::time::Duration::from_secs(600 - index as u64);
+            // 用毫秒级递增偏移，避免同一秒内写入导致 mtime 顺序不确定
+            let old = now
+                - std::time::Duration::from_millis(600_000 - (index as u64) * 1_000);
             set_mtime(&path, old);
         }
 

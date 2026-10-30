@@ -18,19 +18,19 @@ use lx_core::traits::source::SongUrl;
 use lx_source::manager::SourceManager;
 use tokio::sync::{Semaphore, mpsc};
 
-use crate::download::engine::{
+use crate::engine::{
     DownloadEngine, DownloadError, DownloadOptions, DownloadProgress, DownloadRequest,
     ProgressSnapshot,
 };
-use crate::download::naming::{
+use crate::naming::{
     AUDIO_EXTENSIONS, detect_extension, extension_from_url, normalize_extension, render_filename,
     resolve_download_dir, sanitize_filename, unique_dest,
 };
-use crate::download::records::{DownloadRecord, DownloadRecords, DownloadStatus, relative_path};
-use crate::download::tags::{
+use crate::records::{DownloadRecord, DownloadRecords, DownloadStatus, relative_path};
+use crate::tags::{
     DownloadMetadata, embed_tags, shrink_cover, validate_audio, write_lyric_file,
 };
-use crate::download::webdav;
+use crate::webdav;
 
 /// 已结束任务在列表中的保留数量。
 const FINISHED_TASK_LIMIT: usize = 100;
@@ -1031,7 +1031,7 @@ async fn fetch_lyric(sources: &Arc<SourceManager>, song: &SongInfo) -> Option<St
     )
     .await
     {
-        Ok(Ok(lyric)) => crate::download::tags::standard_lyric(&lyric),
+        Ok(Ok(lyric)) => crate::tags::standard_lyric(&lyric),
         _ => None,
     }
 }
@@ -1140,8 +1140,8 @@ fn trim_finished(tasks: &mut Vec<DownloadTask>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::download::engine::DownloadOptions;
-    use crate::download::test_support::{
+    use crate::engine::DownloadOptions;
+    use crate::test_support::{
         RangeMode, fake_audio, spawn_test_server, temp_dir, tiny_png,
     };
     use lx_core::model::lyric::LyricData;

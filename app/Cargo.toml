@@ -16,6 +16,8 @@ lx-core = { path = "../core" }
 lx-source = { path = "../source" }
 lx-player = { path = "../player" }
 lx-lyric = { path = "../lyric" }
+voicefox-application = { path = "../application" }
+voicefox-download = { path = "../download" }
 voicefox-runtime = { path = "../runtime", default-features = false }
 
 tokio.workspace = true

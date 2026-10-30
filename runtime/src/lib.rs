@@ -179,6 +179,8 @@ impl ApplicationRuntime {
         *self.player.state_watcher().borrow()
     }
 }
+pub mod config_loader;
+
 pub fn default_config_path() -> PathBuf {
     directories::ProjectDirs::from("", "", "voicefox")
         .map(|project| project.config_dir().to_path_buf())
@@ -190,12 +192,7 @@ pub fn default_config_path() -> PathBuf {
         .join("config.toml")
 }
 pub fn load_config() -> anyhow::Result<(Config, PathBuf)> {
-    let p = default_config_path();
-    if !p.is_file() {
-        return Ok((Config::default(), p));
-    }
-    let text = std::fs::read_to_string(&p)?;
-    Ok((toml::from_str(&text).unwrap_or_default(), p))
+    config_loader::load("")
 }
 fn expand_home(v: &str) -> PathBuf {
     if let Some(r) = v.strip_prefix("~/")

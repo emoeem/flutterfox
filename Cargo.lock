@@ -4313,6 +4313,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unicode-width",
+ "voicefox-application",
+ "voicefox-download",
  "voicefox-runtime",
  "windows-sys 0.61.2",
  "winrt-toast",
@@ -4329,9 +4331,32 @@ dependencies = [
  "lx-lyric",
  "lx-player",
  "lx-source",
+ "rand 0.8.7",
  "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "voicefox-download"
+version = "0.8.1"
+dependencies = [
+ "dirs",
+ "image",
+ "lofty",
+ "lx-core",
+ "lx-lyric",
+ "lx-source",
+ "md-5",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "voicefox-runtime",
 ]
 
 [[package]]

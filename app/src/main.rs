@@ -1459,6 +1459,9 @@ fn main() -> anyhow::Result<()> {
     // 加载配置
     let (cfg, config_path) = config::loader::load(&cli.config)?;
     init_logging(&cli.log_level, &config_path);
+    // 认不出来的主题色值会在渲染时静默回退，这里集中提示一次，
+    // 免得用户以为"改了配置却没生效"。
+    theme::warn_unrecognized(&cfg.theme);
     tracing::info!(
         "voicefox starting on {} ({})",
         std::env::consts::OS,

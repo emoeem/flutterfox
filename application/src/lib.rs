@@ -9,6 +9,7 @@
 //! 会在迁移期由 frontend adapter 映射到 ApplicationCommand。
 
 pub mod event;
+pub mod playlist;
 pub mod service;
 pub mod state;
 

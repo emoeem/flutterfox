@@ -424,7 +424,7 @@ fn truncate_to_width(value: &str, max_width: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::download::engine::ProgressSnapshot;
+    use voicefox_download::engine::ProgressSnapshot;
 
     fn task(state: DownloadState, downloaded: u64, total: u64) -> DownloadTaskView {
         DownloadTaskView {
@@ -445,7 +445,7 @@ mod tests {
             bytes: 0,
             expected_size: None,
             bitrate_kbps: None,
-            trigger: crate::download::manager::DownloadTrigger::Manual,
+            trigger: voicefox_download::manager::DownloadTrigger::Manual,
         }
     }
 

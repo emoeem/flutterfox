@@ -201,6 +201,10 @@ impl PlaylistManager {
     ///
     /// 注意：**不要**给这个方法加平台 cfg —— 状态栏（`StatusBarItem::Queue`）在
     /// 所有平台都会调用它，加 cfg 会让 macOS / Windows 构建直接失败（E0599）。
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn len(&self) -> usize {
         self.current_list
             .read()

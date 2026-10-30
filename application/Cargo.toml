@@ -11,7 +11,10 @@ lx-source = { path = "../source" }
 lx-player = { path = "../player", default-features = false }
 lx-lyric = { path = "../lyric" }
 tokio.workspace = true
+rand.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true

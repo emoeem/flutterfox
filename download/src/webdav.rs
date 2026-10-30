@@ -167,7 +167,7 @@ fn safe_segment(segment: &str) -> String {
     if trimmed.is_empty() || trimmed == "." || trimmed == ".." {
         return String::new();
     }
-    crate::download::naming::sanitize_filename(trimmed)
+    crate::naming::sanitize_filename(trimmed)
 }
 
 #[cfg(test)]

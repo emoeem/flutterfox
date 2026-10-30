@@ -1,5 +1,16 @@
 [workspace]
-members = ["core", "source", "player", "lyric", "application", "runtime", "app", "ffi", "test"]
+members = [
+    "core",
+    "source",
+    "player",
+    "lyric",
+    "application",
+    "runtime",
+    "download",
+    "app",
+    "ffi",
+    "test",
+]
 resolver = "2"
 
 [workspace.package]

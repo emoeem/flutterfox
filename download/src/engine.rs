@@ -1153,7 +1153,7 @@ mod tests {
         assert_eq!(progress.snapshot().downloaded, 0);
     }
 
-    use crate::download::test_support::{RangeMode, fake_audio, spawn_test_server, temp_dir};
+    use crate::test_support::{RangeMode, fake_audio, spawn_test_server, temp_dir};
 
     #[tokio::test]
     async fn multipart_download_reassembles_exact_bytes() {

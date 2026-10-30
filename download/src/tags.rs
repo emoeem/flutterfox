@@ -225,7 +225,7 @@ pub fn validate_audio(path: &Path, expected: Duration) -> Result<(), String> {
             file.read(&mut head)
         })
         .map_err(|error| error.to_string())?;
-    if crate::download::naming::detect_extension(&head[..read]).is_none() {
+    if crate::naming::detect_extension(&head[..read]).is_none() {
         return Err("下载内容不是音频文件".to_string());
     }
 

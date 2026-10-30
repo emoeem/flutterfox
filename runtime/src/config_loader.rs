@@ -78,9 +78,6 @@ pub fn load(custom_path: &str) -> anyhow::Result<(Config, PathBuf)> {
             if migrate_legacy_config(&mut config) {
                 save(&config, &config_path)?;
             }
-            // 认不出来的主题色值会在渲染时静默回退，这里集中提示一次，
-            // 免得用户以为"改了配置却没生效"。
-            crate::theme::warn_unrecognized(&config.theme);
             Ok((config, config_path))
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -249,12 +246,9 @@ fn migrate_legacy_theme(config: &mut Config) -> bool {
     uses_original_defaults
 }
 
-/// 获取配置文件路径: ~/.config/voicefox/config.toml
+/// 获取配置文件路径: ~/.config/voicefox/config.toml（复用 crate::default_config_path）
 pub fn config_path() -> PathBuf {
-    let dir = directories::ProjectDirs::from("", "", "voicefox")
-        .map(|project| project.config_dir().to_path_buf())
-        .unwrap_or_else(|| dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")));
-    dir.join("config.toml")
+    crate::default_config_path()
 }
 
 fn resolve_config_path(custom_path: &str) -> PathBuf {
