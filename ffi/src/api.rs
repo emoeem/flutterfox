@@ -45,8 +45,17 @@ pub fn command_queue_clear() -> FfiCommand {
     FfiCommand::QueueClear
 }
 
+/// FRB 生成代码无条件引用此函数，因此签名必须始终存在；
+/// 非 mpv 构建（移动端）运行时返回明确错误，移动端应改用 from_application 引导。
 pub fn new_desktop() -> Result<VoicefoxController, String> {
-    VoicefoxController::new_desktop()
+    #[cfg(feature = "desktop-mpv")]
+    {
+        VoicefoxController::new_desktop()
+    }
+    #[cfg(not(feature = "desktop-mpv"))]
+    {
+        Err("desktop-mpv backend is not compiled into this build; bootstrap via from_application instead".to_string())
+    }
 }
 
 pub fn state(controller: &VoicefoxController) -> VoicefoxState {

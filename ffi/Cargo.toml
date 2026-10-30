@@ -12,7 +12,8 @@ async-trait.workspace = true
 flutter_rust_bridge = "=2.13.0"
 serde.workspace = true
 voicefox-application = { package = "voicefox-application", path = "../application" }
-voicefox-runtime = { path = "../runtime" }
+# default-features = false：移动端 ABI 不带 mpv；桌面由 desktop-mpv feature 显式开回
+voicefox-runtime = { path = "../runtime", default-features = false }
 lx-core = { path = "../core" }
 
 [features]

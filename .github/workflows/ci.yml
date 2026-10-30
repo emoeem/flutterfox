@@ -306,3 +306,59 @@ jobs:
           path: target/${{ matrix.target }}/release/voicefox
           if-no-files-found: error
           retention-days: 1
+
+  # ── Android：FFI cdylib 交叉编译（无 mpv，移动端 ABI）──
+  build-android:
+    name: Build Android (cargo-ndk)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rust Android targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Build FFI cdylib (no mpv)
+        run: |
+          # runner 预装 NDK；ANDROID_NDK_LATEST_HOME 由 runner 镜像提供
+          export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_NDK_LATEST_HOME}"
+          test -n "$ANDROID_NDK_HOME" || { echo "no NDK found on runner" >&2; exit 1; }
+          cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 --platform 24 -o dist/jniLibs \
+            build --locked --release -p voicefox-ffi --no-default-features
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: voicefox-android-jniLibs
+          path: dist/jniLibs
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── Flutter：analyze 零警告门禁 ──
+  flutter:
+    name: Flutter (analyze)
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: flutter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Analyze (zero warnings)
+        run: flutter analyze --fatal-infos

@@ -219,12 +219,13 @@ class _LyricsPage extends StatelessWidget {
     final state = controller.state;
     final lyrics = state?.lyrics;
     final song = state?.playback.song;
-    if (lyrics == null || lyrics.isEmpty)
+    if (lyrics == null || lyrics.isEmpty) {
       return _Page(
           title: "歌词",
           child: _EmptyState(
               icon: Icons.lyrics_outlined,
               text: song == null ? "开始播放后显示歌词" : "暂无歌词"));
+    }
     return _Page(
         title: song?.name ?? "歌词",
         child: Column(children: [
@@ -322,7 +323,7 @@ class _SongTile extends StatelessWidget {
       child: ListTile(
           leading: _Cover(url: song.coverUrl, size: 48),
           title: Text(song.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text(song.singer + " · " + song.source,
+          subtitle: Text("${song.singer} · ${song.source}",
               maxLines: 1, overflow: TextOverflow.ellipsis),
           onTap: onPlay,
           trailing: IconButton(
@@ -373,9 +374,7 @@ class _PlaylistCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 5),
-                  Text(playlist.songCount.toString() +
-                      " 首 · " +
-                      playlist.source),
+                  Text("${playlist.songCount} 首 · ${playlist.source}"),
                 ])),
           ])));
 }
@@ -396,7 +395,7 @@ class _Cover extends StatelessWidget {
                   child: const Icon(Icons.music_note))
               : Image.network(url!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => ColoredBox(
+                  errorBuilder: (_, _, _) => ColoredBox(
                       color:
                           Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.music_note)))));

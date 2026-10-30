@@ -8,7 +8,7 @@ repository.workspace = true
 [dependencies]
 lx-core = { path = "../core" }
 lx-source = { path = "../source" }
-lx-player = { path = "../player" }
+lx-player = { path = "../player", default-features = false }
 lx-lyric = { path = "../lyric" }
 voicefox-application = { path = "../application" }
 tokio.workspace = true

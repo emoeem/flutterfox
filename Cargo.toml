@@ -42,7 +42,14 @@ palette = "0.7"
 ratatui-image = { version = "11", default-features = false, features = ["crossterm"] }
 
 # HTTP
-reqwest = { version = "0.12", features = ["json"] }
+# 跨平台（含 Android）统一走 rustls：禁用默认特性避免 native-tls 拖入 OpenSSL；
+# 手动补 charset（非 UTF-8 页面解码，国内音源需要）与 http2（默认特性原本就有）。
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "charset",
+    "http2",
+] }
 
 # Crypto
 md-5 = "0.10"

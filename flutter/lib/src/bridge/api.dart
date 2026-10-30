@@ -43,6 +43,8 @@ Future<FfiCommand> commandQueueRemove({required int index}) =>
 Future<FfiCommand> commandQueueClear() =>
     RustLib.instance.api.crateApiCommandQueueClear();
 
+/// FRB 生成代码无条件引用此函数，因此签名必须始终存在；
+/// 非 mpv 构建（移动端）运行时返回明确错误，移动端应改用 from_application 引导。
 Future<VoicefoxController> newDesktop() =>
     RustLib.instance.api.crateApiNewDesktop();
 

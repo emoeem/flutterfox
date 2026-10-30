@@ -63,8 +63,9 @@ class VoicefoxAppController extends ChangeNotifier {
       final event = await bridge.eventNext(stream: events);
       if (_closed) return;
       if (event.message != null) _notification = event.message;
-      if (event.kind == "search")
+      if (event.kind == "search") {
         _searching = event.items.isEmpty && event.message == null;
+      }
       _state = await bridge.state(controller: _controller);
       notifyListeners();
     }
