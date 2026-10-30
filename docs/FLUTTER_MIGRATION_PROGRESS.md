@@ -9,14 +9,13 @@
 
 ## 当前状态 / 下一步（断点续跑入口）
 
-- **正在做**：Phase 0 收尾验证（clippy 门禁与 flutter build linux 后台运行中）
-- **下一步精确入口**：
-  1. 等 clippy（exec_5d85de19）与 flutter build linux（exec_c052acfb）结果 → 全绿则 commit Phase 0
-  2. 进 Phase 1：新建 download/ crate（voicefox-download），git mv app/src/download/* 过去
-     · 依赖已摸清：lx-core / lx-source / lofty / reqwest / serde / tokio（manager 内部 send Notification 用 lx_core::events）
-     · app 引用点仅 2 处：app/src/context.rs:18,51,191,223 与 app/src/pages/downloads.rs
-  3. Phase 1 后续：playlist 三文件 → application/src/playlist/（纯内存队列，仅依赖 lx-core/lx-source/rand/serde；外部引用 app 内 7 文件）；app/src/config/loader.rs 并入 runtime load_config
-- **Phase 1 预研补充**：DownloadManager::new(&config, Handle::current())（context.rs:191）；DownloadState/DownloadTaskView 从 manager re-export（mod.rs:19）
+- **Phase 0 ✅（commit 99f75b9）Phase 1 ✅（commit 9d569b4）**
+- **下一步精确入口（Phase 2）**：
+  1. 读 `application/src/event.rs`（ApplicationCommand/ApplicationEvent 现状）与 `application/src/services/`（现有 PlaybackService/SearchService/QueueService/LyricsService/PlaylistService 结构）
+  2. 读 `app/src/context.rs` + `app/src/pages/{favorites,history,downloads,qr_login,local_music,settings}.rs` 与 `app/src/sync.rs`，梳理各功能的命令/事件需求面
+  3. 扩宽 ApplicationCommand/ApplicationEvent：favorites / history / downloads（转 broadcast 事件）/ settings / QR 登录 / 跨源同步 diff / local 扫描 / 封面字节
+  4. 验证：cargo test 全绿 + clippy 0 警告，TUI 仍跑旧路径不动
+- **注意**：Phase 2 只扩 application 边界，不改 ffi（ffi 扩宽在 Phase 3）
 
 ## 已完成清单（文件级）
 
