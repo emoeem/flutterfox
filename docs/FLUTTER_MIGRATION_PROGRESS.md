@@ -9,13 +9,24 @@
 
 ## 当前状态 / 下一步（断点续跑入口）
 
-- **Phase 0 ✅（commit 99f75b9）Phase 1 ✅（commit 9d569b4）**
-- **下一步精确入口（Phase 2）**：
-  1. 读 `application/src/event.rs`（ApplicationCommand/ApplicationEvent 现状）与 `application/src/services/`（现有 PlaybackService/SearchService/QueueService/LyricsService/PlaylistService 结构）
-  2. 读 `app/src/context.rs` + `app/src/pages/{favorites,history,downloads,qr_login,local_music,settings}.rs` 与 `app/src/sync.rs`，梳理各功能的命令/事件需求面
-  3. 扩宽 ApplicationCommand/ApplicationEvent：favorites / history / downloads（转 broadcast 事件）/ settings / QR 登录 / 跨源同步 diff / local 扫描 / 封面字节
-  4. 验证：cargo test 全绿 + clippy 0 警告，TUI 仍跑旧路径不动
-- **注意**：Phase 2 只扩 application 边界，不改 ffi（ffi 扩宽在 Phase 3）
+- **Phase 0 ✅（99f75b9）Phase 1 ✅（9d569b4）Phase 2 ✅（01b589a）**
+- **下一步精确入口（UI 设计 → Phase 3）**：
+  1. 调研 FlClash（GitHub: ChenyangGao/FlClash 或 ConfettiGUI? 实为 github.com/chen08209/FlClash）界面设计 → 写 docs/flutter_ui_spec.md（每个借鉴点注明出处部分）
+  2. Phase 3-ffi：ffi/src/lib.rs 的 FfiCommand 目前只有 ~13 条镜像 application 旧命令；把 Phase 2 新命令（favorites/custom playlist/config/downloads/qr/local）映射进 FfiCommand + VoicefoxEvent（QrLoginCreated/Polled、ConfigChanged、DownloadsChanged、LibraryChanged、LocalScanCompleted），重跑 flutter_rust_bridge_codegen generate
+  3. Phase 3-UI：flutter/lib/main.dart 替换为真实入口（VoicefoxController 引导 + Material3 + dynamic_color），页面对齐 app/src/pages/ 全集
+- **Phase 2 已明确后置（GUI v1 之后）**：
+  · 跨源同步编排（app/src/sync.rs 449 行迁 application）——GUI 先做手动收藏/歌单管理
+  · 封面字节命令（CoverFetch）——流媒体歌曲 Flutter 直接用 URL 加载封面（cached_network_image），本地封面后续再走 CoverService 字节
+  · ConfigUpdate 的播放器效果联动（音量/速度等 GUI 另发命令，v1 设置页只改配置不即时生效的部分在 UI 上注明）
+
+## Phase 2 交付明细（新增命令/事件清单）
+
+- 命令：LibraryRefresh / FavoritesAdd·Remove / FavoritePlaylistAdd·Remove / HistoryRemove·HistoryClear / CustomPlaylistCreate·Rename·Delete·AddSongs·RemoveSong / ConfigGet·ConfigUpdate / DownloadEnqueue·DownloadCancel·DownloadClearFinished / QrLoginStart·QrLoginCancel / LocalScan
+- 事件：LibraryChanged / DownloadsChanged / ConfigChanged / QrLoginCreated / QrLoginPolled(status 字符串: waiting/scanned/success/expired/failed/network_error/risk_control/server_error/invalid_session) / LocalScanCompleted
+- 端口：application/src/ports.rs（LibraryStore/ConfigStore/DownloadsEngine + DownloadTaskInfo DTO）
+- 适配器：runtime（Storage→LibraryStore；RuntimeConfigStore；RuntimeDownloads 包装 DownloadManager + 500ms 变更桥）
+- 关键决策：无 tokio 上下文时下载端口优雅留空（Handle::try_current）；QR 轮询 2s/次、取消用 AtomicBool；scan 走 spawn_blocking
+
 
 ## 已完成清单（文件级）
 
