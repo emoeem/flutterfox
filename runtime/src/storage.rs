@@ -1,10 +1,16 @@
 //! JSON 文件存储 — 歌曲/歌单收藏、播放历史和播放会话
 
+// 数据目录迁移与原子写原语已下沉到 lx_core::fsutil（download crate 也需要，
+// 避免 download → runtime → application 依赖环）。这里 re-export 保持既有路径。
+pub use lx_core::fsutil::{
+    commit_staged, default_data_dir, migrate_data_dir, save_atomic, save_atomic_impl,
+    save_atomic_relaxed, stage_atomic,
+};
+
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, RwLock};
@@ -172,116 +178,9 @@ pub struct PlaybackSession {
     pub state: SavedPlayerState,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CustomPlaylist {
-    pub id: String,
-    pub name: String,
-    pub songs: Vec<SongInfo>,
-    pub created_at_unix_nanos: u128,
-    pub updated_at_unix_nanos: u128,
-}
-
-#[derive(Debug, Clone)]
-pub struct CustomPlaylistSummary {
-    pub id: String,
-    pub name: String,
-    pub cover_url: Option<String>,
-    pub song_count: u32,
-}
+pub use lx_core::model::playlist::{CustomPlaylist, CustomPlaylistSummary};
 
 /// 当前数据目录（0.3.12 起）：`~/.local/share/voicefox`（Windows 为 `%APPDATA%\voicefox`）。
-fn data_dir_path() -> PathBuf {
-    dirs::data_dir()
-        .or_else(dirs::config_dir)
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("voicefox")
-}
-
-/// 0.3.12 之前的数据目录：`~/.config/voicefox/data`。
-fn legacy_data_dir() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("voicefox")
-        .join("data")
-}
-
-/// 0.3.12 之前的目录里由本模块（或同一数据目录）落盘的业务文件。
-const LEGACY_DATA_FILES: &[&str] = &[
-    "favorites.json",
-    "favorite_playlists.json",
-    "custom_playlists.json",
-    "history.json",
-    "playback_state.json",
-    "downloads.json",
-    "netease_collections.json",
-];
-
-/// 把旧数据目录迁移到当前数据目录，返回当前数据目录。
-///
-/// 背景：0.3.12 把数据目录从 `~/.config/voicefox/data` 改成了
-/// `~/.local/share/voicefox`，但只改了路径、没有搬数据，于是升级后收藏、
-/// 历史和播放会话全部读不到（新目录是空的），旧文件则一直留在旧目录里。
-///
-/// 迁移**绝不覆盖当前目录里已有的文件**，分两步：
-/// 1. 当前目录整体不存在时，直接 `rename` 整个旧目录；
-/// 2. 当前目录已存在时，逐文件补迁缺失项（典型情况：新目录已经重建了
-///    收藏/历史，只剩 `playback_state.json` 没搬过来）。
-fn migrate_legacy_data_dir() -> PathBuf {
-    let target = data_dir_path();
-    migrate_data_dir(&target, &legacy_data_dir());
-    target
-}
-
-/// [`migrate_legacy_data_dir`](migrate_legacy_data_dir) 的实际实现。
-///
-/// 目录参数显式传入，便于测试覆盖"整体搬迁"和"逐文件补迁"两条路径。
-fn migrate_data_dir(target: &Path, legacy: &Path) {
-    if target == legacy {
-        return;
-    }
-
-    if !target.exists() && legacy.is_dir() {
-        if let Some(parent) = target.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-        match fs::rename(legacy, target) {
-            Ok(()) => {
-                tracing::info!("已把旧数据目录迁移到 {}", target.display());
-                return;
-            }
-            Err(error) => tracing::warn!("整体迁移旧数据目录失败，改为逐文件补迁: {error}"),
-        }
-    }
-
-    if !legacy.is_dir() {
-        return;
-    }
-    if let Err(error) = fs::create_dir_all(target) {
-        tracing::warn!("创建数据目录失败: {error}");
-        return;
-    }
-    for name in LEGACY_DATA_FILES {
-        let (source, destination) = (legacy.join(name), target.join(name));
-        // 已经有新数据时绝不回退覆盖，否则会把用户 0.3.12 之后的收藏/历史冲掉。
-        if destination.exists() || !source.is_file() {
-            continue;
-        }
-        if fs::rename(&source, &destination).is_ok() || fs::copy(&source, &destination).is_ok() {
-            tracing::info!("已从旧数据目录迁移 {name}");
-        }
-    }
-}
-
-/// 数据目录。首次调用时会顺带完成旧目录迁移，因此无论调用方是
-/// `Storage`、下载记录还是远程缓存，拿到的都是迁移后的路径。
-pub fn default_data_dir() -> PathBuf {
-    static MIGRATION: std::sync::Once = std::sync::Once::new();
-    MIGRATION.call_once(|| {
-        migrate_legacy_data_dir();
-    });
-    data_dir_path()
-}
-
 pub struct Storage {
     data_dir: PathBuf,
     favorites: RwLock<Vec<SongInfo>>,
@@ -1189,114 +1088,6 @@ impl Storage {
     }
 }
 
-pub fn save_atomic(path: &std::path::Path, content: &[u8]) -> Result<(), String> {
-    save_atomic_impl(path, content, true)
-}
-
-/// 原子写但不做 fsync：只保证不出现半截文件，不保证断电后内容还在。
-/// 适用于可再生的缓存型数据（如播放会话），避免 5 秒一次的持久化
-/// 在 TUI 线程上产生磁盘刷写停顿。
-fn save_atomic_relaxed(path: &std::path::Path, content: &[u8]) -> Result<(), String> {
-    save_atomic_impl(path, content, false)
-}
-
-/// 只写临时文件不换名，由 [`commit_staged`] 完成最终落盘。
-fn stage_atomic(path: &std::path::Path, content: &[u8]) -> Result<std::path::PathBuf, String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    }
-    let temp_path = path.with_extension(format!(
-        "json.tmp-{}-{}",
-        std::process::id(),
-        STORAGE_TEMP_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    ));
-    let mut file = fs::File::create(&temp_path).map_err(|error| error.to_string())?;
-    file.write_all(content).map_err(|error| error.to_string())?;
-    file.sync_all().map_err(|error| error.to_string())?;
-    Ok(temp_path)
-}
-
-fn commit_staged(temp_path: &std::path::Path, target: &std::path::Path) -> Result<(), String> {
-    #[cfg(windows)]
-    {
-        let old_path = target.with_extension(format!("json.old-{}", std::process::id()));
-        if target.exists() {
-            fs::rename(target, &old_path).map_err(|error| error.to_string())?;
-        }
-        match fs::rename(temp_path, target) {
-            Ok(()) => {
-                let _ = fs::remove_file(&old_path);
-                Ok(())
-            }
-            Err(error) => {
-                let _ = fs::rename(&old_path, target);
-                Err(error.to_string())
-            }
-        }
-    }
-    #[cfg(not(windows))]
-    {
-        fs::rename(temp_path, target).map_err(|error| error.to_string())
-    }
-}
-
-fn save_atomic_impl(path: &std::path::Path, content: &[u8], durable: bool) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    }
-    let temp_path = path.with_extension(format!(
-        "json.tmp-{}-{}",
-        std::process::id(),
-        STORAGE_TEMP_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    ));
-    let result = (|| {
-        let mut file = fs::File::create(&temp_path).map_err(|error| error.to_string())?;
-        file.write_all(content).map_err(|error| error.to_string())?;
-        // 数据落盘后再换名，避免断电时目录项先于数据持久化，留下空文件。
-        if durable {
-            file.sync_all().map_err(|error| error.to_string())?;
-        }
-        drop(file);
-
-        #[cfg(windows)]
-        {
-            // Windows 不支持覆盖式 rename：先把旧文件挪走（而非删除），
-            // 换名失败时把它挪回来，保证任何时刻目标文件都存在。
-            let old_path = path.with_extension(format!("json.old-{}", std::process::id()));
-            if path.exists() {
-                fs::rename(path, &old_path).map_err(|error| error.to_string())?;
-            }
-            match fs::rename(&temp_path, path) {
-                Ok(()) => {
-                    let _ = fs::remove_file(&old_path);
-                }
-                Err(error) => {
-                    let _ = fs::rename(&old_path, path);
-                    return Err(error.to_string());
-                }
-            }
-        }
-
-        #[cfg(not(windows))]
-        fs::rename(&temp_path, path).map_err(|error| error.to_string())?;
-
-        #[cfg(unix)]
-        if durable
-            && let Some(parent) = path.parent()
-            && let Ok(dir) = fs::File::open(parent)
-        {
-            let _ = dir.sync_all();
-        }
-        Ok(())
-    })();
-    if result.is_err() {
-        let _ = fs::remove_file(temp_path);
-    }
-    result
-}
-
-static STORAGE_TEMP_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
 fn parse_m3u(content: &str) -> Vec<ImportedEntry> {
     let mut entries = Vec::new();
     let mut pending = None;
@@ -1656,6 +1447,70 @@ fn js_platform(song: &SongInfo) -> Option<&str> {
 pub fn local_song_matches_path(song: &SongInfo, path: &Path) -> bool {
     song.source == lx_core::model::source::SourceId::Local
         && (song.file_path.as_deref() == Some(path) || song.id == path.to_string_lossy())
+}
+
+
+/// GUI 命令/事件边界（voicefox_application::LibraryStore）对 Storage 的适配。
+/// 方法一一转发，TUI 不经此端口。
+impl voicefox_application::LibraryStore for Storage {
+    fn favorites(&self) -> Vec<SongInfo> {
+        self.load_favorites()
+    }
+    fn add_favorite(&self, song: &SongInfo) -> bool {
+        self.add_favorite(song)
+    }
+    fn remove_favorite(&self, song: &SongInfo) -> bool {
+        self.remove_favorite(song)
+    }
+    fn is_favorite(&self, song: &SongInfo) -> bool {
+        self.is_favorite(song)
+    }
+    fn favorite_playlists(&self) -> Vec<lx_core::model::playlist::Playlist> {
+        self.load_favorite_playlists()
+    }
+    fn add_favorite_playlist(&self, playlist: &lx_core::model::playlist::Playlist) -> bool {
+        self.add_favorite_playlist(playlist)
+    }
+    fn remove_favorite_playlist(&self, playlist: &lx_core::model::playlist::Playlist) -> bool {
+        self.remove_favorite_playlist(playlist)
+    }
+    fn history(&self) -> Vec<SongInfo> {
+        self.load_history()
+    }
+    fn remove_history(&self, song: &SongInfo) -> bool {
+        self.remove_history(song)
+    }
+    fn clear_history(&self) -> bool {
+        self.clear_history()
+    }
+    fn custom_playlist_summaries(&self) -> Vec<CustomPlaylistSummary> {
+        self.custom_playlist_summaries()
+    }
+    fn custom_playlist(&self, id: &str) -> Option<CustomPlaylist> {
+        self.custom_playlist(id)
+    }
+    fn create_custom_playlist(&self, name: &str) -> Result<CustomPlaylist, String> {
+        self.create_custom_playlist(name)
+    }
+    fn rename_custom_playlist(&self, id: &str, name: &str) -> Result<(), String> {
+        self.rename_custom_playlist(id, name)
+    }
+    fn delete_custom_playlist(&self, id: &str) -> Result<bool, String> {
+        self.delete_custom_playlist(id)
+    }
+    fn add_song_to_custom_playlist(&self, id: &str, song: &SongInfo) -> Result<bool, String> {
+        self.add_song_to_custom_playlist(id, song)
+    }
+    fn add_songs_to_custom_playlist(
+        &self,
+        id: &str,
+        songs: &[SongInfo],
+    ) -> Result<(usize, usize), String> {
+        self.add_songs_to_custom_playlist(id, songs)
+    }
+    fn remove_song_from_custom_playlist(&self, id: &str, song: &SongInfo) -> Result<bool, String> {
+        self.remove_song_from_custom_playlist(id, song)
+    }
 }
 
 #[cfg(test)]

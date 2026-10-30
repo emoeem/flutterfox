@@ -202,6 +202,11 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             ApplicationEventKind::Lyrics => "lyrics",
             ApplicationEventKind::Playlist => "playlist",
             ApplicationEventKind::Notification => "notification",
+            ApplicationEventKind::Library => "library",
+            ApplicationEventKind::Downloads => "downloads",
+            ApplicationEventKind::Config => "config",
+            ApplicationEventKind::QrLogin => "qr_login",
+            ApplicationEventKind::LocalMusic => "local_music",
         }
         .to_string();
         let empty = || Self {

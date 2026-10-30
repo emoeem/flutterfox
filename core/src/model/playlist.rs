@@ -91,3 +91,23 @@ pub struct Artist {
     pub source: SourceId,
     pub cover_url: Option<String>,
 }
+
+
+/// 用户自建歌单（本地持久化，区别于音源侧歌单）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomPlaylist {
+    pub id: String,
+    pub name: String,
+    pub songs: Vec<super::song::SongInfo>,
+    pub created_at_unix_nanos: u128,
+    pub updated_at_unix_nanos: u128,
+}
+
+/// 自定义歌单的列表页摘要（避免整单歌曲数组进列表状态）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomPlaylistSummary {
+    pub id: String,
+    pub name: String,
+    pub cover_url: Option<String>,
+    pub song_count: u32,
+}

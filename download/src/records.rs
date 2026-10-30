@@ -115,7 +115,7 @@ pub struct DownloadRecords {
 impl DownloadRecords {
     /// 从默认数据目录加载。
     pub fn load_default() -> Self {
-        Self::at_path(voicefox_runtime::storage::default_data_dir().join("downloads.json"))
+        Self::at_path(lx_core::fsutil::default_data_dir().join("downloads.json"))
     }
 
     /// 从指定文件加载，供测试与自定义数据目录使用。
@@ -231,7 +231,7 @@ impl DownloadRecords {
             tracing::warn!("创建下载记录目录失败: {error}");
             return;
         }
-        if let Err(error) = voicefox_runtime::storage::save_atomic(&self.path, &json) {
+        if let Err(error) = lx_core::fsutil::save_atomic(&self.path, &json) {
             tracing::warn!("写入下载记录失败: {error}");
         }
     }

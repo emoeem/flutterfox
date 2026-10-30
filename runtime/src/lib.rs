@@ -141,18 +141,40 @@ impl ApplicationRuntime {
             &config.network.proxy_url,
             config.network.timeout,
         ));
-        let shared = Arc::new(RwLock::new(config));
+        let shared = Arc::new(RwLock::new(config.clone()));
         let effects: Arc<dyn PlaybackEffects> = Arc::new(RuntimePlaybackEffects {
             storage: Arc::clone(&storage),
             cover: Arc::clone(&cover),
             config: Arc::clone(&shared),
         });
+        let config_store = Arc::new(RuntimeConfigStore {
+            config: Arc::clone(&shared),
+            path: config_path.clone(),
+        });
+        // DownloadManager 构造需要 tokio 句柄：TUI（block_on 内）与 FRB 异步上下文
+        // 都有；纯同步构造路径（无 tokio）下下载端口留空，playback 不受影响。
+        let downloads: Option<Arc<dyn voicefox_application::DownloadsEngine>> =
+            tokio::runtime::Handle::try_current().ok().map(|handle| {
+                Arc::new(RuntimeDownloads {
+                    manager: Arc::new(voicefox_download::DownloadManager::new(
+                        &config,
+                        handle,
+                    )),
+                    sources: Arc::clone(&sources),
+                }) as Arc<dyn voicefox_application::DownloadsEngine>
+            });
         let application = ApplicationService::new(
             Arc::clone(&player),
             Arc::clone(&sources),
             Arc::clone(&lyrics),
             effects,
+            Some(Arc::clone(&storage) as Arc<dyn voicefox_application::LibraryStore>),
+            Some(config_store as Arc<dyn voicefox_application::ConfigStore>),
+            downloads.clone(),
         );
+        if let Some(engine) = downloads {
+            tokio::spawn(downloads_bridge(application.clone(), engine));
+        }
         Ok(Self {
             application,
             config: shared,
@@ -180,6 +202,93 @@ impl ApplicationRuntime {
     }
 }
 pub mod config_loader;
+
+/// [`voicefox_application::ConfigStore`] 的 runtime 实现：内存替换 + TOML 落盘。
+struct RuntimeConfigStore {
+    config: Arc<RwLock<lx_core::model::config::Config>>,
+    path: std::path::PathBuf,
+}
+
+impl voicefox_application::ConfigStore for RuntimeConfigStore {
+    fn get(&self) -> lx_core::model::config::Config {
+        self.config.read().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+    fn set(&self, config: lx_core::model::config::Config) -> Result<(), String> {
+        config_loader::save(&config, &self.path).map_err(|error| error.to_string())?;
+        *self.config.write().unwrap_or_else(|e| e.into_inner()) = config;
+        Ok(())
+    }
+}
+
+/// [`voicefox_application::DownloadsEngine`] 的 runtime 实现，包装
+/// voicefox-download 的 DownloadManager；通知走内部通道，由桥任务转发。
+struct RuntimeDownloads {
+    manager: Arc<voicefox_download::DownloadManager>,
+    sources: Arc<lx_source::manager::SourceManager>,
+}
+
+impl voicefox_application::DownloadsEngine for RuntimeDownloads {
+    fn enqueue(&self, song: lx_core::model::song::SongInfo) -> bool {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        // 通知排空：下载进度的 AppAction 通知对 GUI 无意义（状态靠快照），丢弃即可。
+        tokio::spawn(async move {
+            while rx.recv().await.is_some() {}
+        });
+        self.manager.enqueue(song, Arc::clone(&self.sources), tx)
+    }
+    fn cancel(&self, id: u64) {
+        self.manager.cancel(id)
+    }
+    fn clear_finished(&self) {
+        self.manager.clear_finished()
+    }
+    fn snapshot(&self) -> Vec<voicefox_application::DownloadTaskInfo> {
+        self.manager
+            .snapshot()
+            .into_iter()
+            .map(|task| voicefox_application::DownloadTaskInfo {
+                id: task.id,
+                name: task.name,
+                singer: task.singer,
+                source: task.source,
+                quality: task.quality,
+                dest: task.dest.display().to_string(),
+                state: task.state.label().to_string(),
+                active: task.state.is_active(),
+                downloaded: task.progress.downloaded,
+                total: if task.progress.total > 0 {
+                    Some(task.progress.total)
+                } else {
+                    None
+                },
+                error: task.error,
+                trigger_auto_cache: matches!(
+                    task.trigger,
+                    voicefox_download::manager::DownloadTrigger::AutoCache
+                ),
+            })
+            .collect()
+    }
+    fn active_count(&self) -> usize {
+        self.manager.active_count()
+    }
+}
+
+/// 下载快照轮询桥：活跃任务存在时每 500ms 推一次变更，空闲时不发事件。
+async fn downloads_bridge(
+    service: voicefox_application::ApplicationService,
+    engine: Arc<dyn voicefox_application::DownloadsEngine>,
+) {
+    let mut last: Vec<voicefox_application::DownloadTaskInfo> = Vec::new();
+    loop {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        let current = engine.snapshot();
+        if current != last {
+            service.publish_downloads(current.clone());
+            last = current;
+        }
+    }
+}
 
 pub fn default_config_path() -> PathBuf {
     directories::ProjectDirs::from("", "", "voicefox")

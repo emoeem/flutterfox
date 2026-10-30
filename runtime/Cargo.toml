@@ -11,6 +11,7 @@ lx-source = { path = "../source" }
 lx-player = { path = "../player", default-features = false }
 lx-lyric = { path = "../lyric" }
 voicefox-application = { path = "../application" }
+voicefox-download = { path = "../download" }
 tokio.workspace = true
 async-trait.workspace = true
 reqwest.workspace = true

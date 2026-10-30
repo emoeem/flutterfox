@@ -2010,6 +2010,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "crossterm",
+ "dirs",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -4356,7 +4357,6 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
- "voicefox-runtime",
 ]
 
 [[package]]
@@ -4395,6 +4395,7 @@ dependencies = [
  "toml",
  "tracing",
  "voicefox-application",
+ "voicefox-download",
  "walkdir",
 ]
 

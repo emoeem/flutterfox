@@ -9,7 +9,6 @@ repository.workspace = true
 lx-core = { path = "../core" }
 lx-source = { path = "../source" }
 lx-lyric = { path = "../lyric" }
-voicefox-runtime = { path = "../runtime", default-features = false }
 dirs.workspace = true
 image.workspace = true
 md-5.workspace = true

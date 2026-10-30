@@ -10,10 +10,12 @@
 
 pub mod event;
 pub mod playlist;
+pub mod ports;
 pub mod service;
 pub mod state;
 
 pub use event::{ApplicationCommand, ApplicationEvent, ApplicationEventKind};
+pub use ports::{ConfigStore, DownloadsEngine, DownloadTaskInfo, LibraryStore};
 pub use service::{ApplicationEventStream, ApplicationEventStreamError, ApplicationService};
 pub use state::{ApplicationState, PlaybackSnapshot, QueueState, SearchState};
 

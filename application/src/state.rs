@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use lx_core::model::lyric::LyricState;
-use lx_core::model::playlist::Playlist;
+use lx_core::model::playlist::{CustomPlaylistSummary, Playlist};
 use lx_core::model::song::SongInfo;
 use lx_core::model::source::PlayerState;
 
@@ -12,6 +12,11 @@ pub struct ApplicationState {
     pub search: SearchState,
     pub lyrics: Option<LyricState>,
     pub playlists: Vec<Playlist>,
+    pub favorites: Vec<SongInfo>,
+    pub favorite_playlists: Vec<Playlist>,
+    pub history: Vec<SongInfo>,
+    pub custom_playlists: Vec<CustomPlaylistSummary>,
+    pub downloads: Vec<crate::ports::DownloadTaskInfo>,
 }
 
 #[derive(Debug, Clone)]
