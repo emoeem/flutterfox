@@ -9,15 +9,46 @@
 
 ## 当前状态 / 下一步（断点续跑入口）
 
-- **Phase 0 ✅（99f75b9）Phase 1 ✅（9d569b4）Phase 2 ✅（01b589a）**
-- **下一步精确入口（UI 设计 → Phase 3）**：
-  1. 调研 FlClash（GitHub: ChenyangGao/FlClash 或 ConfettiGUI? 实为 github.com/chen08209/FlClash）界面设计 → 写 docs/flutter_ui_spec.md（每个借鉴点注明出处部分）
-  2. Phase 3-ffi：ffi/src/lib.rs 的 FfiCommand 目前只有 ~13 条镜像 application 旧命令；把 Phase 2 新命令（favorites/custom playlist/config/downloads/qr/local）映射进 FfiCommand + VoicefoxEvent（QrLoginCreated/Polled、ConfigChanged、DownloadsChanged、LibraryChanged、LocalScanCompleted），重跑 flutter_rust_bridge_codegen generate
-  3. Phase 3-UI：flutter/lib/main.dart 替换为真实入口（VoicefoxController 引导 + Material3 + dynamic_color），页面对齐 app/src/pages/ 全集
-- **Phase 2 已明确后置（GUI v1 之后）**：
-  · 跨源同步编排（app/src/sync.rs 449 行迁 application）——GUI 先做手动收藏/歌单管理
-  · 封面字节命令（CoverFetch）——流媒体歌曲 Flutter 直接用 URL 加载封面（cached_network_image），本地封面后续再走 CoverService 字节
-  · ConfigUpdate 的播放器效果联动（音量/速度等 GUI 另发命令，v1 设置页只改配置不即时生效的部分在 UI 上注明）
+- **Phase 0 ✅（99f75b9）Phase 1 ✅（9d569b4）Phase 2 ✅（01b589a）
+  UI 设计 ✅（docs/flutter_ui_spec.md）Phase 3 ffi ✅（e914da7）Phase 3 UI 首批页面 ✅（acca624，桌面实跑通过）**
+- **下一步精确入口（Phase 3 UI 剩余页 → Phase 4）**：
+  1. 剩余页面（对照 app/src/pages/）：leaderboard、playlists（远程网格+自定义歌单 CRUD）、
+     details（歌手/专辑）、sync overlay、local_music（扫描+列表）、help、歌词全屏页。
+     页面骨架参考 lib/src/pages/ 已有 6 页的模式（AppModel + bridge 命令直调）。
+  2. 歌词页：state.lyrics（LyricsDto.lines + currentLine）滚动渲染；
+     mini player 点击展开全屏播放页（spec §9 容器变换转场）。
+  3. Phase 4 Android（入口清单）：
+     a. flutter/lib/src/app_model.dart 已预留 attach(controller)——Android 侧需要
+        宿主先构造 ApplicationService：Android 端直接跑 cdylib（cargo-ndk 产物）+
+        Dart 音频后端（just_audio + audio_service 实现 core 的 PlayerBackend 语义：
+        Rust 只解析 URL/歌词，播放由 Dart 侧执行）。
+        ⚠ ffi 的 from_application 路径 config_base=None → ConfigUpdate 会报
+        "配置存储不可用"，Android 引导时需另想（扩 with_config_base 或 ConfigDto 走
+        runtime 直读）。
+     b. js-sources feature-gate：source/src/js/engine.rs 的 node 子进程加 feature
+        `js-sources`（默认开），ffi--no-default-features 构建时关闭；
+        download crate 无 node 依赖（已确认）。
+     c. 路径核对：lx_core::fsutil::default_data_dir 在 Android 返回
+        dirs::data_dir()=null → fallback "."；需要 Android 上传 app 私有目录
+        （PathProvider 传参或 cargo 端 cfg(target_os="android")）。
+     d. gradle 集成：cargo-ndk 产 libvoicefox_ffi.so 放
+        flutter/android/app/src/main/jniLibs/<abi>/；RustLib.init 自动加载。
+        桌面 linux bundle 需手动 cp .so 到 bundle/lib/（已验证可行）。
+     e. 模拟器实测：后台播放（audio_service foreground service）、锁屏控制、
+        下载通知。
+- **已知 flaky**：source::cover_cache::sweep_evicts_down_to_the_limit_by_oldest_access
+  在满负载并行时偶发（单独跑稳定），mtime 已修到毫秒档仍可复现，待后续用
+  注入时钟的方式根治。
+- **待确认决策（延续记录）**：
+  · 状态管理 v1 = ChangeNotifier（未引 riverpod/bloc），理由：单控制器事件流
+    已够用，避免提前固化架构；引入时机 = 出现跨页共享的派生状态时。
+  · dynamic_color 固定 1.7.0：0.13.0 引入第三方 material_ui，其 ColorScheme
+    与 Flutter SDK 类型不兼容。
+  · ConfigDto 为子集镜像（v1 设置面），完整镜像成本高且 FFI 层膨胀；
+    扩设置项 = 扩 ConfigDto 字段 + apply_to 一行。
+  · 二维码渲染 v1 未接 qr_flutter（显示内容串兜底），pub.dev 有成熟包
+    qr_flutter（周下载量高、近一年维护），接入点 = qr_login_page.dart _QrView。
+  · 旧 flutter scaffold（app.dart/shell.dart 459 行占位）被新架构替代，git 历史可查。
 
 ## Phase 2 交付明细（新增命令/事件清单）
 
