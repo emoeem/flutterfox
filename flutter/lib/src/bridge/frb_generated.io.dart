@@ -67,7 +67,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  AlbumDto dco_decode_album_dto(dynamic raw);
+
+  @protected
+  ArtistDto dco_decode_artist_dto(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
+
+  @protected
+  AlbumDto dco_decode_box_autoadd_album_dto(dynamic raw);
+
+  @protected
+  ArtistDto dco_decode_box_autoadd_artist_dto(dynamic raw);
 
   @protected
   ConfigDto dco_decode_box_autoadd_config_dto(dynamic raw);
@@ -79,10 +91,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlaylistDto dco_decode_box_autoadd_playlist_dto(dynamic raw);
 
   @protected
+  PushPreviewDto dco_decode_box_autoadd_push_preview_dto(dynamic raw);
+
+  @protected
+  PushReportDto dco_decode_box_autoadd_push_report_dto(dynamic raw);
+
+  @protected
+  PushTargetDto dco_decode_box_autoadd_push_target_dto(dynamic raw);
+
+  @protected
   QrLoginSessionDto dco_decode_box_autoadd_qr_login_session_dto(dynamic raw);
 
   @protected
   SongDto dco_decode_box_autoadd_song_dto(dynamic raw);
+
+  @protected
+  SyncPreviewDto dco_decode_box_autoadd_sync_preview_dto(dynamic raw);
+
+  @protected
+  SyncReportDto dco_decode_box_autoadd_sync_report_dto(dynamic raw);
 
   @protected
   BigInt dco_decode_box_autoadd_u_64(dynamic raw);
@@ -106,7 +133,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int dco_decode_i_32(dynamic raw);
 
   @protected
+  LeaderboardDto dco_decode_leaderboard_dto(dynamic raw);
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<AlbumDto> dco_decode_list_album_dto(dynamic raw);
 
   @protected
   List<CustomPlaylistSummaryDto> dco_decode_list_custom_playlist_summary_dto(
@@ -117,7 +150,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<DownloadTaskDto> dco_decode_list_download_task_dto(dynamic raw);
 
   @protected
+  List<LeaderboardDto> dco_decode_list_leaderboard_dto(dynamic raw);
+
+  @protected
   List<LyricLineDto> dco_decode_list_lyric_line_dto(dynamic raw);
+
+  @protected
+  List<PlaylistCategoryDto> dco_decode_list_playlist_category_dto(dynamic raw);
 
   @protected
   List<PlaylistDto> dco_decode_list_playlist_dto(dynamic raw);
@@ -126,7 +165,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<PushTargetDto> dco_decode_list_push_target_dto(dynamic raw);
+
+  @protected
   List<SongDto> dco_decode_list_song_dto(dynamic raw);
+
+  @protected
+  List<SourceCapabilitiesDto> dco_decode_list_source_capabilities_dto(
+    dynamic raw,
+  );
+
+  @protected
+  List<SyncFailureDto> dco_decode_list_sync_failure_dto(dynamic raw);
+
+  @protected
+  List<SyncRowDto> dco_decode_list_sync_row_dto(dynamic raw);
 
   @protected
   LyricLineDto dco_decode_lyric_line_dto(dynamic raw);
@@ -141,6 +194,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ConfigDto? dco_decode_opt_box_autoadd_config_dto(dynamic raw);
 
   @protected
+  PushPreviewDto? dco_decode_opt_box_autoadd_push_preview_dto(dynamic raw);
+
+  @protected
+  PushReportDto? dco_decode_opt_box_autoadd_push_report_dto(dynamic raw);
+
+  @protected
+  PushTargetDto? dco_decode_opt_box_autoadd_push_target_dto(dynamic raw);
+
+  @protected
   QrLoginSessionDto? dco_decode_opt_box_autoadd_qr_login_session_dto(
     dynamic raw,
   );
@@ -149,13 +211,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SongDto? dco_decode_opt_box_autoadd_song_dto(dynamic raw);
 
   @protected
+  SyncPreviewDto? dco_decode_opt_box_autoadd_sync_preview_dto(dynamic raw);
+
+  @protected
+  SyncReportDto? dco_decode_opt_box_autoadd_sync_report_dto(dynamic raw);
+
+  @protected
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
   PlaybackDto dco_decode_playback_dto(dynamic raw);
 
   @protected
+  PlaylistCategoryDto dco_decode_playlist_category_dto(dynamic raw);
+
+  @protected
   PlaylistDto dco_decode_playlist_dto(dynamic raw);
+
+  @protected
+  PushPreviewDto dco_decode_push_preview_dto(dynamic raw);
+
+  @protected
+  PushReportDto dco_decode_push_report_dto(dynamic raw);
+
+  @protected
+  PushTargetDto dco_decode_push_target_dto(dynamic raw);
 
   @protected
   QrLoginSessionDto dco_decode_qr_login_session_dto(dynamic raw);
@@ -165,6 +245,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SongDto dco_decode_song_dto(dynamic raw);
+
+  @protected
+  SourceCapabilitiesDto dco_decode_source_capabilities_dto(dynamic raw);
+
+  @protected
+  SyncFailureDto dco_decode_sync_failure_dto(dynamic raw);
+
+  @protected
+  SyncPreviewDto dco_decode_sync_preview_dto(dynamic raw);
+
+  @protected
+  SyncReportDto dco_decode_sync_report_dto(dynamic raw);
+
+  @protected
+  SyncRowDto dco_decode_sync_row_dto(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -227,7 +322,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  AlbumDto sse_decode_album_dto(SseDeserializer deserializer);
+
+  @protected
+  ArtistDto sse_decode_artist_dto(SseDeserializer deserializer);
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  AlbumDto sse_decode_box_autoadd_album_dto(SseDeserializer deserializer);
+
+  @protected
+  ArtistDto sse_decode_box_autoadd_artist_dto(SseDeserializer deserializer);
 
   @protected
   ConfigDto sse_decode_box_autoadd_config_dto(SseDeserializer deserializer);
@@ -239,12 +346,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlaylistDto sse_decode_box_autoadd_playlist_dto(SseDeserializer deserializer);
 
   @protected
+  PushPreviewDto sse_decode_box_autoadd_push_preview_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PushReportDto sse_decode_box_autoadd_push_report_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PushTargetDto sse_decode_box_autoadd_push_target_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   QrLoginSessionDto sse_decode_box_autoadd_qr_login_session_dto(
     SseDeserializer deserializer,
   );
 
   @protected
   SongDto sse_decode_box_autoadd_song_dto(SseDeserializer deserializer);
+
+  @protected
+  SyncPreviewDto sse_decode_box_autoadd_sync_preview_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SyncReportDto sse_decode_box_autoadd_sync_report_dto(
+    SseDeserializer deserializer,
+  );
 
   @protected
   BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
@@ -270,7 +402,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
+  LeaderboardDto sse_decode_leaderboard_dto(SseDeserializer deserializer);
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<AlbumDto> sse_decode_list_album_dto(SseDeserializer deserializer);
 
   @protected
   List<CustomPlaylistSummaryDto> sse_decode_list_custom_playlist_summary_dto(
@@ -283,7 +421,17 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<LeaderboardDto> sse_decode_list_leaderboard_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<LyricLineDto> sse_decode_list_lyric_line_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<PlaylistCategoryDto> sse_decode_list_playlist_category_dto(
     SseDeserializer deserializer,
   );
 
@@ -294,7 +442,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<PushTargetDto> sse_decode_list_push_target_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<SongDto> sse_decode_list_song_dto(SseDeserializer deserializer);
+
+  @protected
+  List<SourceCapabilitiesDto> sse_decode_list_source_capabilities_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<SyncFailureDto> sse_decode_list_sync_failure_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<SyncRowDto> sse_decode_list_sync_row_dto(SseDeserializer deserializer);
 
   @protected
   LyricLineDto sse_decode_lyric_line_dto(SseDeserializer deserializer);
@@ -311,6 +477,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  PushPreviewDto? sse_decode_opt_box_autoadd_push_preview_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PushReportDto? sse_decode_opt_box_autoadd_push_report_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PushTargetDto? sse_decode_opt_box_autoadd_push_target_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   QrLoginSessionDto? sse_decode_opt_box_autoadd_qr_login_session_dto(
     SseDeserializer deserializer,
   );
@@ -319,13 +500,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SongDto? sse_decode_opt_box_autoadd_song_dto(SseDeserializer deserializer);
 
   @protected
+  SyncPreviewDto? sse_decode_opt_box_autoadd_sync_preview_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SyncReportDto? sse_decode_opt_box_autoadd_sync_report_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
   PlaybackDto sse_decode_playback_dto(SseDeserializer deserializer);
 
   @protected
+  PlaylistCategoryDto sse_decode_playlist_category_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   PlaylistDto sse_decode_playlist_dto(SseDeserializer deserializer);
+
+  @protected
+  PushPreviewDto sse_decode_push_preview_dto(SseDeserializer deserializer);
+
+  @protected
+  PushReportDto sse_decode_push_report_dto(SseDeserializer deserializer);
+
+  @protected
+  PushTargetDto sse_decode_push_target_dto(SseDeserializer deserializer);
 
   @protected
   QrLoginSessionDto sse_decode_qr_login_session_dto(
@@ -337,6 +542,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SongDto sse_decode_song_dto(SseDeserializer deserializer);
+
+  @protected
+  SourceCapabilitiesDto sse_decode_source_capabilities_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SyncFailureDto sse_decode_sync_failure_dto(SseDeserializer deserializer);
+
+  @protected
+  SyncPreviewDto sse_decode_sync_preview_dto(SseDeserializer deserializer);
+
+  @protected
+  SyncReportDto sse_decode_sync_report_dto(SseDeserializer deserializer);
+
+  @protected
+  SyncRowDto sse_decode_sync_row_dto(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -405,7 +627,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_album_dto(AlbumDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_artist_dto(ArtistDto self, SseSerializer serializer);
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_album_dto(
+    AlbumDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_artist_dto(
+    ArtistDto self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_config_dto(
@@ -426,6 +666,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_push_preview_dto(
+    PushPreviewDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_push_report_dto(
+    PushReportDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_push_target_dto(
+    PushTargetDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_qr_login_session_dto(
     QrLoginSessionDto self,
     SseSerializer serializer,
@@ -433,6 +691,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_box_autoadd_song_dto(SongDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_sync_preview_dto(
+    SyncPreviewDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_sync_report_dto(
+    SyncReportDto self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
@@ -462,7 +732,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
+  void sse_encode_leaderboard_dto(
+    LeaderboardDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_album_dto(List<AlbumDto> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_custom_playlist_summary_dto(
@@ -477,8 +756,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_leaderboard_dto(
+    List<LeaderboardDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_lyric_line_dto(
     List<LyricLineDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_playlist_category_dto(
+    List<PlaylistCategoryDto> self,
     SseSerializer serializer,
   );
 
@@ -495,7 +786,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_push_target_dto(
+    List<PushTargetDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_song_dto(List<SongDto> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_source_capabilities_dto(
+    List<SourceCapabilitiesDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_sync_failure_dto(
+    List<SyncFailureDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_sync_row_dto(
+    List<SyncRowDto> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_lyric_line_dto(LyricLineDto self, SseSerializer serializer);
@@ -513,6 +828,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_push_preview_dto(
+    PushPreviewDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_push_report_dto(
+    PushReportDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_push_target_dto(
+    PushTargetDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_qr_login_session_dto(
     QrLoginSessionDto? self,
     SseSerializer serializer,
@@ -525,13 +858,43 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_sync_preview_dto(
+    SyncPreviewDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_sync_report_dto(
+    SyncReportDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
   @protected
   void sse_encode_playback_dto(PlaybackDto self, SseSerializer serializer);
 
   @protected
+  void sse_encode_playlist_category_dto(
+    PlaylistCategoryDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_playlist_dto(PlaylistDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_push_preview_dto(
+    PushPreviewDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_push_report_dto(PushReportDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_push_target_dto(PushTargetDto self, SseSerializer serializer);
 
   @protected
   void sse_encode_qr_login_session_dto(
@@ -544,6 +907,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_song_dto(SongDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_source_capabilities_dto(
+    SourceCapabilitiesDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_sync_failure_dto(
+    SyncFailureDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_sync_preview_dto(
+    SyncPreviewDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_sync_report_dto(SyncReportDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sync_row_dto(SyncRowDto self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

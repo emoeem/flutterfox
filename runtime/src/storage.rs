@@ -1449,7 +1449,6 @@ pub fn local_song_matches_path(song: &SongInfo, path: &Path) -> bool {
         && (song.file_path.as_deref() == Some(path) || song.id == path.to_string_lossy())
 }
 
-
 /// GUI 命令/事件边界（voicefox_application::LibraryStore）对 Storage 的适配。
 /// 方法一一转发，TUI 不经此端口。
 impl voicefox_application::LibraryStore for Storage {

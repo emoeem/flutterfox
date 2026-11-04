@@ -55,7 +55,7 @@ extension FfiCommandPatterns on FfiCommand {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FfiCommand_Pause value)?  pause,TResult Function( FfiCommand_Resume value)?  resume,TResult Function( FfiCommand_Toggle value)?  toggle,TResult Function( FfiCommand_Stop value)?  stop,TResult Function( FfiCommand_SeekMs value)?  seekMs,TResult Function( FfiCommand_PlaySong value)?  playSong,TResult Function( FfiCommand_QueueAdd value)?  queueAdd,TResult Function( FfiCommand_QueueRemove value)?  queueRemove,TResult Function( FfiCommand_QueueClear value)?  queueClear,TResult Function( FfiCommand_Next value)?  next,TResult Function( FfiCommand_Previous value)?  previous,TResult Function( FfiCommand_Search value)?  search,TResult Function( FfiCommand_SearchMore value)?  searchMore,TResult Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult Function( FfiCommand_HistoryClear value)?  historyClear,TResult Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult Function( FfiCommand_ConfigGet value)?  configGet,TResult Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult Function( FfiCommand_LocalScan value)?  localScan,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FfiCommand_Pause value)?  pause,TResult Function( FfiCommand_Resume value)?  resume,TResult Function( FfiCommand_Toggle value)?  toggle,TResult Function( FfiCommand_Stop value)?  stop,TResult Function( FfiCommand_SeekMs value)?  seekMs,TResult Function( FfiCommand_SetVolume value)?  setVolume,TResult Function( FfiCommand_PlaySong value)?  playSong,TResult Function( FfiCommand_QueueAdd value)?  queueAdd,TResult Function( FfiCommand_QueueRemove value)?  queueRemove,TResult Function( FfiCommand_QueueClear value)?  queueClear,TResult Function( FfiCommand_Next value)?  next,TResult Function( FfiCommand_Previous value)?  previous,TResult Function( FfiCommand_Search value)?  search,TResult Function( FfiCommand_SearchMore value)?  searchMore,TResult Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult Function( FfiCommand_HistoryClear value)?  historyClear,TResult Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult Function( FfiCommand_ConfigGet value)?  configGet,TResult Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult Function( FfiCommand_LocalScan value)?  localScan,TResult Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult Function( FfiCommand_SyncPreview value)?  syncPreview,TResult Function( FfiCommand_SyncRun value)?  syncRun,TResult Function( FfiCommand_SyncCancel value)?  syncCancel,TResult Function( FfiCommand_PushTargets value)?  pushTargets,TResult Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult Function( FfiCommand_PushPlan value)?  pushPlan,TResult Function( FfiCommand_PushRun value)?  pushRun,TResult Function( FfiCommand_PushCancel value)?  pushCancel,TResult Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult Function( FfiCommand_PlaylistList value)?  playlistList,TResult Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult Function( FfiCommand_PlaySongs value)?  playSongs,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
@@ -63,7 +63,8 @@ return pause(_that);case FfiCommand_Resume() when resume != null:
 return resume(_that);case FfiCommand_Toggle() when toggle != null:
 return toggle(_that);case FfiCommand_Stop() when stop != null:
 return stop(_that);case FfiCommand_SeekMs() when seekMs != null:
-return seekMs(_that);case FfiCommand_PlaySong() when playSong != null:
+return seekMs(_that);case FfiCommand_SetVolume() when setVolume != null:
+return setVolume(_that);case FfiCommand_PlaySong() when playSong != null:
 return playSong(_that);case FfiCommand_QueueAdd() when queueAdd != null:
 return queueAdd(_that);case FfiCommand_QueueRemove() when queueRemove != null:
 return queueRemove(_that);case FfiCommand_QueueClear() when queueClear != null:
@@ -83,7 +84,8 @@ return customPlaylistCreate(_that);case FfiCommand_CustomPlaylistRename() when c
 return customPlaylistRename(_that);case FfiCommand_CustomPlaylistDelete() when customPlaylistDelete != null:
 return customPlaylistDelete(_that);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
-return customPlaylistRemoveSong(_that);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistRemoveSong(_that);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
+return customPlaylistDetail(_that);case FfiCommand_ConfigGet() when configGet != null:
 return configGet(_that);case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel() when downloadCancel != null:
@@ -91,7 +93,27 @@ return downloadCancel(_that);case FfiCommand_DownloadClearFinished() when downlo
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel(_that);case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that);case _:
+return localScan(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return accountPlaylists(_that);case FfiCommand_AccountFavorites() when accountFavorites != null:
+return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
+return accountPlaylistDetail(_that);case FfiCommand_SyncPreview() when syncPreview != null:
+return syncPreview(_that);case FfiCommand_SyncRun() when syncRun != null:
+return syncRun(_that);case FfiCommand_SyncCancel() when syncCancel != null:
+return syncCancel(_that);case FfiCommand_PushTargets() when pushTargets != null:
+return pushTargets(_that);case FfiCommand_PushCreateTarget() when pushCreateTarget != null:
+return pushCreateTarget(_that);case FfiCommand_PushPlan() when pushPlan != null:
+return pushPlan(_that);case FfiCommand_PushRun() when pushRun != null:
+return pushRun(_that);case FfiCommand_PushCancel() when pushCancel != null:
+return pushCancel(_that);case FfiCommand_PlaylistCategories() when playlistCategories != null:
+return playlistCategories(_that);case FfiCommand_PlaylistList() when playlistList != null:
+return playlistList(_that);case FfiCommand_PlaylistDetail() when playlistDetail != null:
+return playlistDetail(_that);case FfiCommand_LeaderboardBoards() when leaderboardBoards != null:
+return leaderboardBoards(_that);case FfiCommand_LeaderboardSongs() when leaderboardSongs != null:
+return leaderboardSongs(_that);case FfiCommand_ArtistSongs() when artistSongs != null:
+return artistSongs(_that);case FfiCommand_ArtistAlbums() when artistAlbums != null:
+return artistAlbums(_that);case FfiCommand_AlbumSongs() when albumSongs != null:
+return albumSongs(_that);case FfiCommand_PlaySongs() when playSongs != null:
+return playSongs(_that);case _:
   return orElse();
 
 }
@@ -109,7 +131,7 @@ return localScan(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FfiCommand_Pause value)  pause,required TResult Function( FfiCommand_Resume value)  resume,required TResult Function( FfiCommand_Toggle value)  toggle,required TResult Function( FfiCommand_Stop value)  stop,required TResult Function( FfiCommand_SeekMs value)  seekMs,required TResult Function( FfiCommand_PlaySong value)  playSong,required TResult Function( FfiCommand_QueueAdd value)  queueAdd,required TResult Function( FfiCommand_QueueRemove value)  queueRemove,required TResult Function( FfiCommand_QueueClear value)  queueClear,required TResult Function( FfiCommand_Next value)  next,required TResult Function( FfiCommand_Previous value)  previous,required TResult Function( FfiCommand_Search value)  search,required TResult Function( FfiCommand_SearchMore value)  searchMore,required TResult Function( FfiCommand_LibraryRefresh value)  libraryRefresh,required TResult Function( FfiCommand_FavoritesAdd value)  favoritesAdd,required TResult Function( FfiCommand_FavoritesRemove value)  favoritesRemove,required TResult Function( FfiCommand_FavoritePlaylistAdd value)  favoritePlaylistAdd,required TResult Function( FfiCommand_FavoritePlaylistRemove value)  favoritePlaylistRemove,required TResult Function( FfiCommand_HistoryRemove value)  historyRemove,required TResult Function( FfiCommand_HistoryClear value)  historyClear,required TResult Function( FfiCommand_CustomPlaylistCreate value)  customPlaylistCreate,required TResult Function( FfiCommand_CustomPlaylistRename value)  customPlaylistRename,required TResult Function( FfiCommand_CustomPlaylistDelete value)  customPlaylistDelete,required TResult Function( FfiCommand_CustomPlaylistAddSongs value)  customPlaylistAddSongs,required TResult Function( FfiCommand_CustomPlaylistRemoveSong value)  customPlaylistRemoveSong,required TResult Function( FfiCommand_ConfigGet value)  configGet,required TResult Function( FfiCommand_ConfigUpdate value)  configUpdate,required TResult Function( FfiCommand_DownloadEnqueue value)  downloadEnqueue,required TResult Function( FfiCommand_DownloadCancel value)  downloadCancel,required TResult Function( FfiCommand_DownloadClearFinished value)  downloadClearFinished,required TResult Function( FfiCommand_QrLoginStart value)  qrLoginStart,required TResult Function( FfiCommand_QrLoginCancel value)  qrLoginCancel,required TResult Function( FfiCommand_LocalScan value)  localScan,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FfiCommand_Pause value)  pause,required TResult Function( FfiCommand_Resume value)  resume,required TResult Function( FfiCommand_Toggle value)  toggle,required TResult Function( FfiCommand_Stop value)  stop,required TResult Function( FfiCommand_SeekMs value)  seekMs,required TResult Function( FfiCommand_SetVolume value)  setVolume,required TResult Function( FfiCommand_PlaySong value)  playSong,required TResult Function( FfiCommand_QueueAdd value)  queueAdd,required TResult Function( FfiCommand_QueueRemove value)  queueRemove,required TResult Function( FfiCommand_QueueClear value)  queueClear,required TResult Function( FfiCommand_Next value)  next,required TResult Function( FfiCommand_Previous value)  previous,required TResult Function( FfiCommand_Search value)  search,required TResult Function( FfiCommand_SearchMore value)  searchMore,required TResult Function( FfiCommand_LibraryRefresh value)  libraryRefresh,required TResult Function( FfiCommand_FavoritesAdd value)  favoritesAdd,required TResult Function( FfiCommand_FavoritesRemove value)  favoritesRemove,required TResult Function( FfiCommand_FavoritePlaylistAdd value)  favoritePlaylistAdd,required TResult Function( FfiCommand_FavoritePlaylistRemove value)  favoritePlaylistRemove,required TResult Function( FfiCommand_HistoryRemove value)  historyRemove,required TResult Function( FfiCommand_HistoryClear value)  historyClear,required TResult Function( FfiCommand_CustomPlaylistCreate value)  customPlaylistCreate,required TResult Function( FfiCommand_CustomPlaylistRename value)  customPlaylistRename,required TResult Function( FfiCommand_CustomPlaylistDelete value)  customPlaylistDelete,required TResult Function( FfiCommand_CustomPlaylistAddSongs value)  customPlaylistAddSongs,required TResult Function( FfiCommand_CustomPlaylistRemoveSong value)  customPlaylistRemoveSong,required TResult Function( FfiCommand_CustomPlaylistDetail value)  customPlaylistDetail,required TResult Function( FfiCommand_ConfigGet value)  configGet,required TResult Function( FfiCommand_ConfigUpdate value)  configUpdate,required TResult Function( FfiCommand_DownloadEnqueue value)  downloadEnqueue,required TResult Function( FfiCommand_DownloadCancel value)  downloadCancel,required TResult Function( FfiCommand_DownloadClearFinished value)  downloadClearFinished,required TResult Function( FfiCommand_QrLoginStart value)  qrLoginStart,required TResult Function( FfiCommand_QrLoginCancel value)  qrLoginCancel,required TResult Function( FfiCommand_LocalScan value)  localScan,required TResult Function( FfiCommand_AccountPlaylists value)  accountPlaylists,required TResult Function( FfiCommand_AccountFavorites value)  accountFavorites,required TResult Function( FfiCommand_AccountPlaylistDetail value)  accountPlaylistDetail,required TResult Function( FfiCommand_SyncPreview value)  syncPreview,required TResult Function( FfiCommand_SyncRun value)  syncRun,required TResult Function( FfiCommand_SyncCancel value)  syncCancel,required TResult Function( FfiCommand_PushTargets value)  pushTargets,required TResult Function( FfiCommand_PushCreateTarget value)  pushCreateTarget,required TResult Function( FfiCommand_PushPlan value)  pushPlan,required TResult Function( FfiCommand_PushRun value)  pushRun,required TResult Function( FfiCommand_PushCancel value)  pushCancel,required TResult Function( FfiCommand_PlaylistCategories value)  playlistCategories,required TResult Function( FfiCommand_PlaylistList value)  playlistList,required TResult Function( FfiCommand_PlaylistDetail value)  playlistDetail,required TResult Function( FfiCommand_LeaderboardBoards value)  leaderboardBoards,required TResult Function( FfiCommand_LeaderboardSongs value)  leaderboardSongs,required TResult Function( FfiCommand_ArtistSongs value)  artistSongs,required TResult Function( FfiCommand_ArtistAlbums value)  artistAlbums,required TResult Function( FfiCommand_AlbumSongs value)  albumSongs,required TResult Function( FfiCommand_PlaySongs value)  playSongs,}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause():
@@ -117,7 +139,8 @@ return pause(_that);case FfiCommand_Resume():
 return resume(_that);case FfiCommand_Toggle():
 return toggle(_that);case FfiCommand_Stop():
 return stop(_that);case FfiCommand_SeekMs():
-return seekMs(_that);case FfiCommand_PlaySong():
+return seekMs(_that);case FfiCommand_SetVolume():
+return setVolume(_that);case FfiCommand_PlaySong():
 return playSong(_that);case FfiCommand_QueueAdd():
 return queueAdd(_that);case FfiCommand_QueueRemove():
 return queueRemove(_that);case FfiCommand_QueueClear():
@@ -137,7 +160,8 @@ return customPlaylistCreate(_that);case FfiCommand_CustomPlaylistRename():
 return customPlaylistRename(_that);case FfiCommand_CustomPlaylistDelete():
 return customPlaylistDelete(_that);case FfiCommand_CustomPlaylistAddSongs():
 return customPlaylistAddSongs(_that);case FfiCommand_CustomPlaylistRemoveSong():
-return customPlaylistRemoveSong(_that);case FfiCommand_ConfigGet():
+return customPlaylistRemoveSong(_that);case FfiCommand_CustomPlaylistDetail():
+return customPlaylistDetail(_that);case FfiCommand_ConfigGet():
 return configGet(_that);case FfiCommand_ConfigUpdate():
 return configUpdate(_that);case FfiCommand_DownloadEnqueue():
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel():
@@ -145,7 +169,27 @@ return downloadCancel(_that);case FfiCommand_DownloadClearFinished():
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart():
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel():
 return qrLoginCancel(_that);case FfiCommand_LocalScan():
-return localScan(_that);}
+return localScan(_that);case FfiCommand_AccountPlaylists():
+return accountPlaylists(_that);case FfiCommand_AccountFavorites():
+return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail():
+return accountPlaylistDetail(_that);case FfiCommand_SyncPreview():
+return syncPreview(_that);case FfiCommand_SyncRun():
+return syncRun(_that);case FfiCommand_SyncCancel():
+return syncCancel(_that);case FfiCommand_PushTargets():
+return pushTargets(_that);case FfiCommand_PushCreateTarget():
+return pushCreateTarget(_that);case FfiCommand_PushPlan():
+return pushPlan(_that);case FfiCommand_PushRun():
+return pushRun(_that);case FfiCommand_PushCancel():
+return pushCancel(_that);case FfiCommand_PlaylistCategories():
+return playlistCategories(_that);case FfiCommand_PlaylistList():
+return playlistList(_that);case FfiCommand_PlaylistDetail():
+return playlistDetail(_that);case FfiCommand_LeaderboardBoards():
+return leaderboardBoards(_that);case FfiCommand_LeaderboardSongs():
+return leaderboardSongs(_that);case FfiCommand_ArtistSongs():
+return artistSongs(_that);case FfiCommand_ArtistAlbums():
+return artistAlbums(_that);case FfiCommand_AlbumSongs():
+return albumSongs(_that);case FfiCommand_PlaySongs():
+return playSongs(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -159,7 +203,7 @@ return localScan(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FfiCommand_Pause value)?  pause,TResult? Function( FfiCommand_Resume value)?  resume,TResult? Function( FfiCommand_Toggle value)?  toggle,TResult? Function( FfiCommand_Stop value)?  stop,TResult? Function( FfiCommand_SeekMs value)?  seekMs,TResult? Function( FfiCommand_PlaySong value)?  playSong,TResult? Function( FfiCommand_QueueAdd value)?  queueAdd,TResult? Function( FfiCommand_QueueRemove value)?  queueRemove,TResult? Function( FfiCommand_QueueClear value)?  queueClear,TResult? Function( FfiCommand_Next value)?  next,TResult? Function( FfiCommand_Previous value)?  previous,TResult? Function( FfiCommand_Search value)?  search,TResult? Function( FfiCommand_SearchMore value)?  searchMore,TResult? Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult? Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult? Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult? Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult? Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult? Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult? Function( FfiCommand_HistoryClear value)?  historyClear,TResult? Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult? Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult? Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult? Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult? Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult? Function( FfiCommand_ConfigGet value)?  configGet,TResult? Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult? Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult? Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult? Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult? Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult? Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult? Function( FfiCommand_LocalScan value)?  localScan,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FfiCommand_Pause value)?  pause,TResult? Function( FfiCommand_Resume value)?  resume,TResult? Function( FfiCommand_Toggle value)?  toggle,TResult? Function( FfiCommand_Stop value)?  stop,TResult? Function( FfiCommand_SeekMs value)?  seekMs,TResult? Function( FfiCommand_SetVolume value)?  setVolume,TResult? Function( FfiCommand_PlaySong value)?  playSong,TResult? Function( FfiCommand_QueueAdd value)?  queueAdd,TResult? Function( FfiCommand_QueueRemove value)?  queueRemove,TResult? Function( FfiCommand_QueueClear value)?  queueClear,TResult? Function( FfiCommand_Next value)?  next,TResult? Function( FfiCommand_Previous value)?  previous,TResult? Function( FfiCommand_Search value)?  search,TResult? Function( FfiCommand_SearchMore value)?  searchMore,TResult? Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult? Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult? Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult? Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult? Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult? Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult? Function( FfiCommand_HistoryClear value)?  historyClear,TResult? Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult? Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult? Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult? Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult? Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult? Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult? Function( FfiCommand_ConfigGet value)?  configGet,TResult? Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult? Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult? Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult? Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult? Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult? Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult? Function( FfiCommand_LocalScan value)?  localScan,TResult? Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult? Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult? Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult? Function( FfiCommand_SyncPreview value)?  syncPreview,TResult? Function( FfiCommand_SyncRun value)?  syncRun,TResult? Function( FfiCommand_SyncCancel value)?  syncCancel,TResult? Function( FfiCommand_PushTargets value)?  pushTargets,TResult? Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult? Function( FfiCommand_PushPlan value)?  pushPlan,TResult? Function( FfiCommand_PushRun value)?  pushRun,TResult? Function( FfiCommand_PushCancel value)?  pushCancel,TResult? Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult? Function( FfiCommand_PlaylistList value)?  playlistList,TResult? Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult? Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult? Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult? Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult? Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult? Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult? Function( FfiCommand_PlaySongs value)?  playSongs,}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
@@ -167,7 +211,8 @@ return pause(_that);case FfiCommand_Resume() when resume != null:
 return resume(_that);case FfiCommand_Toggle() when toggle != null:
 return toggle(_that);case FfiCommand_Stop() when stop != null:
 return stop(_that);case FfiCommand_SeekMs() when seekMs != null:
-return seekMs(_that);case FfiCommand_PlaySong() when playSong != null:
+return seekMs(_that);case FfiCommand_SetVolume() when setVolume != null:
+return setVolume(_that);case FfiCommand_PlaySong() when playSong != null:
 return playSong(_that);case FfiCommand_QueueAdd() when queueAdd != null:
 return queueAdd(_that);case FfiCommand_QueueRemove() when queueRemove != null:
 return queueRemove(_that);case FfiCommand_QueueClear() when queueClear != null:
@@ -187,7 +232,8 @@ return customPlaylistCreate(_that);case FfiCommand_CustomPlaylistRename() when c
 return customPlaylistRename(_that);case FfiCommand_CustomPlaylistDelete() when customPlaylistDelete != null:
 return customPlaylistDelete(_that);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
-return customPlaylistRemoveSong(_that);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistRemoveSong(_that);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
+return customPlaylistDetail(_that);case FfiCommand_ConfigGet() when configGet != null:
 return configGet(_that);case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel() when downloadCancel != null:
@@ -195,7 +241,27 @@ return downloadCancel(_that);case FfiCommand_DownloadClearFinished() when downlo
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel(_that);case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that);case _:
+return localScan(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return accountPlaylists(_that);case FfiCommand_AccountFavorites() when accountFavorites != null:
+return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
+return accountPlaylistDetail(_that);case FfiCommand_SyncPreview() when syncPreview != null:
+return syncPreview(_that);case FfiCommand_SyncRun() when syncRun != null:
+return syncRun(_that);case FfiCommand_SyncCancel() when syncCancel != null:
+return syncCancel(_that);case FfiCommand_PushTargets() when pushTargets != null:
+return pushTargets(_that);case FfiCommand_PushCreateTarget() when pushCreateTarget != null:
+return pushCreateTarget(_that);case FfiCommand_PushPlan() when pushPlan != null:
+return pushPlan(_that);case FfiCommand_PushRun() when pushRun != null:
+return pushRun(_that);case FfiCommand_PushCancel() when pushCancel != null:
+return pushCancel(_that);case FfiCommand_PlaylistCategories() when playlistCategories != null:
+return playlistCategories(_that);case FfiCommand_PlaylistList() when playlistList != null:
+return playlistList(_that);case FfiCommand_PlaylistDetail() when playlistDetail != null:
+return playlistDetail(_that);case FfiCommand_LeaderboardBoards() when leaderboardBoards != null:
+return leaderboardBoards(_that);case FfiCommand_LeaderboardSongs() when leaderboardSongs != null:
+return leaderboardSongs(_that);case FfiCommand_ArtistSongs() when artistSongs != null:
+return artistSongs(_that);case FfiCommand_ArtistAlbums() when artistAlbums != null:
+return artistAlbums(_that);case FfiCommand_AlbumSongs() when albumSongs != null:
+return albumSongs(_that);case FfiCommand_PlaySongs() when playSongs != null:
+return playSongs(_that);case _:
   return null;
 
 }
@@ -212,21 +278,22 @@ return localScan(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  toggle,TResult Function()?  stop,TResult Function( BigInt field0)?  seekMs,TResult Function( SongDto song)?  playSong,TResult Function( SongDto song,  bool next)?  queueAdd,TResult Function( int index)?  queueRemove,TResult Function()?  queueClear,TResult Function()?  next,TResult Function()?  previous,TResult Function( String keyword)?  search,TResult Function( String keyword,  int page)?  searchMore,TResult Function()?  libraryRefresh,TResult Function( SongDto song)?  favoritesAdd,TResult Function( SongDto song)?  favoritesRemove,TResult Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult Function( SongDto song)?  historyRemove,TResult Function()?  historyClear,TResult Function( String name)?  customPlaylistCreate,TResult Function( String id,  String name)?  customPlaylistRename,TResult Function( String id)?  customPlaylistDelete,TResult Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult Function()?  configGet,TResult Function( ConfigDto config)?  configUpdate,TResult Function( SongDto song)?  downloadEnqueue,TResult Function( BigInt id)?  downloadCancel,TResult Function()?  downloadClearFinished,TResult Function( String source,  String kind)?  qrLoginStart,TResult Function()?  qrLoginCancel,TResult Function( List<String> paths,  int maxDepth)?  localScan,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  toggle,TResult Function()?  stop,TResult Function( BigInt field0)?  seekMs,TResult Function( int volume)?  setVolume,TResult Function( SongDto song)?  playSong,TResult Function( SongDto song,  bool next)?  queueAdd,TResult Function( int index)?  queueRemove,TResult Function()?  queueClear,TResult Function()?  next,TResult Function()?  previous,TResult Function( String keyword,  String? source)?  search,TResult Function( String keyword,  int page)?  searchMore,TResult Function()?  libraryRefresh,TResult Function( SongDto song)?  favoritesAdd,TResult Function( SongDto song)?  favoritesRemove,TResult Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult Function( SongDto song)?  historyRemove,TResult Function()?  historyClear,TResult Function( String name)?  customPlaylistCreate,TResult Function( String id,  String name)?  customPlaylistRename,TResult Function( String id)?  customPlaylistDelete,TResult Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult Function( String id)?  customPlaylistDetail,TResult Function()?  configGet,TResult Function( ConfigDto config)?  configUpdate,TResult Function( SongDto song)?  downloadEnqueue,TResult Function( BigInt id)?  downloadCancel,TResult Function()?  downloadClearFinished,TResult Function( String source,  String kind)?  qrLoginStart,TResult Function()?  qrLoginCancel,TResult Function( List<String> paths,  int maxDepth)?  localScan,TResult Function( String source)?  accountPlaylists,TResult Function( String source)?  accountFavorites,TResult Function( String source,  String playlistId)?  accountPlaylistDetail,TResult Function( String source)?  syncPreview,TResult Function( String source)?  syncRun,TResult Function()?  syncCancel,TResult Function( String source)?  pushTargets,TResult Function( String source,  String name)?  pushCreateTarget,TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult Function( String source)?  pushRun,TResult Function()?  pushCancel,TResult Function( String source)?  playlistCategories,TResult Function( String source,  String category,  int page)?  playlistList,TResult Function( String source,  String playlistId,  int page)?  playlistDetail,TResult Function( String source)?  leaderboardBoards,TResult Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult Function( ArtistDto artist,  int page)?  artistSongs,TResult Function( ArtistDto artist,  int page)?  artistAlbums,TResult Function( AlbumDto album,  int page)?  albumSongs,TResult Function( List<SongDto> songs,  int index)?  playSongs,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
 return pause();case FfiCommand_Resume() when resume != null:
 return resume();case FfiCommand_Toggle() when toggle != null:
 return toggle();case FfiCommand_Stop() when stop != null:
 return stop();case FfiCommand_SeekMs() when seekMs != null:
-return seekMs(_that.field0);case FfiCommand_PlaySong() when playSong != null:
+return seekMs(_that.field0);case FfiCommand_SetVolume() when setVolume != null:
+return setVolume(_that.volume);case FfiCommand_PlaySong() when playSong != null:
 return playSong(_that.song);case FfiCommand_QueueAdd() when queueAdd != null:
 return queueAdd(_that.song,_that.next);case FfiCommand_QueueRemove() when queueRemove != null:
 return queueRemove(_that.index);case FfiCommand_QueueClear() when queueClear != null:
 return queueClear();case FfiCommand_Next() when next != null:
 return next();case FfiCommand_Previous() when previous != null:
 return previous();case FfiCommand_Search() when search != null:
-return search(_that.keyword);case FfiCommand_SearchMore() when searchMore != null:
+return search(_that.keyword,_that.source);case FfiCommand_SearchMore() when searchMore != null:
 return searchMore(_that.keyword,_that.page);case FfiCommand_LibraryRefresh() when libraryRefresh != null:
 return libraryRefresh();case FfiCommand_FavoritesAdd() when favoritesAdd != null:
 return favoritesAdd(_that.song);case FfiCommand_FavoritesRemove() when favoritesRemove != null:
@@ -239,7 +306,8 @@ return customPlaylistCreate(_that.name);case FfiCommand_CustomPlaylistRename() w
 return customPlaylistRename(_that.id,_that.name);case FfiCommand_CustomPlaylistDelete() when customPlaylistDelete != null:
 return customPlaylistDelete(_that.id);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that.id,_that.songs);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
-return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
+return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet() when configGet != null:
 return configGet();case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel() when downloadCancel != null:
@@ -247,7 +315,27 @@ return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished() when dow
 return downloadClearFinished();case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel();case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that.paths,_that.maxDepth);case _:
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return accountPlaylists(_that.source);case FfiCommand_AccountFavorites() when accountFavorites != null:
+return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
+return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview() when syncPreview != null:
+return syncPreview(_that.source);case FfiCommand_SyncRun() when syncRun != null:
+return syncRun(_that.source);case FfiCommand_SyncCancel() when syncCancel != null:
+return syncCancel();case FfiCommand_PushTargets() when pushTargets != null:
+return pushTargets(_that.source);case FfiCommand_PushCreateTarget() when pushCreateTarget != null:
+return pushCreateTarget(_that.source,_that.name);case FfiCommand_PushPlan() when pushPlan != null:
+return pushPlan(_that.source,_that.localName,_that.localSongs,_that.isFavorites,_that.targetKind,_that.targetId,_that.targetName,_that.targetSongCount);case FfiCommand_PushRun() when pushRun != null:
+return pushRun(_that.source);case FfiCommand_PushCancel() when pushCancel != null:
+return pushCancel();case FfiCommand_PlaylistCategories() when playlistCategories != null:
+return playlistCategories(_that.source);case FfiCommand_PlaylistList() when playlistList != null:
+return playlistList(_that.source,_that.category,_that.page);case FfiCommand_PlaylistDetail() when playlistDetail != null:
+return playlistDetail(_that.source,_that.playlistId,_that.page);case FfiCommand_LeaderboardBoards() when leaderboardBoards != null:
+return leaderboardBoards(_that.source);case FfiCommand_LeaderboardSongs() when leaderboardSongs != null:
+return leaderboardSongs(_that.source,_that.boardId,_that.page);case FfiCommand_ArtistSongs() when artistSongs != null:
+return artistSongs(_that.artist,_that.page);case FfiCommand_ArtistAlbums() when artistAlbums != null:
+return artistAlbums(_that.artist,_that.page);case FfiCommand_AlbumSongs() when albumSongs != null:
+return albumSongs(_that.album,_that.page);case FfiCommand_PlaySongs() when playSongs != null:
+return playSongs(_that.songs,_that.index);case _:
   return orElse();
 
 }
@@ -265,21 +353,22 @@ return localScan(_that.paths,_that.maxDepth);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  toggle,required TResult Function()  stop,required TResult Function( BigInt field0)  seekMs,required TResult Function( SongDto song)  playSong,required TResult Function( SongDto song,  bool next)  queueAdd,required TResult Function( int index)  queueRemove,required TResult Function()  queueClear,required TResult Function()  next,required TResult Function()  previous,required TResult Function( String keyword)  search,required TResult Function( String keyword,  int page)  searchMore,required TResult Function()  libraryRefresh,required TResult Function( SongDto song)  favoritesAdd,required TResult Function( SongDto song)  favoritesRemove,required TResult Function( PlaylistDto playlist)  favoritePlaylistAdd,required TResult Function( PlaylistDto playlist)  favoritePlaylistRemove,required TResult Function( SongDto song)  historyRemove,required TResult Function()  historyClear,required TResult Function( String name)  customPlaylistCreate,required TResult Function( String id,  String name)  customPlaylistRename,required TResult Function( String id)  customPlaylistDelete,required TResult Function( String id,  List<SongDto> songs)  customPlaylistAddSongs,required TResult Function( String id,  SongDto song)  customPlaylistRemoveSong,required TResult Function()  configGet,required TResult Function( ConfigDto config)  configUpdate,required TResult Function( SongDto song)  downloadEnqueue,required TResult Function( BigInt id)  downloadCancel,required TResult Function()  downloadClearFinished,required TResult Function( String source,  String kind)  qrLoginStart,required TResult Function()  qrLoginCancel,required TResult Function( List<String> paths,  int maxDepth)  localScan,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  toggle,required TResult Function()  stop,required TResult Function( BigInt field0)  seekMs,required TResult Function( int volume)  setVolume,required TResult Function( SongDto song)  playSong,required TResult Function( SongDto song,  bool next)  queueAdd,required TResult Function( int index)  queueRemove,required TResult Function()  queueClear,required TResult Function()  next,required TResult Function()  previous,required TResult Function( String keyword,  String? source)  search,required TResult Function( String keyword,  int page)  searchMore,required TResult Function()  libraryRefresh,required TResult Function( SongDto song)  favoritesAdd,required TResult Function( SongDto song)  favoritesRemove,required TResult Function( PlaylistDto playlist)  favoritePlaylistAdd,required TResult Function( PlaylistDto playlist)  favoritePlaylistRemove,required TResult Function( SongDto song)  historyRemove,required TResult Function()  historyClear,required TResult Function( String name)  customPlaylistCreate,required TResult Function( String id,  String name)  customPlaylistRename,required TResult Function( String id)  customPlaylistDelete,required TResult Function( String id,  List<SongDto> songs)  customPlaylistAddSongs,required TResult Function( String id,  SongDto song)  customPlaylistRemoveSong,required TResult Function( String id)  customPlaylistDetail,required TResult Function()  configGet,required TResult Function( ConfigDto config)  configUpdate,required TResult Function( SongDto song)  downloadEnqueue,required TResult Function( BigInt id)  downloadCancel,required TResult Function()  downloadClearFinished,required TResult Function( String source,  String kind)  qrLoginStart,required TResult Function()  qrLoginCancel,required TResult Function( List<String> paths,  int maxDepth)  localScan,required TResult Function( String source)  accountPlaylists,required TResult Function( String source)  accountFavorites,required TResult Function( String source,  String playlistId)  accountPlaylistDetail,required TResult Function( String source)  syncPreview,required TResult Function( String source)  syncRun,required TResult Function()  syncCancel,required TResult Function( String source)  pushTargets,required TResult Function( String source,  String name)  pushCreateTarget,required TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)  pushPlan,required TResult Function( String source)  pushRun,required TResult Function()  pushCancel,required TResult Function( String source)  playlistCategories,required TResult Function( String source,  String category,  int page)  playlistList,required TResult Function( String source,  String playlistId,  int page)  playlistDetail,required TResult Function( String source)  leaderboardBoards,required TResult Function( String source,  String boardId,  int page)  leaderboardSongs,required TResult Function( ArtistDto artist,  int page)  artistSongs,required TResult Function( ArtistDto artist,  int page)  artistAlbums,required TResult Function( AlbumDto album,  int page)  albumSongs,required TResult Function( List<SongDto> songs,  int index)  playSongs,}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause():
 return pause();case FfiCommand_Resume():
 return resume();case FfiCommand_Toggle():
 return toggle();case FfiCommand_Stop():
 return stop();case FfiCommand_SeekMs():
-return seekMs(_that.field0);case FfiCommand_PlaySong():
+return seekMs(_that.field0);case FfiCommand_SetVolume():
+return setVolume(_that.volume);case FfiCommand_PlaySong():
 return playSong(_that.song);case FfiCommand_QueueAdd():
 return queueAdd(_that.song,_that.next);case FfiCommand_QueueRemove():
 return queueRemove(_that.index);case FfiCommand_QueueClear():
 return queueClear();case FfiCommand_Next():
 return next();case FfiCommand_Previous():
 return previous();case FfiCommand_Search():
-return search(_that.keyword);case FfiCommand_SearchMore():
+return search(_that.keyword,_that.source);case FfiCommand_SearchMore():
 return searchMore(_that.keyword,_that.page);case FfiCommand_LibraryRefresh():
 return libraryRefresh();case FfiCommand_FavoritesAdd():
 return favoritesAdd(_that.song);case FfiCommand_FavoritesRemove():
@@ -292,7 +381,8 @@ return customPlaylistCreate(_that.name);case FfiCommand_CustomPlaylistRename():
 return customPlaylistRename(_that.id,_that.name);case FfiCommand_CustomPlaylistDelete():
 return customPlaylistDelete(_that.id);case FfiCommand_CustomPlaylistAddSongs():
 return customPlaylistAddSongs(_that.id,_that.songs);case FfiCommand_CustomPlaylistRemoveSong():
-return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_ConfigGet():
+return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_CustomPlaylistDetail():
+return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet():
 return configGet();case FfiCommand_ConfigUpdate():
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue():
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel():
@@ -300,7 +390,27 @@ return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished():
 return downloadClearFinished();case FfiCommand_QrLoginStart():
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel():
 return qrLoginCancel();case FfiCommand_LocalScan():
-return localScan(_that.paths,_that.maxDepth);}
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists():
+return accountPlaylists(_that.source);case FfiCommand_AccountFavorites():
+return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail():
+return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview():
+return syncPreview(_that.source);case FfiCommand_SyncRun():
+return syncRun(_that.source);case FfiCommand_SyncCancel():
+return syncCancel();case FfiCommand_PushTargets():
+return pushTargets(_that.source);case FfiCommand_PushCreateTarget():
+return pushCreateTarget(_that.source,_that.name);case FfiCommand_PushPlan():
+return pushPlan(_that.source,_that.localName,_that.localSongs,_that.isFavorites,_that.targetKind,_that.targetId,_that.targetName,_that.targetSongCount);case FfiCommand_PushRun():
+return pushRun(_that.source);case FfiCommand_PushCancel():
+return pushCancel();case FfiCommand_PlaylistCategories():
+return playlistCategories(_that.source);case FfiCommand_PlaylistList():
+return playlistList(_that.source,_that.category,_that.page);case FfiCommand_PlaylistDetail():
+return playlistDetail(_that.source,_that.playlistId,_that.page);case FfiCommand_LeaderboardBoards():
+return leaderboardBoards(_that.source);case FfiCommand_LeaderboardSongs():
+return leaderboardSongs(_that.source,_that.boardId,_that.page);case FfiCommand_ArtistSongs():
+return artistSongs(_that.artist,_that.page);case FfiCommand_ArtistAlbums():
+return artistAlbums(_that.artist,_that.page);case FfiCommand_AlbumSongs():
+return albumSongs(_that.album,_that.page);case FfiCommand_PlaySongs():
+return playSongs(_that.songs,_that.index);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -314,21 +424,22 @@ return localScan(_that.paths,_that.maxDepth);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  toggle,TResult? Function()?  stop,TResult? Function( BigInt field0)?  seekMs,TResult? Function( SongDto song)?  playSong,TResult? Function( SongDto song,  bool next)?  queueAdd,TResult? Function( int index)?  queueRemove,TResult? Function()?  queueClear,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function( String keyword)?  search,TResult? Function( String keyword,  int page)?  searchMore,TResult? Function()?  libraryRefresh,TResult? Function( SongDto song)?  favoritesAdd,TResult? Function( SongDto song)?  favoritesRemove,TResult? Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult? Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult? Function( SongDto song)?  historyRemove,TResult? Function()?  historyClear,TResult? Function( String name)?  customPlaylistCreate,TResult? Function( String id,  String name)?  customPlaylistRename,TResult? Function( String id)?  customPlaylistDelete,TResult? Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult? Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult? Function()?  configGet,TResult? Function( ConfigDto config)?  configUpdate,TResult? Function( SongDto song)?  downloadEnqueue,TResult? Function( BigInt id)?  downloadCancel,TResult? Function()?  downloadClearFinished,TResult? Function( String source,  String kind)?  qrLoginStart,TResult? Function()?  qrLoginCancel,TResult? Function( List<String> paths,  int maxDepth)?  localScan,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  toggle,TResult? Function()?  stop,TResult? Function( BigInt field0)?  seekMs,TResult? Function( int volume)?  setVolume,TResult? Function( SongDto song)?  playSong,TResult? Function( SongDto song,  bool next)?  queueAdd,TResult? Function( int index)?  queueRemove,TResult? Function()?  queueClear,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function( String keyword,  String? source)?  search,TResult? Function( String keyword,  int page)?  searchMore,TResult? Function()?  libraryRefresh,TResult? Function( SongDto song)?  favoritesAdd,TResult? Function( SongDto song)?  favoritesRemove,TResult? Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult? Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult? Function( SongDto song)?  historyRemove,TResult? Function()?  historyClear,TResult? Function( String name)?  customPlaylistCreate,TResult? Function( String id,  String name)?  customPlaylistRename,TResult? Function( String id)?  customPlaylistDelete,TResult? Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult? Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult? Function( String id)?  customPlaylistDetail,TResult? Function()?  configGet,TResult? Function( ConfigDto config)?  configUpdate,TResult? Function( SongDto song)?  downloadEnqueue,TResult? Function( BigInt id)?  downloadCancel,TResult? Function()?  downloadClearFinished,TResult? Function( String source,  String kind)?  qrLoginStart,TResult? Function()?  qrLoginCancel,TResult? Function( List<String> paths,  int maxDepth)?  localScan,TResult? Function( String source)?  accountPlaylists,TResult? Function( String source)?  accountFavorites,TResult? Function( String source,  String playlistId)?  accountPlaylistDetail,TResult? Function( String source)?  syncPreview,TResult? Function( String source)?  syncRun,TResult? Function()?  syncCancel,TResult? Function( String source)?  pushTargets,TResult? Function( String source,  String name)?  pushCreateTarget,TResult? Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult? Function( String source)?  pushRun,TResult? Function()?  pushCancel,TResult? Function( String source)?  playlistCategories,TResult? Function( String source,  String category,  int page)?  playlistList,TResult? Function( String source,  String playlistId,  int page)?  playlistDetail,TResult? Function( String source)?  leaderboardBoards,TResult? Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult? Function( ArtistDto artist,  int page)?  artistSongs,TResult? Function( ArtistDto artist,  int page)?  artistAlbums,TResult? Function( AlbumDto album,  int page)?  albumSongs,TResult? Function( List<SongDto> songs,  int index)?  playSongs,}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
 return pause();case FfiCommand_Resume() when resume != null:
 return resume();case FfiCommand_Toggle() when toggle != null:
 return toggle();case FfiCommand_Stop() when stop != null:
 return stop();case FfiCommand_SeekMs() when seekMs != null:
-return seekMs(_that.field0);case FfiCommand_PlaySong() when playSong != null:
+return seekMs(_that.field0);case FfiCommand_SetVolume() when setVolume != null:
+return setVolume(_that.volume);case FfiCommand_PlaySong() when playSong != null:
 return playSong(_that.song);case FfiCommand_QueueAdd() when queueAdd != null:
 return queueAdd(_that.song,_that.next);case FfiCommand_QueueRemove() when queueRemove != null:
 return queueRemove(_that.index);case FfiCommand_QueueClear() when queueClear != null:
 return queueClear();case FfiCommand_Next() when next != null:
 return next();case FfiCommand_Previous() when previous != null:
 return previous();case FfiCommand_Search() when search != null:
-return search(_that.keyword);case FfiCommand_SearchMore() when searchMore != null:
+return search(_that.keyword,_that.source);case FfiCommand_SearchMore() when searchMore != null:
 return searchMore(_that.keyword,_that.page);case FfiCommand_LibraryRefresh() when libraryRefresh != null:
 return libraryRefresh();case FfiCommand_FavoritesAdd() when favoritesAdd != null:
 return favoritesAdd(_that.song);case FfiCommand_FavoritesRemove() when favoritesRemove != null:
@@ -341,7 +452,8 @@ return customPlaylistCreate(_that.name);case FfiCommand_CustomPlaylistRename() w
 return customPlaylistRename(_that.id,_that.name);case FfiCommand_CustomPlaylistDelete() when customPlaylistDelete != null:
 return customPlaylistDelete(_that.id);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that.id,_that.songs);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
-return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
+return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet() when configGet != null:
 return configGet();case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel() when downloadCancel != null:
@@ -349,7 +461,27 @@ return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished() when dow
 return downloadClearFinished();case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel();case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that.paths,_that.maxDepth);case _:
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return accountPlaylists(_that.source);case FfiCommand_AccountFavorites() when accountFavorites != null:
+return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
+return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview() when syncPreview != null:
+return syncPreview(_that.source);case FfiCommand_SyncRun() when syncRun != null:
+return syncRun(_that.source);case FfiCommand_SyncCancel() when syncCancel != null:
+return syncCancel();case FfiCommand_PushTargets() when pushTargets != null:
+return pushTargets(_that.source);case FfiCommand_PushCreateTarget() when pushCreateTarget != null:
+return pushCreateTarget(_that.source,_that.name);case FfiCommand_PushPlan() when pushPlan != null:
+return pushPlan(_that.source,_that.localName,_that.localSongs,_that.isFavorites,_that.targetKind,_that.targetId,_that.targetName,_that.targetSongCount);case FfiCommand_PushRun() when pushRun != null:
+return pushRun(_that.source);case FfiCommand_PushCancel() when pushCancel != null:
+return pushCancel();case FfiCommand_PlaylistCategories() when playlistCategories != null:
+return playlistCategories(_that.source);case FfiCommand_PlaylistList() when playlistList != null:
+return playlistList(_that.source,_that.category,_that.page);case FfiCommand_PlaylistDetail() when playlistDetail != null:
+return playlistDetail(_that.source,_that.playlistId,_that.page);case FfiCommand_LeaderboardBoards() when leaderboardBoards != null:
+return leaderboardBoards(_that.source);case FfiCommand_LeaderboardSongs() when leaderboardSongs != null:
+return leaderboardSongs(_that.source,_that.boardId,_that.page);case FfiCommand_ArtistSongs() when artistSongs != null:
+return artistSongs(_that.artist,_that.page);case FfiCommand_ArtistAlbums() when artistAlbums != null:
+return artistAlbums(_that.artist,_that.page);case FfiCommand_AlbumSongs() when albumSongs != null:
+return albumSongs(_that.album,_that.page);case FfiCommand_PlaySongs() when playSongs != null:
+return playSongs(_that.songs,_that.index);case _:
   return null;
 
 }
@@ -545,6 +677,72 @@ class _$FfiCommand_SeekMsCopyWithImpl<$Res>
   return _then(FfiCommand_SeekMs(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
 as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_SetVolume extends FfiCommand {
+  const FfiCommand_SetVolume({required this.volume}): super._();
+  
+
+ final  int volume;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_SetVolumeCopyWith<FfiCommand_SetVolume> get copyWith => _$FfiCommand_SetVolumeCopyWithImpl<FfiCommand_SetVolume>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,volume);
+
+@override
+String toString() {
+  return 'FfiCommand.setVolume(volume: $volume)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_SetVolumeCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_SetVolumeCopyWith(FfiCommand_SetVolume value, $Res Function(FfiCommand_SetVolume) _then) = _$FfiCommand_SetVolumeCopyWithImpl;
+@useResult
+$Res call({
+ int volume
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_SetVolumeCopyWithImpl<$Res>
+    implements $FfiCommand_SetVolumeCopyWith<$Res> {
+  _$FfiCommand_SetVolumeCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_SetVolume _self;
+  final $Res Function(FfiCommand_SetVolume) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? volume = null,}) {
+  return _then(FfiCommand_SetVolume(
+volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -851,10 +1049,12 @@ String toString() {
 
 
 class FfiCommand_Search extends FfiCommand {
-  const FfiCommand_Search({required this.keyword}): super._();
+  const FfiCommand_Search({required this.keyword, this.source}): super._();
   
 
  final  String keyword;
+/// 可选音源过滤；None 为聚合搜索。不合法的 id 报错。
+ final  String? source;
 
 /// Create a copy of FfiCommand
 /// with the given fields replaced by the non-null parameter values.
@@ -866,16 +1066,16 @@ $FfiCommand_SearchCopyWith<FfiCommand_Search> get copyWith => _$FfiCommand_Searc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Search&&(identical(other.keyword, keyword) || other.keyword == keyword));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Search&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,keyword);
+int get hashCode => Object.hash(runtimeType,keyword,source);
 
 @override
 String toString() {
-  return 'FfiCommand.search(keyword: $keyword)';
+  return 'FfiCommand.search(keyword: $keyword, source: $source)';
 }
 
 
@@ -886,7 +1086,7 @@ abstract mixin class $FfiCommand_SearchCopyWith<$Res> implements $FfiCommandCopy
   factory $FfiCommand_SearchCopyWith(FfiCommand_Search value, $Res Function(FfiCommand_Search) _then) = _$FfiCommand_SearchCopyWithImpl;
 @useResult
 $Res call({
- String keyword
+ String keyword, String? source
 });
 
 
@@ -903,10 +1103,11 @@ class _$FfiCommand_SearchCopyWithImpl<$Res>
 
 /// Create a copy of FfiCommand
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? keyword = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? keyword = null,Object? source = freezed,}) {
   return _then(FfiCommand_Search(
 keyword: null == keyword ? _self.keyword : keyword // ignore: cast_nullable_to_non_nullable
-as String,
+as String,source: freezed == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -1720,6 +1921,72 @@ as SongDto,
 /// @nodoc
 
 
+class FfiCommand_CustomPlaylistDetail extends FfiCommand {
+  const FfiCommand_CustomPlaylistDetail({required this.id}): super._();
+  
+
+ final  String id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_CustomPlaylistDetailCopyWith<FfiCommand_CustomPlaylistDetail> get copyWith => _$FfiCommand_CustomPlaylistDetailCopyWithImpl<FfiCommand_CustomPlaylistDetail>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistDetail&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'FfiCommand.customPlaylistDetail(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_CustomPlaylistDetailCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_CustomPlaylistDetailCopyWith(FfiCommand_CustomPlaylistDetail value, $Res Function(FfiCommand_CustomPlaylistDetail) _then) = _$FfiCommand_CustomPlaylistDetailCopyWithImpl;
+@useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_CustomPlaylistDetailCopyWithImpl<$Res>
+    implements $FfiCommand_CustomPlaylistDetailCopyWith<$Res> {
+  _$FfiCommand_CustomPlaylistDetailCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_CustomPlaylistDetail _self;
+  final $Res Function(FfiCommand_CustomPlaylistDetail) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_CustomPlaylistDetail(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class FfiCommand_ConfigGet extends FfiCommand {
   const FfiCommand_ConfigGet(): super._();
   
@@ -2146,6 +2413,1308 @@ class _$FfiCommand_LocalScanCopyWithImpl<$Res>
   return _then(FfiCommand_LocalScan(
 paths: null == paths ? _self._paths : paths // ignore: cast_nullable_to_non_nullable
 as List<String>,maxDepth: null == maxDepth ? _self.maxDepth : maxDepth // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_AccountPlaylists extends FfiCommand {
+  const FfiCommand_AccountPlaylists({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_AccountPlaylistsCopyWith<FfiCommand_AccountPlaylists> get copyWith => _$FfiCommand_AccountPlaylistsCopyWithImpl<FfiCommand_AccountPlaylists>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountPlaylists&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.accountPlaylists(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_AccountPlaylistsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_AccountPlaylistsCopyWith(FfiCommand_AccountPlaylists value, $Res Function(FfiCommand_AccountPlaylists) _then) = _$FfiCommand_AccountPlaylistsCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_AccountPlaylistsCopyWithImpl<$Res>
+    implements $FfiCommand_AccountPlaylistsCopyWith<$Res> {
+  _$FfiCommand_AccountPlaylistsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_AccountPlaylists _self;
+  final $Res Function(FfiCommand_AccountPlaylists) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_AccountPlaylists(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_AccountFavorites extends FfiCommand {
+  const FfiCommand_AccountFavorites({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_AccountFavoritesCopyWith<FfiCommand_AccountFavorites> get copyWith => _$FfiCommand_AccountFavoritesCopyWithImpl<FfiCommand_AccountFavorites>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountFavorites&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.accountFavorites(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_AccountFavoritesCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_AccountFavoritesCopyWith(FfiCommand_AccountFavorites value, $Res Function(FfiCommand_AccountFavorites) _then) = _$FfiCommand_AccountFavoritesCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_AccountFavoritesCopyWithImpl<$Res>
+    implements $FfiCommand_AccountFavoritesCopyWith<$Res> {
+  _$FfiCommand_AccountFavoritesCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_AccountFavorites _self;
+  final $Res Function(FfiCommand_AccountFavorites) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_AccountFavorites(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_AccountPlaylistDetail extends FfiCommand {
+  const FfiCommand_AccountPlaylistDetail({required this.source, required this.playlistId}): super._();
+  
+
+ final  String source;
+ final  String playlistId;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_AccountPlaylistDetailCopyWith<FfiCommand_AccountPlaylistDetail> get copyWith => _$FfiCommand_AccountPlaylistDetailCopyWithImpl<FfiCommand_AccountPlaylistDetail>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountPlaylistDetail&&(identical(other.source, source) || other.source == source)&&(identical(other.playlistId, playlistId) || other.playlistId == playlistId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source,playlistId);
+
+@override
+String toString() {
+  return 'FfiCommand.accountPlaylistDetail(source: $source, playlistId: $playlistId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_AccountPlaylistDetailCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_AccountPlaylistDetailCopyWith(FfiCommand_AccountPlaylistDetail value, $Res Function(FfiCommand_AccountPlaylistDetail) _then) = _$FfiCommand_AccountPlaylistDetailCopyWithImpl;
+@useResult
+$Res call({
+ String source, String playlistId
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_AccountPlaylistDetailCopyWithImpl<$Res>
+    implements $FfiCommand_AccountPlaylistDetailCopyWith<$Res> {
+  _$FfiCommand_AccountPlaylistDetailCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_AccountPlaylistDetail _self;
+  final $Res Function(FfiCommand_AccountPlaylistDetail) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,Object? playlistId = null,}) {
+  return _then(FfiCommand_AccountPlaylistDetail(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,playlistId: null == playlistId ? _self.playlistId : playlistId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_SyncPreview extends FfiCommand {
+  const FfiCommand_SyncPreview({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_SyncPreviewCopyWith<FfiCommand_SyncPreview> get copyWith => _$FfiCommand_SyncPreviewCopyWithImpl<FfiCommand_SyncPreview>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncPreview&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.syncPreview(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_SyncPreviewCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_SyncPreviewCopyWith(FfiCommand_SyncPreview value, $Res Function(FfiCommand_SyncPreview) _then) = _$FfiCommand_SyncPreviewCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_SyncPreviewCopyWithImpl<$Res>
+    implements $FfiCommand_SyncPreviewCopyWith<$Res> {
+  _$FfiCommand_SyncPreviewCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_SyncPreview _self;
+  final $Res Function(FfiCommand_SyncPreview) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_SyncPreview(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_SyncRun extends FfiCommand {
+  const FfiCommand_SyncRun({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_SyncRunCopyWith<FfiCommand_SyncRun> get copyWith => _$FfiCommand_SyncRunCopyWithImpl<FfiCommand_SyncRun>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncRun&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.syncRun(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_SyncRunCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_SyncRunCopyWith(FfiCommand_SyncRun value, $Res Function(FfiCommand_SyncRun) _then) = _$FfiCommand_SyncRunCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_SyncRunCopyWithImpl<$Res>
+    implements $FfiCommand_SyncRunCopyWith<$Res> {
+  _$FfiCommand_SyncRunCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_SyncRun _self;
+  final $Res Function(FfiCommand_SyncRun) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_SyncRun(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_SyncCancel extends FfiCommand {
+  const FfiCommand_SyncCancel(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncCancel);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'FfiCommand.syncCancel()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class FfiCommand_PushTargets extends FfiCommand {
+  const FfiCommand_PushTargets({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PushTargetsCopyWith<FfiCommand_PushTargets> get copyWith => _$FfiCommand_PushTargetsCopyWithImpl<FfiCommand_PushTargets>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushTargets&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.pushTargets(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PushTargetsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PushTargetsCopyWith(FfiCommand_PushTargets value, $Res Function(FfiCommand_PushTargets) _then) = _$FfiCommand_PushTargetsCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PushTargetsCopyWithImpl<$Res>
+    implements $FfiCommand_PushTargetsCopyWith<$Res> {
+  _$FfiCommand_PushTargetsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PushTargets _self;
+  final $Res Function(FfiCommand_PushTargets) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_PushTargets(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PushCreateTarget extends FfiCommand {
+  const FfiCommand_PushCreateTarget({required this.source, required this.name}): super._();
+  
+
+ final  String source;
+ final  String name;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PushCreateTargetCopyWith<FfiCommand_PushCreateTarget> get copyWith => _$FfiCommand_PushCreateTargetCopyWithImpl<FfiCommand_PushCreateTarget>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushCreateTarget&&(identical(other.source, source) || other.source == source)&&(identical(other.name, name) || other.name == name));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source,name);
+
+@override
+String toString() {
+  return 'FfiCommand.pushCreateTarget(source: $source, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PushCreateTargetCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PushCreateTargetCopyWith(FfiCommand_PushCreateTarget value, $Res Function(FfiCommand_PushCreateTarget) _then) = _$FfiCommand_PushCreateTargetCopyWithImpl;
+@useResult
+$Res call({
+ String source, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PushCreateTargetCopyWithImpl<$Res>
+    implements $FfiCommand_PushCreateTargetCopyWith<$Res> {
+  _$FfiCommand_PushCreateTargetCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PushCreateTarget _self;
+  final $Res Function(FfiCommand_PushCreateTarget) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,Object? name = null,}) {
+  return _then(FfiCommand_PushCreateTarget(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PushPlan extends FfiCommand {
+  const FfiCommand_PushPlan({required this.source, required this.localName, required final  List<SongDto> localSongs, required this.isFavorites, required this.targetKind, required this.targetId, required this.targetName, required this.targetSongCount}): _localSongs = localSongs,super._();
+  
+
+ final  String source;
+ final  String localName;
+ final  List<SongDto> _localSongs;
+ List<SongDto> get localSongs {
+  if (_localSongs is EqualUnmodifiableListView) return _localSongs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_localSongs);
+}
+
+ final  bool isFavorites;
+ final  String targetKind;
+ final  String targetId;
+ final  String targetName;
+ final  int targetSongCount;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PushPlanCopyWith<FfiCommand_PushPlan> get copyWith => _$FfiCommand_PushPlanCopyWithImpl<FfiCommand_PushPlan>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushPlan&&(identical(other.source, source) || other.source == source)&&(identical(other.localName, localName) || other.localName == localName)&&const DeepCollectionEquality().equals(other._localSongs, _localSongs)&&(identical(other.isFavorites, isFavorites) || other.isFavorites == isFavorites)&&(identical(other.targetKind, targetKind) || other.targetKind == targetKind)&&(identical(other.targetId, targetId) || other.targetId == targetId)&&(identical(other.targetName, targetName) || other.targetName == targetName)&&(identical(other.targetSongCount, targetSongCount) || other.targetSongCount == targetSongCount));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source,localName,const DeepCollectionEquality().hash(_localSongs),isFavorites,targetKind,targetId,targetName,targetSongCount);
+
+@override
+String toString() {
+  return 'FfiCommand.pushPlan(source: $source, localName: $localName, localSongs: $localSongs, isFavorites: $isFavorites, targetKind: $targetKind, targetId: $targetId, targetName: $targetName, targetSongCount: $targetSongCount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PushPlanCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PushPlanCopyWith(FfiCommand_PushPlan value, $Res Function(FfiCommand_PushPlan) _then) = _$FfiCommand_PushPlanCopyWithImpl;
+@useResult
+$Res call({
+ String source, String localName, List<SongDto> localSongs, bool isFavorites, String targetKind, String targetId, String targetName, int targetSongCount
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PushPlanCopyWithImpl<$Res>
+    implements $FfiCommand_PushPlanCopyWith<$Res> {
+  _$FfiCommand_PushPlanCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PushPlan _self;
+  final $Res Function(FfiCommand_PushPlan) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,Object? localName = null,Object? localSongs = null,Object? isFavorites = null,Object? targetKind = null,Object? targetId = null,Object? targetName = null,Object? targetSongCount = null,}) {
+  return _then(FfiCommand_PushPlan(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,localName: null == localName ? _self.localName : localName // ignore: cast_nullable_to_non_nullable
+as String,localSongs: null == localSongs ? _self._localSongs : localSongs // ignore: cast_nullable_to_non_nullable
+as List<SongDto>,isFavorites: null == isFavorites ? _self.isFavorites : isFavorites // ignore: cast_nullable_to_non_nullable
+as bool,targetKind: null == targetKind ? _self.targetKind : targetKind // ignore: cast_nullable_to_non_nullable
+as String,targetId: null == targetId ? _self.targetId : targetId // ignore: cast_nullable_to_non_nullable
+as String,targetName: null == targetName ? _self.targetName : targetName // ignore: cast_nullable_to_non_nullable
+as String,targetSongCount: null == targetSongCount ? _self.targetSongCount : targetSongCount // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PushRun extends FfiCommand {
+  const FfiCommand_PushRun({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PushRunCopyWith<FfiCommand_PushRun> get copyWith => _$FfiCommand_PushRunCopyWithImpl<FfiCommand_PushRun>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushRun&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.pushRun(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PushRunCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PushRunCopyWith(FfiCommand_PushRun value, $Res Function(FfiCommand_PushRun) _then) = _$FfiCommand_PushRunCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PushRunCopyWithImpl<$Res>
+    implements $FfiCommand_PushRunCopyWith<$Res> {
+  _$FfiCommand_PushRunCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PushRun _self;
+  final $Res Function(FfiCommand_PushRun) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_PushRun(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PushCancel extends FfiCommand {
+  const FfiCommand_PushCancel(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushCancel);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'FfiCommand.pushCancel()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class FfiCommand_PlaylistCategories extends FfiCommand {
+  const FfiCommand_PlaylistCategories({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PlaylistCategoriesCopyWith<FfiCommand_PlaylistCategories> get copyWith => _$FfiCommand_PlaylistCategoriesCopyWithImpl<FfiCommand_PlaylistCategories>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistCategories&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.playlistCategories(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PlaylistCategoriesCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PlaylistCategoriesCopyWith(FfiCommand_PlaylistCategories value, $Res Function(FfiCommand_PlaylistCategories) _then) = _$FfiCommand_PlaylistCategoriesCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PlaylistCategoriesCopyWithImpl<$Res>
+    implements $FfiCommand_PlaylistCategoriesCopyWith<$Res> {
+  _$FfiCommand_PlaylistCategoriesCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PlaylistCategories _self;
+  final $Res Function(FfiCommand_PlaylistCategories) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_PlaylistCategories(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PlaylistList extends FfiCommand {
+  const FfiCommand_PlaylistList({required this.source, required this.category, required this.page}): super._();
+  
+
+ final  String source;
+ final  String category;
+ final  int page;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PlaylistListCopyWith<FfiCommand_PlaylistList> get copyWith => _$FfiCommand_PlaylistListCopyWithImpl<FfiCommand_PlaylistList>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistList&&(identical(other.source, source) || other.source == source)&&(identical(other.category, category) || other.category == category)&&(identical(other.page, page) || other.page == page));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source,category,page);
+
+@override
+String toString() {
+  return 'FfiCommand.playlistList(source: $source, category: $category, page: $page)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PlaylistListCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PlaylistListCopyWith(FfiCommand_PlaylistList value, $Res Function(FfiCommand_PlaylistList) _then) = _$FfiCommand_PlaylistListCopyWithImpl;
+@useResult
+$Res call({
+ String source, String category, int page
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PlaylistListCopyWithImpl<$Res>
+    implements $FfiCommand_PlaylistListCopyWith<$Res> {
+  _$FfiCommand_PlaylistListCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PlaylistList _self;
+  final $Res Function(FfiCommand_PlaylistList) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,Object? category = null,Object? page = null,}) {
+  return _then(FfiCommand_PlaylistList(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as String,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PlaylistDetail extends FfiCommand {
+  const FfiCommand_PlaylistDetail({required this.source, required this.playlistId, required this.page}): super._();
+  
+
+ final  String source;
+ final  String playlistId;
+ final  int page;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PlaylistDetailCopyWith<FfiCommand_PlaylistDetail> get copyWith => _$FfiCommand_PlaylistDetailCopyWithImpl<FfiCommand_PlaylistDetail>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistDetail&&(identical(other.source, source) || other.source == source)&&(identical(other.playlistId, playlistId) || other.playlistId == playlistId)&&(identical(other.page, page) || other.page == page));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source,playlistId,page);
+
+@override
+String toString() {
+  return 'FfiCommand.playlistDetail(source: $source, playlistId: $playlistId, page: $page)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PlaylistDetailCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PlaylistDetailCopyWith(FfiCommand_PlaylistDetail value, $Res Function(FfiCommand_PlaylistDetail) _then) = _$FfiCommand_PlaylistDetailCopyWithImpl;
+@useResult
+$Res call({
+ String source, String playlistId, int page
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PlaylistDetailCopyWithImpl<$Res>
+    implements $FfiCommand_PlaylistDetailCopyWith<$Res> {
+  _$FfiCommand_PlaylistDetailCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PlaylistDetail _self;
+  final $Res Function(FfiCommand_PlaylistDetail) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,Object? playlistId = null,Object? page = null,}) {
+  return _then(FfiCommand_PlaylistDetail(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,playlistId: null == playlistId ? _self.playlistId : playlistId // ignore: cast_nullable_to_non_nullable
+as String,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_LeaderboardBoards extends FfiCommand {
+  const FfiCommand_LeaderboardBoards({required this.source}): super._();
+  
+
+ final  String source;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_LeaderboardBoardsCopyWith<FfiCommand_LeaderboardBoards> get copyWith => _$FfiCommand_LeaderboardBoardsCopyWithImpl<FfiCommand_LeaderboardBoards>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LeaderboardBoards&&(identical(other.source, source) || other.source == source));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source);
+
+@override
+String toString() {
+  return 'FfiCommand.leaderboardBoards(source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_LeaderboardBoardsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_LeaderboardBoardsCopyWith(FfiCommand_LeaderboardBoards value, $Res Function(FfiCommand_LeaderboardBoards) _then) = _$FfiCommand_LeaderboardBoardsCopyWithImpl;
+@useResult
+$Res call({
+ String source
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_LeaderboardBoardsCopyWithImpl<$Res>
+    implements $FfiCommand_LeaderboardBoardsCopyWith<$Res> {
+  _$FfiCommand_LeaderboardBoardsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_LeaderboardBoards _self;
+  final $Res Function(FfiCommand_LeaderboardBoards) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,}) {
+  return _then(FfiCommand_LeaderboardBoards(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_LeaderboardSongs extends FfiCommand {
+  const FfiCommand_LeaderboardSongs({required this.source, required this.boardId, required this.page}): super._();
+  
+
+ final  String source;
+ final  String boardId;
+ final  int page;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_LeaderboardSongsCopyWith<FfiCommand_LeaderboardSongs> get copyWith => _$FfiCommand_LeaderboardSongsCopyWithImpl<FfiCommand_LeaderboardSongs>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LeaderboardSongs&&(identical(other.source, source) || other.source == source)&&(identical(other.boardId, boardId) || other.boardId == boardId)&&(identical(other.page, page) || other.page == page));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,source,boardId,page);
+
+@override
+String toString() {
+  return 'FfiCommand.leaderboardSongs(source: $source, boardId: $boardId, page: $page)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_LeaderboardSongsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_LeaderboardSongsCopyWith(FfiCommand_LeaderboardSongs value, $Res Function(FfiCommand_LeaderboardSongs) _then) = _$FfiCommand_LeaderboardSongsCopyWithImpl;
+@useResult
+$Res call({
+ String source, String boardId, int page
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_LeaderboardSongsCopyWithImpl<$Res>
+    implements $FfiCommand_LeaderboardSongsCopyWith<$Res> {
+  _$FfiCommand_LeaderboardSongsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_LeaderboardSongs _self;
+  final $Res Function(FfiCommand_LeaderboardSongs) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? source = null,Object? boardId = null,Object? page = null,}) {
+  return _then(FfiCommand_LeaderboardSongs(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,boardId: null == boardId ? _self.boardId : boardId // ignore: cast_nullable_to_non_nullable
+as String,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_ArtistSongs extends FfiCommand {
+  const FfiCommand_ArtistSongs({required this.artist, required this.page}): super._();
+  
+
+ final  ArtistDto artist;
+ final  int page;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_ArtistSongsCopyWith<FfiCommand_ArtistSongs> get copyWith => _$FfiCommand_ArtistSongsCopyWithImpl<FfiCommand_ArtistSongs>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ArtistSongs&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.page, page) || other.page == page));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,artist,page);
+
+@override
+String toString() {
+  return 'FfiCommand.artistSongs(artist: $artist, page: $page)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_ArtistSongsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_ArtistSongsCopyWith(FfiCommand_ArtistSongs value, $Res Function(FfiCommand_ArtistSongs) _then) = _$FfiCommand_ArtistSongsCopyWithImpl;
+@useResult
+$Res call({
+ ArtistDto artist, int page
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_ArtistSongsCopyWithImpl<$Res>
+    implements $FfiCommand_ArtistSongsCopyWith<$Res> {
+  _$FfiCommand_ArtistSongsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_ArtistSongs _self;
+  final $Res Function(FfiCommand_ArtistSongs) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? artist = null,Object? page = null,}) {
+  return _then(FfiCommand_ArtistSongs(
+artist: null == artist ? _self.artist : artist // ignore: cast_nullable_to_non_nullable
+as ArtistDto,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_ArtistAlbums extends FfiCommand {
+  const FfiCommand_ArtistAlbums({required this.artist, required this.page}): super._();
+  
+
+ final  ArtistDto artist;
+ final  int page;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_ArtistAlbumsCopyWith<FfiCommand_ArtistAlbums> get copyWith => _$FfiCommand_ArtistAlbumsCopyWithImpl<FfiCommand_ArtistAlbums>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ArtistAlbums&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.page, page) || other.page == page));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,artist,page);
+
+@override
+String toString() {
+  return 'FfiCommand.artistAlbums(artist: $artist, page: $page)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_ArtistAlbumsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_ArtistAlbumsCopyWith(FfiCommand_ArtistAlbums value, $Res Function(FfiCommand_ArtistAlbums) _then) = _$FfiCommand_ArtistAlbumsCopyWithImpl;
+@useResult
+$Res call({
+ ArtistDto artist, int page
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_ArtistAlbumsCopyWithImpl<$Res>
+    implements $FfiCommand_ArtistAlbumsCopyWith<$Res> {
+  _$FfiCommand_ArtistAlbumsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_ArtistAlbums _self;
+  final $Res Function(FfiCommand_ArtistAlbums) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? artist = null,Object? page = null,}) {
+  return _then(FfiCommand_ArtistAlbums(
+artist: null == artist ? _self.artist : artist // ignore: cast_nullable_to_non_nullable
+as ArtistDto,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_AlbumSongs extends FfiCommand {
+  const FfiCommand_AlbumSongs({required this.album, required this.page}): super._();
+  
+
+ final  AlbumDto album;
+ final  int page;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_AlbumSongsCopyWith<FfiCommand_AlbumSongs> get copyWith => _$FfiCommand_AlbumSongsCopyWithImpl<FfiCommand_AlbumSongs>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AlbumSongs&&(identical(other.album, album) || other.album == album)&&(identical(other.page, page) || other.page == page));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,album,page);
+
+@override
+String toString() {
+  return 'FfiCommand.albumSongs(album: $album, page: $page)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_AlbumSongsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_AlbumSongsCopyWith(FfiCommand_AlbumSongs value, $Res Function(FfiCommand_AlbumSongs) _then) = _$FfiCommand_AlbumSongsCopyWithImpl;
+@useResult
+$Res call({
+ AlbumDto album, int page
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_AlbumSongsCopyWithImpl<$Res>
+    implements $FfiCommand_AlbumSongsCopyWith<$Res> {
+  _$FfiCommand_AlbumSongsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_AlbumSongs _self;
+  final $Res Function(FfiCommand_AlbumSongs) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? album = null,Object? page = null,}) {
+  return _then(FfiCommand_AlbumSongs(
+album: null == album ? _self.album : album // ignore: cast_nullable_to_non_nullable
+as AlbumDto,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_PlaySongs extends FfiCommand {
+  const FfiCommand_PlaySongs({required final  List<SongDto> songs, required this.index}): _songs = songs,super._();
+  
+
+ final  List<SongDto> _songs;
+ List<SongDto> get songs {
+  if (_songs is EqualUnmodifiableListView) return _songs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_songs);
+}
+
+ final  int index;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_PlaySongsCopyWith<FfiCommand_PlaySongs> get copyWith => _$FfiCommand_PlaySongsCopyWithImpl<FfiCommand_PlaySongs>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaySongs&&const DeepCollectionEquality().equals(other._songs, _songs)&&(identical(other.index, index) || other.index == index));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_songs),index);
+
+@override
+String toString() {
+  return 'FfiCommand.playSongs(songs: $songs, index: $index)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_PlaySongsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_PlaySongsCopyWith(FfiCommand_PlaySongs value, $Res Function(FfiCommand_PlaySongs) _then) = _$FfiCommand_PlaySongsCopyWithImpl;
+@useResult
+$Res call({
+ List<SongDto> songs, int index
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_PlaySongsCopyWithImpl<$Res>
+    implements $FfiCommand_PlaySongsCopyWith<$Res> {
+  _$FfiCommand_PlaySongsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_PlaySongs _self;
+  final $Res Function(FfiCommand_PlaySongs) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? songs = null,Object? index = null,}) {
+  return _then(FfiCommand_PlaySongs(
+songs: null == songs ? _self._songs : songs // ignore: cast_nullable_to_non_nullable
+as List<SongDto>,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

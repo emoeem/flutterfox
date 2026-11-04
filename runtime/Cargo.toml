@@ -7,7 +7,7 @@ repository.workspace = true
 
 [dependencies]
 lx-core = { path = "../core" }
-lx-source = { path = "../source" }
+lx-source = { path = "../source", default-features = false }
 lx-player = { path = "../player", default-features = false }
 lx-lyric = { path = "../lyric" }
 voicefox-application = { path = "../application" }
@@ -34,4 +34,5 @@ walkdir.workspace = true
 [features]
 default = ["desktop-mpv"]
 desktop-mpv = ["lx-player/desktop-mpv"]
+js-sources = ["lx-source/js-sources"]
 build-libmpv = ["desktop-mpv", "lx-player/build_libmpv"]

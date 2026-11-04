@@ -26,8 +26,8 @@ pub fn command_next() -> FfiCommand {
 pub fn command_previous() -> FfiCommand {
     FfiCommand::Previous
 }
-pub fn command_search(keyword: String) -> FfiCommand {
-    FfiCommand::Search { keyword }
+pub fn command_search(keyword: String, source: Option<String>) -> FfiCommand {
+    FfiCommand::Search { keyword, source }
 }
 pub fn command_search_more(keyword: String, page: u32) -> FfiCommand {
     FfiCommand::SearchMore { keyword, page }
@@ -50,12 +50,25 @@ pub fn command_queue_clear() -> FfiCommand {
 pub fn new_desktop() -> Result<VoicefoxController, String> {
     #[cfg(feature = "desktop-mpv")]
     {
+        // libmpv 初始化要求 LC_NUMERIC 为 "C"：GTK 宿主会把它设成用户区域
+        // （如 zh_CN），导致 mpv 初始化直接失败。只影响本进程，无需还原。
+        unsafe { libc::setlocale(libc::LC_NUMERIC, c"C".as_ptr()) };
         VoicefoxController::new_desktop()
     }
     #[cfg(not(feature = "desktop-mpv"))]
     {
         Err("desktop-mpv backend is not compiled into this build; bootstrap via from_application instead".to_string())
     }
+}
+
+/// 宿主引导：注入进程级数据目录覆盖（App 私有目录）。
+///
+/// Android 上 `dirs::data_dir()` 为 `None`，`default_data_dir` 会回退到
+/// `"."`（进程工作目录）。宿主应在构造 ApplicationService 之前调用本
+/// 函数，把 PathProvider 拿到的 App 私有目录传进来；有覆盖时跳过旧目录
+/// 迁移。桌面端无需调用（`None` 即回到平台默认路径）。
+pub fn set_data_dir(path: Option<String>) {
+    lx_core::fsutil::set_data_dir_override(path.map(std::path::PathBuf::from));
 }
 
 pub fn state(controller: &VoicefoxController) -> VoicefoxState {

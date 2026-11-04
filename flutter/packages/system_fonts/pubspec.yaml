@@ -1,0 +1,9 @@
+name: system_fonts
+description: "Voicefox local stub: system font enumeration is a no-op."
+version: 1.0.1
+publish_to: none
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter

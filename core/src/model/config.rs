@@ -82,6 +82,11 @@ pub fn default_theme_name() -> String {
     "voicefox".to_string()
 }
 
+/// GUI 明暗三态默认跟随系统。
+pub fn default_theme_mode() -> String {
+    "system".to_string()
+}
+
 fn default_status_bar_height() -> u8 {
     1
 }
@@ -375,6 +380,13 @@ pub struct ThemeConfig {
     /// 名字不合法时回退到 `voicefox`，不会让界面变成读不清的颜色。
     #[serde(default = "default_theme_name")]
     pub name: String,
+    /// 是否跟随系统动态取色（Material You）。仅 Flutter GUI 消费；
+    /// TUI 忽略此字段。默认关闭，保证具名主题按色板原样呈现。
+    pub dynamic_color: bool,
+    /// GUI 明暗三态：`system` / `light` / `dark`。仅 Flutter GUI 消费；
+    /// TUI 忽略此字段。未知值由消费端回退到 `system`。
+    #[serde(default = "default_theme_mode")]
+    pub mode: String,
     /// 兼容旧配置的主强调色。
     pub accent: String,
     pub text: String,
@@ -413,6 +425,8 @@ impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
             name: default_theme_name(),
+            dynamic_color: false,
+            mode: default_theme_mode(),
             accent: "#cba6f7".to_string(),
             text: "#cdd6f4".to_string(),
             muted: "#a6adc8".to_string(),

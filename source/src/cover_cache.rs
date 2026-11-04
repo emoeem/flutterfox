@@ -342,8 +342,7 @@ mod tests {
             let path = dir.join(format!("{index}.jpg"));
             store_bytes(&path, &png_bytes(2, 2)).unwrap();
             // 用毫秒级递增偏移，避免同一秒内写入导致 mtime 顺序不确定
-            let old = now
-                - std::time::Duration::from_millis(600_000 - (index as u64) * 1_000);
+            let old = now - std::time::Duration::from_millis(600_000 - (index as u64) * 1_000);
             set_mtime(&path, old);
         }
 

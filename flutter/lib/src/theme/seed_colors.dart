@@ -34,5 +34,8 @@ const List<SeedTheme> kSeedThemes = [
   SeedTheme('midnight-commander', 'Midnight Commander', '#0000AA', '#00AAAA', true),
 ];
 
-/// "#RRGGBB" → int 颜色值。
-int hexOf(String value) => int.parse(value.substring(1), radix: 16);
+/// "#RRGGBB" → 不透明 ARGB。`Color(0x1E1E2E)` 的 alpha 是 0x00：
+/// 直接传 24 位值会让页面底色完全透明（窗口透出纯黑），
+/// 16 套 seed 主题与 FlClash 定制都受影响。
+int hexOf(String value) =>
+    0xFF000000 | int.parse(value.substring(1), radix: 16);

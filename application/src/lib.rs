@@ -11,13 +11,17 @@
 pub mod event;
 pub mod playlist;
 pub mod ports;
+pub mod remote_cache;
 pub mod service;
 pub mod state;
+pub mod sync;
 
-pub use event::{ApplicationCommand, ApplicationEvent, ApplicationEventKind};
-pub use ports::{ConfigStore, DownloadsEngine, DownloadTaskInfo, LibraryStore};
+pub use event::{ApplicationCommand, ApplicationEvent, ApplicationEventKind, BrowseKind};
+pub use ports::{ConfigStore, DownloadTaskInfo, DownloadsEngine, LibraryStore};
 pub use service::{ApplicationEventStream, ApplicationEventStreamError, ApplicationService};
-pub use state::{ApplicationState, PlaybackSnapshot, QueueState, SearchState};
+pub use state::{
+    ApplicationState, PlaybackSnapshot, QueueState, SearchState, SourceCapabilityInfo,
+};
 
 pub use services::{
     LyricsService, PlaybackEffects, PlaybackService, PlaylistService, QueueService, SearchService,

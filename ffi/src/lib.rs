@@ -22,19 +22,34 @@ pub struct SongDto {
     pub source: String,
     pub name: String,
     pub singer: String,
+    /// 稳定的歌手 ID；音源未提供时为空，UI 回退到展示名。
+    pub artist_id: Option<String>,
     pub album_name: String,
+    /// 稳定的专辑 ID；音源未提供时为空，UI 回退到展示名。
+    pub album_id: Option<String>,
     pub duration_ms: u64,
     pub cover_url: Option<String>,
 }
 
 impl From<SongInfo> for SongDto {
     fn from(song: SongInfo) -> Self {
+        let artist_id = song
+            .extra
+            .get("artist_id")
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        let album_id = {
+            let value = song.album_id.trim();
+            (!value.is_empty()).then(|| value.to_string())
+        };
         Self {
             id: song.id,
             source: song.source.as_str().to_string(),
             name: song.name,
             singer: song.singer,
+            artist_id,
             album_name: song.album_name,
+            album_id,
             duration_ms: song.duration.as_millis() as u64,
             cover_url: song.cover_url,
         }
@@ -67,6 +82,12 @@ impl SongDto {
         let source = parse_source(&self.source)?;
         let mut song = SongInfo::new(self.id, source, self.name, self.singer);
         song.album_name = self.album_name;
+        if let Some(album_id) = self.album_id.filter(|value| !value.trim().is_empty()) {
+            song.album_id = album_id;
+        }
+        if let Some(artist_id) = self.artist_id.filter(|value| !value.trim().is_empty()) {
+            song.extra.insert("artist_id".to_string(), artist_id);
+        }
         song.duration = Duration::from_millis(self.duration_ms);
         song.cover_url = self.cover_url;
         Ok(song)
@@ -85,6 +106,10 @@ pub struct VoicefoxState {
     pub history: Vec<SongDto>,
     pub custom_playlists: Vec<CustomPlaylistSummaryDto>,
     pub downloads: Vec<DownloadTaskDto>,
+    /// 已启用在线音源的能力声明（歌单/排行榜/歌手/专辑入口判定）。
+    pub sources: Vec<SourceCapabilitiesDto>,
+    /// 本地扫描结果（直接读 SourceManager 的本地曲库快照）。
+    pub local_songs: Vec<SongDto>,
 }
 
 #[derive(Debug, Clone)]
@@ -103,6 +128,8 @@ pub struct DownloadTaskDto {
     pub source: String,
     pub quality: String,
     pub dest: String,
+    /// 完整歌曲载荷：失败/取消任务的「重试」按钮用它重新入队。
+    pub song: SongDto,
     pub state: String,
     pub active: bool,
     pub downloaded: u64,
@@ -116,6 +143,9 @@ pub struct DownloadTaskDto {
 #[derive(Debug, Clone)]
 pub struct ConfigDto {
     pub theme: String,
+    pub dynamic_color: bool,
+    /// GUI 明暗三态（`system`/`light`/`dark`），镜像 `theme.mode`。
+    pub theme_mode: String,
     pub volume: u32,
     pub playback_speed: f64,
     pub play_mode: String,
@@ -131,15 +161,23 @@ pub struct ConfigDto {
     pub lyric_offset_ms: i32,
     pub proxy_url: String,
     pub network_timeout_secs: u64,
+    /// 本地音乐目录与扫描深度（只读镜像，供本地音乐页触发扫描）。
+    pub local_music_enabled: bool,
+    pub local_music_paths: Vec<String>,
+    pub local_music_max_depth: u32,
 }
 
 impl ConfigDto {
     fn from_config(config: &lx_core::model::config::Config) -> Self {
         Self {
             theme: config.theme.name.clone(),
+            dynamic_color: config.theme.dynamic_color,
+            theme_mode: config.theme.mode.clone(),
             volume: config.player.volume,
             playback_speed: config.player.playback_speed,
-            play_mode: format!("{:?}", config.player.play_mode).to_lowercase(),
+            // play_mode 在配置里本身就是字符串（"list-loop" 等）。此前用
+            // Debug 格式化会带出引号，回写时把引号写进配置，每保存一次再叠一层。
+            play_mode: config.player.play_mode.clone(),
             history_limit: config.player.history_limit as u32,
             default_source: config.source.default.as_str().to_string(),
             enabled_sources: config
@@ -153,13 +191,16 @@ impl ConfigDto {
             download_quality: config
                 .download
                 .quality
-                .map(|quality| format!("{:?}", quality)),
+                .map(|quality| quality_token(quality).to_string()),
             download_concurrency: config.download.concurrent_songs as u32,
             show_translation: config.lyric.show_translation,
             show_yrc: config.lyric.show_yrc,
             lyric_offset_ms: config.lyric.offset,
             proxy_url: config.network.proxy_url.clone(),
             network_timeout_secs: config.network.timeout,
+            local_music_enabled: config.local_music.enabled,
+            local_music_paths: config.local_music.paths.clone(),
+            local_music_max_depth: config.local_music.max_depth,
         }
     }
 
@@ -168,13 +209,22 @@ impl ConfigDto {
         use lx_core::model::source::SourceId;
         let mut config = base.clone();
         config.theme.name = self.theme;
+        config.theme.dynamic_color = self.dynamic_color;
+        // 明暗三态必须是合法 token；未知值保留原配置。
+        config.theme.mode = match self.theme_mode.as_str() {
+            "system" | "light" | "dark" => self.theme_mode.clone(),
+            _ => base.theme.mode.clone(),
+        };
         config.player.volume = self.volume;
         config.player.playback_speed = self.playback_speed;
-        // play_mode 在配置里就是字符串（"list-loop"/"single-loop"/"random"/"none"）
-        config.player.play_mode = self.play_mode;
+        // play_mode 必须是四个合法 token 之一；未知值保留原配置，避免把
+        // 历史脏数据（引号叠加）继续写回去。
+        config.player.play_mode = match self.play_mode.as_str() {
+            "none" | "list-loop" | "single-loop" | "random" => self.play_mode.clone(),
+            _ => base.player.play_mode.clone(),
+        };
         config.player.history_limit = self.history_limit as usize;
-        config.source.default = parse_source(&self.default_source)
-            .unwrap_or(base.source.default);
+        config.source.default = parse_source(&self.default_source).unwrap_or(base.source.default);
         config.source.enabled = self
             .enabled_sources
             .iter()
@@ -182,11 +232,18 @@ impl ConfigDto {
             .collect::<Vec<SourceId>>();
         config.source.js_first = self.js_sources_first;
         config.download.dir = self.download_dir;
-        config.download.quality = self.download_quality.and_then(|quality| match quality.as_str() {
-            "high320" | "320k" => Some(lx_core::model::source::Quality::High320),
-            "flac" => Some(lx_core::model::source::Quality::Flac),
-            "flac24bit" => Some(lx_core::model::source::Quality::Flac24),
-            _ => Some(lx_core::model::source::Quality::Low128),
+        config.download.quality = self.download_quality.as_deref().map(|quality| {
+            match quality {
+                "128k" | "low128" => lx_core::model::source::Quality::Low128,
+                "320k" | "high320" => lx_core::model::source::Quality::High320,
+                "flac" => lx_core::model::source::Quality::Flac,
+                "flac24bit" | "flac24" => lx_core::model::source::Quality::Flac24,
+                // 未知 token 保留原设置，不再静默降级到 128k。
+                _ => base
+                    .download
+                    .quality
+                    .unwrap_or(lx_core::model::source::Quality::High320),
+            }
         });
         config.download.concurrent_songs = self.download_concurrency as usize;
         config.lyric.show_translation = self.show_translation;
@@ -194,7 +251,21 @@ impl ConfigDto {
         config.lyric.offset = self.lyric_offset_ms;
         config.network.proxy_url = self.proxy_url;
         config.network.timeout = self.network_timeout_secs;
+        config.local_music.enabled = self.local_music_enabled;
+        config.local_music.paths = self.local_music_paths;
+        config.local_music.max_depth = self.local_music_max_depth;
         config
+    }
+}
+
+/// `Quality` → FFI/Dart 使用的稳定 token（与配置 serde 名一致）。
+fn quality_token(quality: lx_core::model::source::Quality) -> &'static str {
+    use lx_core::model::source::Quality;
+    match quality {
+        Quality::Low128 => "128k",
+        Quality::High320 => "320k",
+        Quality::Flac => "flac",
+        Quality::Flac24 => "flac24bit",
     }
 }
 
@@ -215,6 +286,10 @@ pub struct SearchDto {
     pub has_more: bool,
     pub items: Vec<SongDto>,
     pub request_id: u64,
+    /// 请求进行中（GUI 显示加载态，而不是空态）。
+    pub loading: bool,
+    /// 最近一次失败的可见原因；成功后为 None。
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -241,6 +316,134 @@ pub struct PlaylistDto {
     pub cover_url: Option<String>,
     pub song_count: u32,
     pub description: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PlaylistCategoryDto {
+    pub id: String,
+    pub name: String,
+    pub source: String,
+    pub group: Option<String>,
+    pub count: u32,
+    pub hot: bool,
+}
+
+impl From<lx_core::model::playlist::PlaylistCategory> for PlaylistCategoryDto {
+    fn from(value: lx_core::model::playlist::PlaylistCategory) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            source: value.source.as_str().to_string(),
+            group: value.group,
+            count: value.count,
+            hot: value.hot,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LeaderboardDto {
+    pub id: String,
+    pub name: String,
+    pub source: String,
+    pub update: Option<String>,
+}
+
+impl From<lx_core::model::leaderboard::LeaderboardInfo> for LeaderboardDto {
+    fn from(value: lx_core::model::leaderboard::LeaderboardInfo) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            source: value.source.as_str().to_string(),
+            update: value.update,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ArtistDto {
+    pub id: String,
+    pub name: String,
+    pub source: String,
+    pub cover_url: Option<String>,
+}
+
+impl ArtistDto {
+    pub fn into_artist(self) -> Result<lx_core::model::playlist::Artist, String> {
+        let source = parse_source(&self.source)?;
+        Ok(lx_core::model::playlist::Artist {
+            id: self.id,
+            name: self.name,
+            source,
+            cover_url: self.cover_url,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AlbumDto {
+    pub id: String,
+    pub name: String,
+    pub source: String,
+    pub cover_url: Option<String>,
+    pub artist: String,
+}
+
+impl From<lx_core::model::playlist::Album> for AlbumDto {
+    fn from(value: lx_core::model::playlist::Album) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            source: value.source.as_str().to_string(),
+            cover_url: value.cover_url,
+            artist: value.artist,
+        }
+    }
+}
+
+impl AlbumDto {
+    pub fn into_album(self) -> Result<lx_core::model::playlist::Album, String> {
+        let source = parse_source(&self.source)?;
+        Ok(lx_core::model::playlist::Album {
+            id: self.id,
+            name: self.name,
+            source,
+            cover_url: self.cover_url,
+            artist: self.artist,
+        })
+    }
+}
+
+/// 音源能力位：前端据此隐藏入口或展示「该音源不支持」空态。
+#[derive(Debug, Clone)]
+pub struct SourceCapabilitiesDto {
+    pub id: String,
+    pub name: String,
+    pub playlists: bool,
+    pub playlist_categories: bool,
+    pub playlist_search: bool,
+    pub album: bool,
+    pub artist: bool,
+    pub leaderboard: bool,
+    pub login: bool,
+    pub qr_login: bool,
+}
+
+impl From<voicefox_application::SourceCapabilityInfo> for SourceCapabilitiesDto {
+    fn from(value: voicefox_application::SourceCapabilityInfo) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            playlists: value.playlists,
+            playlist_categories: value.playlist_categories,
+            playlist_search: value.playlist_search,
+            album: value.album,
+            artist: value.artist,
+            leaderboard: value.leaderboard,
+            login: value.login,
+            qr_login: value.qr_login,
+        }
+    }
 }
 
 impl PlaylistDto {
@@ -309,6 +512,8 @@ impl From<voicefox_application::ApplicationState> for VoicefoxState {
                 has_more: value.search.has_more,
                 items: value.search.items.into_iter().map(Into::into).collect(),
                 request_id: value.search.request_id,
+                loading: value.search.loading,
+                error: value.search.error,
             },
             lyrics,
             playlists: value
@@ -357,6 +562,7 @@ impl From<voicefox_application::ApplicationState> for VoicefoxState {
                     source: task.source.as_str().to_string(),
                     quality: format!("{:?}", task.quality),
                     dest: task.dest,
+                    song: task.song.into(),
                     state: task.state,
                     active: task.active,
                     downloaded: task.downloaded,
@@ -365,8 +571,80 @@ impl From<voicefox_application::ApplicationState> for VoicefoxState {
                     trigger_auto_cache: task.trigger_auto_cache,
                 })
                 .collect(),
+            sources: vec![],
+            local_songs: vec![],
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct SyncRowDto {
+    pub name: String,
+    /// "歌单" / "红心"。
+    pub kind: String,
+    pub cached: u32,
+    pub remote: u32,
+    /// "新增" / "更新" / "相同"。
+    pub status: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SyncFailureDto {
+    pub name: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SyncPreviewDto {
+    pub playlists: u32,
+    pub favorites: u32,
+    pub songs: u32,
+    pub added: u32,
+    pub updated: u32,
+    pub removed: u32,
+    pub failures: Vec<SyncFailureDto>,
+    pub rows: Vec<SyncRowDto>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SyncReportDto {
+    pub playlists: u32,
+    pub favorites: u32,
+    pub songs: u32,
+    pub added: u32,
+    pub updated: u32,
+    pub removed: u32,
+    pub failures: Vec<SyncFailureDto>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PushTargetDto {
+    /// "playlist" / "favorites"，作为稳定的 wire 值。
+    pub kind: String,
+    pub id: String,
+    pub name: String,
+    pub song_count: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct PushPreviewDto {
+    pub target_name: String,
+    pub target_kind: String,
+    pub local_songs: u32,
+    pub remote_songs: u32,
+    pub additions: u32,
+    pub matched: u32,
+    pub unmatched: u32,
+    pub samples: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PushReportDto {
+    pub target_name: String,
+    pub added: u32,
+    pub already_present: u32,
+    pub unmatched: u32,
+    pub failed: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -382,17 +660,40 @@ pub struct VoicefoxEvent {
     pub items: Vec<SongDto>,
     pub queue: Vec<SongDto>,
     pub queue_index: u32,
+    // ── 播放进度（kind == "progress"，由播放器 watcher 泵低频广播）──
+    pub position_ms: u64,
+    pub duration_ms: u64,
+    pub playback_state: Option<String>,
     pub qr_session: Option<QrLoginSessionDto>,
     pub status: Option<String>,
     pub user_name: Option<String>,
     pub warnings: Vec<String>,
     pub config: Option<ConfigDto>,
+    // ── 浏览数据面（kind == "browse"）──
+    pub browse_kind: Option<String>,
+    pub source: Option<String>,
+    pub id: Option<String>,
+    pub playlists: Vec<PlaylistDto>,
+    pub categories: Vec<PlaylistCategoryDto>,
+    pub albums: Vec<AlbumDto>,
+    pub boards: Vec<LeaderboardDto>,
+    // ── 账号歌单同步（kind == "sync"）──
+    pub sync_preview: Option<SyncPreviewDto>,
+    pub sync_report: Option<SyncReportDto>,
+    pub progress_done: u32,
+    pub progress_total: u32,
+    // ── 本地 → 远端推送 ──
+    pub push_targets: Vec<PushTargetDto>,
+    pub push_target: Option<PushTargetDto>,
+    pub push_preview: Option<PushPreviewDto>,
+    pub push_report: Option<PushReportDto>,
 }
 
 impl From<ApplicationEvent> for VoicefoxEvent {
     fn from(value: ApplicationEvent) -> Self {
         let kind = match value.kind() {
             ApplicationEventKind::StateChanged => "state_changed",
+            ApplicationEventKind::Progress => "progress",
             ApplicationEventKind::Search => "search",
             ApplicationEventKind::Playback => "playback",
             ApplicationEventKind::Queue => "queue",
@@ -404,6 +705,8 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             ApplicationEventKind::Config => "config",
             ApplicationEventKind::QrLogin => "qr_login",
             ApplicationEventKind::LocalMusic => "local_music",
+            ApplicationEventKind::Browse => "browse",
+            ApplicationEventKind::Sync => "sync",
         }
         .to_string();
         let empty = || Self {
@@ -418,33 +721,40 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             items: vec![],
             queue: vec![],
             queue_index: 0,
+            position_ms: 0,
+            duration_ms: 0,
+            playback_state: None,
             qr_session: None,
             status: None,
             user_name: None,
             warnings: vec![],
             config: None,
+            browse_kind: None,
+            source: None,
+            id: None,
+            playlists: vec![],
+            categories: vec![],
+            albums: vec![],
+            boards: vec![],
+            sync_preview: None,
+            sync_report: None,
+            progress_done: 0,
+            progress_total: 0,
+            push_targets: vec![],
+            push_target: None,
+            push_preview: None,
+            push_report: None,
         };
         match value {
             ApplicationEvent::SearchStarted {
                 request_id,
                 keyword,
             } => Self {
-                kind,
+                kind: kind.clone(),
                 request_id,
                 keyword: Some(keyword),
                 page: 1,
-                append: false,
-                has_more: false,
-                message: None,
-                song: None,
-                items: vec![],
-                queue: vec![],
-                queue_index: 0,
-                qr_session: None,
-                status: None,
-                user_name: None,
-                warnings: vec![],
-                config: None,
+                ..empty()
             },
             ApplicationEvent::SearchCompleted {
                 request_id,
@@ -454,22 +764,14 @@ impl From<ApplicationEvent> for VoicefoxEvent {
                 items,
                 has_more,
             } => Self {
-                kind,
+                kind: kind.clone(),
                 request_id,
                 keyword: Some(keyword),
                 page,
                 append,
                 has_more,
-                message: None,
-                song: None,
                 items: items.into_iter().map(Into::into).collect(),
-                queue: vec![],
-                queue_index: 0,
-                qr_session: None,
-                status: None,
-                user_name: None,
-                warnings: vec![],
-                config: None,
+                ..empty()
             },
             ApplicationEvent::SearchFailed { request_id, error }
             | ApplicationEvent::PlaybackFailed { request_id, error } => {
@@ -482,40 +784,16 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             ApplicationEvent::PlaybackStarted {
                 request_id, song, ..
             } => Self {
-                kind,
+                kind: kind.clone(),
                 request_id,
-                keyword: None,
-                page: 0,
-                append: false,
-                has_more: false,
-                message: None,
                 song: Some(song.into()),
-                items: vec![],
-                queue: vec![],
-                queue_index: 0,
-                qr_session: None,
-                status: None,
-                user_name: None,
-                warnings: vec![],
-                config: None,
+                ..empty()
             },
             ApplicationEvent::QueueChanged { queue, index } => Self {
-                kind,
-                request_id: 0,
-                keyword: None,
-                page: 0,
-                append: false,
-                has_more: false,
-                message: None,
-                song: None,
-                items: vec![],
+                kind: kind.clone(),
                 queue: queue.into_iter().map(Into::into).collect(),
                 queue_index: index as u32,
-                qr_session: None,
-                status: None,
-                user_name: None,
-                warnings: vec![],
-                config: None,
+                ..empty()
             },
             ApplicationEvent::Notification { message } => {
                 let mut event = empty();
@@ -558,6 +836,208 @@ impl From<ApplicationEvent> for VoicefoxEvent {
                 event.config = Some(ConfigDto::from_config(&config));
                 event
             }
+            ApplicationEvent::BrowseLoaded {
+                request_id,
+                kind: browse_kind,
+                source,
+                id,
+                page,
+                items,
+                albums,
+                boards,
+                playlists,
+                categories,
+                has_more,
+                message,
+            } => Self {
+                kind: kind.clone(),
+                request_id,
+                page,
+                append: page > 1,
+                has_more,
+                message,
+                items: items.into_iter().map(Into::into).collect(),
+                browse_kind: Some(browse_kind.as_str().to_string()),
+                source: Some(source.as_str().to_string()),
+                id: Some(id),
+                playlists: playlists
+                    .into_iter()
+                    .map(|playlist| PlaylistDto {
+                        id: playlist.id,
+                        name: playlist.name,
+                        source: playlist.source.as_str().to_string(),
+                        cover_url: playlist.cover_url,
+                        song_count: playlist.song_count,
+                        description: playlist.description,
+                    })
+                    .collect(),
+                categories: categories.into_iter().map(Into::into).collect(),
+                albums: albums.into_iter().map(Into::into).collect(),
+                boards: boards.into_iter().map(Into::into).collect(),
+                ..empty()
+            },
+            ApplicationEvent::BrowseFailed {
+                request_id,
+                kind: browse_kind,
+                source,
+                id,
+                error,
+            } => {
+                let mut event = empty();
+                event.request_id = request_id;
+                event.message = Some(error);
+                event.browse_kind = Some(browse_kind.as_str().to_string());
+                event.source = Some(source.as_str().to_string());
+                event.id = Some(id);
+                event
+            }
+            ApplicationEvent::CustomPlaylistCreated { id, name } => {
+                let mut event = empty();
+                event.id = Some(id);
+                event.message = Some(name);
+                event
+            }
+            ApplicationEvent::SyncPreviewReady { source, preview } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("preview".into());
+                event.sync_preview = Some(SyncPreviewDto {
+                    playlists: preview.playlists as u32,
+                    favorites: preview.favorites as u32,
+                    songs: preview.songs as u32,
+                    added: preview.added as u32,
+                    updated: preview.updated as u32,
+                    removed: preview.removed as u32,
+                    failures: preview
+                        .failed
+                        .iter()
+                        .map(|(name, reason)| SyncFailureDto {
+                            name: name.clone(),
+                            reason: reason.clone(),
+                        })
+                        .collect(),
+                    rows: preview
+                        .rows
+                        .iter()
+                        .map(|row| SyncRowDto {
+                            name: row.name.clone(),
+                            kind: row.kind.clone(),
+                            cached: row.cached as u32,
+                            remote: row.remote as u32,
+                            status: row.status.clone(),
+                        })
+                        .collect(),
+                });
+                event
+            }
+            ApplicationEvent::SyncProgress {
+                source,
+                done,
+                total,
+            } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("progress".into());
+                event.progress_done = done as u32;
+                event.progress_total = total as u32;
+                event
+            }
+            ApplicationEvent::SyncCompleted { source, report } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("completed".into());
+                event.sync_report = Some(SyncReportDto {
+                    playlists: report.playlists as u32,
+                    favorites: report.favorites as u32,
+                    songs: report.songs as u32,
+                    added: report.added as u32,
+                    updated: report.updated as u32,
+                    removed: report.removed as u32,
+                    failures: report
+                        .failed
+                        .iter()
+                        .map(|(name, reason)| SyncFailureDto {
+                            name: name.clone(),
+                            reason: reason.clone(),
+                        })
+                        .collect(),
+                });
+                event
+            }
+            ApplicationEvent::SyncFailed { source, error } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("failed".into());
+                event.message = Some(error);
+                event
+            }
+            ApplicationEvent::PushTargetsReady { source, targets } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("push_targets".into());
+                event.push_targets = targets.into_iter().map(Into::into).collect();
+                event
+            }
+            ApplicationEvent::PushTargetCreated { source, target } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("push_target_created".into());
+                event.push_target = Some(target.into());
+                event
+            }
+            ApplicationEvent::PushPlanReady { source, preview } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("push_preview".into());
+                event.push_preview = Some((*preview).into());
+                event
+            }
+            ApplicationEvent::PushProgress {
+                source,
+                done,
+                total,
+            } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("push_progress".into());
+                event.progress_done = done as u32;
+                event.progress_total = total as u32;
+                event
+            }
+            ApplicationEvent::PushCompleted { source, report } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("push_completed".into());
+                event.push_report = Some((*report).into());
+                event
+            }
+            ApplicationEvent::PushFailed { source, error } => {
+                let mut event = empty();
+                event.source = Some(source.as_str().to_string());
+                event.status = Some("push_failed".into());
+                event.message = Some(error);
+                event
+            }
+            ApplicationEvent::PlaybackProgress {
+                state,
+                position,
+                duration,
+            } => {
+                let mut event = empty();
+                event.position_ms = position.as_millis() as u64;
+                event.duration_ms = duration.as_millis() as u64;
+                event.playback_state = Some(
+                    match state {
+                        lx_core::model::source::PlayerState::Idle => "idle",
+                        lx_core::model::source::PlayerState::Loading => "loading",
+                        lx_core::model::source::PlayerState::Playing => "playing",
+                        lx_core::model::source::PlayerState::Paused => "paused",
+                        lx_core::model::source::PlayerState::Stopped => "stopped",
+                    }
+                    .to_string(),
+                );
+                event
+            }
             ApplicationEvent::LibraryChanged
             | ApplicationEvent::DownloadsChanged
             | ApplicationEvent::StateChanged(_)
@@ -567,6 +1047,52 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             | ApplicationEvent::PlaybackEnded
             | ApplicationEvent::LyricsChanged { .. }
             | ApplicationEvent::PlaylistChanged { .. } => empty(),
+        }
+    }
+}
+
+impl From<voicefox_application::sync::PushTargetOption> for PushTargetDto {
+    fn from(target: voicefox_application::sync::PushTargetOption) -> Self {
+        Self {
+            kind: match target.kind {
+                lx_core::sync::SyncCollectionKind::Playlist => "playlist",
+                lx_core::sync::SyncCollectionKind::Favorites => "favorites",
+            }
+            .into(),
+            id: target.id,
+            name: target.name,
+            song_count: target.song_count as u32,
+        }
+    }
+}
+
+impl From<voicefox_application::sync::PushPlanPreview> for PushPreviewDto {
+    fn from(preview: voicefox_application::sync::PushPlanPreview) -> Self {
+        Self {
+            target_name: preview.target_name,
+            target_kind: preview.target_kind,
+            local_songs: preview.local_songs as u32,
+            remote_songs: preview.remote_songs as u32,
+            additions: preview.additions as u32,
+            matched: preview.matched as u32,
+            unmatched: preview.unmatched as u32,
+            samples: preview.samples,
+        }
+    }
+}
+
+impl From<voicefox_application::sync::PushReport> for PushReportDto {
+    fn from(report: voicefox_application::sync::PushReport) -> Self {
+        Self {
+            target_name: report.target_name,
+            added: report.added as u32,
+            already_present: report.already_present as u32,
+            unmatched: report.unmatched as u32,
+            failed: report
+                .failed
+                .into_iter()
+                .map(|(song, artist, reason)| format!("{song} - {artist}: {reason}"))
+                .collect(),
         }
     }
 }
@@ -609,7 +1135,20 @@ impl VoicefoxController {
     }
 
     pub fn state(&self) -> VoicefoxState {
-        self.application.state().into()
+        let mut state: VoicefoxState = self.application.state().into();
+        state.sources = self
+            .application
+            .source_capabilities()
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        state.local_songs = self
+            .application
+            .local_songs()
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        state
     }
 
     pub async fn dispatch(&self, command: FfiCommand) -> Result<(), String> {
@@ -658,39 +1197,173 @@ pub enum FfiCommand {
     Toggle,
     Stop,
     SeekMs(u64),
-    PlaySong { song: SongDto },
-    QueueAdd { song: SongDto, next: bool },
-    QueueRemove { index: u32 },
+    /// 立即设置播放器音量（0-100）；持久化由 ConfigUpdate 负责。
+    SetVolume {
+        volume: u32,
+    },
+    PlaySong {
+        song: SongDto,
+    },
+    QueueAdd {
+        song: SongDto,
+        next: bool,
+    },
+    QueueRemove {
+        index: u32,
+    },
     QueueClear,
     Next,
     Previous,
-    Search { keyword: String },
-    SearchMore { keyword: String, page: u32 },
+    Search {
+        keyword: String,
+        /// 可选音源过滤；None 为聚合搜索。不合法的 id 报错。
+        source: Option<String>,
+    },
+    SearchMore {
+        keyword: String,
+        page: u32,
+    },
     // ── 库（收藏/历史/自定义歌单）──
     LibraryRefresh,
-    FavoritesAdd { song: SongDto },
-    FavoritesRemove { song: SongDto },
-    FavoritePlaylistAdd { playlist: PlaylistDto },
-    FavoritePlaylistRemove { playlist: PlaylistDto },
-    HistoryRemove { song: SongDto },
+    FavoritesAdd {
+        song: SongDto,
+    },
+    FavoritesRemove {
+        song: SongDto,
+    },
+    FavoritePlaylistAdd {
+        playlist: PlaylistDto,
+    },
+    FavoritePlaylistRemove {
+        playlist: PlaylistDto,
+    },
+    HistoryRemove {
+        song: SongDto,
+    },
     HistoryClear,
-    CustomPlaylistCreate { name: String },
-    CustomPlaylistRename { id: String, name: String },
-    CustomPlaylistDelete { id: String },
-    CustomPlaylistAddSongs { id: String, songs: Vec<SongDto> },
-    CustomPlaylistRemoveSong { id: String, song: SongDto },
+    CustomPlaylistCreate {
+        name: String,
+    },
+    CustomPlaylistRename {
+        id: String,
+        name: String,
+    },
+    CustomPlaylistDelete {
+        id: String,
+    },
+    CustomPlaylistAddSongs {
+        id: String,
+        songs: Vec<SongDto>,
+    },
+    CustomPlaylistRemoveSong {
+        id: String,
+        song: SongDto,
+    },
+    CustomPlaylistDetail {
+        id: String,
+    },
     // ── 配置 ──
     ConfigGet,
-    ConfigUpdate { config: ConfigDto },
+    ConfigUpdate {
+        config: ConfigDto,
+    },
     // ── 下载 ──
-    DownloadEnqueue { song: SongDto },
-    DownloadCancel { id: u64 },
+    DownloadEnqueue {
+        song: SongDto,
+    },
+    DownloadCancel {
+        id: u64,
+    },
     DownloadClearFinished,
     // ── 扫码登录 ──
-    QrLoginStart { source: String, kind: String },
+    QrLoginStart {
+        source: String,
+        kind: String,
+    },
     QrLoginCancel,
     // ── 本地扫描 ──
-    LocalScan { paths: Vec<String>, max_depth: u32 },
+    LocalScan {
+        paths: Vec<String>,
+        max_depth: u32,
+    },
+    // ── 账号歌单镜像 / 同步 ──
+    AccountPlaylists {
+        source: String,
+    },
+    AccountFavorites {
+        source: String,
+    },
+    AccountPlaylistDetail {
+        source: String,
+        playlist_id: String,
+    },
+    SyncPreview {
+        source: String,
+    },
+    SyncRun {
+        source: String,
+    },
+    SyncCancel,
+    PushTargets {
+        source: String,
+    },
+    PushCreateTarget {
+        source: String,
+        name: String,
+    },
+    PushPlan {
+        source: String,
+        local_name: String,
+        local_songs: Vec<SongDto>,
+        is_favorites: bool,
+        target_kind: String,
+        target_id: String,
+        target_name: String,
+        target_song_count: u32,
+    },
+    PushRun {
+        source: String,
+    },
+    PushCancel,
+    // ── 浏览数据面（歌单 / 排行榜 / 歌手 / 专辑）──
+    PlaylistCategories {
+        source: String,
+    },
+    PlaylistList {
+        source: String,
+        category: String,
+        page: u32,
+    },
+    PlaylistDetail {
+        source: String,
+        playlist_id: String,
+        page: u32,
+    },
+    LeaderboardBoards {
+        source: String,
+    },
+    LeaderboardSongs {
+        source: String,
+        board_id: String,
+        page: u32,
+    },
+    ArtistSongs {
+        artist: ArtistDto,
+        page: u32,
+    },
+    ArtistAlbums {
+        artist: ArtistDto,
+        page: u32,
+    },
+    AlbumSongs {
+        album: AlbumDto,
+        page: u32,
+    },
+    /// 播放一组歌曲（列表/榜单/专辑的「播放全部」），复用现有队列播放语义。
+    PlaySongs {
+        songs: Vec<SongDto>,
+        index: u32,
+    },
 }
 
 impl FfiCommand {
@@ -701,6 +1374,9 @@ impl FfiCommand {
             FfiCommand::Toggle => ApplicationCommand::Toggle,
             FfiCommand::Stop => ApplicationCommand::Stop,
             FfiCommand::SeekMs(ms) => ApplicationCommand::Seek(Duration::from_millis(ms)),
+            FfiCommand::SetVolume { volume } => {
+                ApplicationCommand::SetVolume(volume.min(100))
+            }
             FfiCommand::PlaySong { song } => ApplicationCommand::Play {
                 songs: vec![song.into_song()?],
                 index: 0,
@@ -715,9 +1391,12 @@ impl FfiCommand {
             FfiCommand::QueueClear => ApplicationCommand::QueueClear,
             FfiCommand::Next => ApplicationCommand::Next,
             FfiCommand::Previous => ApplicationCommand::Previous,
-            FfiCommand::Search { keyword } => ApplicationCommand::Search {
+            FfiCommand::Search { keyword, source } => ApplicationCommand::Search {
                 keyword,
-                source: None,
+                source: match source {
+                    Some(id) => Some(parse_source(&id)?),
+                    None => None,
+                },
             },
             FfiCommand::SearchMore { keyword, page } => ApplicationCommand::SearchMore {
                 keyword,
@@ -751,7 +1430,9 @@ impl FfiCommand {
             FfiCommand::CustomPlaylistRename { id, name } => {
                 ApplicationCommand::CustomPlaylistRename { id, name }
             }
-            FfiCommand::CustomPlaylistDelete { id } => ApplicationCommand::CustomPlaylistDelete { id },
+            FfiCommand::CustomPlaylistDelete { id } => {
+                ApplicationCommand::CustomPlaylistDelete { id }
+            }
             FfiCommand::CustomPlaylistAddSongs { id, songs } => {
                 let mut converted = Vec::with_capacity(songs.len());
                 for song in songs {
@@ -768,6 +1449,9 @@ impl FfiCommand {
                     song: song.into_song()?,
                 }
             }
+            FfiCommand::CustomPlaylistDetail { id } => {
+                ApplicationCommand::CustomPlaylistDetail { id }
+            }
             FfiCommand::ConfigGet => ApplicationCommand::ConfigGet,
             FfiCommand::DownloadEnqueue { song } => ApplicationCommand::DownloadEnqueue {
                 song: song.into_song()?,
@@ -782,12 +1466,131 @@ impl FfiCommand {
                 },
             },
             FfiCommand::QrLoginCancel => ApplicationCommand::QrLoginCancel,
-            FfiCommand::LocalScan { paths, max_depth } => ApplicationCommand::LocalScan {
-                paths,
-                max_depth,
+            FfiCommand::LocalScan { paths, max_depth } => {
+                ApplicationCommand::LocalScan { paths, max_depth }
+            }
+            FfiCommand::AccountPlaylists { source } => ApplicationCommand::AccountPlaylists {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::AccountFavorites { source } => ApplicationCommand::AccountFavorites {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::AccountPlaylistDetail {
+                source,
+                playlist_id,
+            } => ApplicationCommand::AccountPlaylistDetail {
+                source: parse_source(&source)?,
+                playlist_id,
+            },
+            FfiCommand::SyncPreview { source } => ApplicationCommand::SyncPreview {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::SyncRun { source } => ApplicationCommand::SyncRun {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::SyncCancel => ApplicationCommand::SyncCancel,
+            FfiCommand::PushTargets { source } => ApplicationCommand::PushTargets {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::PushCreateTarget { source, name } => {
+                ApplicationCommand::PushCreateTarget {
+                    source: parse_source(&source)?,
+                    name,
+                }
+            }
+            FfiCommand::PushPlan {
+                source,
+                local_name,
+                local_songs,
+                is_favorites,
+                target_kind,
+                target_id,
+                target_name,
+                target_song_count,
+            } => {
+                let kind = match target_kind.as_str() {
+                    "playlist" => lx_core::sync::SyncCollectionKind::Playlist,
+                    "favorites" => lx_core::sync::SyncCollectionKind::Favorites,
+                    _ => return Err("未知的推送目标类型".into()),
+                };
+                ApplicationCommand::PushPlan {
+                    source: parse_source(&source)?,
+                    local: voicefox_application::sync::LocalPushCollection {
+                        name: local_name,
+                        songs: local_songs
+                            .into_iter()
+                            .map(SongDto::into_song)
+                            .collect::<Result<_, _>>()?,
+                        is_favorites,
+                    },
+                    target: voicefox_application::sync::PushTargetOption {
+                        kind,
+                        id: target_id,
+                        name: target_name,
+                        song_count: target_song_count as usize,
+                    },
+                }
+            }
+            FfiCommand::PushRun { source } => ApplicationCommand::PushRun {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::PushCancel => ApplicationCommand::PushCancel,
+            FfiCommand::PlaylistCategories { source } => ApplicationCommand::PlaylistCategories {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::PlaylistList {
+                source,
+                category,
+                page,
+            } => ApplicationCommand::Playlists {
+                source: parse_source(&source)?,
+                category,
+                page,
+            },
+            FfiCommand::PlaylistDetail {
+                source,
+                playlist_id,
+                page,
+            } => ApplicationCommand::PlaylistDetail {
+                source: parse_source(&source)?,
+                playlist_id,
+                page,
+            },
+            FfiCommand::LeaderboardBoards { source } => ApplicationCommand::LeaderboardBoards {
+                source: parse_source(&source)?,
+            },
+            FfiCommand::LeaderboardSongs {
+                source,
+                board_id,
+                page,
+            } => ApplicationCommand::LeaderboardSongs {
+                source: parse_source(&source)?,
+                board_id,
+                page,
+            },
+            FfiCommand::ArtistSongs { artist, page } => ApplicationCommand::ArtistSongs {
+                artist: artist.into_artist()?,
+                page,
+            },
+            FfiCommand::ArtistAlbums { artist, page } => ApplicationCommand::ArtistAlbums {
+                artist: artist.into_artist()?,
+                page,
+            },
+            FfiCommand::AlbumSongs { album, page } => ApplicationCommand::AlbumSongs {
+                album: album.into_album()?,
+                page,
+            },
+            FfiCommand::PlaySongs { songs, index } => ApplicationCommand::Play {
+                songs: songs
+                    .into_iter()
+                    .map(SongDto::into_song)
+                    .collect::<Result<_, _>>()?,
+                index: index as usize,
             },
             // ConfigUpdate 在 VoicefoxController::dispatch 里特判（需要 config_base）
-            FfiCommand::ConfigUpdate { .. } => unreachable!("handled in VoicefoxController::dispatch"),
+            FfiCommand::ConfigUpdate { .. } => {
+                unreachable!("handled in VoicefoxController::dispatch")
+            }
         })
     }
 }
@@ -820,5 +1623,64 @@ mod tests {
         assert!(
             matches!(command.into_application().unwrap(), ApplicationCommand::Seek(d) if d == Duration::from_millis(1_250))
         );
+    }
+
+    #[test]
+    fn config_roundtrip_is_idempotent() {
+        let config = lx_core::model::config::Config::default();
+        let dto = ConfigDto::from_config(&config);
+        // play_mode 是字符串，不能再被 Debug 加引号。
+        assert_eq!(dto.play_mode, "list-loop");
+
+        let once = dto.apply_to(&config);
+        assert_eq!(once.player.play_mode, "list-loop");
+
+        // 连续保存三次不得膨胀（旧的引号叠加 bug 会在这里被抓住）。
+        let mut current = config;
+        for _ in 0..3 {
+            let dto = ConfigDto::from_config(&current);
+            current = dto.apply_to(&current);
+            assert_eq!(current.player.play_mode, "list-loop");
+        }
+    }
+
+    #[test]
+    fn download_quality_roundtrip_keeps_320k() {
+        use lx_core::model::source::Quality;
+        let mut config = lx_core::model::config::Config::default();
+        config.download.quality = Some(Quality::High320);
+
+        let dto = ConfigDto::from_config(&config);
+        assert_eq!(dto.download_quality.as_deref(), Some("320k"));
+
+        let applied = dto.apply_to(&config);
+        assert_eq!(applied.download.quality, Some(Quality::High320));
+    }
+
+    #[test]
+    fn invalid_play_mode_keeps_previous_value() {
+        let config = lx_core::model::config::Config::default();
+        let mut dto = ConfigDto::from_config(&config);
+        dto.play_mode = "\"list-loop\"".to_string();
+        let applied = dto.apply_to(&config);
+        assert_eq!(applied.player.play_mode, "list-loop");
+    }
+
+    #[test]
+    fn theme_mode_roundtrip_and_default() {
+        let config = lx_core::model::config::Config::default();
+        assert_eq!(config.theme.mode, "system");
+        let dto = ConfigDto::from_config(&config);
+        assert_eq!(dto.theme_mode, "system");
+        let applied = dto.apply_to(&config);
+        assert_eq!(applied.theme.mode, "system");
+
+        // 合法 token 写入；未知值保留原配置。
+        let mut dto = ConfigDto::from_config(&applied);
+        dto.theme_mode = "dark".to_string();
+        let dark = dto.clone().apply_to(&applied);
+        assert_eq!(dark.theme.mode, "dark");
+        dto.theme_mode = "bogus".to_string();
+        assert_eq!(dto.apply_to(&dark).theme.mode, "dark");
     }
 }

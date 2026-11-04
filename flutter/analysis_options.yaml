@@ -16,6 +16,8 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # vendored myune_music UI (Apache-2.0): frozen upstream, linted upstream-style
+    - lib/src/myune/**
 
 linter:
   # The lint rules applied to this project can be customized in the

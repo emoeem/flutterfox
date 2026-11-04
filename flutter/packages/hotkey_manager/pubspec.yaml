@@ -1,0 +1,9 @@
+name: hotkey_manager
+description: "Voicefox local stub: no native keyboard hook (P1 global hotkeys are out of scope)."
+version: 0.2.3
+publish_to: none
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter

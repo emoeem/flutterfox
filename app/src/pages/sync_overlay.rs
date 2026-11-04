@@ -6,7 +6,6 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph, Widget};
 use std::sync::{Arc, Mutex};
 use tokio::task::JoinHandle;
 
-use crate::storage::Storage;
 use crate::sync::{
     self, LocalPushCollection, NeteaseSyncPreview, NeteaseSyncReport, PushPlanPreview, PushReport,
     PushTargetOption, SyncControl,
@@ -83,12 +82,7 @@ impl SyncOverlay {
             source: SourceId::Wy,
         }
     }
-    pub fn start_for(
-        &mut self,
-        source: SourceId,
-        storage: Arc<Storage>,
-        rt: &tokio::runtime::Runtime,
-    ) {
+    pub fn start_for(&mut self, source: SourceId, rt: &tokio::runtime::Runtime) {
         self.source = source;
         self.control = SyncControl::default();
         self.selected = 0;
@@ -96,7 +90,7 @@ impl SyncOverlay {
         let control = self.control.clone();
         *state.lock().unwrap_or_else(|e| e.into_inner()) = SyncUiState::default();
         self.task = Some(rt.spawn(async move {
-            match sync::preview_source(&storage, source).await {
+            match sync::preview_source(source).await {
                 Ok(preview) => {
                     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                     s.preview = Some(preview);
@@ -111,15 +105,10 @@ impl SyncOverlay {
             let _ = control;
         }));
     }
-    pub fn confirm(&mut self, storage: Arc<Storage>, rt: &tokio::runtime::Runtime) {
-        self.confirm_for(self.source, storage, rt);
+    pub fn confirm(&mut self, rt: &tokio::runtime::Runtime) {
+        self.confirm_for(self.source, rt);
     }
-    pub fn confirm_for(
-        &mut self,
-        source: SourceId,
-        storage: Arc<Storage>,
-        rt: &tokio::runtime::Runtime,
-    ) {
+    pub fn confirm_for(&mut self, source: SourceId, rt: &tokio::runtime::Runtime) {
         let phase = self.state.lock().unwrap_or_else(|e| e.into_inner()).phase;
         if !matches!(
             phase,
@@ -141,7 +130,7 @@ impl SyncOverlay {
             s.error = None;
         }
         self.task = Some(rt.spawn(async move {
-            match sync::sync_source_with_control(&storage, source, &control).await {
+            match sync::sync_source_with_control(source, &control).await {
                 Ok(report) => {
                     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                     s.report = Some(report);
@@ -159,8 +148,8 @@ impl SyncOverlay {
             }
         }));
     }
-    pub fn retry(&mut self, storage: Arc<Storage>, rt: &tokio::runtime::Runtime) {
-        self.start_for(self.source, storage, rt);
+    pub fn retry(&mut self, rt: &tokio::runtime::Runtime) {
+        self.start_for(self.source, rt);
     }
     pub fn cancel(&mut self) {
         self.control.cancel();

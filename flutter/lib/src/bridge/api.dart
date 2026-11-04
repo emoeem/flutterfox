@@ -23,8 +23,11 @@ Future<FfiCommand> commandNext() => RustLib.instance.api.crateApiCommandNext();
 Future<FfiCommand> commandPrevious() =>
     RustLib.instance.api.crateApiCommandPrevious();
 
-Future<FfiCommand> commandSearch({required String keyword}) =>
-    RustLib.instance.api.crateApiCommandSearch(keyword: keyword);
+Future<FfiCommand> commandSearch({required String keyword, String? source}) =>
+    RustLib.instance.api.crateApiCommandSearch(
+      keyword: keyword,
+      source: source,
+    );
 
 Future<FfiCommand> commandSearchMore({
   required String keyword,
@@ -50,6 +53,15 @@ Future<FfiCommand> commandQueueClear() =>
 /// 非 mpv 构建（移动端）运行时返回明确错误，移动端应改用 from_application 引导。
 Future<VoicefoxController> newDesktop() =>
     RustLib.instance.api.crateApiNewDesktop();
+
+/// 宿主引导：注入进程级数据目录覆盖（App 私有目录）。
+///
+/// Android 上 `dirs::data_dir()` 为 `None`，`default_data_dir` 会回退到
+/// `"."`（进程工作目录）。宿主应在构造 ApplicationService 之前调用本
+/// 函数，把 PathProvider 拿到的 App 私有目录传进来；有覆盖时跳过旧目录
+/// 迁移。桌面端无需调用（`None` 即回到平台默认路径）。
+Future<void> setDataDir({String? path}) =>
+    RustLib.instance.api.crateApiSetDataDir(path: path);
 
 Future<VoicefoxState> state({required VoicefoxController controller}) =>
     RustLib.instance.api.crateApiState(controller: controller);

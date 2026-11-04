@@ -3,6 +3,10 @@ name = "lx-source"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = ["js-sources"]
+js-sources = []
+
 [dependencies]
 lx-core = { path = "../core" }
 

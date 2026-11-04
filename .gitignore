@@ -15,3 +15,5 @@ flutter/build/
 
 # 本地 agent 工具状态
 .mimosa/
+.v2c/
+.video_agent/

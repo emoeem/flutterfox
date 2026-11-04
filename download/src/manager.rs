@@ -27,9 +27,7 @@ use crate::naming::{
     resolve_download_dir, sanitize_filename, unique_dest,
 };
 use crate::records::{DownloadRecord, DownloadRecords, DownloadStatus, relative_path};
-use crate::tags::{
-    DownloadMetadata, embed_tags, shrink_cover, validate_audio, write_lyric_file,
-};
+use crate::tags::{DownloadMetadata, embed_tags, shrink_cover, validate_audio, write_lyric_file};
 use crate::webdav;
 
 /// 已结束任务在列表中的保留数量。
@@ -90,6 +88,8 @@ pub struct DownloadTask {
     pub source: SourceId,
     pub quality: Quality,
     pub dest: PathBuf,
+    /// 完整歌曲载荷：失败重试要重新入队，UI 也需要它定位原曲。
+    pub song: SongInfo,
     pub state: DownloadState,
     pub error: Option<String>,
     pub progress: Arc<DownloadProgress>,
@@ -114,6 +114,8 @@ pub struct DownloadTaskView {
     pub source: SourceId,
     pub quality: Quality,
     pub dest: PathBuf,
+    /// 完整歌曲载荷（快照克隆自任务），供 UI 重试重新入队。
+    pub song: SongInfo,
     pub state: DownloadState,
     pub error: Option<String>,
     pub progress: ProgressSnapshot,
@@ -302,6 +304,7 @@ impl DownloadManager {
                     source: task.source,
                     quality: task.quality,
                     dest: task.dest.clone(),
+                    song: task.song.clone(),
                     state: task.state,
                     error: task.error.clone(),
                     progress: task.progress.snapshot(),
@@ -623,6 +626,7 @@ impl DownloadManager {
             source: song.source,
             quality,
             dest: dest.clone(),
+            song: song.clone(),
             state: DownloadState::Queued,
             error: None,
             progress: Arc::clone(&progress),
@@ -1141,9 +1145,7 @@ fn trim_finished(tasks: &mut Vec<DownloadTask>) {
 mod tests {
     use super::*;
     use crate::engine::DownloadOptions;
-    use crate::test_support::{
-        RangeMode, fake_audio, spawn_test_server, temp_dir, tiny_png,
-    };
+    use crate::test_support::{RangeMode, fake_audio, spawn_test_server, temp_dir, tiny_png};
     use lx_core::model::lyric::LyricData;
     use lx_core::traits::source::{FetchError, MusicSource, SearchError, SearchResult};
 
@@ -1255,6 +1257,12 @@ mod tests {
                 source: SourceId::Kw,
                 quality: Quality::Flac,
                 dest: PathBuf::from(format!("/tmp/{id}.flac")),
+                song: SongInfo::new(
+                    format!("id-{id}"),
+                    SourceId::Kw,
+                    format!("song {id}"),
+                    String::new(),
+                ),
                 state,
                 error: None,
                 progress: DownloadProgress::new(),
@@ -1297,6 +1305,12 @@ mod tests {
             source: SourceId::Kw,
             quality: Quality::Flac,
             dest: PathBuf::from("/tmp/a.flac"),
+            song: SongInfo::new(
+                "id-1".to_string(),
+                SourceId::Kw,
+                "晴天".to_string(),
+                "周杰伦".to_string(),
+            ),
             state: DownloadState::Done,
             error: None,
             progress: ProgressSnapshot {

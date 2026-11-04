@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
@@ -138,13 +139,12 @@ class _QrView extends StatelessWidget {
     if (session.url.isEmpty) {
       return const Center(child: Text('该渠道未返回二维码内容'));
     }
-    // v1：二维码渲染依赖 qr_flutter；未引入前展示内容串，
-    // 见 FLUTTER_MIGRATION_PROGRESS.md 待确认决策（pub.dev 成熟包接入点）。
+    // 渠道只回了 URL（无 PNG 字节）：本地用 qr_flutter 渲染成二维码。
     return Center(
-      child: SelectableText(
-        session.url,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall,
+      child: QrImageView(
+        data: session.url,
+        size: 220,
+        backgroundColor: Colors.white,
       ),
     );
   }

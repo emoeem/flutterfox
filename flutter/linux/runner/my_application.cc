@@ -57,6 +57,9 @@ static void my_application_activate(GApplication* application) {
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
       project, self->dart_entrypoint_arguments);
+  // Impeller(OpenGLES) 在部分 Linux 驱动上反复 "Timed out waiting for
+  // OpenGL frame"，走带动画掉帧。回退 Skia 渲染管线（embedder 官方开关）。
+  fl_dart_project_set_enable_impeller(project, FALSE);
 
   FlView* view = fl_view_new(project);
   GdkRGBA background_color;

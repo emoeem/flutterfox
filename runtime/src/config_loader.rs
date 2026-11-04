@@ -68,30 +68,93 @@ const VERSION_15_DEFAULT_SOURCES: &[SourceId] = &[
     SourceId::Jamendo,
 ];
 
+/// 正常配置只会有几 KB。ConfigDto 往返 bug 曾把 `play_mode` 写成
+/// 128MB 的转义引号串，超大文件直接按损坏处理，避免启动时白读白解析。
+const MAX_CONFIG_BYTES: u64 = 4 * 1024 * 1024;
+
+/// `play_mode` 的合法 token，与 `PlayerConfig::default` 保持一致。
+const VALID_PLAY_MODES: &[&str] = &["none", "list-loop", "single-loop", "random"];
+
 /// 加载配置：优先读用户配置文件，否则用默认值
 pub fn load(custom_path: &str) -> anyhow::Result<(Config, PathBuf)> {
     let config_path = resolve_config_path(custom_path);
 
+    if let Ok(metadata) = fs::metadata(&config_path)
+        && metadata.len() > MAX_CONFIG_BYTES
+    {
+        quarantine_corrupted(&config_path, "文件超过 4MB")?;
+        return default_config_at(&config_path);
+    }
+
     match fs::read_to_string(&config_path) {
         Ok(content) => {
-            let mut config: Config = toml::from_str(&content)?;
-            if migrate_legacy_config(&mut config) {
+            let mut config: Config = match toml::from_str(&content) {
+                Ok(config) => config,
+                Err(error) => {
+                    // 解析失败的存量损坏（如旧 bug 写出的大写 quality 枚举名）：
+                    // 备份后回默认配置，不能让程序起不来。
+                    quarantine_corrupted(&config_path, &format!("解析失败: {error}"))?;
+                    return default_config_at(&config_path);
+                }
+            };
+            let mut changed = sanitize_corrupted_fields(&mut config);
+            changed |= migrate_legacy_config(&mut config);
+            if changed {
                 save(&config, &config_path)?;
             }
             Ok((config, config_path))
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            // 配置文件不存在，写入默认配置
-            let config = Config::default();
-            let toml_str = toml::to_string_pretty(&config)?;
-            if let Some(parent) = config_path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::write(&config_path, toml_str)?;
-            Ok((config, config_path))
+            default_config_at(&config_path)
         }
         Err(error) => Err(error.into()),
     }
+}
+
+/// 把默认配置写到 `path`（配置文件不存在时的原逻辑）。
+fn default_config_at(config_path: &std::path::Path) -> anyhow::Result<(Config, PathBuf)> {
+    let config = Config::default();
+    save(&config, config_path)?;
+    Ok((config, config_path.to_path_buf()))
+}
+
+/// 把损坏的配置文件改名留档（不删除，用户可手工找回），随后由调用方写默认配置。
+fn quarantine_corrupted(config_path: &std::path::Path, reason: &str) -> anyhow::Result<()> {
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_nanos())
+        .unwrap_or(0);
+    let backup = config_path.with_file_name(format!(
+        "{}.corrupt-{unique}",
+        config_path.file_name().unwrap_or_default().to_string_lossy(),
+    ));
+    tracing::warn!(
+        "配置文件损坏（{reason}），已备份到 {} 并改用默认配置",
+        backup.display()
+    );
+    match fs::rename(config_path, &backup) {
+        Ok(()) => Ok(()),
+        // 文件可能已被并发进程挪走；不存在视为已隔离。
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+/// 与版本迁移无关的字段修复，每次加载都执行。
+///
+/// ConfigDto 往返 bug 曾用 `Debug` 格式化写回 `play_mode`，每次保存多一层
+/// 引号转义，实测把配置膨胀到 134MB。非法 token 在这里重置回默认，
+/// `load` 随后的 `save` 会把文件恢复到 KB 级。
+fn sanitize_corrupted_fields(config: &mut Config) -> bool {
+    if VALID_PLAY_MODES.contains(&config.player.play_mode.as_str()) {
+        return false;
+    }
+    tracing::warn!(
+        "检测到损坏的 play_mode（{} 字节），已重置为 list-loop",
+        config.player.play_mode.len()
+    );
+    config.player.play_mode = "list-loop".to_string();
+    true
 }
 
 fn migrate_legacy_config(config: &mut Config) -> bool {
@@ -531,5 +594,93 @@ mod tests {
         assert_eq!(columns[0].width, 8);
         assert!(columns[0].visible);
         let _ = std::fs::remove_file(path);
+    }
+
+    fn temp_config_path(tag: &str) -> std::path::PathBuf {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "voicefox-{tag}-{}-{unique}.toml",
+            std::process::id()
+        ))
+    }
+
+    /// 实测受害者：play_mode 是逐层转义的引号串，文件膨胀到 134MB。
+    /// 加载必须把它重置回合法 token 并把文件恢复到 KB 级。
+    #[test]
+    fn corrupted_play_mode_is_reset_and_file_rewritten() {
+        let path = temp_config_path("playmode-corrupt");
+        // 两层转义模拟往返 bug 的存量形态。
+        std::fs::write(
+            &path,
+            "[player]\nplay_mode = \"\\\"\\\\\\\"list-loop\\\\\\\"\\\"\"\nvolume = 7\n",
+        )
+        .unwrap();
+
+        let (config, _) = load(path.to_str().unwrap()).unwrap();
+
+        assert_eq!(config.player.play_mode, "list-loop");
+        assert_eq!(config.player.volume, 7, "其余字段必须保留");
+        let rewritten = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            rewritten.len() < 64 * 1024,
+            "重写后的配置应回到 KB 级（完整默认配置约 6KB），实际 {} 字节",
+            rewritten.len()
+        );
+        let _ = std::fs::remove_file(path);
+    }
+
+    /// 解析失败（如旧 bug 写出的大写 quality 枚举名）不能让程序起不来：
+    /// 损坏文件改名留档，回默认配置。
+    #[test]
+    fn unparsable_config_is_quarantined_and_replaced() {
+        let path = temp_config_path("unparsable");
+        std::fs::write(&path, "[download]\nquality = \"High320\"\n").unwrap();
+
+        let (config, _) = load(path.to_str().unwrap()).unwrap();
+
+        assert_eq!(config.version, CURRENT_CONFIG_VERSION);
+        // 留档文件存在且内容原样。
+        let dir = path.parent().unwrap();
+        let backups: Vec<_> = std::fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(path.file_name().unwrap().to_string_lossy().as_ref())
+                    && entry.file_name().to_string_lossy().contains(".corrupt-")
+            })
+            .collect();
+        assert_eq!(backups.len(), 1, "损坏文件必须留档一份");
+        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(backups[0].path());
+    }
+
+    /// 超过 4MB 的配置直接按损坏处理，不做无谓的读取与解析。
+    #[test]
+    fn oversized_config_is_quarantined_without_parsing() {
+        let path = temp_config_path("oversized");
+        // 注释填充：内容本身合法，仅体积超限。
+        let filler = "#".repeat(5 * 1024 * 1024);
+        std::fs::write(&path, filler).unwrap();
+
+        let (config, _) = load(path.to_str().unwrap()).unwrap();
+
+        assert_eq!(config.version, CURRENT_CONFIG_VERSION);
+        assert!(std::fs::metadata(&path).unwrap().len() < 64 * 1024);
+        // 只清理本测试自己的留档，避免并行测试误删别人的备份。
+        let prefix = path.file_name().unwrap().to_string_lossy().to_string();
+        let _ = std::fs::remove_file(&path);
+        let dir = path.parent().unwrap();
+        for entry in std::fs::read_dir(dir).unwrap().filter_map(|entry| entry.ok()) {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with(&prefix) && name.contains(".corrupt-") {
+                let _ = std::fs::remove_file(entry.path());
+            }
+        }
     }
 }

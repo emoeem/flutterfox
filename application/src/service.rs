@@ -3,6 +3,7 @@ use std::sync::{
     Arc, RwLock,
     atomic::{AtomicU64, Ordering},
 };
+use std::time::{Duration, Instant};
 
 /// fire-and-forget spawn：任务 panic 时向用户发一条通知而不是静默消失。
 ///
@@ -25,19 +26,44 @@ where
 }
 
 use lx_core::model::source::PlayerState;
-use lx_core::traits::player::PlayerBackend;
+use lx_core::traits::player::{PlayerBackend, PlayerEvent};
 use lx_lyric::service::LyricService;
 use lx_source::manager::SourceManager;
 use tokio::sync::broadcast;
 
-use crate::event::{ApplicationCommand, ApplicationEvent};
-use crate::ports::{ConfigStore, DownloadsEngine, DownloadTaskInfo, LibraryStore};
+/// 播放器离散事件接收：没有事件源时永久挂起，避免 select! 分支空转。
+async fn recv_player_event(
+    receiver: &mut Option<tokio::sync::mpsc::UnboundedReceiver<PlayerEvent>>,
+) -> Option<PlayerEvent> {
+    match receiver {
+        Some(receiver) => receiver.recv().await,
+        None => std::future::pending().await,
+    }
+}
+
+/// 随机模式的下一首：排除当前曲；单曲队列返回自身。
+fn random_other(index: usize, len: usize) -> usize {
+    if len <= 1 {
+        return index;
+    }
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.subsec_nanos() as usize)
+        .unwrap_or(0);
+    (index + 1 + nanos % (len - 1)) % len
+}
+
+
+use crate::event::{ApplicationCommand, ApplicationEvent, BrowseKind};
+use crate::ports::{ConfigStore, DownloadTaskInfo, DownloadsEngine, LibraryStore};
 use crate::services::{
     LyricsService, PlaybackService, PlaylistService, QueueService, SearchService,
 };
 use crate::state::ApplicationState;
 
 const EVENT_CAPACITY: usize = 256;
+/// 播放进度广播节流：位置 watcher 每帧都在变，前端 4Hz 足够平滑。
+const PROGRESS_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Clone)]
 pub struct ApplicationService {
@@ -54,8 +80,13 @@ pub struct ApplicationService {
     sources: Arc<SourceManager>,
     /// 扫码登录的取消标志：QrLoginCancel 置位，轮询任务每轮检查。
     qr_cancel: Arc<std::sync::atomic::AtomicBool>,
+    /// 当前账号歌单同步的取消/进度控制；SyncCancel 操作最近一次同步。
+    sync_control: Arc<std::sync::Mutex<crate::sync::SyncControl>>,
+    /// 推送计划在预览与执行间复用，避免执行时重新读取远端集合。
+    push_plan: Arc<std::sync::Mutex<Option<(lx_core::model::source::SourceId, lx_core::sync::SyncPlan)>>>,
     request_id: Arc<AtomicU64>,
     playback_request_id: Arc<AtomicU64>,
+    browse_request_id: Arc<AtomicU64>,
 }
 
 impl ApplicationService {
@@ -83,9 +114,40 @@ impl ApplicationService {
             downloads,
             sources,
             qr_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            sync_control: Arc::new(std::sync::Mutex::new(crate::sync::SyncControl::default())),
+            push_plan: Arc::new(std::sync::Mutex::new(None)),
             request_id: Arc::new(AtomicU64::new(0)),
             playback_request_id: Arc::new(AtomicU64::new(0)),
+            browse_request_id: Arc::new(AtomicU64::new(0)),
         }
+    }
+
+    /// 当前启用音源的显式能力声明，供 GUI 决定入口/空态。
+    pub fn source_capabilities(&self) -> Vec<crate::state::SourceCapabilityInfo> {
+        self.sources
+            .enabled_sources()
+            .into_iter()
+            .map(|source| {
+                let capabilities = self.sources.capabilities(source);
+                crate::state::SourceCapabilityInfo {
+                    id: source.as_str().to_string(),
+                    name: source.display_name().to_string(),
+                    playlists: capabilities.playlists,
+                    playlist_categories: capabilities.playlist_categories,
+                    playlist_search: capabilities.playlist_search,
+                    album: capabilities.album,
+                    artist: capabilities.artist,
+                    leaderboard: capabilities.leaderboard,
+                    login: capabilities.login,
+                    qr_login: capabilities.qr_login,
+                }
+            })
+            .collect()
+    }
+
+    /// 本地曲库快照（扫描结果直接从这里读取，避免每轮扫描重复广播大列表）。
+    pub fn local_songs(&self) -> Vec<lx_core::model::song::SongInfo> {
+        self.sources.local_source().all_songs()
     }
 
     pub fn subscribe(&self) -> ApplicationEventStream {
@@ -96,6 +158,148 @@ impl ApplicationService {
 
     pub fn state(&self) -> ApplicationState {
         self.state.read().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    /// 启动播放器事件泵：把 `PlayerBackend` 的 state/position/duration watcher
+    /// 与离散事件接到应用状态和广播通道上。
+    ///
+    /// 在此之前 application 层从不消费这些 watcher，GUI 的进度条、时长、
+    /// 暂停状态、自动切歌与播放模式全部停在不动的初始值上。
+    /// 宿主（runtime/FFI 或移动端）应在 tokio 上下文里调用一次。
+    pub fn start_playback_pump(&self) {
+        let Ok(handle) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
+        let service = self.clone();
+        let player = self.playback.player();
+        let mut state_rx = player.state_watcher();
+        let mut position_rx = player.position_watcher();
+        let mut duration_rx = player.duration_watcher();
+        let mut player_events = player.take_event_receiver();
+        handle.spawn(async move {
+            let mut last_emit = Instant::now();
+            service.push_playback_snapshot(true, &mut last_emit);
+            loop {
+                let alive = tokio::select! {
+                    changed = state_rx.changed() => changed.is_ok(),
+                    changed = position_rx.changed() => changed.is_ok(),
+                    changed = duration_rx.changed() => changed.is_ok(),
+                    event = recv_player_event(&mut player_events) => {
+                        if let Some(event) = event {
+                            service.handle_player_event(event).await;
+                        }
+                        true
+                    }
+                };
+                if !alive {
+                    break;
+                }
+                service.push_playback_snapshot(
+                    last_emit.elapsed() >= PROGRESS_INTERVAL,
+                    &mut last_emit,
+                );
+            }
+        });
+    }
+
+    /// 读播放器当前快照写进应用状态；位置变化按 `PROGRESS_INTERVAL` 节流广播，
+    /// 状态迁移（播放/暂停/停止）则立即广播。
+    fn push_playback_snapshot(&self, allow_emit: bool, last_emit: &mut Instant) {
+        let player = self.playback.player();
+        let next_state = *player.state_watcher().borrow();
+        let position = *player.position_watcher().borrow();
+        let duration = *player.duration_watcher().borrow();
+        let volume = player.volume();
+        let (state_changed, changed) = {
+            let mut state = self.state.write().unwrap_or_else(|e| e.into_inner());
+            let state_changed = state.playback.state != next_state;
+            let changed = state_changed
+                || state.playback.position != position
+                || state.playback.duration != duration
+                || state.playback.volume != volume;
+            state.playback.state = next_state;
+            state.playback.position = position;
+            state.playback.duration = duration;
+            state.playback.volume = volume;
+            (state_changed, changed)
+        };
+        // 歌词高亮跟随真实播放位置（此前只在换曲时更新一次）。
+        self.lyrics.update_position(position);
+        if changed && (allow_emit || state_changed) {
+            *last_emit = Instant::now();
+            let _ = self.events.send(ApplicationEvent::PlaybackProgress {
+                state: next_state,
+                position,
+                duration,
+            });
+        }
+    }
+
+    async fn handle_player_event(&self, event: PlayerEvent) {
+        match event {
+            PlayerEvent::Ended { generation } => {
+                let current = self
+                    .state
+                    .read()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .playback
+                    .generation;
+                // 旧代次的 Ended 是换曲竞态，忽略。
+                if generation != 0 && current != 0 && generation != current {
+                    return;
+                }
+                if let Err(error) = self.advance_after_end().await {
+                    self.emit(ApplicationEvent::PlaybackFailed {
+                        request_id: 0,
+                        error,
+                    });
+                }
+            }
+            PlayerEvent::Error { message, .. } => {
+                let request_id = self.request_id.load(Ordering::Acquire);
+                self.emit(ApplicationEvent::PlaybackFailed {
+                    request_id,
+                    error: message,
+                });
+            }
+            PlayerEvent::Playing { .. } | PlayerEvent::Buffering { .. } => {}
+        }
+    }
+
+    /// 曲目自然结束后的推进：单曲循环、随机、顺序到尾部停止，其余列表循环。
+    async fn advance_after_end(&self) -> Result<(), String> {
+        let (songs, index) = self.queue.snapshot();
+        if songs.is_empty() {
+            return Ok(());
+        }
+        match self.play_mode().as_str() {
+            "single-loop" => self.play(songs, index).await,
+            "random" => {
+                let next = random_other(index, songs.len());
+                self.play(songs, next).await
+            }
+            "none" => {
+                if index + 1 < songs.len() {
+                    self.play(songs, index + 1).await
+                } else {
+                    self.playback.stop();
+                    self.emit(ApplicationEvent::PlaybackStopped);
+                    Ok(())
+                }
+            }
+            _ => {
+                let next = (index + 1) % songs.len();
+                self.play(songs, next).await
+            }
+        }
+    }
+
+    /// 配置里的播放模式字符串（`none` / `list-loop` / `single-loop` / `random`）。
+    fn play_mode(&self) -> String {
+        self.config_store
+            .as_ref()
+            .map(|store| store.get().player.play_mode)
+            .unwrap_or_else(|| "list-loop".to_string())
     }
 
     pub fn playback(&self) -> PlaybackService {
@@ -141,6 +345,16 @@ impl ApplicationService {
             }
             ApplicationCommand::Toggle => {
                 self.playback.toggle();
+                // 立即读回播放器状态并广播：此前 Toggle 既不写快照也不发事件，
+                // 播放/暂停按钮点下去 UI 毫无反应。
+                let mut last_emit = Instant::now();
+                self.push_playback_snapshot(true, &mut last_emit);
+                Ok(())
+            }
+            ApplicationCommand::SetVolume(volume) => {
+                self.playback.set_volume(volume);
+                let mut last_emit = Instant::now();
+                self.push_playback_snapshot(true, &mut last_emit);
                 Ok(())
             }
             ApplicationCommand::Stop => {
@@ -182,7 +396,11 @@ impl ApplicationService {
                 if songs.is_empty() {
                     return Ok(());
                 }
-                let next = (index + 1) % songs.len();
+                let next = if self.play_mode() == "random" {
+                    random_other(index, songs.len())
+                } else {
+                    (index + 1) % songs.len()
+                };
                 self.play(songs, next).await
             }
             ApplicationCommand::Previous => {
@@ -191,7 +409,13 @@ impl ApplicationService {
                     return Ok(());
                 }
                 let len = songs.len();
-                let previous = if index == 0 { len - 1 } else { index - 1 };
+                let previous = if self.play_mode() == "random" {
+                    random_other(index, len)
+                } else if index == 0 {
+                    len - 1
+                } else {
+                    index - 1
+                };
                 self.play(songs, previous).await
             }
             ApplicationCommand::PlaybackFailed { request_id, error } => {
@@ -295,11 +519,18 @@ impl ApplicationService {
             }
             ApplicationCommand::CustomPlaylistCreate { name } => {
                 let store = self.library()?;
-                let result = store.create_custom_playlist(&name).map(|_| ());
-                if result.is_ok() {
-                    self.publish_library();
+                let created = store.create_custom_playlist(&name);
+                match created {
+                    Ok(playlist) => {
+                        self.publish_library();
+                        self.emit(ApplicationEvent::CustomPlaylistCreated {
+                            id: playlist.id,
+                            name: playlist.name,
+                        });
+                        Ok(())
+                    }
+                    Err(error) => Err(error),
                 }
-                result
             }
             ApplicationCommand::CustomPlaylistRename { id, name } => {
                 let store = self.library()?;
@@ -325,9 +556,7 @@ impl ApplicationService {
                     Ok((added, skipped)) => {
                         self.publish_library();
                         self.emit(ApplicationEvent::Notification {
-                            message: format!(
-                                "已加入 {added}/{count} 首（重复跳过 {skipped}）"
-                            ),
+                            message: format!("已加入 {added}/{count} 首（重复跳过 {skipped}）"),
                         });
                         Ok(())
                     }
@@ -336,11 +565,48 @@ impl ApplicationService {
             }
             ApplicationCommand::CustomPlaylistRemoveSong { id, song } => {
                 let store = self.library()?;
-                let result = store.remove_song_from_custom_playlist(&id, &song).map(|_| ());
+                let result = store
+                    .remove_song_from_custom_playlist(&id, &song)
+                    .map(|_| ());
                 if result.is_ok() {
                     self.publish_library();
                 }
                 result
+            }
+            ApplicationCommand::CustomPlaylistDetail { id } => {
+                // 本地存储直读，无须异步任务；结果复用浏览数据面，
+                // 前端按 `custom_playlist|local|<id>` 分槽。
+                let store = self.library()?;
+                let request_id = self.next_browse_request();
+                match store.custom_playlist(&id) {
+                    Some(playlist) => {
+                        self.emit(ApplicationEvent::BrowseLoaded {
+                            request_id,
+                            kind: BrowseKind::CustomPlaylist,
+                            source: lx_core::model::source::SourceId::Local,
+                            id,
+                            page: 1,
+                            items: playlist.songs,
+                            albums: vec![],
+                            boards: vec![],
+                            playlists: vec![],
+                            categories: vec![],
+                            has_more: false,
+                            message: None,
+                        });
+                        Ok(())
+                    }
+                    None => {
+                        self.emit(ApplicationEvent::BrowseFailed {
+                            request_id,
+                            kind: BrowseKind::CustomPlaylist,
+                            source: lx_core::model::source::SourceId::Local,
+                            id,
+                            error: "自建歌单不存在或已被删除".to_string(),
+                        });
+                        Ok(())
+                    }
+                }
             }
             ApplicationCommand::ConfigUpdate { config } => {
                 let store = self
@@ -406,17 +672,690 @@ impl ApplicationService {
                 let events = self.events.clone();
                 spawn_reported(events.clone(), "本地扫描", async move {
                     let local = sources.local_source();
-                    let result =
-                        tokio::task::spawn_blocking(move || local.scan(&paths, max_depth))
-                            .await
-                            .unwrap_or_default();
-                    let _ = events.send(ApplicationEvent::LocalScanCompleted {
-                        warnings: result,
+                    let result = tokio::task::spawn_blocking(move || local.scan(&paths, max_depth))
+                        .await
+                        .unwrap_or_default();
+                    let _ = events.send(ApplicationEvent::LocalScanCompleted { warnings: result });
+                });
+                Ok(())
+            }
+            ApplicationCommand::AccountPlaylists { source } => {
+                let request_id = self.next_browse_request();
+                match account_playlists(source) {
+                    Some(playlists) => {
+                        self.emit(ApplicationEvent::BrowseLoaded {
+                            request_id,
+                            kind: BrowseKind::AccountPlaylists,
+                            source,
+                            id: String::new(),
+                            page: 1,
+                            items: vec![],
+                            albums: vec![],
+                            boards: vec![],
+                            playlists,
+                            categories: vec![],
+                            has_more: false,
+                            message: None,
+                        });
+                    }
+                    None => self.emit(ApplicationEvent::BrowseLoaded {
+                        request_id,
+                        kind: BrowseKind::AccountPlaylists,
+                        source,
+                        id: String::new(),
+                        page: 1,
+                        items: vec![],
+                        albums: vec![],
+                        boards: vec![],
+                        playlists: vec![],
+                        categories: vec![],
+                        has_more: false,
+                        message: Some("该平台没有账号歌单镜像（当前支持网易云与 QQ 音乐）".into()),
+                    }),
+                }
+                Ok(())
+            }
+            ApplicationCommand::AccountFavorites { source } => {
+                let request_id = self.next_browse_request();
+                let supported = matches!(
+                    source,
+                    lx_core::model::source::SourceId::Wy | lx_core::model::source::SourceId::Tx
+                );
+                let songs = if supported {
+                    crate::remote_cache::favorites_songs(source)
+                } else {
+                    vec![]
+                };
+                self.emit(ApplicationEvent::BrowseLoaded {
+                    request_id,
+                    kind: BrowseKind::AccountFavorites,
+                    source,
+                    id: "favorites".into(),
+                    page: 1,
+                    items: songs,
+                    albums: vec![],
+                    boards: vec![],
+                    playlists: vec![],
+                    categories: vec![],
+                    has_more: false,
+                    message: if supported {
+                        None
+                    } else {
+                        Some("账号红心镜像仅支持网易云与 QQ 音乐".into())
+                    },
+                });
+                Ok(())
+            }
+            ApplicationCommand::AccountPlaylistDetail {
+                source,
+                playlist_id,
+            } => {
+                let request_id = self.next_browse_request();
+                match crate::remote_cache::playlist(source, &playlist_id) {
+                    Some(collection) => {
+                        self.emit(ApplicationEvent::BrowseLoaded {
+                            request_id,
+                            kind: BrowseKind::AccountPlaylistDetail,
+                            source,
+                            id: playlist_id,
+                            page: 1,
+                            items: collection.songs,
+                            albums: vec![],
+                            boards: vec![],
+                            playlists: vec![],
+                            categories: vec![],
+                            has_more: false,
+                            message: None,
+                        });
+                    }
+                    None => self.emit(ApplicationEvent::BrowseFailed {
+                        request_id,
+                        kind: BrowseKind::AccountPlaylistDetail,
+                        source,
+                        id: playlist_id,
+                        error: "账号歌单缓存中没有该歌单，请先同步".to_string(),
+                    }),
+                }
+                Ok(())
+            }
+            ApplicationCommand::SyncPreview { source } => {
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "账号歌单预览", async move {
+                    match crate::sync::preview_source(source).await {
+                        Ok(preview) => {
+                            let _ = events.send(ApplicationEvent::SyncPreviewReady {
+                                source,
+                                preview: Box::new(preview),
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::SyncFailed { source, error });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::SyncRun { source } => {
+                let control = crate::sync::SyncControl::default();
+                *self.sync_control.lock().unwrap_or_else(|e| e.into_inner()) = control.clone();
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "账号歌单同步", async move {
+                    // 进度轮询：拉取阶段没有粒度，进度在缓存写入阶段推进；
+                    // 完成/取消后 abort。
+                    let monitor_control = control.clone();
+                    let monitor_events = events.clone();
+                    let monitor = tokio::spawn(async move {
+                        loop {
+                            let (done, total) = monitor_control.progress();
+                            let _ = monitor_events.send(ApplicationEvent::SyncProgress {
+                                source,
+                                done,
+                                total,
+                            });
+                            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+                        }
                     });
+                    let result = crate::sync::sync_source_with_control(source, &control).await;
+                    monitor.abort();
+                    match result {
+                        Ok(report) => {
+                            let _ = events.send(ApplicationEvent::SyncCompleted {
+                                source,
+                                report: Box::new(report),
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::SyncFailed { source, error });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::SyncCancel => {
+                self.sync_control
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .cancel();
+                Ok(())
+            }
+            ApplicationCommand::PushTargets { source } => {
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "推送目标读取", async move {
+                    match crate::sync::push_list_targets(source).await {
+                        Ok(targets) => {
+                            let _ = events.send(ApplicationEvent::PushTargetsReady {
+                                source,
+                                targets,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::PushFailed { source, error });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::PushCreateTarget { source, name } => {
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "推送歌单创建", async move {
+                    match crate::sync::push_create_target(source, &name).await {
+                        Ok(target) => {
+                            let _ = events.send(ApplicationEvent::PushTargetCreated {
+                                source,
+                                target,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::PushFailed { source, error });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::PushPlan {
+                source,
+                local,
+                target,
+            } => {
+                let events = self.events.clone();
+                let saved_plan = Arc::clone(&self.push_plan);
+                spawn_reported(events.clone(), "推送预览", async move {
+                    match crate::sync::push_plan(source, &local, &target).await {
+                        Ok((preview, plan)) => {
+                            *saved_plan.lock().unwrap_or_else(|e| e.into_inner()) =
+                                Some((source, plan));
+                            let _ = events.send(ApplicationEvent::PushPlanReady {
+                                source,
+                                preview: Box::new(preview),
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::PushFailed { source, error });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::PushRun { source } => {
+                let plan = self
+                    .push_plan
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .take()
+                    .filter(|(planned_source, _)| *planned_source == source);
+                let Some((_, plan)) = plan else {
+                    self.emit(ApplicationEvent::PushFailed {
+                        source,
+                        error: "推送计划已失效，请重新预览".into(),
+                    });
+                    return Ok(());
+                };
+                let control = crate::sync::SyncControl::default();
+                *self.sync_control.lock().unwrap_or_else(|e| e.into_inner()) = control.clone();
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "歌单推送", async move {
+                    let monitor_control = control.clone();
+                    let monitor_events = events.clone();
+                    let monitor = tokio::spawn(async move {
+                        loop {
+                            let (done, total) = monitor_control.progress();
+                            let _ = monitor_events.send(ApplicationEvent::PushProgress {
+                                source,
+                                done,
+                                total,
+                            });
+                            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+                        }
+                    });
+                    let result = crate::sync::push_execute(source, &plan, &control).await;
+                    monitor.abort();
+                    match result {
+                        Ok(report) => {
+                            let _ = events.send(ApplicationEvent::PushCompleted {
+                                source,
+                                report: Box::new(report),
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::PushFailed { source, error });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::PushCancel => {
+                self.sync_control
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .cancel();
+                Ok(())
+            }
+            ApplicationCommand::PlaylistCategories { source } => {
+                if !self.sources.capabilities(source).playlist_categories {
+                    // 有歌单浏览能力但没有分类目录的音源：发空分类 + 说明，
+                    // 前端只用默认「推荐」入口，不出现伪造分类。
+                    self.emit(ApplicationEvent::BrowseLoaded {
+                        request_id: self.next_browse_request(),
+                        kind: BrowseKind::PlaylistCategories,
+                        source,
+                        id: String::new(),
+                        page: 1,
+                        items: vec![],
+                        albums: vec![],
+                        boards: vec![],
+                        playlists: vec![],
+                        categories: vec![],
+                        has_more: false,
+                        message: Some("该音源不提供歌单分类，仅可浏览推荐歌单".to_string()),
+                    });
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "歌单分类", async move {
+                    match sources.playlist_categories(source).await {
+                        Ok(categories) => {
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::PlaylistCategories,
+                                source,
+                                id: String::new(),
+                                page: 1,
+                                items: vec![],
+                                albums: vec![],
+                                boards: vec![],
+                                playlists: vec![],
+                                categories,
+                                has_more: false,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::PlaylistCategories,
+                                source,
+                                id: String::new(),
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::Playlists {
+                source,
+                category,
+                page,
+            } => {
+                if !self.sources.capabilities(source).playlists {
+                    self.emit_browse_unavailable(
+                        BrowseKind::Playlists,
+                        source,
+                        &category,
+                        "该音源不支持歌单浏览",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "歌单列表", async move {
+                    match sources.playlists(source, &category, page).await {
+                        Ok(playlists) => {
+                            let has_more = !playlists.is_empty();
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::Playlists,
+                                source,
+                                id: category,
+                                page,
+                                items: vec![],
+                                albums: vec![],
+                                boards: vec![],
+                                playlists,
+                                categories: vec![],
+                                has_more,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::Playlists,
+                                source,
+                                id: category,
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::PlaylistDetail {
+                source,
+                playlist_id,
+                page,
+            } => {
+                if !self.sources.capabilities(source).playlists {
+                    self.emit_browse_unavailable(
+                        BrowseKind::PlaylistDetail,
+                        source,
+                        &playlist_id,
+                        "该音源不支持歌单详情",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "歌单详情", async move {
+                    match sources.playlist_detail(source, &playlist_id, page).await {
+                        Ok(items) => {
+                            let has_more = !items.is_empty();
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::PlaylistDetail,
+                                source,
+                                id: playlist_id,
+                                page,
+                                items,
+                                albums: vec![],
+                                boards: vec![],
+                                playlists: vec![],
+                                categories: vec![],
+                                has_more,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::PlaylistDetail,
+                                source,
+                                id: playlist_id,
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::LeaderboardBoards { source } => {
+                if !self.sources.capabilities(source).leaderboard {
+                    self.emit_browse_unavailable(
+                        BrowseKind::LeaderboardBoards,
+                        source,
+                        "",
+                        "该音源不支持排行榜",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "榜单目录", async move {
+                    match sources.leaderboard_boards(source).await {
+                        Ok(boards) => {
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::LeaderboardBoards,
+                                source,
+                                id: String::new(),
+                                page: 1,
+                                items: vec![],
+                                albums: vec![],
+                                boards,
+                                playlists: vec![],
+                                categories: vec![],
+                                has_more: false,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::LeaderboardBoards,
+                                source,
+                                id: String::new(),
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::LeaderboardSongs {
+                source,
+                board_id,
+                page,
+            } => {
+                if !self.sources.capabilities(source).leaderboard {
+                    self.emit_browse_unavailable(
+                        BrowseKind::LeaderboardSongs,
+                        source,
+                        &board_id,
+                        "该音源不支持排行榜",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "榜单歌曲", async move {
+                    match sources.leaderboard(source, &board_id, page, 50).await {
+                        Ok(result) => {
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::LeaderboardSongs,
+                                source,
+                                id: board_id,
+                                page,
+                                items: result.items,
+                                albums: vec![],
+                                boards: vec![],
+                                playlists: vec![],
+                                categories: vec![],
+                                has_more: result.has_more,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::LeaderboardSongs,
+                                source,
+                                id: board_id,
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::ArtistSongs { artist, page } => {
+                if !self.sources.capabilities(artist.source).artist {
+                    self.emit_browse_unavailable(
+                        BrowseKind::ArtistSongs,
+                        artist.source,
+                        &artist.id,
+                        "该音源不支持歌手详情",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "歌手歌曲", async move {
+                    match sources.artist_songs(&artist, page, 100).await {
+                        Ok(result) => {
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::ArtistSongs,
+                                source: artist.source,
+                                id: artist.id,
+                                page,
+                                items: result.items,
+                                albums: vec![],
+                                boards: vec![],
+                                playlists: vec![],
+                                categories: vec![],
+                                has_more: result.has_more,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::ArtistSongs,
+                                source: artist.source,
+                                id: artist.id,
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::ArtistAlbums { artist, page } => {
+                if !self.sources.capabilities(artist.source).artist {
+                    self.emit_browse_unavailable(
+                        BrowseKind::ArtistAlbums,
+                        artist.source,
+                        &artist.id,
+                        "该音源不支持歌手详情",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "歌手专辑", async move {
+                    match sources.artist_albums(&artist, page, 100).await {
+                        Ok(albums) => {
+                            let has_more = !albums.is_empty();
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::ArtistAlbums,
+                                source: artist.source,
+                                id: artist.id,
+                                page,
+                                items: vec![],
+                                albums,
+                                boards: vec![],
+                                playlists: vec![],
+                                categories: vec![],
+                                has_more,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::ArtistAlbums,
+                                source: artist.source,
+                                id: artist.id,
+                                error: error.to_string(),
+                            });
+                        }
+                    }
+                });
+                Ok(())
+            }
+            ApplicationCommand::AlbumSongs { album, page } => {
+                if !self.sources.capabilities(album.source).album {
+                    self.emit_browse_unavailable(
+                        BrowseKind::AlbumSongs,
+                        album.source,
+                        &album.id,
+                        "该音源不支持专辑",
+                    );
+                    return Ok(());
+                }
+                let request_id = self.next_browse_request();
+                let sources = Arc::clone(&self.sources);
+                let events = self.events.clone();
+                spawn_reported(events.clone(), "专辑曲目", async move {
+                    match sources.album_songs(&album, page, 100).await {
+                        Ok(result) => {
+                            let _ = events.send(ApplicationEvent::BrowseLoaded {
+                                request_id,
+                                kind: BrowseKind::AlbumSongs,
+                                source: album.source,
+                                id: album.id,
+                                page,
+                                items: result.items,
+                                albums: vec![],
+                                boards: vec![],
+                                playlists: vec![],
+                                categories: vec![],
+                                has_more: result.has_more,
+                                message: None,
+                            });
+                        }
+                        Err(error) => {
+                            let _ = events.send(ApplicationEvent::BrowseFailed {
+                                request_id,
+                                kind: BrowseKind::AlbumSongs,
+                                source: album.source,
+                                id: album.id,
+                                error: error.to_string(),
+                            });
+                        }
+                    }
                 });
                 Ok(())
             }
         }
+    }
+
+    fn next_browse_request(&self) -> u64 {
+        self.browse_request_id.fetch_add(1, Ordering::SeqCst) + 1
+    }
+
+    /// 能力不支持时发「成功但为空」的浏览事件：前端走空态，不当错误处理。
+    fn emit_browse_unavailable(
+        &self,
+        kind: BrowseKind,
+        source: lx_core::model::source::SourceId,
+        id: &str,
+        message: &str,
+    ) {
+        self.emit(ApplicationEvent::BrowseLoaded {
+            request_id: self.next_browse_request(),
+            kind,
+            source,
+            id: id.to_string(),
+            page: 1,
+            items: vec![],
+            albums: vec![],
+            boards: vec![],
+            playlists: vec![],
+            categories: vec![],
+            has_more: false,
+            message: Some(message.to_string()),
+        });
     }
 
     /// 扫码登录：生成二维码 → 轮询状态直至终态/取消。
@@ -526,6 +1465,8 @@ impl ApplicationService {
             state.search.source = source;
             state.search.page = page;
             state.search.request_id = request_id;
+            state.search.loading = true;
+            state.search.error = None;
             if !append {
                 state.search.items.clear();
             }
@@ -552,6 +1493,8 @@ impl ApplicationService {
                     }
                     current.search.has_more = has_more;
                     current.search.page = page;
+                    current.search.loading = false;
+                    current.search.error = None;
                     let _ = events.send(ApplicationEvent::SearchCompleted {
                         request_id,
                         keyword: keyword.clone(),
@@ -571,7 +1514,18 @@ impl ApplicationService {
                     {
                         return;
                     }
-                    let _ = events.send(ApplicationEvent::SearchFailed { request_id, error });
+                    let _ = events.send(ApplicationEvent::SearchFailed {
+                        request_id,
+                        error: error.clone(),
+                    });
+                    // 失败原因留在状态里，GUI 直接渲染错误态。
+                    {
+                        let mut current = state.write().unwrap_or_else(|e| e.into_inner());
+                        if current.search.request_id == request_id {
+                            current.search.loading = false;
+                            current.search.error = Some(error);
+                        }
+                    }
                 }
             }
         });
@@ -779,6 +1733,40 @@ impl From<broadcast::error::RecvError> for ApplicationEventStreamError {
     }
 }
 
+/// 远程缓存里的账号歌单 → 浏览数据面的 `Playlist`（不含红心集合）。
+///
+/// 返回 `None` 表示该平台没有镜像槽位（当前只有网易云 / QQ 音乐），
+/// 与「有槽位但缓存为空」区分开：前者走能力提示，后者走空态。
+fn account_playlists(
+    source: lx_core::model::source::SourceId,
+) -> Option<Vec<lx_core::model::playlist::Playlist>> {
+    crate::remote_cache::with_source(source, account_playlists_from)
+}
+
+/// 纯映射：只保留普通歌单（红心集合归收藏页），封面取第一首歌的封面。
+fn account_playlists_from(
+    collections: &[lx_core::sync::SyncCollection],
+) -> Vec<lx_core::model::playlist::Playlist> {
+    collections
+        .iter()
+        .filter(|collection| collection.kind == lx_core::sync::SyncCollectionKind::Playlist)
+        .map(|collection| lx_core::model::playlist::Playlist {
+            id: collection.id.clone(),
+            name: collection.name.clone(),
+            source: collection.source,
+            cover_url: collection
+                .songs
+                .first()
+                .and_then(|song| song.cover_url.clone()),
+            song_count: collection.songs.len() as u32,
+            description: None,
+            play_count: None,
+            creator: None,
+            link: None,
+            extra: Default::default(),
+        })
+        .collect()
+}
 
 #[cfg(test)]
 mod tests {
@@ -794,6 +1782,7 @@ mod tests {
     #[derive(Default)]
     struct MockLibrary {
         favorites: Mutex<Vec<SongInfo>>,
+        custom: Mutex<Vec<CustomPlaylist>>,
     }
 
     fn song(id: &str) -> SongInfo {
@@ -817,7 +1806,10 @@ mod tests {
 
     impl LibraryStore for MockLibrary {
         fn favorites(&self) -> Vec<SongInfo> {
-            self.favorites.lock().unwrap_or_else(|e| e.into_inner()).clone()
+            self.favorites
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone()
         }
         fn add_favorite(&self, song: &SongInfo) -> bool {
             let mut list = self.favorites.lock().unwrap_or_else(|e| e.into_inner());
@@ -859,13 +1851,37 @@ mod tests {
             true
         }
         fn custom_playlist_summaries(&self) -> Vec<CustomPlaylistSummary> {
-            vec![]
+            self.custom
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .iter()
+                .map(|playlist| CustomPlaylistSummary {
+                    id: playlist.id.clone(),
+                    name: playlist.name.clone(),
+                    cover_url: None,
+                    song_count: playlist.songs.len() as u32,
+                })
+                .collect()
         }
-        fn custom_playlist(&self, _id: &str) -> Option<CustomPlaylist> {
-            None
+        fn custom_playlist(&self, id: &str) -> Option<CustomPlaylist> {
+            self.custom
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .iter()
+                .find(|playlist| playlist.id == id)
+                .cloned()
         }
-        fn create_custom_playlist(&self, _name: &str) -> Result<CustomPlaylist, String> {
-            Err("not implemented".into())
+        fn create_custom_playlist(&self, name: &str) -> Result<CustomPlaylist, String> {
+            let mut list = self.custom.lock().unwrap_or_else(|e| e.into_inner());
+            let playlist = CustomPlaylist {
+                id: format!("custom-{}", list.len() + 1),
+                name: name.to_string(),
+                songs: vec![],
+                created_at_unix_nanos: 0,
+                updated_at_unix_nanos: 0,
+            };
+            list.push(playlist.clone());
+            Ok(playlist)
         }
         fn rename_custom_playlist(&self, _id: &str, _name: &str) -> Result<(), String> {
             Err("not implemented".into())
@@ -873,19 +1889,32 @@ mod tests {
         fn delete_custom_playlist(&self, _id: &str) -> Result<bool, String> {
             Err("not implemented".into())
         }
-        fn add_song_to_custom_playlist(
-            &self,
-            _id: &str,
-            _song: &SongInfo,
-        ) -> Result<bool, String> {
-            Err("not implemented".into())
+        fn add_song_to_custom_playlist(&self, id: &str, song: &SongInfo) -> Result<bool, String> {
+            self.add_songs_to_custom_playlist(id, std::slice::from_ref(song))
+                .map(|(added, _)| added > 0)
         }
         fn add_songs_to_custom_playlist(
             &self,
-            _id: &str,
-            _songs: &[SongInfo],
+            id: &str,
+            songs: &[SongInfo],
         ) -> Result<(usize, usize), String> {
-            Err("not implemented".into())
+            let mut list = self.custom.lock().unwrap_or_else(|e| e.into_inner());
+            let playlist = list
+                .iter_mut()
+                .find(|playlist| playlist.id == id)
+                .ok_or_else(|| "自定义歌单不存在".to_string())?;
+            let before = playlist.songs.len();
+            for song in songs {
+                if !playlist
+                    .songs
+                    .iter()
+                    .any(|item| item.id == song.id && item.source == song.source)
+                {
+                    playlist.songs.push(song.clone());
+                }
+            }
+            let added = playlist.songs.len() - before;
+            Ok((added, songs.len() - added))
         }
         fn remove_song_from_custom_playlist(
             &self,
@@ -954,5 +1983,118 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(error, "本地存储不可用");
+    }
+
+    #[tokio::test]
+    async fn custom_playlist_create_and_detail_round_trip() {
+        let (events, mut receiver) = broadcast::channel(256);
+        let mut service = test_service();
+        service.library = Some(Arc::new(MockLibrary::default()));
+        service.events = events;
+
+        service
+            .dispatch(ApplicationCommand::CustomPlaylistCreate {
+                name: "通勤".into(),
+            })
+            .await
+            .unwrap();
+
+        // 快照同步刷新，创建事件带回 id（前端据此「新建并立即加歌」）。
+        assert_eq!(service.state().custom_playlists.len(), 1);
+        let mut created_id = None;
+        while let Ok(event) = receiver.try_recv() {
+            if let ApplicationEvent::CustomPlaylistCreated { id, name } = event {
+                assert_eq!(name, "通勤");
+                created_id = Some(id);
+            }
+        }
+        let id = created_id.expect("创建事件应带回 id");
+
+        service
+            .dispatch(ApplicationCommand::CustomPlaylistAddSongs {
+                id: id.clone(),
+                songs: vec![song("1"), song("2")],
+            })
+            .await
+            .unwrap();
+        while receiver.try_recv().is_ok() {}
+
+        service
+            .dispatch(ApplicationCommand::CustomPlaylistDetail { id: id.clone() })
+            .await
+            .unwrap();
+
+        let mut detail = None;
+        while let Ok(event) = receiver.try_recv() {
+            if let ApplicationEvent::BrowseLoaded {
+                kind,
+                source,
+                id: event_id,
+                items,
+                ..
+            } = event
+            {
+                assert_eq!(kind, BrowseKind::CustomPlaylist);
+                assert_eq!(source, lx_core::model::source::SourceId::Local);
+                assert_eq!(event_id, id);
+                detail = Some(items);
+            }
+        }
+        let songs = detail.expect("详情应发出 BrowseLoaded");
+        assert_eq!(songs.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn custom_playlist_detail_missing_emits_browse_failed() {
+        let (service, mut receiver) = service_with_library();
+        service
+            .dispatch(ApplicationCommand::CustomPlaylistDetail {
+                id: "missing".into(),
+            })
+            .await
+            .unwrap();
+
+        let mut failed = false;
+        while let Ok(event) = receiver.try_recv() {
+            if let ApplicationEvent::BrowseFailed {
+                kind,
+                source,
+                error,
+                ..
+            } = event
+            {
+                assert_eq!(kind, BrowseKind::CustomPlaylist);
+                assert_eq!(source, lx_core::model::source::SourceId::Local);
+                assert!(error.contains("不存在"), "错误信息应说明歌单不存在");
+                failed = true;
+            }
+        }
+        assert!(failed, "缺失歌单应发出 BrowseFailed");
+    }
+
+    #[test]
+    fn account_playlists_mapping_drops_favorites_and_keeps_counts() {
+        use lx_core::model::source::SourceId;
+        use lx_core::sync::{SyncCollection, SyncCollectionKind};
+
+        let collection = |kind, id: &str, name: &str, songs: usize| SyncCollection {
+            kind,
+            id: id.to_string(),
+            name: name.to_string(),
+            source: SourceId::Wy,
+            songs: (0..songs)
+                .map(|index| song(&format!("{id}-{index}")))
+                .collect(),
+        };
+        let mapped = account_playlists_from(&[
+            collection(SyncCollectionKind::Playlist, "p1", "通勤", 2),
+            collection(SyncCollectionKind::Favorites, "fav", "我喜欢的音乐", 5),
+        ]);
+
+        assert_eq!(mapped.len(), 1, "红心集合不进账号歌单列表");
+        assert_eq!(mapped[0].id, "p1");
+        assert_eq!(mapped[0].name, "通勤");
+        assert_eq!(mapped[0].song_count, 2);
+        assert_eq!(mapped[0].source, SourceId::Wy);
     }
 }

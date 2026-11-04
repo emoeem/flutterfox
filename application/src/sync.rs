@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
-use crate::storage::Storage;
-
 use lx_core::model::song::SongInfo;
 use lx_core::model::source::SourceId;
 use lx_core::sync::{
@@ -156,7 +154,7 @@ fn diff_rows(source: SourceId, set: &SyncCollectionSet) -> Vec<PlaylistDiff> {
 fn sync_error_message(error: lx_core::sync::SyncError) -> String {
     match error {
         lx_core::sync::SyncError::NotLoggedIn(name) => {
-            format!("尚未登录{name}，请先在设置（8）→ 账号与扫码 扫码登录")
+            format!("尚未登录{name}，请先在「设置 → 扫码登录」登录")
         }
         other => other.to_string(),
     }
@@ -176,10 +174,7 @@ fn mirror_source(source: SourceId) -> Result<(), String> {
 /// 只读预览：从远端读一次，和缓存比对，说明「确认」之后会发生什么。
 ///
 /// 注意这里**不写任何远端数据**，也不再像旧版那样声称会把本地歌单上传到云端。
-pub async fn preview_source(
-    _storage: &Storage,
-    source: SourceId,
-) -> Result<NeteaseSyncPreview, String> {
+pub async fn preview_source(source: SourceId) -> Result<NeteaseSyncPreview, String> {
     mirror_source(source)?;
     let provider = provider(source).ok_or_else(|| "同步适配器不可用".to_string())?;
     // 会话有效性预检：未登录与已失效分别给出可操作的提示，不必等几十次
@@ -187,7 +182,7 @@ pub async fn preview_source(
     // 报真正的错误。
     if source == SourceId::Wy {
         if !lx_source::wy::session::is_logged_in() {
-            return Err("尚未登录网易云，请先在设置（8）→ 账号与扫码 扫码登录".into());
+            return Err("尚未登录网易云，请先在「设置 → 扫码登录」登录".into());
         }
         if let Ok(false) = lx_source::wy::login::refresh().await {
             return Err("网易云登录已失效，请重新扫码登录".into());
@@ -219,7 +214,6 @@ pub async fn preview_source(
 /// 跟着消失）；只要有一个歌单失败就退化为按 id 增量合并，失败歌单保留缓存里的
 /// 旧数据 —— 绝不能因为一次频控就把用户已缓存的歌单清空。
 pub async fn sync_source_with_control(
-    _storage: &Storage,
     source: SourceId,
     control: &SyncControl,
 ) -> Result<NeteaseSyncReport, String> {
@@ -326,7 +320,7 @@ fn push_precheck(source: SourceId) -> Result<(), String> {
     match source {
         SourceId::Wy => {
             if !lx_source::wy::session::is_logged_in() {
-                return Err("尚未登录网易云，请先在设置（8）→ 账号与扫码 扫码登录".into());
+                return Err("尚未登录网易云，请先在「设置 → 扫码登录」登录".into());
             }
             Ok(())
         }

@@ -1,8 +1,8 @@
 //! 仅测试使用的支撑代码：空播放器后端与空效果端口。
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use async_trait::async_trait;

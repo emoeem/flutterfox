@@ -1,0 +1,816 @@
+// Vendored from https://github.com/xiaobaimc/myune_music @ 5188867b2f986e79260d8191c0c659bc1d2216ad
+// License: Apache-2.0 (see /home/emo/code/myune_music-reference/LICENSE)
+// Upstream logic kept as-is unless the seam (AudioService/adapters) requires it.
+//
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
+
+import '../../lyrics/lyric_source.dart';
+
+// 自定义背景遮罩样式
+enum BackgroundMaskStyle { none, solid, glass }
+
+class SettingsProvider with ChangeNotifier {
+  static const _enableGlobalHotkeysKey = 'enableGlobalHotkeys';
+  static const _playPauseHotKeyKey = 'playPauseHotKey';
+  static const _nextTrackHotKeyKey = 'nextTrackHotKey';
+  static const _prevTrackHotKeyKey = 'prevTrackHotKey';
+  static const _volumeUpHotKeyKey = 'volumeUpHotKey';
+  static const _volumeDownHotKeyKey = 'volumeDownHotKey';
+
+  static const _prefsKey = 'maxLinesPerLyric';
+  static const _fontSizeKey = 'fontSize';
+  static const _lyricAlignmentKey = 'lyricAlignment';
+  static const _useBlurBackgroundKey = 'useBlurBackground'; // 模糊背景设置的 key
+  static const _useDynamicColorKey = 'useDynamicColor'; // 动态颜色设置的 key
+  static const _allowAnyFormatKey = 'allowAnyFormat'; // 允许任何格式设置的 key
+  static const _forceSingleLineLyricKey =
+      'forceSingleLineLyric'; // 强制单行歌词设置的 key
+  static const _showAlbumNameKey = 'showAlbumName'; // 显示专辑名称设置的 key
+
+  static const _enableOnlineLyricsKey = 'enableOnlineLyrics';
+  static const _lyricVerticalSpacingKey =
+      'lyricVerticalSpacing'; // 歌词垂直间距设置的 key
+  static const _primaryLyricSourceKey = 'primaryLyricSource'; // 主要歌词源设置的 key
+  static const _secondaryLyricSourceKey =
+      'secondaryLyricSource'; // 备用歌词源设置的 key
+  static const _addLyricPaddingKey = 'addLyricPadding'; // 歌词上下补位设置的 key
+  static const _artistSeparatorsKey = 'artistSeparators'; // 艺术家分隔符设置的 key
+  static const _minimizeToTrayKey = 'minimizeToTray'; // 最小化到托盘设置的 key
+  static const _enableLyricBlurKey = 'enableLyricBlur'; // 歌词模糊效果设置的 key
+  static const _lyricBlurStrengthKey = 'lyricBlurStrength'; // 歌词模糊强度设置的 key
+  static const _showTaskbarProgressKey =
+      'showTaskbarProgress'; // 任务栏进度显示设置的 key
+  static const _hiddenPagesKey = 'hiddenPages'; // 隐藏页面设置的 key
+  static const _enableDynamicBackgroundKey =
+      'enableDynamicBackground'; // 动态背景设置的 key
+  static const _audioDeviceNameKey = 'audio_device_name';
+  static const _audioDeviceDescKey = 'audio_device_desc';
+  static const _audioDeviceIsAutoKey = 'audio_device_is_auto';
+  static const _ignorePlaybackErrorsKey = 'ignorePlaybackErrors';
+  static const _lyricSourceOrderKey = 'lyricSourceOrder'; // 歌词来源优先级顺序
+  static const _autoAdjustLyricLayoutKey =
+      'autoAdjustLyricLayout'; // 自动调节歌词字体与间距设置的 key
+  static const _lyricFontWeightKey = 'lyricFontWeight'; // 歌词字重设置的 key
+
+  static const _enableLyricElasticScrollKey = 'enableLyricElasticScroll';
+  static const _enableLyricFloatingAnimationKey =
+      'enableLyricFloatingAnimation';
+  static const _enableLoudnessKey = 'enableLoudness';
+  static const _enableReplayGainKey = 'enableReplayGain';
+  static const _enableGaplessPlaybackKey = 'enableGaplessPlayback';
+  static const _autoHidePlayPageComponentsKey = 'autoHidePlayPageComponents';
+  static const _autoCheckUpdatesKey = 'autoCheckUpdates'; // 启动时自动检查更新设置的 key
+
+  static const _enableCustomBackgroundKey =
+      'enableCustomBackground'; // 自定义背景图开关
+  static const _customBackgroundPathKey = 'customBackgroundPath'; // 自定义背景图路径
+  static const _backgroundMaskStyleKey = 'backgroundMaskStyle'; // 背景遮罩样式
+  static const _backgroundMaskOpacityKey = 'backgroundMaskOpacity'; // 背景遮罩不透明度
+  static const _backgroundImageBlurKey = 'backgroundImageBlur'; // 背景图模糊强度
+  static const _railSurfaceOpacityKey = 'railSurfaceOpacity'; // 侧边导航栏不透明度
+  static const _panelSurfaceOpacityKey = 'panelSurfaceOpacity'; // 卡片/面板不透明度
+
+  int _maxLinesPerLyric = 2;
+  double _fontSize = 22.0; // 默认字体大小
+  TextAlign _lyricAlignment = TextAlign.center; // 默认居中对齐
+  bool _useBlurBackground = true; // 默认启用模糊背景
+  bool _useDynamicColor = true; // 默认启用动态颜色
+  bool _allowAnyFormat = false; // 默认不允许任何格式
+  bool _forceSingleLineLyric = false; // 默认不强制单行显示歌词
+  double _lyricVerticalSpacing = 6.0; // 默认歌词垂直间距为6.0
+  int _lyricFontWeight = 500; // 默认歌词字重（100~900），高亮行与非高亮行统一使用
+  bool _addLyricPadding = true; // 默认启用歌词上下补位
+  bool _minimizeToTray = false; // 默认不启用最小化到托盘
+  bool _enableLyricBlur = true; // 默认启用歌词模糊效果
+  double _lyricBlurStrength = 2.5; // 歌词模糊强度，范围 1.0~4.0
+  bool _showAlbumName = false; // 默认不显示专辑名称
+  bool _enableDynamicBackground = false; // 默认不启用动态背景
+  bool _audioDeviceIsAuto = true; // 默认音频设备为自动
+  String? _audioDeviceName; // 音频设备名称
+  String? _audioDeviceDesc; // 音频设备描述
+  bool _ignorePlaybackErrors = false; // 默认不忽略播放错误
+  List<String> _lyricSourceOrder = LyricSource.defaultOrderIds; // 歌词来源优先级顺序
+  bool _autoAdjustLyricLayout = false; // 默认不自动调节歌词布局
+  bool _enableLyricElasticScroll = false;
+  bool _enableLyricFloatingAnimation = false;
+  bool _enableLoudness = false;
+  bool _enableReplayGain = false;
+  bool _enableGaplessPlayback = false; // 默认不启用无缝播放
+  bool _autoHidePlayPageComponents = false; // 默认不自动隐藏部分组件
+  bool _autoCheckUpdates = true; // 默认启用启动时自动检查更新
+
+  bool _enableCustomBackground = false; // 默认不启用自定义背景图
+  String? _customBackgroundPath; // 自定义背景图文件路径
+  BackgroundMaskStyle _backgroundMaskStyle =
+      BackgroundMaskStyle.solid; // 默认使用普通遮罩
+  double _backgroundMaskOpacity = 0.7; // 默认遮罩不透明度
+  double _backgroundImageBlur = 20.0; // 毛玻璃模式下的背景模糊强度
+  double _railSurfaceOpacity = 0.65; // 侧边导航栏背景不透明度
+  double _panelSurfaceOpacity = 0.6; // 卡片/面板背景不透明度
+
+  bool _enableGlobalHotkeys = true;
+  HotKey? _playPauseHotKey;
+  HotKey? _nextTrackHotKey;
+  HotKey? _prevTrackHotKey;
+  HotKey? _volumeUpHotKey;
+  HotKey? _volumeDownHotKey;
+
+  bool _showTaskbarProgress = false;
+  bool _enableOnlineLyrics = false; // 默认不启用从网络获取歌词
+  String _primaryLyricSource = 'qq'; // 默认主要歌词源为qq音乐
+  String _secondaryLyricSource = 'netease'; // 默认备用歌词源为网易云音乐
+
+  // 默认隐藏音频分析
+  List<String> _hiddenPages = ['音频分析'];
+
+  // 默认艺术家分隔符
+  List<String> _artistSeparators = [';', '、', '；', '，', ','];
+
+  int get maxLinesPerLyric => _maxLinesPerLyric;
+  double get fontSize => _fontSize;
+  TextAlign get lyricAlignment => _lyricAlignment;
+  bool get useBlurBackground => _useBlurBackground; // 获取模糊背景设置
+  bool get useDynamicColor => _useDynamicColor; // 获取动态颜色设置
+  bool get allowAnyFormat => _allowAnyFormat; // 获取允许任何格式设置
+  bool get forceSingleLineLyric => _forceSingleLineLyric; // 获取强制单行歌词设置
+  double get lyricVerticalSpacing => _lyricVerticalSpacing; // 获取歌词垂直间距
+  int get lyricFontWeight => _lyricFontWeight; // 获取歌词字重（100~900）
+  bool get addLyricPadding => _addLyricPadding; // 获取歌词上下补位设置
+  bool get minimizeToTray => _minimizeToTray; // 获取最小化到托盘设置
+  bool get enableLyricBlur => _enableLyricBlur; // 获取歌词模糊效果设置
+  bool get enableLyricFloatingAnimation =>
+      _enableLyricFloatingAnimation; // 获取逐字歌词上浮动画设置
+  double get lyricBlurStrength => _lyricBlurStrength; // 获取歌词模糊强度设置
+  bool get showTaskbarProgress => _showTaskbarProgress; // 获取任务栏进度显示设置
+  bool get showAlbumName => _showAlbumName; // 获取显示专辑名称设置
+  bool get enableDynamicBackground => _enableDynamicBackground; // 获取动态背景设置
+
+  bool get enableOnlineLyrics => _enableOnlineLyrics;
+  String get primaryLyricSource => _primaryLyricSource; // 获取主要歌词源
+  String get secondaryLyricSource => _secondaryLyricSource; // 获取备用歌词源
+
+  List<String> get hiddenPages => _hiddenPages; // 获取隐藏页面列表
+
+  List<String> get artistSeparators => _artistSeparators; // 获取艺术家分隔符
+
+  bool get audioDeviceIsAuto => _audioDeviceIsAuto;
+  String? get audioDeviceName => _audioDeviceName;
+  String? get audioDeviceDesc => _audioDeviceDesc;
+  bool get ignorePlaybackErrors => _ignorePlaybackErrors;
+
+  // 歌词来源优先级顺序
+  List<String> get lyricSourceOrder => List.unmodifiable(_lyricSourceOrder);
+  bool get autoAdjustLyricLayout => _autoAdjustLyricLayout; // 获取是否自动调节歌词布局
+  bool get enableLyricElasticScroll => _enableLyricElasticScroll;
+  bool get enableLoudness => _enableLoudness;
+  bool get enableReplayGain => _enableReplayGain;
+  bool get enableGaplessPlayback => _enableGaplessPlayback;
+  bool get autoHidePlayPageComponents => _autoHidePlayPageComponents;
+  bool get autoCheckUpdates => _autoCheckUpdates; // 获取启动时自动检查更新设置
+
+  bool get enableCustomBackground => _enableCustomBackground; // 获取自定义背景图开关
+  String? get customBackgroundPath => _customBackgroundPath; // 获取自定义背景图路径
+  BackgroundMaskStyle get backgroundMaskStyle =>
+      _backgroundMaskStyle; // 获取背景遮罩样式
+  double get backgroundMaskOpacity => _backgroundMaskOpacity; // 获取背景遮罩不透明度
+  double get backgroundImageBlur => _backgroundImageBlur; // 获取背景图模糊强度
+
+  // 侧边导航栏背景不透明度
+  double get railSurfaceOpacity => _railSurfaceOpacity;
+
+  // 卡片/面板背景不透明度
+  double get panelSurfaceOpacity => _panelSurfaceOpacity;
+
+  // 是否真正可以显示自定义背景图：已启用、已选择路径且文件仍然存在
+  bool get hasCustomBackgroundImage {
+    if (!_enableCustomBackground) return false;
+    final path = _customBackgroundPath;
+    if (path == null || path.isEmpty) return false;
+    return File(path).existsSync();
+  }
+
+  // 当前可用的背景图路径，不可用时为 null
+  String? get existingBackgroundPath {
+    if (!hasCustomBackgroundImage) return null;
+    return _customBackgroundPath;
+  }
+
+  // 遮罩是否使用毛玻璃效果
+  bool get isGlassBackgroundMask =>
+      _backgroundMaskStyle == BackgroundMaskStyle.glass;
+
+  bool get enableGlobalHotkeys => _enableGlobalHotkeys;
+  HotKey? get playPauseHotKey => _playPauseHotKey;
+  HotKey? get nextTrackHotKey => _nextTrackHotKey;
+  HotKey? get prevTrackHotKey => _prevTrackHotKey;
+  HotKey? get volumeUpHotKey => _volumeUpHotKey;
+  HotKey? get volumeDownHotKey => _volumeDownHotKey;
+
+  late final Future<void> initializationFuture;
+
+  SettingsProvider() {
+    initializationFuture = _loadFromPrefs();
+  }
+
+  Future<void> _loadFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    _maxLinesPerLyric = prefs.getInt(_prefsKey) ?? 2;
+    _fontSize = prefs.getDouble(_fontSizeKey) ?? 20.0;
+    _useBlurBackground = prefs.getBool(_useBlurBackgroundKey) ?? true;
+    _useDynamicColor = prefs.getBool(_useDynamicColorKey) ?? true; // 加载动态颜色设置
+    _allowAnyFormat = prefs.getBool(_allowAnyFormatKey) ?? false; // 加载允许任何格式设置
+    _forceSingleLineLyric =
+        prefs.getBool(_forceSingleLineLyricKey) ?? false; // 加载强制单行歌词设置
+    _showAlbumName = prefs.getBool(_showAlbumNameKey) ?? false; // 加载显示专辑名称设置
+    _enableOnlineLyrics = prefs.getBool(_enableOnlineLyricsKey) ?? false;
+    _lyricVerticalSpacing =
+        prefs.getDouble(_lyricVerticalSpacingKey) ?? 6.0; // 加载歌词垂直间距设置
+    _lyricFontWeight = (prefs.getInt(_lyricFontWeightKey) ?? 500).clamp(
+      100,
+      900,
+    ); // 加载歌词字重设置
+    _addLyricPadding = prefs.getBool(_addLyricPaddingKey) ?? true; // 加载歌词上下补位设置
+    _minimizeToTray = prefs.getBool(_minimizeToTrayKey) ?? false; // 加载最小化到托盘设置
+    _enableLyricBlur = prefs.getBool(_enableLyricBlurKey) ?? true; // 加载歌词模糊效果设置
+    _lyricBlurStrength =
+        prefs.getDouble(_lyricBlurStrengthKey) ?? 2.5; // 加载歌词模糊强度设置
+    _primaryLyricSource =
+        prefs.getString(_primaryLyricSourceKey) ?? 'qq'; // 加载主要歌词源设置
+    _secondaryLyricSource =
+        prefs.getString(_secondaryLyricSourceKey) ?? 'netease'; // 加载备用歌词源设置
+    _showTaskbarProgress =
+        prefs.getBool(_showTaskbarProgressKey) ?? false; // 加载任务栏进度显示设置
+    _enableDynamicBackground =
+        prefs.getBool(_enableDynamicBackgroundKey) ?? false; // 加载动态背景设置
+
+    _audioDeviceIsAuto = prefs.getBool(_audioDeviceIsAutoKey) ?? true;
+    _audioDeviceName = prefs.getString(_audioDeviceNameKey);
+    _audioDeviceDesc = prefs.getString(_audioDeviceDescKey);
+    _ignorePlaybackErrors = prefs.getBool(_ignorePlaybackErrorsKey) ?? false;
+    _autoAdjustLyricLayout = prefs.getBool(_autoAdjustLyricLayoutKey) ?? false;
+    _enableLyricElasticScroll =
+        prefs.getBool(_enableLyricElasticScrollKey) ?? false;
+    _enableLyricFloatingAnimation =
+        prefs.getBool(_enableLyricFloatingAnimationKey) ?? false;
+    _enableLoudness = prefs.getBool(_enableLoudnessKey) ?? false;
+    _enableReplayGain = prefs.getBool(_enableReplayGainKey) ?? false;
+    _enableGaplessPlayback = prefs.getBool(_enableGaplessPlaybackKey) ?? false;
+    _autoHidePlayPageComponents =
+        prefs.getBool(_autoHidePlayPageComponentsKey) ?? false;
+    _autoCheckUpdates =
+        prefs.getBool(_autoCheckUpdatesKey) ?? true; // 加载自动检查更新设置
+
+    // 加载自定义背景图设置
+    _enableCustomBackground =
+        prefs.getBool(_enableCustomBackgroundKey) ?? false;
+    _customBackgroundPath = prefs.getString(_customBackgroundPathKey);
+    _backgroundMaskStyle = _backgroundMaskStyleFromString(
+      prefs.getString(_backgroundMaskStyleKey),
+    );
+    _backgroundMaskOpacity = prefs.getDouble(_backgroundMaskOpacityKey) ?? 0.7;
+    _backgroundImageBlur = prefs.getDouble(_backgroundImageBlurKey) ?? 20.0;
+    _railSurfaceOpacity = prefs.getDouble(_railSurfaceOpacityKey) ?? 0.65;
+    _panelSurfaceOpacity = prefs.getDouble(_panelSurfaceOpacityKey) ?? 0.6;
+    if (_enableLoudness && _enableReplayGain) {
+      _enableReplayGain = false;
+      await prefs.setBool(_enableReplayGainKey, false);
+    }
+
+    // 加载隐藏页面设置
+    final hiddenPagesList = prefs.getStringList(_hiddenPagesKey);
+    if (hiddenPagesList != null) {
+      _hiddenPages = hiddenPagesList;
+    }
+
+    // 加载艺术家分隔符设置
+    final separatorsList = prefs.getStringList(_artistSeparatorsKey);
+    if (separatorsList != null && separatorsList.isNotEmpty) {
+      _artistSeparators = separatorsList;
+    }
+
+    // 加载歌词来源优先级顺序
+    final lyricSourceOrderList = prefs.getStringList(_lyricSourceOrderKey);
+    if (lyricSourceOrderList != null && lyricSourceOrderList.isNotEmpty) {
+      _lyricSourceOrder = LyricSource.normalizeOrder(lyricSourceOrderList);
+    }
+
+    final alignmentString = prefs.getString(_lyricAlignmentKey);
+    _lyricAlignment = alignmentString != null
+        ? TextAlign.values.firstWhere(
+            (e) => e.toString() == alignmentString,
+            orElse: () => TextAlign.center,
+          )
+        : TextAlign.center;
+
+    _enableGlobalHotkeys = prefs.getBool(_enableGlobalHotkeysKey) ?? true;
+    _playPauseHotKey = _parseHotKey(
+      prefs.getString(_playPauseHotKeyKey),
+      'play_pause',
+    );
+    _nextTrackHotKey = _parseHotKey(
+      prefs.getString(_nextTrackHotKeyKey),
+      'next_track',
+    );
+    _prevTrackHotKey = _parseHotKey(
+      prefs.getString(_prevTrackHotKeyKey),
+      'prev_track',
+    );
+    _volumeUpHotKey = _parseHotKey(
+      prefs.getString(_volumeUpHotKeyKey),
+      'volume_up',
+    );
+    _volumeDownHotKey = _parseHotKey(
+      prefs.getString(_volumeDownHotKeyKey),
+      'volume_down',
+    );
+
+    notifyListeners(); // 读取完毕后刷新界面
+  }
+
+  void setMaxLinesPerLyric(int value) async {
+    _maxLinesPerLyric = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_prefsKey, value);
+  }
+
+  void setFontSize(double size) async {
+    _fontSize = size.clamp(12.0, 32.0); // 限制字体大小范围
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_fontSizeKey, _fontSize);
+  }
+
+  void setLyricAlignment(TextAlign alignment) async {
+    _lyricAlignment = alignment;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lyricAlignmentKey, alignment.toString());
+  }
+
+  void setUseBlurBackground(bool value) async {
+    _useBlurBackground = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_useBlurBackgroundKey, value);
+  }
+
+  void setUseDynamicColor(bool value) async {
+    if (_useDynamicColor != value) {
+      _useDynamicColor = value;
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_useDynamicColorKey, value);
+    }
+  }
+
+  void setEnableOnlineLyrics(bool value) async {
+    _enableOnlineLyrics = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableOnlineLyricsKey, value);
+  }
+
+  void setLyricVerticalSpacing(double value) async {
+    _lyricVerticalSpacing = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_lyricVerticalSpacingKey, value);
+  }
+
+  void setLyricFontWeight(int value) async {
+    final clamped = value.clamp(100, 900);
+    if (_lyricFontWeight == clamped) return;
+    _lyricFontWeight = clamped;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_lyricFontWeightKey, clamped);
+  }
+
+  void setPrimaryLyricSource(String value) async {
+    _primaryLyricSource = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_primaryLyricSourceKey, value);
+  }
+
+  void setSecondaryLyricSource(String value) async {
+    _secondaryLyricSource = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_secondaryLyricSourceKey, value);
+  }
+
+  void setAllowAnyFormat(bool value) async {
+    _allowAnyFormat = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_allowAnyFormatKey, value);
+  }
+
+  void setForceSingleLineLyric(bool value) async {
+    _forceSingleLineLyric = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_forceSingleLineLyricKey, value);
+  }
+
+  void setAddLyricPadding(bool value) async {
+    _addLyricPadding = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_addLyricPaddingKey, value);
+  }
+
+  void setAutoAdjustLyricLayout(bool value) async {
+    _autoAdjustLyricLayout = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_autoAdjustLyricLayoutKey, value);
+  }
+
+  void setArtistSeparators(List<String> separators) async {
+    _artistSeparators = separators;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    // 使用字符串列表而不是用逗号连接的字符串，避免与分隔符冲突
+    await prefs.setStringList(_artistSeparatorsKey, separators);
+  }
+
+  void setMinimizeToTray(bool value) async {
+    _minimizeToTray = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_minimizeToTrayKey, value);
+  }
+
+  void setEnableLyricBlur(bool value) async {
+    _enableLyricBlur = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableLyricBlurKey, value);
+  }
+
+  void setLyricBlurStrength(double value) async {
+    final clampedValue = value.clamp(1.0, 4.0);
+    if (_lyricBlurStrength == clampedValue) return;
+
+    _lyricBlurStrength = clampedValue;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_lyricBlurStrengthKey, clampedValue);
+  }
+
+  void setShowTaskbarProgress(bool value) async {
+    _showTaskbarProgress = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showTaskbarProgressKey, value);
+  }
+
+  void setShowAlbumName(bool value) async {
+    _showAlbumName = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showAlbumNameKey, value);
+  }
+
+  void setHiddenPages(List<String> hiddenPages) async {
+    // 确保歌单和设置不会被隐藏
+    final filteredHiddenPages = hiddenPages
+        .where((page) => page != '歌单' && page != '设置')
+        .toList();
+
+    _hiddenPages = filteredHiddenPages;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_hiddenPagesKey, filteredHiddenPages);
+  }
+
+  void setEnableDynamicBackground(bool value) async {
+    _enableDynamicBackground = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableDynamicBackgroundKey, value);
+  }
+
+  void setAudioDevice(String name, String desc) async {
+    _audioDeviceIsAuto = false;
+    _audioDeviceName = name;
+    _audioDeviceDesc = desc;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_audioDeviceIsAutoKey, false);
+    await prefs.setString(_audioDeviceNameKey, name);
+    await prefs.setString(_audioDeviceDescKey, desc);
+  }
+
+  void setAudioDeviceToAuto() async {
+    _audioDeviceIsAuto = true;
+    _audioDeviceName = null;
+    _audioDeviceDesc = null;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_audioDeviceIsAutoKey, true);
+    await prefs.remove(_audioDeviceNameKey);
+    await prefs.remove(_audioDeviceDescKey);
+  }
+
+  void setIgnorePlaybackErrors(bool value) async {
+    _ignorePlaybackErrors = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_ignorePlaybackErrorsKey, value);
+  }
+
+  void setAutoHidePlayPageComponents(bool value) async {
+    _autoHidePlayPageComponents = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_autoHidePlayPageComponentsKey, value);
+  }
+
+  void setAutoCheckUpdates(bool value) async {
+    if (_autoCheckUpdates == value) return;
+    _autoCheckUpdates = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_autoCheckUpdatesKey, value);
+  }
+
+  void setLyricSourceOrder(List<String> order) async {
+    final normalized = LyricSource.normalizeOrder(order);
+    if (listEquals(_lyricSourceOrder, normalized)) return;
+
+    _lyricSourceOrder = normalized;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_lyricSourceOrderKey, normalized);
+  }
+
+  void setEnableLyricElasticScroll(bool value) async {
+    _enableLyricElasticScroll = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableLyricElasticScrollKey, value);
+  }
+
+  void setEnableLyricFloatingAnimation(bool value) async {
+    _enableLyricFloatingAnimation = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableLyricFloatingAnimationKey, value);
+  }
+
+  void setEnableLoudness(bool value) async {
+    _enableLoudness = value;
+    if (value) {
+      _enableReplayGain = false;
+    }
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableLoudnessKey, value);
+    if (value) {
+      await prefs.setBool(_enableReplayGainKey, false);
+    }
+  }
+
+  void setEnableReplayGain(bool value) async {
+    _enableReplayGain = value;
+    if (value) {
+      _enableLoudness = false;
+    }
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableReplayGainKey, value);
+    if (value) {
+      await prefs.setBool(_enableLoudnessKey, false);
+    }
+  }
+
+  void setEnableGaplessPlayback(bool value) async {
+    _enableGaplessPlayback = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableGaplessPlaybackKey, value);
+  }
+
+  void setEnableCustomBackground(bool value) async {
+    if (_enableCustomBackground == value) return;
+    _enableCustomBackground = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableCustomBackgroundKey, value);
+  }
+
+  void setCustomBackgroundPath(String? path) async {
+    _customBackgroundPath = (path == null || path.isEmpty) ? null : path;
+    // 选择了新的背景图后自动启用，避免用户以为设置没生效
+    if (_customBackgroundPath != null) {
+      _enableCustomBackground = true;
+    }
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (_customBackgroundPath == null) {
+      await prefs.remove(_customBackgroundPathKey);
+    } else {
+      await prefs.setString(_customBackgroundPathKey, _customBackgroundPath!);
+    }
+    await prefs.setBool(_enableCustomBackgroundKey, _enableCustomBackground);
+  }
+
+  void setBackgroundMaskStyle(BackgroundMaskStyle style) async {
+    if (_backgroundMaskStyle == style) return;
+    _backgroundMaskStyle = style;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_backgroundMaskStyleKey, style.name);
+  }
+
+  // 保证一点文字可读性
+  static const double minBackgroundMaskOpacity = 0.2;
+
+  void setBackgroundMaskOpacity(double value) async {
+    final clamped = value.clamp(minBackgroundMaskOpacity, 1.0);
+    if (_backgroundMaskOpacity == clamped) return;
+    _backgroundMaskOpacity = clamped;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_backgroundMaskOpacityKey, clamped);
+  }
+
+  void setBackgroundImageBlur(double value) async {
+    final clamped = value.clamp(0.0, 60.0);
+    if (_backgroundImageBlur == clamped) return;
+    _backgroundImageBlur = clamped;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_backgroundImageBlurKey, clamped);
+  }
+
+  void setRailSurfaceOpacity(double value) async {
+    final clamped = value.clamp(0.0, 1.0);
+    if (_railSurfaceOpacity == clamped) return;
+    _railSurfaceOpacity = clamped;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_railSurfaceOpacityKey, clamped);
+  }
+
+  void setPanelSurfaceOpacity(double value) async {
+    final clamped = value.clamp(0.0, 1.0);
+    if (_panelSurfaceOpacity == clamped) return;
+    _panelSurfaceOpacity = clamped;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_panelSurfaceOpacityKey, clamped);
+  }
+
+  static BackgroundMaskStyle _backgroundMaskStyleFromString(String? value) {
+    switch (value) {
+      case 'none':
+        return BackgroundMaskStyle.none;
+      case 'glass':
+        return BackgroundMaskStyle.glass;
+      case 'solid':
+      default:
+        return BackgroundMaskStyle.solid;
+    }
+  }
+
+  HotKey? _parseHotKey(String? jsonStr, String type) {
+    if (jsonStr == null) {
+      return _getDefaultHotKey(type);
+    }
+    if (jsonStr.isEmpty || jsonStr == 'none') {
+      return null;
+    }
+    try {
+      final Map<String, dynamic> json = jsonDecode(jsonStr);
+      return HotKey.fromJson(json);
+    } catch (e) {
+      return _getDefaultHotKey(type);
+    }
+  }
+
+  HotKey _getDefaultHotKey(String type) {
+    switch (type) {
+      case 'play_pause':
+        return HotKey(
+          key: PhysicalKeyboardKey.space,
+          modifiers: [HotKeyModifier.control, HotKeyModifier.alt],
+          scope: HotKeyScope.system,
+          identifier: 'play_pause',
+        );
+      case 'next_track':
+        return HotKey(
+          key: PhysicalKeyboardKey.arrowRight,
+          modifiers: [HotKeyModifier.control, HotKeyModifier.alt],
+          scope: HotKeyScope.system,
+          identifier: 'next_track',
+        );
+      case 'prev_track':
+        return HotKey(
+          key: PhysicalKeyboardKey.arrowLeft,
+          modifiers: [HotKeyModifier.control, HotKeyModifier.alt],
+          scope: HotKeyScope.system,
+          identifier: 'prev_track',
+        );
+      case 'volume_up':
+        return HotKey(
+          key: PhysicalKeyboardKey.arrowUp,
+          modifiers: [HotKeyModifier.control, HotKeyModifier.alt],
+          scope: HotKeyScope.system,
+          identifier: 'volume_up',
+        );
+      case 'volume_down':
+        return HotKey(
+          key: PhysicalKeyboardKey.arrowDown,
+          modifiers: [HotKeyModifier.control, HotKeyModifier.alt],
+          scope: HotKeyScope.system,
+          identifier: 'volume_down',
+        );
+      default:
+        throw ArgumentError('Invalid hotkey type');
+    }
+  }
+
+  Future<void> setEnableGlobalHotkeys(bool value) async {
+    _enableGlobalHotkeys = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enableGlobalHotkeysKey, value);
+  }
+
+  Future<void> setHotKey(String type, HotKey? hotKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String key;
+    switch (type) {
+      case 'play_pause':
+        _playPauseHotKey = hotKey;
+        key = _playPauseHotKeyKey;
+        break;
+      case 'next_track':
+        _nextTrackHotKey = hotKey;
+        key = _nextTrackHotKeyKey;
+        break;
+      case 'prev_track':
+        _prevTrackHotKey = hotKey;
+        key = _prevTrackHotKeyKey;
+        break;
+      case 'volume_up':
+        _volumeUpHotKey = hotKey;
+        key = _volumeUpHotKeyKey;
+        break;
+      case 'volume_down':
+        _volumeDownHotKey = hotKey;
+        key = _volumeDownHotKeyKey;
+        break;
+      default:
+        return;
+    }
+    notifyListeners();
+    if (hotKey != null) {
+      await prefs.setString(key, jsonEncode(hotKey.toJson()));
+    } else {
+      await prefs.setString(key, 'none');
+    }
+  }
+
+  Future<void> resetToDefaultHotKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+    _playPauseHotKey = _getDefaultHotKey('play_pause');
+    _nextTrackHotKey = _getDefaultHotKey('next_track');
+    _prevTrackHotKey = _getDefaultHotKey('prev_track');
+    _volumeUpHotKey = _getDefaultHotKey('volume_up');
+    _volumeDownHotKey = _getDefaultHotKey('volume_down');
+    notifyListeners();
+    await prefs.setString(
+      _playPauseHotKeyKey,
+      jsonEncode(_playPauseHotKey!.toJson()),
+    );
+    await prefs.setString(
+      _nextTrackHotKeyKey,
+      jsonEncode(_nextTrackHotKey!.toJson()),
+    );
+    await prefs.setString(
+      _prevTrackHotKeyKey,
+      jsonEncode(_prevTrackHotKey!.toJson()),
+    );
+    await prefs.setString(
+      _volumeUpHotKeyKey,
+      jsonEncode(_volumeUpHotKey!.toJson()),
+    );
+    await prefs.setString(
+      _volumeDownHotKeyKey,
+      jsonEncode(_volumeDownHotKey!.toJson()),
+    );
+  }
+}

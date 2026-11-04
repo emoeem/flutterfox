@@ -54,6 +54,14 @@ fn parse_song(item: &Value) -> Option<SongInfo> {
         _ => String::new(),
     };
 
+    let artist_id = match &item["Singers"] {
+        Value::Array(singers) => singers
+            .first()
+            .map(|singer| value_string(&singer["id"]))
+            .unwrap_or_default(),
+        _ => String::new(),
+    };
+
     let album_name = item["AlbumName"].as_str().unwrap_or("").to_string();
     let album_id = value_string(&item["AlbumID"]);
     let duration_secs = json_i64(&item["Duration"]).max(json_i64(&item["_interval"])) as u64;
@@ -101,6 +109,9 @@ fn parse_song(item: &Value) -> Option<SongInfo> {
     song.duration = Duration::from_secs(duration_secs);
     song.qualities = qualities;
     song.extra = extra;
+    if !artist_id.is_empty() {
+        song.extra.insert("artist_id".to_string(), artist_id);
+    }
     Some(song)
 }
 

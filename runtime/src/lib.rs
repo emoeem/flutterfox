@@ -147,19 +147,40 @@ impl ApplicationRuntime {
             cover: Arc::clone(&cover),
             config: Arc::clone(&shared),
         });
+        // DownloadManager 构造需要 tokio 句柄：TUI（block_on 内）与 FRB 异步上下文
+        // 都有；纯同步构造路径（无 tokio）下下载端口留空，playback 不受影响。
+        let downloads_manager = tokio::runtime::Handle::try_current()
+            .ok()
+            .map(|handle| Arc::new(voicefox_download::DownloadManager::new(&config, handle)));
+
+        // 配置保存后立即热应用：此前这些设置只在启动时读一次，改完要重启才生效。
+        let apply: Arc<dyn Fn(&lx_core::model::config::Config) + Send + Sync> = {
+            let player = Arc::clone(&player);
+            let lyrics = Arc::clone(&lyrics);
+            let downloads = downloads_manager.clone();
+            Arc::new(move |config: &lx_core::model::config::Config| {
+                player.set_volume(config.player.volume);
+                player.set_playback_speed(config.player.playback_speed);
+                player.set_audio_output_device(&config.player.audio_device);
+                lx_source::configure_network(&config.network.proxy_url, config.network.timeout);
+                lyrics.set_translation_enabled(config.lyric.show_translation);
+                lyrics.set_yrc_enabled(config.lyric.show_yrc);
+                lyrics.set_offset_ms(config.lyric.offset);
+                if let Some(manager) = &downloads {
+                    manager.sync_config(config);
+                }
+            })
+        };
+
         let config_store = Arc::new(RuntimeConfigStore {
             config: Arc::clone(&shared),
             path: config_path.clone(),
+            apply: Some(apply),
         });
-        // DownloadManager 构造需要 tokio 句柄：TUI（block_on 内）与 FRB 异步上下文
-        // 都有；纯同步构造路径（无 tokio）下下载端口留空，playback 不受影响。
         let downloads: Option<Arc<dyn voicefox_application::DownloadsEngine>> =
-            tokio::runtime::Handle::try_current().ok().map(|handle| {
+            downloads_manager.map(|manager| {
                 Arc::new(RuntimeDownloads {
-                    manager: Arc::new(voicefox_download::DownloadManager::new(
-                        &config,
-                        handle,
-                    )),
+                    manager,
                     sources: Arc::clone(&sources),
                 }) as Arc<dyn voicefox_application::DownloadsEngine>
             });
@@ -175,6 +196,8 @@ impl ApplicationRuntime {
         if let Some(engine) = downloads {
             tokio::spawn(downloads_bridge(application.clone(), engine));
         }
+        // 播放器 watcher/事件接进应用层：进度、时长、暂停状态、自动切歌。
+        application.start_playback_pump();
         Ok(Self {
             application,
             config: shared,
@@ -203,19 +226,27 @@ impl ApplicationRuntime {
 }
 pub mod config_loader;
 
-/// [`voicefox_application::ConfigStore`] 的 runtime 实现：内存替换 + TOML 落盘。
+/// [`voicefox_application::ConfigStore`] 的 runtime 实现：内存替换 + TOML 落盘，
+/// 并在保存后立即把可热更新的设置应用到播放器/网络/歌词/下载。
 struct RuntimeConfigStore {
     config: Arc<RwLock<lx_core::model::config::Config>>,
     path: std::path::PathBuf,
+    apply: Option<Arc<dyn Fn(&lx_core::model::config::Config) + Send + Sync>>,
 }
 
 impl voicefox_application::ConfigStore for RuntimeConfigStore {
     fn get(&self) -> lx_core::model::config::Config {
-        self.config.read().unwrap_or_else(|e| e.into_inner()).clone()
+        self.config
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
     }
     fn set(&self, config: lx_core::model::config::Config) -> Result<(), String> {
         config_loader::save(&config, &self.path).map_err(|error| error.to_string())?;
-        *self.config.write().unwrap_or_else(|e| e.into_inner()) = config;
+        *self.config.write().unwrap_or_else(|e| e.into_inner()) = config.clone();
+        if let Some(apply) = &self.apply {
+            apply(&config);
+        }
         Ok(())
     }
 }
@@ -231,9 +262,7 @@ impl voicefox_application::DownloadsEngine for RuntimeDownloads {
     fn enqueue(&self, song: lx_core::model::song::SongInfo) -> bool {
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         // 通知排空：下载进度的 AppAction 通知对 GUI 无意义（状态靠快照），丢弃即可。
-        tokio::spawn(async move {
-            while rx.recv().await.is_some() {}
-        });
+        tokio::spawn(async move { while rx.recv().await.is_some() {} });
         self.manager.enqueue(song, Arc::clone(&self.sources), tx)
     }
     fn cancel(&self, id: u64) {
@@ -253,6 +282,7 @@ impl voicefox_application::DownloadsEngine for RuntimeDownloads {
                 source: task.source,
                 quality: task.quality,
                 dest: task.dest.display().to_string(),
+                song: task.song,
                 state: task.state.label().to_string(),
                 active: task.state.is_active(),
                 downloaded: task.progress.downloaded,

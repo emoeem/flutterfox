@@ -14,10 +14,77 @@ abstract class VoicefoxController implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxEventStream>>
 abstract class VoicefoxEventStream implements RustOpaqueInterface {}
 
+class AlbumDto {
+  final String id;
+  final String name;
+  final String source;
+  final String? coverUrl;
+  final String artist;
+
+  const AlbumDto({
+    required this.id,
+    required this.name,
+    required this.source,
+    this.coverUrl,
+    required this.artist,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      source.hashCode ^
+      coverUrl.hashCode ^
+      artist.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AlbumDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          source == other.source &&
+          coverUrl == other.coverUrl &&
+          artist == other.artist;
+}
+
+class ArtistDto {
+  final String id;
+  final String name;
+  final String source;
+  final String? coverUrl;
+
+  const ArtistDto({
+    required this.id,
+    required this.name,
+    required this.source,
+    this.coverUrl,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ name.hashCode ^ source.hashCode ^ coverUrl.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ArtistDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          source == other.source &&
+          coverUrl == other.coverUrl;
+}
+
 /// 配置的 FFI 子集镜像：只覆盖 GUI 设置页 v1 编辑面。
 /// 回写时打在「当前完整配置」上，未镜像字段（keybindings/local_music 等）原样保留。
 class ConfigDto {
   final String theme;
+  final bool dynamicColor;
+
+  /// GUI 明暗三态（`system`/`light`/`dark`），镜像 `theme.mode`。
+  final String themeMode;
   final int volume;
   final double playbackSpeed;
   final String playMode;
@@ -34,8 +101,15 @@ class ConfigDto {
   final String proxyUrl;
   final BigInt networkTimeoutSecs;
 
+  /// 本地音乐目录与扫描深度（只读镜像，供本地音乐页触发扫描）。
+  final bool localMusicEnabled;
+  final List<String> localMusicPaths;
+  final int localMusicMaxDepth;
+
   const ConfigDto({
     required this.theme,
+    required this.dynamicColor,
+    required this.themeMode,
     required this.volume,
     required this.playbackSpeed,
     required this.playMode,
@@ -51,11 +125,16 @@ class ConfigDto {
     required this.lyricOffsetMs,
     required this.proxyUrl,
     required this.networkTimeoutSecs,
+    required this.localMusicEnabled,
+    required this.localMusicPaths,
+    required this.localMusicMaxDepth,
   });
 
   @override
   int get hashCode =>
       theme.hashCode ^
+      dynamicColor.hashCode ^
+      themeMode.hashCode ^
       volume.hashCode ^
       playbackSpeed.hashCode ^
       playMode.hashCode ^
@@ -70,7 +149,10 @@ class ConfigDto {
       showYrc.hashCode ^
       lyricOffsetMs.hashCode ^
       proxyUrl.hashCode ^
-      networkTimeoutSecs.hashCode;
+      networkTimeoutSecs.hashCode ^
+      localMusicEnabled.hashCode ^
+      localMusicPaths.hashCode ^
+      localMusicMaxDepth.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -78,6 +160,8 @@ class ConfigDto {
       other is ConfigDto &&
           runtimeType == other.runtimeType &&
           theme == other.theme &&
+          dynamicColor == other.dynamicColor &&
+          themeMode == other.themeMode &&
           volume == other.volume &&
           playbackSpeed == other.playbackSpeed &&
           playMode == other.playMode &&
@@ -92,7 +176,10 @@ class ConfigDto {
           showYrc == other.showYrc &&
           lyricOffsetMs == other.lyricOffsetMs &&
           proxyUrl == other.proxyUrl &&
-          networkTimeoutSecs == other.networkTimeoutSecs;
+          networkTimeoutSecs == other.networkTimeoutSecs &&
+          localMusicEnabled == other.localMusicEnabled &&
+          localMusicPaths == other.localMusicPaths &&
+          localMusicMaxDepth == other.localMusicMaxDepth;
 }
 
 class CustomPlaylistSummaryDto {
@@ -130,6 +217,9 @@ class DownloadTaskDto {
   final String source;
   final String quality;
   final String dest;
+
+  /// 完整歌曲载荷：失败/取消任务的「重试」按钮用它重新入队。
+  final SongDto song;
   final String state;
   final bool active;
   final BigInt downloaded;
@@ -144,6 +234,7 @@ class DownloadTaskDto {
     required this.source,
     required this.quality,
     required this.dest,
+    required this.song,
     required this.state,
     required this.active,
     required this.downloaded,
@@ -160,6 +251,7 @@ class DownloadTaskDto {
       source.hashCode ^
       quality.hashCode ^
       dest.hashCode ^
+      song.hashCode ^
       state.hashCode ^
       active.hashCode ^
       downloaded.hashCode ^
@@ -178,6 +270,7 @@ class DownloadTaskDto {
           source == other.source &&
           quality == other.quality &&
           dest == other.dest &&
+          song == other.song &&
           state == other.state &&
           active == other.active &&
           downloaded == other.downloaded &&
@@ -195,6 +288,10 @@ sealed class FfiCommand with _$FfiCommand {
   const factory FfiCommand.toggle() = FfiCommand_Toggle;
   const factory FfiCommand.stop() = FfiCommand_Stop;
   const factory FfiCommand.seekMs(BigInt field0) = FfiCommand_SeekMs;
+
+  /// 立即设置播放器音量（0-100）；持久化由 ConfigUpdate 负责。
+  const factory FfiCommand.setVolume({required int volume}) =
+      FfiCommand_SetVolume;
   const factory FfiCommand.playSong({required SongDto song}) =
       FfiCommand_PlaySong;
   const factory FfiCommand.queueAdd({
@@ -206,8 +303,12 @@ sealed class FfiCommand with _$FfiCommand {
   const factory FfiCommand.queueClear() = FfiCommand_QueueClear;
   const factory FfiCommand.next() = FfiCommand_Next;
   const factory FfiCommand.previous() = FfiCommand_Previous;
-  const factory FfiCommand.search({required String keyword}) =
-      FfiCommand_Search;
+  const factory FfiCommand.search({
+    required String keyword,
+
+    /// 可选音源过滤；None 为聚合搜索。不合法的 id 报错。
+    String? source,
+  }) = FfiCommand_Search;
   const factory FfiCommand.searchMore({
     required String keyword,
     required int page,
@@ -242,6 +343,8 @@ sealed class FfiCommand with _$FfiCommand {
     required String id,
     required SongDto song,
   }) = FfiCommand_CustomPlaylistRemoveSong;
+  const factory FfiCommand.customPlaylistDetail({required String id}) =
+      FfiCommand_CustomPlaylistDetail;
   const factory FfiCommand.configGet() = FfiCommand_ConfigGet;
   const factory FfiCommand.configUpdate({required ConfigDto config}) =
       FfiCommand_ConfigUpdate;
@@ -260,6 +363,103 @@ sealed class FfiCommand with _$FfiCommand {
     required List<String> paths,
     required int maxDepth,
   }) = FfiCommand_LocalScan;
+  const factory FfiCommand.accountPlaylists({required String source}) =
+      FfiCommand_AccountPlaylists;
+  const factory FfiCommand.accountFavorites({required String source}) =
+      FfiCommand_AccountFavorites;
+  const factory FfiCommand.accountPlaylistDetail({
+    required String source,
+    required String playlistId,
+  }) = FfiCommand_AccountPlaylistDetail;
+  const factory FfiCommand.syncPreview({required String source}) =
+      FfiCommand_SyncPreview;
+  const factory FfiCommand.syncRun({required String source}) =
+      FfiCommand_SyncRun;
+  const factory FfiCommand.syncCancel() = FfiCommand_SyncCancel;
+  const factory FfiCommand.pushTargets({required String source}) =
+      FfiCommand_PushTargets;
+  const factory FfiCommand.pushCreateTarget({
+    required String source,
+    required String name,
+  }) = FfiCommand_PushCreateTarget;
+  const factory FfiCommand.pushPlan({
+    required String source,
+    required String localName,
+    required List<SongDto> localSongs,
+    required bool isFavorites,
+    required String targetKind,
+    required String targetId,
+    required String targetName,
+    required int targetSongCount,
+  }) = FfiCommand_PushPlan;
+  const factory FfiCommand.pushRun({required String source}) =
+      FfiCommand_PushRun;
+  const factory FfiCommand.pushCancel() = FfiCommand_PushCancel;
+  const factory FfiCommand.playlistCategories({required String source}) =
+      FfiCommand_PlaylistCategories;
+  const factory FfiCommand.playlistList({
+    required String source,
+    required String category,
+    required int page,
+  }) = FfiCommand_PlaylistList;
+  const factory FfiCommand.playlistDetail({
+    required String source,
+    required String playlistId,
+    required int page,
+  }) = FfiCommand_PlaylistDetail;
+  const factory FfiCommand.leaderboardBoards({required String source}) =
+      FfiCommand_LeaderboardBoards;
+  const factory FfiCommand.leaderboardSongs({
+    required String source,
+    required String boardId,
+    required int page,
+  }) = FfiCommand_LeaderboardSongs;
+  const factory FfiCommand.artistSongs({
+    required ArtistDto artist,
+    required int page,
+  }) = FfiCommand_ArtistSongs;
+  const factory FfiCommand.artistAlbums({
+    required ArtistDto artist,
+    required int page,
+  }) = FfiCommand_ArtistAlbums;
+  const factory FfiCommand.albumSongs({
+    required AlbumDto album,
+    required int page,
+  }) = FfiCommand_AlbumSongs;
+
+  /// 播放一组歌曲（列表/榜单/专辑的「播放全部」），复用现有队列播放语义。
+  const factory FfiCommand.playSongs({
+    required List<SongDto> songs,
+    required int index,
+  }) = FfiCommand_PlaySongs;
+}
+
+class LeaderboardDto {
+  final String id;
+  final String name;
+  final String source;
+  final String? update;
+
+  const LeaderboardDto({
+    required this.id,
+    required this.name,
+    required this.source,
+    this.update,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ name.hashCode ^ source.hashCode ^ update.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LeaderboardDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          source == other.source &&
+          update == other.update;
 }
 
 class LyricLineDto {
@@ -361,6 +561,45 @@ class PlaybackDto {
           generation == other.generation;
 }
 
+class PlaylistCategoryDto {
+  final String id;
+  final String name;
+  final String source;
+  final String? group;
+  final int count;
+  final bool hot;
+
+  const PlaylistCategoryDto({
+    required this.id,
+    required this.name,
+    required this.source,
+    this.group,
+    required this.count,
+    required this.hot,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      source.hashCode ^
+      group.hashCode ^
+      count.hashCode ^
+      hot.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlaylistCategoryDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          source == other.source &&
+          group == other.group &&
+          count == other.count &&
+          hot == other.hot;
+}
+
 class PlaylistDto {
   final String id;
   final String name;
@@ -398,6 +637,117 @@ class PlaylistDto {
           coverUrl == other.coverUrl &&
           songCount == other.songCount &&
           description == other.description;
+}
+
+class PushPreviewDto {
+  final String targetName;
+  final String targetKind;
+  final int localSongs;
+  final int remoteSongs;
+  final int additions;
+  final int matched;
+  final int unmatched;
+  final List<String> samples;
+
+  const PushPreviewDto({
+    required this.targetName,
+    required this.targetKind,
+    required this.localSongs,
+    required this.remoteSongs,
+    required this.additions,
+    required this.matched,
+    required this.unmatched,
+    required this.samples,
+  });
+
+  @override
+  int get hashCode =>
+      targetName.hashCode ^
+      targetKind.hashCode ^
+      localSongs.hashCode ^
+      remoteSongs.hashCode ^
+      additions.hashCode ^
+      matched.hashCode ^
+      unmatched.hashCode ^
+      samples.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PushPreviewDto &&
+          runtimeType == other.runtimeType &&
+          targetName == other.targetName &&
+          targetKind == other.targetKind &&
+          localSongs == other.localSongs &&
+          remoteSongs == other.remoteSongs &&
+          additions == other.additions &&
+          matched == other.matched &&
+          unmatched == other.unmatched &&
+          samples == other.samples;
+}
+
+class PushReportDto {
+  final String targetName;
+  final int added;
+  final int alreadyPresent;
+  final int unmatched;
+  final List<String> failed;
+
+  const PushReportDto({
+    required this.targetName,
+    required this.added,
+    required this.alreadyPresent,
+    required this.unmatched,
+    required this.failed,
+  });
+
+  @override
+  int get hashCode =>
+      targetName.hashCode ^
+      added.hashCode ^
+      alreadyPresent.hashCode ^
+      unmatched.hashCode ^
+      failed.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PushReportDto &&
+          runtimeType == other.runtimeType &&
+          targetName == other.targetName &&
+          added == other.added &&
+          alreadyPresent == other.alreadyPresent &&
+          unmatched == other.unmatched &&
+          failed == other.failed;
+}
+
+class PushTargetDto {
+  /// "playlist" / "favorites"，作为稳定的 wire 值。
+  final String kind;
+  final String id;
+  final String name;
+  final int songCount;
+
+  const PushTargetDto({
+    required this.kind,
+    required this.id,
+    required this.name,
+    required this.songCount,
+  });
+
+  @override
+  int get hashCode =>
+      kind.hashCode ^ id.hashCode ^ name.hashCode ^ songCount.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PushTargetDto &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          id == other.id &&
+          name == other.name &&
+          songCount == other.songCount;
 }
 
 class QrLoginSessionDto {
@@ -446,12 +796,20 @@ class SearchDto {
   final List<SongDto> items;
   final BigInt requestId;
 
+  /// 请求进行中（GUI 显示加载态，而不是空态）。
+  final bool loading;
+
+  /// 最近一次失败的可见原因；成功后为 None。
+  final String? error;
+
   const SearchDto({
     required this.keyword,
     required this.page,
     required this.hasMore,
     required this.items,
     required this.requestId,
+    required this.loading,
+    this.error,
   });
 
   @override
@@ -460,7 +818,9 @@ class SearchDto {
       page.hashCode ^
       hasMore.hashCode ^
       items.hashCode ^
-      requestId.hashCode;
+      requestId.hashCode ^
+      loading.hashCode ^
+      error.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -471,7 +831,9 @@ class SearchDto {
           page == other.page &&
           hasMore == other.hasMore &&
           items == other.items &&
-          requestId == other.requestId;
+          requestId == other.requestId &&
+          loading == other.loading &&
+          error == other.error;
 }
 
 class SongDto {
@@ -479,7 +841,13 @@ class SongDto {
   final String source;
   final String name;
   final String singer;
+
+  /// 稳定的歌手 ID；音源未提供时为空，UI 回退到展示名。
+  final String? artistId;
   final String albumName;
+
+  /// 稳定的专辑 ID；音源未提供时为空，UI 回退到展示名。
+  final String? albumId;
   final BigInt durationMs;
   final String? coverUrl;
 
@@ -488,7 +856,9 @@ class SongDto {
     required this.source,
     required this.name,
     required this.singer,
+    this.artistId,
     required this.albumName,
+    this.albumId,
     required this.durationMs,
     this.coverUrl,
   });
@@ -499,7 +869,9 @@ class SongDto {
       source.hashCode ^
       name.hashCode ^
       singer.hashCode ^
+      artistId.hashCode ^
       albumName.hashCode ^
+      albumId.hashCode ^
       durationMs.hashCode ^
       coverUrl.hashCode;
 
@@ -512,9 +884,214 @@ class SongDto {
           source == other.source &&
           name == other.name &&
           singer == other.singer &&
+          artistId == other.artistId &&
           albumName == other.albumName &&
+          albumId == other.albumId &&
           durationMs == other.durationMs &&
           coverUrl == other.coverUrl;
+}
+
+/// 音源能力位：前端据此隐藏入口或展示「该音源不支持」空态。
+class SourceCapabilitiesDto {
+  final String id;
+  final String name;
+  final bool playlists;
+  final bool playlistCategories;
+  final bool playlistSearch;
+  final bool album;
+  final bool artist;
+  final bool leaderboard;
+  final bool login;
+  final bool qrLogin;
+
+  const SourceCapabilitiesDto({
+    required this.id,
+    required this.name,
+    required this.playlists,
+    required this.playlistCategories,
+    required this.playlistSearch,
+    required this.album,
+    required this.artist,
+    required this.leaderboard,
+    required this.login,
+    required this.qrLogin,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      playlists.hashCode ^
+      playlistCategories.hashCode ^
+      playlistSearch.hashCode ^
+      album.hashCode ^
+      artist.hashCode ^
+      leaderboard.hashCode ^
+      login.hashCode ^
+      qrLogin.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SourceCapabilitiesDto &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          playlists == other.playlists &&
+          playlistCategories == other.playlistCategories &&
+          playlistSearch == other.playlistSearch &&
+          album == other.album &&
+          artist == other.artist &&
+          leaderboard == other.leaderboard &&
+          login == other.login &&
+          qrLogin == other.qrLogin;
+}
+
+class SyncFailureDto {
+  final String name;
+  final String reason;
+
+  const SyncFailureDto({required this.name, required this.reason});
+
+  @override
+  int get hashCode => name.hashCode ^ reason.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncFailureDto &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          reason == other.reason;
+}
+
+class SyncPreviewDto {
+  final int playlists;
+  final int favorites;
+  final int songs;
+  final int added;
+  final int updated;
+  final int removed;
+  final List<SyncFailureDto> failures;
+  final List<SyncRowDto> rows;
+
+  const SyncPreviewDto({
+    required this.playlists,
+    required this.favorites,
+    required this.songs,
+    required this.added,
+    required this.updated,
+    required this.removed,
+    required this.failures,
+    required this.rows,
+  });
+
+  @override
+  int get hashCode =>
+      playlists.hashCode ^
+      favorites.hashCode ^
+      songs.hashCode ^
+      added.hashCode ^
+      updated.hashCode ^
+      removed.hashCode ^
+      failures.hashCode ^
+      rows.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncPreviewDto &&
+          runtimeType == other.runtimeType &&
+          playlists == other.playlists &&
+          favorites == other.favorites &&
+          songs == other.songs &&
+          added == other.added &&
+          updated == other.updated &&
+          removed == other.removed &&
+          failures == other.failures &&
+          rows == other.rows;
+}
+
+class SyncReportDto {
+  final int playlists;
+  final int favorites;
+  final int songs;
+  final int added;
+  final int updated;
+  final int removed;
+  final List<SyncFailureDto> failures;
+
+  const SyncReportDto({
+    required this.playlists,
+    required this.favorites,
+    required this.songs,
+    required this.added,
+    required this.updated,
+    required this.removed,
+    required this.failures,
+  });
+
+  @override
+  int get hashCode =>
+      playlists.hashCode ^
+      favorites.hashCode ^
+      songs.hashCode ^
+      added.hashCode ^
+      updated.hashCode ^
+      removed.hashCode ^
+      failures.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncReportDto &&
+          runtimeType == other.runtimeType &&
+          playlists == other.playlists &&
+          favorites == other.favorites &&
+          songs == other.songs &&
+          added == other.added &&
+          updated == other.updated &&
+          removed == other.removed &&
+          failures == other.failures;
+}
+
+class SyncRowDto {
+  final String name;
+
+  /// "歌单" / "红心"。
+  final String kind;
+  final int cached;
+  final int remote;
+
+  /// "新增" / "更新" / "相同"。
+  final String status;
+
+  const SyncRowDto({
+    required this.name,
+    required this.kind,
+    required this.cached,
+    required this.remote,
+    required this.status,
+  });
+
+  @override
+  int get hashCode =>
+      name.hashCode ^
+      kind.hashCode ^
+      cached.hashCode ^
+      remote.hashCode ^
+      status.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncRowDto &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          kind == other.kind &&
+          cached == other.cached &&
+          remote == other.remote &&
+          status == other.status;
 }
 
 class VoicefoxEvent {
@@ -529,11 +1106,29 @@ class VoicefoxEvent {
   final List<SongDto> items;
   final List<SongDto> queue;
   final int queueIndex;
+  final BigInt positionMs;
+  final BigInt durationMs;
+  final String? playbackState;
   final QrLoginSessionDto? qrSession;
   final String? status;
   final String? userName;
   final List<String> warnings;
   final ConfigDto? config;
+  final String? browseKind;
+  final String? source;
+  final String? id;
+  final List<PlaylistDto> playlists;
+  final List<PlaylistCategoryDto> categories;
+  final List<AlbumDto> albums;
+  final List<LeaderboardDto> boards;
+  final SyncPreviewDto? syncPreview;
+  final SyncReportDto? syncReport;
+  final int progressDone;
+  final int progressTotal;
+  final List<PushTargetDto> pushTargets;
+  final PushTargetDto? pushTarget;
+  final PushPreviewDto? pushPreview;
+  final PushReportDto? pushReport;
 
   const VoicefoxEvent({
     required this.kind,
@@ -547,11 +1142,29 @@ class VoicefoxEvent {
     required this.items,
     required this.queue,
     required this.queueIndex,
+    required this.positionMs,
+    required this.durationMs,
+    this.playbackState,
     this.qrSession,
     this.status,
     this.userName,
     required this.warnings,
     this.config,
+    this.browseKind,
+    this.source,
+    this.id,
+    required this.playlists,
+    required this.categories,
+    required this.albums,
+    required this.boards,
+    this.syncPreview,
+    this.syncReport,
+    required this.progressDone,
+    required this.progressTotal,
+    required this.pushTargets,
+    this.pushTarget,
+    this.pushPreview,
+    this.pushReport,
   });
 
   @override
@@ -567,11 +1180,29 @@ class VoicefoxEvent {
       items.hashCode ^
       queue.hashCode ^
       queueIndex.hashCode ^
+      positionMs.hashCode ^
+      durationMs.hashCode ^
+      playbackState.hashCode ^
       qrSession.hashCode ^
       status.hashCode ^
       userName.hashCode ^
       warnings.hashCode ^
-      config.hashCode;
+      config.hashCode ^
+      browseKind.hashCode ^
+      source.hashCode ^
+      id.hashCode ^
+      playlists.hashCode ^
+      categories.hashCode ^
+      albums.hashCode ^
+      boards.hashCode ^
+      syncPreview.hashCode ^
+      syncReport.hashCode ^
+      progressDone.hashCode ^
+      progressTotal.hashCode ^
+      pushTargets.hashCode ^
+      pushTarget.hashCode ^
+      pushPreview.hashCode ^
+      pushReport.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -589,11 +1220,29 @@ class VoicefoxEvent {
           items == other.items &&
           queue == other.queue &&
           queueIndex == other.queueIndex &&
+          positionMs == other.positionMs &&
+          durationMs == other.durationMs &&
+          playbackState == other.playbackState &&
           qrSession == other.qrSession &&
           status == other.status &&
           userName == other.userName &&
           warnings == other.warnings &&
-          config == other.config;
+          config == other.config &&
+          browseKind == other.browseKind &&
+          source == other.source &&
+          id == other.id &&
+          playlists == other.playlists &&
+          categories == other.categories &&
+          albums == other.albums &&
+          boards == other.boards &&
+          syncPreview == other.syncPreview &&
+          syncReport == other.syncReport &&
+          progressDone == other.progressDone &&
+          progressTotal == other.progressTotal &&
+          pushTargets == other.pushTargets &&
+          pushTarget == other.pushTarget &&
+          pushPreview == other.pushPreview &&
+          pushReport == other.pushReport;
 }
 
 class VoicefoxState {
@@ -609,6 +1258,12 @@ class VoicefoxState {
   final List<CustomPlaylistSummaryDto> customPlaylists;
   final List<DownloadTaskDto> downloads;
 
+  /// 已启用在线音源的能力声明（歌单/排行榜/歌手/专辑入口判定）。
+  final List<SourceCapabilitiesDto> sources;
+
+  /// 本地扫描结果（直接读 SourceManager 的本地曲库快照）。
+  final List<SongDto> localSongs;
+
   const VoicefoxState({
     required this.playback,
     required this.queue,
@@ -621,6 +1276,8 @@ class VoicefoxState {
     required this.history,
     required this.customPlaylists,
     required this.downloads,
+    required this.sources,
+    required this.localSongs,
   });
 
   @override
@@ -635,7 +1292,9 @@ class VoicefoxState {
       favoritePlaylists.hashCode ^
       history.hashCode ^
       customPlaylists.hashCode ^
-      downloads.hashCode;
+      downloads.hashCode ^
+      sources.hashCode ^
+      localSongs.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -652,5 +1311,7 @@ class VoicefoxState {
           favoritePlaylists == other.favoritePlaylists &&
           history == other.history &&
           customPlaylists == other.customPlaylists &&
-          downloads == other.downloads;
+          downloads == other.downloads &&
+          sources == other.sources &&
+          localSongs == other.localSongs;
 }

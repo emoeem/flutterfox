@@ -123,6 +123,17 @@ pub(crate) fn parse_song(resource: &Value) -> Option<SongInfo> {
         _ => String::new(),
     };
 
+    // 歌手 ID：部分接口直接用 ar[0].id，用于稳定跳转歌手页。
+    let artist_id = match &item["ar"] {
+        Value::Array(artists) => artists.first().and_then(|artist| {
+            artist["id"]
+                .as_i64()
+                .or_else(|| artist["id"].as_str().and_then(|value| value.parse().ok()))
+        }),
+        _ => None,
+    }
+    .map(|id| id.to_string());
+
     let album_name = item["al"]
         .get("name")
         .and_then(|v| v.as_str())
@@ -174,6 +185,9 @@ pub(crate) fn parse_song(resource: &Value) -> Option<SongInfo> {
     song.duration = duration;
     song.cover_url = cover_url;
     song.qualities = qualities;
+    if let Some(artist_id) = artist_id {
+        song.extra.insert("artist_id".to_string(), artist_id);
+    }
 
     Some(song)
 }

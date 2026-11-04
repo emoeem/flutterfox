@@ -1,6 +1,7 @@
 pub mod apple;
 pub mod bili;
 pub mod cover_cache;
+#[cfg(feature = "js-sources")]
 pub mod js;
 pub mod local;
 pub mod manager;

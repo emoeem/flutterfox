@@ -20,12 +20,18 @@ mod notification;
 mod nowplaying;
 mod pages;
 mod playlist;
-mod remote_cache;
+/// 远程歌单缓存与同步适配已迁移到 `voicefox-application`；
+/// 保留模块别名，页面里的 `crate::remote_cache::…` 路径不变。
+mod remote_cache {
+    pub use voicefox_application::remote_cache::*;
+}
 mod sleep_timer;
 #[cfg(target_os = "windows")]
 mod smtc;
 mod storage;
-mod sync;
+mod sync {
+    pub use voicefox_application::sync::*;
+}
 mod ui_cursor;
 mod visualizer;
 
@@ -2121,7 +2127,7 @@ fn run_app(
                         continue;
                     }
                     let mut overlay = pages::sync_overlay::SyncOverlay::new();
-                    overlay.start_for(source, Arc::clone(&ctx.storage), rt);
+                    overlay.start_for(source, rt);
                     sync_overlay = Some(overlay);
                     needs_render = true;
                     continue;
@@ -2844,7 +2850,7 @@ fn run_app(
                         KeyCode::Enter | KeyCode::Char('s') | KeyCode::Char('S')
                             if phase == pages::sync_overlay::SyncPhase::Preview =>
                         {
-                            sync.confirm(Arc::clone(&ctx.storage), rt);
+                            sync.confirm(rt);
                         }
                         KeyCode::Char('r') | KeyCode::Char('R')
                             if matches!(
@@ -2853,7 +2859,7 @@ fn run_app(
                                     | pages::sync_overlay::SyncPhase::Cancelled
                             ) =>
                         {
-                            sync.retry(Arc::clone(&ctx.storage), rt);
+                            sync.retry(rt);
                         }
                         _ => {}
                     },

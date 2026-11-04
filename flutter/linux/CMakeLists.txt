@@ -106,6 +106,38 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     COMPONENT Runtime)
 endforeach(bundled_library)
 
+# voicefox FFI 动态库：由 cargo 构建并在安装时装入 bundle/lib。
+# 没有它 Dart 侧会报 "Failed to load dynamic library 'libvoicefox_ffi.so'"；
+# 且 flutter 的增量重建会清掉手动复制的文件，所以必须在安装规则里带上。
+# profile 跟随 Flutter 构建模式：Debug 用 target/debug，Profile/Release 用 target/release。
+set(VOICEFOX_FFI_PROFILE "release")
+set(VOICEFOX_FFI_PROFILE_FLAG "--release")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(VOICEFOX_FFI_PROFILE "debug")
+  set(VOICEFOX_FFI_PROFILE_FLAG "")
+endif()
+set(VOICEFOX_FFI_SO
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../target/${VOICEFOX_FFI_PROFILE}/libvoicefox_ffi.so")
+
+find_program(VOICEFOX_CARGO cargo)
+if(VOICEFOX_CARGO)
+  # 让 flutter build/run 从干净工作区也能直接出可用 bundle，不必手动预构建。
+  add_custom_target(voicefox_ffi ALL
+    COMMAND ${VOICEFOX_CARGO} build -p voicefox-ffi ${VOICEFOX_FFI_PROFILE_FLAG}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+    COMMENT "Building voicefox-ffi (${VOICEFOX_FFI_PROFILE})"
+    BYPRODUCTS "${VOICEFOX_FFI_SO}"
+    VERBATIM
+  )
+  add_dependencies(${BINARY_NAME} voicefox_ffi)
+  install(FILES "${VOICEFOX_FFI_SO}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+else()
+  message(WARNING
+    "cargo 未找到：bundle/lib 将缺少 libvoicefox_ffi.so，GUI 无法启动。请安装 Rust 工具链。")
+endif()
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

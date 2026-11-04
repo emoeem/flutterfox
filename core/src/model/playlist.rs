@@ -92,7 +92,6 @@ pub struct Artist {
     pub cover_url: Option<String>,
 }
 
-
 /// 用户自建歌单（本地持久化，区别于音源侧歌单）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomPlaylist {

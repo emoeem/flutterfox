@@ -92,12 +92,45 @@ pub fn migrate_data_dir(target: &Path, legacy: &Path) {
 
 /// 数据目录。首次调用时会顺带完成旧目录迁移，因此无论调用方是
 /// `Storage`、下载记录还是远程缓存，拿到的都是迁移后的路径。
+///
+/// 宿主（移动端）可在首次使用前通过 [`set_data_dir_override`] 注入
+/// App 私有目录：`dirs::data_dir()` 在 Android 返回 `None`，回退到
+/// `"."` 会把用户数据写进进程工作目录。有覆盖时**跳过**旧目录迁移
+/// （显式目录由宿主管理，不属于迁移场景）。
 pub fn default_data_dir() -> PathBuf {
+    if let Some(dir) = data_dir_override() {
+        return dir;
+    }
     static MIGRATION: std::sync::Once = std::sync::Once::new();
     MIGRATION.call_once(|| {
         migrate_legacy_data_dir();
     });
     data_dir_path()
+}
+
+/// 进程级数据目录覆盖槽：宿主引导时写入一次，之后所有
+/// [`default_data_dir`] 调用直接返回该目录。
+static DATA_DIR_OVERRIDE: std::sync::OnceLock<std::sync::RwLock<Option<PathBuf>>> =
+    std::sync::OnceLock::new();
+
+fn override_slot() -> &'static std::sync::RwLock<Option<PathBuf>> {
+    DATA_DIR_OVERRIDE.get_or_init(|| std::sync::RwLock::new(None))
+}
+
+/// 设置（或清除）进程级数据目录覆盖。
+///
+/// 必须在首次 [`default_data_dir`] 调用之前设置：迁移的 `Once` 一旦
+/// 触发不可撤销，且覆盖只在读取时生效，不回溯已取到的路径。
+pub fn set_data_dir_override(path: Option<PathBuf>) {
+    *override_slot().write().unwrap_or_else(|e| e.into_inner()) = path;
+}
+
+/// 当前生效的覆盖目录（未设置时为 `None`）。
+pub fn data_dir_override() -> Option<PathBuf> {
+    override_slot()
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
 }
 
 pub fn save_atomic(path: &Path, content: &[u8]) -> Result<(), String> {
@@ -259,5 +292,27 @@ mod tests {
             .collect();
         assert_eq!(entries, vec!["data.json".to_string()]);
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn data_dir_override_takes_precedence_and_can_be_cleared() {
+        let override_dir =
+            std::env::temp_dir().join(format!("vfs-override-{}", std::process::id()));
+        set_data_dir_override(Some(override_dir.clone()));
+        assert_eq!(default_data_dir(), override_dir);
+        assert_eq!(data_dir_override(), Some(override_dir.clone()));
+
+        // 覆盖目录不会被动过（迁移逻辑对显式目录无效）。
+        assert!(!override_dir.exists());
+
+        // 清除后读口返回 None；同一进程内再次设置仍生效。
+        set_data_dir_override(None);
+        assert_eq!(data_dir_override(), None);
+
+        let second = override_dir.join("second");
+        set_data_dir_override(Some(second.clone()));
+        assert_eq!(default_data_dir(), second);
+        set_data_dir_override(None);
+        assert_eq!(data_dir_override(), None);
     }
 }

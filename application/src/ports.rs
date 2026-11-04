@@ -29,11 +29,13 @@ pub trait LibraryStore: Send + Sync {
     fn rename_custom_playlist(&self, id: &str, name: &str) -> Result<(), String>;
     fn delete_custom_playlist(&self, id: &str) -> Result<bool, String>;
     fn add_song_to_custom_playlist(&self, id: &str, song: &SongInfo) -> Result<bool, String>;
-    fn add_songs_to_custom_playlist(&self, id: &str, songs: &[SongInfo])
-    -> Result<(usize, usize), String>;
+    fn add_songs_to_custom_playlist(
+        &self,
+        id: &str,
+        songs: &[SongInfo],
+    ) -> Result<(usize, usize), String>;
     fn remove_song_from_custom_playlist(&self, id: &str, song: &SongInfo) -> Result<bool, String>;
 }
-
 
 /// 配置读写端口（runtime 实现：内存替换 + TOML 落盘）。
 pub trait ConfigStore: Send + Sync {
@@ -53,6 +55,8 @@ pub struct DownloadTaskInfo {
     pub source: lx_core::model::source::SourceId,
     pub quality: lx_core::model::source::Quality,
     pub dest: String,
+    /// 完整歌曲载荷：失败/取消任务用它重新入队（UI 重试按钮）。
+    pub song: SongInfo,
     /// 下载状态的人类可读标签（排队中/下载中/已完成/失败…）。
     pub state: String,
     /// 是否仍在活跃（排队/解析/下载/写标签）。

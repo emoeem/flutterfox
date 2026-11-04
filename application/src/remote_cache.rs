@@ -34,7 +34,7 @@ impl Slot {
 
     #[cfg(not(test))]
     fn cache_path(&self) -> PathBuf {
-        crate::storage::default_data_dir().join(self.file_name)
+        lx_core::fsutil::default_data_dir().join(self.file_name)
     }
 
     /// 测试构建下没有磁盘缓存，指向一个必然不存在的路径即可。

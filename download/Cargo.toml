@@ -7,7 +7,7 @@ repository.workspace = true
 
 [dependencies]
 lx-core = { path = "../core" }
-lx-source = { path = "../source" }
+lx-source = { path = "../source", default-features = false }
 lx-lyric = { path = "../lyric" }
 dirs.workspace = true
 image.workspace = true

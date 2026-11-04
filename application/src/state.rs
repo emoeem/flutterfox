@@ -5,6 +5,21 @@ use lx_core::model::playlist::{CustomPlaylistSummary, Playlist};
 use lx_core::model::song::SongInfo;
 use lx_core::model::source::PlayerState;
 
+/// 音源能力声明的稳定前端镜像。GUI 据此隐藏入口或在空态里说明原因。
+#[derive(Debug, Clone)]
+pub struct SourceCapabilityInfo {
+    pub id: String,
+    pub name: String,
+    pub playlists: bool,
+    pub playlist_categories: bool,
+    pub playlist_search: bool,
+    pub album: bool,
+    pub artist: bool,
+    pub leaderboard: bool,
+    pub login: bool,
+    pub qr_login: bool,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct ApplicationState {
     pub playback: PlaybackSnapshot,
@@ -56,6 +71,10 @@ pub struct SearchState {
     pub has_more: bool,
     pub items: Vec<SongInfo>,
     pub request_id: u64,
+    /// 请求进行中：GUI 据此显示加载态而不是空态。
+    pub loading: bool,
+    /// 最近一次失败的可见原因；成功后清空。
+    pub error: Option<String>,
 }
 
 /// Stable frontend DTO. It deliberately uses strings instead of exposing

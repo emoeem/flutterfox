@@ -543,6 +543,19 @@ fn parse_js_search_result(result: &serde_json::Value) -> Result<SearchResult, Se
                 .unwrap_or(&serde_json::Value::Null),
         );
         song.extra.insert("source".into(), source.to_string());
+        if let Some(artist_id) = get_str(
+            item,
+            &[
+                "artist_id",
+                "artistid",
+                "artistId",
+                "singer_id",
+                "singerid",
+                "singerId",
+            ],
+        ) {
+            song.extra.insert("artist_id".into(), artist_id.to_string());
+        }
 
         if let Some(obj) = item.as_object() {
             for (key, value) in obj {

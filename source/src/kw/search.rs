@@ -112,6 +112,7 @@ pub async fn search(keyword: &str, page: u32, limit: u32) -> Result<SearchResult
 
         let album = item["ALBUM"].as_str().unwrap_or("").to_string();
         let album_id = item["ALBUMID"].as_str().unwrap_or("").to_string();
+        let artist_id = item["ARTISTID"].as_str().unwrap_or("").trim().to_string();
 
         // 时长：秒 → Duration
         let duration_secs = item["DURATION"]
@@ -128,6 +129,9 @@ pub async fn search(keyword: &str, page: u32, limit: u32) -> Result<SearchResult
         song.album_id = album_id;
         song.duration = Duration::from_secs(duration_secs);
         song.qualities = qualities;
+        if !artist_id.is_empty() {
+            song.extra.insert("artist_id".to_string(), artist_id);
+        }
 
         items.push(song);
     }
