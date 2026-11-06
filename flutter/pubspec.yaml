@@ -16,7 +16,7 @@ dependencies:
   path: ^1.9.1
   path_provider: ^2.1.5
   pinyin: ^3.3.0
-  pointycastle: ^3.9.1
+  pointycastle: ^4.0.0
   provider: ^6.1.5
   rxdart: ^0.28.0
   scrollable_positioned_list: ^0.3.8
