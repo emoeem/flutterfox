@@ -39,7 +39,8 @@ import 'context_panel.dart';
 import 'responsive_shell.dart';
 
 /// IndexedStack 中各目的地的固定顺序（settings/help 为侧栏底部二级页）。
-const List<ShellDestination> _kDestinationOrder = [
+/// 桌面 VoicefoxShell 与移动 MobileShell/TabletShell 共享（Phase 7）。
+const List<ShellDestination> kShellDestinationOrder = [
   ShellDestination.home,
   ShellDestination.discover,
   ShellDestination.search,
@@ -49,9 +50,19 @@ const List<ShellDestination> _kDestinationOrder = [
   ShellDestination.help,
 ];
 
+/// 一级导航五主入口（§2.1；桌面侧栏与手机底部导航同源）。
+const List<ShellDestination> kShellPrimaryDestinations = [
+  ShellDestination.home,
+  ShellDestination.discover,
+  ShellDestination.search,
+  ShellDestination.library,
+  ShellDestination.downloads,
+];
+
 /// 旧页面 `navRequest`（旧九入口索引）→ 新目的地。
 /// 1=搜索 2=曲库 3=在线歌单 4=排行榜 5=本地音乐 6=下载 7=设置。
-ShellDestination? _mapLegacyNavIndex(int index) => switch (index) {
+/// 桌面与移动壳同样消费（Phase 7 提取共享）。
+ShellDestination? mapLegacyNavIndex(int index) => switch (index) {
       1 => ShellDestination.search,
       2 => ShellDestination.library,
       3 || 4 => ShellDestination.discover,
@@ -268,7 +279,7 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
     final index = navRequest.value;
     if (index == null) return;
     navRequest.value = null;
-    final dest = _mapLegacyNavIndex(index);
+    final dest = mapLegacyNavIndex(index);
     if (dest == null || dest == _current) return;
     _navigate(dest);
   }
@@ -491,9 +502,9 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(VxRadius.lg),
                   child: IndexedStack(
-                    index: _kDestinationOrder.indexOf(_current),
+                    index: kShellDestinationOrder.indexOf(_current),
                     children: [
-                      for (final dest in _kDestinationOrder) _pageFor(dest),
+                      for (final dest in kShellDestinationOrder) _pageFor(dest),
                     ],
                   ),
                 ),
@@ -590,27 +601,13 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
     );
   }
 
-  Widget _pageFor(ShellDestination dest) {
-    final model = widget.model;
-    return switch (dest) {
-      ShellDestination.home => HomePage(model),
-      ShellDestination.discover => DiscoverPage(model),
-      ShellDestination.search => KeyedSubtree(
-          key: ValueKey('search-page:$_searchSeed'),
-          child: SearchPage(model, seedKeyword: _searchSeed),
-        ),
-      ShellDestination.library => LibraryPage(
-          model,
-          initialTab: _libraryTabFromSeed(),
-        ),
-      ShellDestination.downloads => DownloadsPage(model),
-      ShellDestination.settings => SettingsPage(
-          model,
-          initialSection: _settingsSectionFromSeed(),
-        ),
-      ShellDestination.help => const HelpPage(),
-    };
-  }
+  Widget _pageFor(ShellDestination dest) => buildShellPage(
+        widget.model,
+        dest,
+        searchSeed: _searchSeed,
+        libraryTab: _libraryTabFromSeed(),
+        settingsSection: _settingsSectionFromSeed(),
+      );
 
   /// VOICEFOX_START_TAB → 我的音乐二级类别（验收截图用）。
   LibraryTab? _libraryTabFromSeed() => switch (widget.libraryTab) {
@@ -628,4 +625,30 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
     }
     return null;
   }
+}
+
+/// 构造目的地页面（Phase 7 从 _VoicefoxShellState._pageFor 提取共享）：
+/// 桌面 VoicefoxShell 与移动 MobileShell/TabletShell 的 IndexedStack
+/// 都用它建页，保证同一目的地在两种壳里是同一页面实现。
+/// [searchSeed] 搜索页种子（桌面 Header 提交联动）；[libraryTab]/
+/// [settingsSection] 为 VOICEFOX_START_* 验收种子（移动壳默认 null）。
+Widget buildShellPage(
+  AppModel model,
+  ShellDestination dest, {
+  String searchSeed = '',
+  LibraryTab? libraryTab,
+  SettingsSection? settingsSection,
+}) {
+  return switch (dest) {
+    ShellDestination.home => HomePage(model),
+    ShellDestination.discover => DiscoverPage(model),
+    ShellDestination.search => KeyedSubtree(
+        key: ValueKey('search-page:$searchSeed'),
+        child: SearchPage(model, seedKeyword: searchSeed),
+      ),
+    ShellDestination.library => LibraryPage(model, initialTab: libraryTab),
+    ShellDestination.downloads => DownloadsPage(model),
+    ShellDestination.settings => SettingsPage(model, initialSection: settingsSection),
+    ShellDestination.help => const HelpPage(),
+  };
 }

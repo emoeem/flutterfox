@@ -72,7 +72,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: _Backdrop(coverColor: _coverColor),
+                    child: NowPlayingBackdrop(coverColor: _coverColor),
                   ),
                   // 封面取色（失败回退主题色）；歌曲/封面变化时自动重取。
                   Positioned(
@@ -80,7 +80,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     top: 0,
                     width: 0,
                     height: 0,
-                    child: _AutoPalette(
+                    child: NowPlayingAutoPalette(
                       url: song?.coverUrl,
                       onColor: (color) {
                         if (mounted) setState(() => _coverColor = color);
@@ -130,8 +130,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
 // ── 背景：封面取色低饱和暗化（§5.1） ─────────────────────────────────────
 
-class _Backdrop extends StatelessWidget {
-  const _Backdrop({required this.coverColor});
+/// 封面取色低饱和暗化背景（Phase 7 提取公开：桌面 NowPlayingPage 与手机
+/// MobileNowPlayingPage 共用；浅色亮度 0.85 / 暗色 0.13 保证歌词对比度）。
+class NowPlayingBackdrop extends StatelessWidget {
+  const NowPlayingBackdrop({super.key, required this.coverColor});
 
   final Color? coverColor;
 
@@ -205,18 +207,19 @@ class _CoverPalette {
   }
 }
 
-/// 封面 URL 变化时自动重取主色。
-class _AutoPalette extends StatefulWidget {
-  const _AutoPalette({required this.url, required this.onColor});
+/// 封面 URL 变化时自动重取主色（Phase 7 提取公开；取色实现
+/// _CoverPalette 保持私有，失败回退 null 由背景走主题色）。
+class NowPlayingAutoPalette extends StatefulWidget {
+  const NowPlayingAutoPalette({super.key, required this.url, required this.onColor});
 
   final String? url;
   final ValueChanged<Color?> onColor;
 
   @override
-  State<_AutoPalette> createState() => _AutoPaletteState();
+  State<NowPlayingAutoPalette> createState() => _AutoPaletteState();
 }
 
-class _AutoPaletteState extends State<_AutoPalette> {
+class _AutoPaletteState extends State<NowPlayingAutoPalette> {
   @override
   void initState() {
     super.initState();
@@ -224,7 +227,7 @@ class _AutoPaletteState extends State<_AutoPalette> {
   }
 
   @override
-  void didUpdateWidget(covariant _AutoPalette old) {
+  void didUpdateWidget(covariant NowPlayingAutoPalette old) {
     super.didUpdateWidget(old);
     if (widget.url != old.url) _load();
   }
@@ -431,7 +434,7 @@ class _LeftColumn extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _CrossfadeCover(song: song, size: coverSize),
+              CrossfadeCover(song: song, size: coverSize),
               const SizedBox(height: 24),
               // 歌曲名 28–34px（§5.1），长标题两行截断。
               Text(
@@ -455,7 +458,7 @@ class _LeftColumn extends StatelessWidget {
                 style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant),
               ),
               const SizedBox(height: 14),
-              _ActionRow(model: model, song: song),
+              NowPlayingActionRow(model: model, song: song),
               const SizedBox(height: 20),
               RepaintBoundary(
                 child: Padding(
@@ -506,8 +509,10 @@ class _LeftColumn extends StatelessWidget {
 
 // ── 封面（切换 crossfade；无封面走种子渐变占位） ─────────────────────────
 
-class _CrossfadeCover extends StatelessWidget {
-  const _CrossfadeCover({required this.song, required this.size});
+/// 封面 crossfade（Phase 7 提取公开：歌曲更换 key 变化 → crossfade，
+/// 同曲刷新不重播 §6.5；无封面走种子渐变占位）。
+class CrossfadeCover extends StatelessWidget {
+  const CrossfadeCover({super.key, required this.song, required this.size});
 
   final bridge.SongDto song;
   final double size;
@@ -559,8 +564,10 @@ class _CrossfadeCover extends StatelessWidget {
 
 // ── 操作行：收藏 / 添加到歌单 / 下载 / 更多（全部真实命令） ─────────────
 
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.model, required this.song});
+/// 操作行：收藏 / 添加到歌单 / 下载 / 更多（Phase 7 提取公开；全部真实
+/// 命令，窄宽自动换行）。
+class NowPlayingActionRow extends StatelessWidget {
+  const NowPlayingActionRow({super.key, required this.model, required this.song});
 
   final AppModel model;
   final bridge.SongDto song;
@@ -572,8 +579,11 @@ class _ActionRow extends StatelessWidget {
       animation: model,
       builder: (context, _) {
         final favorite = model.isFavorite(song);
-        return Row(
-          mainAxisSize: MainAxisSize.min,
+        // Wrap：桌面一行放下时与 Row 视觉一致；手机窄宽自动换行不溢出。
+        return Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             IconButton(
               tooltip: favorite ? '取消收藏' : '收藏',
@@ -584,19 +594,16 @@ class _ActionRow extends StatelessWidget {
                 color: favorite ? scheme.primary : scheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(width: 6),
             IconButton(
               tooltip: '添加到歌单',
               onPressed: () => showAddToCustomPlaylistSheet(context, model, [song]),
               icon: Icon(Icons.playlist_add, size: 22, color: scheme.onSurfaceVariant),
             ),
-            const SizedBox(width: 6),
             IconButton(
               tooltip: '下载',
               onPressed: () => model.download(song),
               icon: Icon(Icons.download_outlined, size: 22, color: scheme.onSurfaceVariant),
             ),
-            const SizedBox(width: 6),
             PopupMenuButton<String>(
               tooltip: '更多',
               itemBuilder: (context) => [
@@ -631,8 +638,11 @@ class _BottomRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // Wrap：桌面一行放下时与 Row 视觉一致；手机窄宽自动换行不溢出。
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // 音量：真实 setVolume 命令（config.volume 为当前值）。
         AnimatedBuilder(
@@ -652,21 +662,25 @@ class _BottomRow extends StatelessWidget {
                   color: scheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
-                SizedBox(
-                  width: 110,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 3,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 5),
-                      overlayShape:
-                          const RoundSliderOverlayShape(overlayRadius: 10),
-                    ),
-                    child: Slider(
-                      value: (volume / 100).clamp(0.0, 1.0),
-                      onChanged: model.config != null
-                          ? (v) => model.setVolume((v * 100).round())
-                          : null,
+                // Flexible：桌面不限宽时滑条恒 110；手机窄宽（Wrap 列
+                // 157px）自动收缩，不溢出（Phase 7 触屏适配）。
+                Flexible(
+                  child: SizedBox(
+                    width: 110,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3,
+                        thumbShape:
+                            const RoundSliderThumbShape(enabledThumbRadius: 5),
+                        overlayShape:
+                            const RoundSliderOverlayShape(overlayRadius: 10),
+                      ),
+                      child: Slider(
+                        value: (volume / 100).clamp(0.0, 1.0),
+                        onChanged: model.config != null
+                            ? (v) => model.setVolume((v * 100).round())
+                            : null,
+                      ),
                     ),
                   ),
                 ),
@@ -685,7 +699,6 @@ class _BottomRow extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(width: 12),
         // 输出设备：后端未提供设备枚举 API，如实显示「由系统管理」（§5.4）。
         PopupMenuButton<void>(
           tooltip: '音频输出',
@@ -697,7 +710,6 @@ class _BottomRow extends StatelessWidget {
           ],
           icon: Icon(Icons.speaker_outlined, size: 20, color: scheme.onSurfaceVariant),
         ),
-        const SizedBox(width: 12),
         IconButton(
           tooltip: '队列面板',
           onPressed: onToggleQueue,

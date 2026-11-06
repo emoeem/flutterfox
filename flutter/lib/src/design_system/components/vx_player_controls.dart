@@ -80,13 +80,15 @@ class VxPlayerControls extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // Wrap：桌面一行放下时与 Row 视觉一致；手机窄宽（全屏页 46% 封面列）
+    // 自动换行不溢出（Phase 7 触屏适配）。
+    return Wrap(
+      spacing: gap,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         ctrl(Icons.shuffle, '随机播放', onShuffle, active: shuffleOn),
-        SizedBox(width: gap),
         ctrl(Icons.skip_previous, '上一首', onPrevious),
-        SizedBox(width: gap),
         Tooltip(
           message: isPlaying ? '暂停' : '播放',
           child: InkWell(
@@ -111,9 +113,7 @@ class VxPlayerControls extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: gap),
         ctrl(Icons.skip_next, '下一首', onNext),
-        SizedBox(width: gap),
         ctrl(Icons.repeat, '循环播放', onRepeat, active: repeatOn),
       ],
     );

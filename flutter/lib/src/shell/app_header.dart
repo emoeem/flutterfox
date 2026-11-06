@@ -17,6 +17,11 @@ import '../myune/page/setting/settings_provider.dart';
 import 'context_panel.dart';
 import 'responsive_shell.dart';
 
+/// 窗口部件（拖动区/窗控按钮）只在桌面平台进树：window_manager 0.5.2
+/// 仅声明 linux/macos/windows 平台实现，触屏平台调用必抛
+/// MissingPluginException（Phase 7 平台安全引导）。
+bool get _hasDesktopWindow => !isTouchPlatform;
+
 /// 顶部 Header。
 class AppHeader extends StatelessWidget {
   const AppHeader({
@@ -70,8 +75,11 @@ class AppHeader extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // 空白处可拖动窗口（自绘标题栏，无系统标题栏）。
-          Positioned.fill(child: DragToMoveArea(child: const SizedBox.expand())),
+          // 空白处可拖动窗口（自绘标题栏，无系统标题栏；仅桌面平台）。
+          if (_hasDesktopWindow)
+            Positioned.fill(
+              child: DragToMoveArea(child: const SizedBox.expand()),
+            ),
           Row(
             children: [
               _brandZone(context),
@@ -83,8 +91,11 @@ class AppHeader extends StatelessWidget {
               _sourceEntry(context),
               const SizedBox(width: 6),
               _panelToggles(context),
-              const SizedBox(width: 6),
-              const _WindowControls(),
+              // 窗控（最小化/最大化/关闭）仅桌面平台进树。
+              if (_hasDesktopWindow) ...[
+                const SizedBox(width: 6),
+                const _WindowControls(),
+              ],
             ],
           ),
         ],

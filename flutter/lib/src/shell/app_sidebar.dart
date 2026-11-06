@@ -95,7 +95,7 @@ class _ExpandedSidebar extends StatelessWidget {
                   const _GroupLabel('探索'),
                   for (final dest in AppSidebar._primaryOrder.take(3))
                     _NavRow(
-                      icon: _iconOf(dest),
+                      icon: shellDestinationIcon(dest),
                       label: dest.label,
                       active: current == dest,
                       onTap: () => onSelect(dest),
@@ -197,7 +197,7 @@ class _CollapsedSidebar extends StatelessWidget {
         children: [
           const SizedBox(height: 14),
           for (final dest in AppSidebar._primaryOrder.take(3))
-            icon(_iconOf(dest), dest.label, dest),
+            icon(shellDestinationIcon(dest), dest.label, dest),
           const SizedBox(height: 10),
           icon(
             Icons.library_music_outlined,
@@ -227,7 +227,8 @@ class _CollapsedSidebar extends StatelessWidget {
   }
 }
 
-IconData _iconOf(ShellDestination dest) => switch (dest) {
+/// ShellDestination → 导航图标（桌面侧栏与手机底部导航/Rail 共享，Phase 7 提取公开）。
+IconData shellDestinationIcon(ShellDestination dest) => switch (dest) {
       ShellDestination.home => Icons.home_outlined,
       ShellDestination.discover => Icons.explore_outlined,
       ShellDestination.search => Icons.search,

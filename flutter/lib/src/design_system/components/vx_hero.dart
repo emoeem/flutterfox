@@ -120,73 +120,92 @@ class VxHero extends StatelessWidget {
               ),
             ),
           ),
-          // 内容
+          // 内容：宽内容区（桌面全部档位，含 <960 降级档最小 ~480）走
+          // 封面+文案并置 Row，视觉与 Phase 6 冻结态一致；窄内容区
+          // （<320，手机档）封面与文案纵排堆叠，避免 178px 封面把文字列
+          // 压扁导致按钮逐字换行（Phase 7 触屏适配）。
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                _heroArt(),
-                const SizedBox(width: 26),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        eyebrow,
-                        style: VxTypography.eyebrow.copyWith(
-                          color: scheme.primary,
-                        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 320;
+                final textColumn = Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      eyebrow,
+                      style: VxTypography.eyebrow.copyWith(
+                        color: scheme.primary,
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        title,
-                        style: VxTypography.h1.copyWith(
-                          color: scheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      title,
+                      style: VxTypography.h1.copyWith(
+                        color: scheme.onSurface,
                       ),
-                      const SizedBox(height: 7),
-                      Text(
-                        description,
-                        style: VxTypography.body.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      description,
+                      style: VxTypography.body.copyWith(
+                        color: scheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: VxSpacing.lg),
-                      Row(
-                        children: [
-                          FilledButton.icon(
-                            onPressed: onPrimary,
-                            icon: const Icon(Icons.play_arrow, size: 18),
-                            label: Text(primaryLabel),
-                          ),
-                          if (secondaryLabel != null) ...[
-                            const SizedBox(width: VxSpacing.sm),
-                            OutlinedButton(
-                              onPressed: onSecondary,
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: scheme.onSurface.withValues(
-                                  alpha: 0.06,
-                                ),
-                                side: BorderSide(
-                                  color: scheme.onSurface.withValues(
-                                    alpha: 0.14,
-                                  ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: VxSpacing.lg),
+                    // Wrap：一行放下时与 Row 视觉一致；窄宽自动换行不溢出。
+                    Wrap(
+                      spacing: VxSpacing.sm,
+                      runSpacing: VxSpacing.sm,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: onPrimary,
+                          icon: const Icon(Icons.play_arrow, size: 18),
+                          label: Text(primaryLabel),
+                        ),
+                        if (secondaryLabel != null)
+                          OutlinedButton(
+                            onPressed: onSecondary,
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: scheme.onSurface.withValues(
+                                alpha: 0.06,
+                              ),
+                              side: BorderSide(
+                                color: scheme.onSurface.withValues(
+                                  alpha: 0.14,
                                 ),
                               ),
-                              child: Text(secondaryLabel!),
                             ),
-                          ],
-                        ],
-                      ),
+                            child: Text(secondaryLabel!),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+                if (wide) {
+                  return Row(
+                    children: [
+                      _heroArt(),
+                      const SizedBox(width: 26),
+                      Expanded(child: textColumn),
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(child: _heroArt()),
+                    const SizedBox(width: 20),
+                    textColumn,
+                  ],
+                );
+              },
             ),
           ),
         ],

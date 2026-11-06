@@ -68,7 +68,11 @@ void openSongDetail(BuildContext context, AppModel model, bridge.SongDto song) {
   }
 }
 
-/// 歌曲右键 / 更多菜单。返回是否展示了菜单（overlay 缺失时为 false）。
+/// 歌曲右键 / 长按 / 更多菜单。返回是否展示了菜单（overlay 缺失时为 false）。
+///
+/// 触发面（§9）：桌面右键（onSecondaryTapUp）、触屏长按（Phase 7：hover
+/// 操作的可达替代，菜单聚合全部行内动作）、行尾「更多」按钮。三个入口
+/// 走同一份菜单与命令接线，桌面右键行为不受影响。
 bool showSongMenu(
   BuildContext context,
   AppModel model,
@@ -230,6 +234,16 @@ class SongTrackRow extends StatelessWidget {
         cover: CoverImage(url: song.coverUrl, size: 40, radius: 6),
         showAlbum: showAlbum,
         onTap: onTap ?? () => fireAndForget(model.playSong(song)),
+        // 长按 = 右键的触屏替代：同一份菜单、同一批真实命令（§9）。
+        onLongPressStart: (details) {
+          showSongMenu(
+            context,
+            model,
+            song,
+            position: details.globalPosition,
+            onRemove: onRemove,
+          );
+        },
         onPlay: () => fireAndForget(model.playSong(song)),
         onAddToQueue: () => fireAndForget(model.queueAdd(song)),
         onLike: () => fireAndForget(model.toggleFavorite(song)),
@@ -361,6 +375,19 @@ class SongTile extends StatelessWidget {
         ],
       ),
       onTap: () => model.playSong(song),
+      // 长按 = 触屏上的完整上下文菜单（hover 无关；桌面行为不变）。
+      onLongPress: () {
+        final box = context.findRenderObject() as RenderBox?;
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox?;
+        Offset? anchor;
+        if (box != null && overlay != null) {
+          anchor = box.localToGlobal(
+            Offset(box.size.width / 2, box.size.height / 2),
+          );
+        }
+        showSongMenu(context, model, song, position: anchor, onRemove: onRemove);
+      },
       ),
     );
   }

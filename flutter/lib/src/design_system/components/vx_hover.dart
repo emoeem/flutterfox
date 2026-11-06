@@ -12,6 +12,7 @@ class VxHoverBuilder extends StatefulWidget {
     super.key,
     required this.builder,
     this.onTap,
+    this.onLongPressStart,
     this.enabled = true,
   });
 
@@ -20,6 +21,10 @@ class VxHoverBuilder extends StatefulWidget {
 
   /// 提供后整块区域可点击；null 表示不可点（光标不变成手型）。
   final VoidCallback? onTap;
+
+  /// 长按回调（Phase 7 触屏语义：长按菜单替代右键/hover 操作；桌面
+  /// 按住同样触发，与 Material 惯例一致，不影响右键行为）。
+  final GestureLongPressStartCallback? onLongPressStart;
 
   /// false 时永远报告 not hovering 且不响应点击。
   final bool enabled;
@@ -40,6 +45,7 @@ class _VxHoverBuilderState extends State<VxHoverBuilder> {
       onExit: (_) => setState(() => _hovering = false),
       child: GestureDetector(
         onTap: interactive ? widget.onTap : null,
+        onLongPressStart: widget.onLongPressStart,
         behavior: HitTestBehavior.opaque,
         child: widget.builder(context, _hovering && widget.enabled),
       ),

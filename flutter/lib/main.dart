@@ -11,6 +11,7 @@ library;
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +27,25 @@ import 'src/myune_seam/app_model_audio_backend.dart'
 import 'src/myune_shell/projection.dart' show MyuneHost;
 import 'src/shell/app_shell.dart' show ShellDetailSeed, VoicefoxShell;
 import 'src/shell/app_sidebar.dart' show ShellDestination;
+import 'src/shell/mobile_shell.dart' show TouchShell;
+import 'src/shell/responsive_shell.dart' show isTouchPlatform;
+
+/// 桌面窗口平台（非触屏）：window_manager / 窗控 / DragToMoveArea 只在
+/// 这些平台进树。判定用 dart:io Platform（isTouchPlatform），禁止
+/// defaultTargetPlatform（FLUTTER_TEST 强制 android，会翻掉桌面基线）。
+bool get _isDesktopWindowPlatform => !isTouchPlatform;
+
+/// 无 Rust UI-only 引导（Phase 7）：`--dart-define=VOICEFOX_UI_ONLY=1` 且
+/// debug 构建（kDebugMode）才生效。bool.fromEnvironment 是编译期常量，
+/// release 下 kDebugMode 恒 false，整个分支被树摇剔除，不会静默吞掉
+/// 真实引导。用途：Android 模拟器（工程暂无 jniLibs；进程由 Zygote 派生
+/// 无法注入环境变量，故不能用 Platform.environment 门控）与桌面同一
+/// 用法的 UI 预览：`flutter run --dart-define=VOICEFOX_UI_ONLY=1`。
+/// 该分支只渲染壳与各页真实空/错误态（无 Rust 时 dispatch 安全返回
+/// 错误串，app_model.dart `_sendCommand`），不引入任何原生媒体能力
+/// （计划书 §11.4 边界）。
+const bool kUiOnly =
+    bool.fromEnvironment('VOICEFOX_UI_ONLY') && kDebugMode;
 
 /// 验收截图起始页（与 VOICEFOX_START_SIZE 同一约定）：VOICEFOX_START_PAGE=
 /// home|discover|search|library|downloads|settings|help，缺省 home，
@@ -76,43 +96,56 @@ String _startSearchSeedFromEnv() =>
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 自绘标题栏（AppHeader）依赖隐藏系统标题栏。
-  await windowManager.ensureInitialized();
-  // 初始窗口尺寸：默认 1150x720；VOICEFOX_START_SIZE=1440x900 可覆盖
-  // （用于断点验收截图，运行时行为与默认完全一致）。
-  Size startSize = const Size(1150, 720);
-  final envSize = Platform.environment['VOICEFOX_START_SIZE'];
-  if (envSize != null) {
-    final match = RegExp(r'^(\d+)x(\d+)$').firstMatch(envSize.trim());
-    if (match != null) {
-      startSize = Size(double.parse(match.group(1)!), double.parse(match.group(2)!));
-    }
+  // Phase 7 无 Rust UI-only 分支：渲染壳 + 各页空/错误态，见 [kUiOnly]。
+  // window_manager 0.5.2 仅声明 linux/macos/windows 平台实现，触屏平台
+  // 必须跳过（Android 引导屏不再抛 MissingPluginException）；桌面预览
+  // 保留窗口初始化（窗控/拖动区可用）。
+  if (kUiOnly) {
+    if (_isDesktopWindowPlatform) await windowManager.ensureInitialized();
+    runApp(VoicefoxApp(model: AppModel(), uiOnly: true));
+    return;
   }
-  // 可选起始位置：VOICEFOX_START_POS=x,y（X11 后端 + 验收截图用；
-  // Wayland 合成器可能忽略，运行时行为不受影响）。
-  Offset? startPos;
-  final envPos = Platform.environment['VOICEFOX_START_POS'];
-  if (envPos != null) {
-    final posMatch = RegExp(r'^(-?\d+),(-?\d+)$').firstMatch(envPos.trim());
-    if (posMatch != null) {
-      startPos = Offset(
-        double.parse(posMatch.group(1)!),
-        double.parse(posMatch.group(2)!),
-      );
+  // 自绘标题栏（AppHeader）依赖隐藏系统标题栏；Android 进程无该插件实现。
+  if (_isDesktopWindowPlatform) await windowManager.ensureInitialized();
+  // 初始窗口尺寸/位置与隐藏标题栏：仅桌面窗口平台（触屏无 window_manager
+  // 插件实现，跳过整段；VOICEFOX_START_* 桌面验收钩子语义不变）。
+  if (_isDesktopWindowPlatform) {
+    // 初始窗口尺寸：默认 1150x720；VOICEFOX_START_SIZE=1440x900 可覆盖
+    // （用于断点验收截图，运行时行为与默认完全一致）。
+    Size startSize = const Size(1150, 720);
+    final envSize = Platform.environment['VOICEFOX_START_SIZE'];
+    if (envSize != null) {
+      final match = RegExp(r'^(\d+)x(\d+)$').firstMatch(envSize.trim());
+      if (match != null) {
+        startSize = Size(double.parse(match.group(1)!), double.parse(match.group(2)!));
+      }
     }
+    // 可选起始位置：VOICEFOX_START_POS=x,y（X11 后端 + 验收截图用；
+    // Wayland 合成器可能忽略，运行时行为不受影响）。
+    Offset? startPos;
+    final envPos = Platform.environment['VOICEFOX_START_POS'];
+    if (envPos != null) {
+      final posMatch = RegExp(r'^(-?\d+),(-?\d+)$').firstMatch(envPos.trim());
+      if (posMatch != null) {
+        startPos = Offset(
+          double.parse(posMatch.group(1)!),
+          double.parse(posMatch.group(2)!),
+        );
+      }
+    }
+    final windowOptions = WindowOptions(
+      title: 'voicefox',
+      size: startSize,
+      minimumSize: const Size(560, 480),
+      titleBarStyle: TitleBarStyle.hidden,
+    );
+    unawaited(
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        if (startPos != null) await windowManager.setPosition(startPos);
+        await windowManager.show();
+      }),
+    );
   }
-  final windowOptions = WindowOptions(
-    title: 'voicefox',
-    size: startSize,
-    minimumSize: const Size(560, 480),
-    titleBarStyle: TitleBarStyle.hidden,
-  );
-  unawaited(
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      if (startPos != null) await windowManager.setPosition(startPos);
-      await windowManager.show();
-    }),
-  );
 
   final model = AppModel();
   // myune 壳的播放接缝：vendored UI 全部通过 shim 走 AppModel。
@@ -150,6 +183,11 @@ class VoicefoxApp extends StatefulWidget {
   /// 详情页下钻种子（VOICEFOX_START_DETAIL，验收截图用）。
   final ShellDetailSeed? detailSeed;
 
+  /// 无 Rust UI-only 引导（kUiOnly 分支传入）：不起 myune Host，直接以
+  /// 测试同款最小 Provider 集渲染壳（桌面 VoicefoxShell / 触屏
+  /// TouchShell），页面呈现真实空/错误态。
+  final bool uiOnly;
+
   const VoicefoxApp({
     super.key,
     required this.model,
@@ -158,6 +196,7 @@ class VoicefoxApp extends StatefulWidget {
     this.libraryTab,
     this.detailSeed,
     this.settingsSection,
+    this.uiOnly = false,
   });
 
   @override
@@ -202,6 +241,43 @@ class _VoicefoxAppState extends State<VoicefoxApp> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.uiOnly) {
+      // 无 Rust UI-only：壳直接渲染，不等 Rust 就绪（model.ready 永假也
+      // 不回退骨架屏）。Provider 集对齐 shell_test.dart 桌面 harness；
+      // 主题与引导骨架屏同源 seed（真主题链路在 Phase 8 接 Rust 配置）。
+      final brightness = MediaQuery.platformBrightnessOf(context);
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AppModel>.value(value: widget.model),
+          ChangeNotifierProvider<SettingsProvider>.value(
+            value: SettingsProvider(),
+          ),
+          ChangeNotifierProvider<NotificationService>.value(
+            value: NotificationService(),
+          ),
+        ],
+        child: MaterialApp(
+          title: 'voicefox',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF89B4FA),
+              brightness: brightness,
+            ),
+          ),
+          home: isTouchPlatform
+              ? TouchShell(model: widget.model)
+              : VoicefoxShell(
+                  model: widget.model,
+                  initialDestination: widget.initialDestination,
+                  searchSeed: widget.searchSeed,
+                  libraryTab: widget.libraryTab,
+                  detailSeed: widget.detailSeed,
+                  settingsSection: widget.settingsSection,
+                ),
+        ),
+      );
+    }
     final host = _host;
     if (host == null) {
       // 引导期：无 Provider 图，骨架屏 + 轻量标题栏（可关闭窗口）。
@@ -251,14 +327,18 @@ class _VoicefoxAppState extends State<VoicefoxApp> {
                 theme: host.theme.lightThemeData,
                 darkTheme: host.theme.darkThemeData,
                 themeMode: host.theme.themeMode,
-                home: VoicefoxShell(
-                  model: widget.model,
-                  initialDestination: widget.initialDestination,
-                  searchSeed: widget.searchSeed,
-                  libraryTab: widget.libraryTab,
-                  detailSeed: widget.detailSeed,
-                  settingsSection: widget.settingsSection,
-                ),
+                // 桌面平台恒走 VoicefoxShell（四档断点零变化）；触屏平台
+                // 按宽度进移动/平板形态（responsive_shell.dart 设备形态）。
+                home: isTouchPlatform
+                    ? TouchShell(model: widget.model)
+                    : VoicefoxShell(
+                        model: widget.model,
+                        initialDestination: widget.initialDestination,
+                        searchSeed: widget.searchSeed,
+                        libraryTab: widget.libraryTab,
+                        detailSeed: widget.detailSeed,
+                        settingsSection: widget.settingsSection,
+                      ),
               );
             },
           );
@@ -278,6 +358,8 @@ class _BootstrapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // 拖动区/关闭按钮只在桌面窗口平台进树（window_manager 无移动端实现）。
+    final desktopWindow = _isDesktopWindowPlatform;
     return Scaffold(
       body: Column(
         children: [
@@ -297,19 +379,22 @@ class _BootstrapScreen extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: DragToMoveArea(child: const SizedBox.expand()),
+                  child: desktopWindow
+                      ? DragToMoveArea(child: const SizedBox.expand())
+                      : const SizedBox.expand(),
                 ),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: windowManager.close,
-                    child: const SizedBox(
-                      width: 40,
-                      height: 31,
-                      child: Icon(Icons.close, size: 16),
+                if (desktopWindow)
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: windowManager.close,
+                      child: const SizedBox(
+                        width: 40,
+                        height: 31,
+                        child: Icon(Icons.close, size: 16),
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(width: 2),
               ],
             ),

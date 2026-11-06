@@ -62,6 +62,7 @@ class VxTrackRow extends StatelessWidget {
     this.showIndex = true,
     this.showAlbum = true,
     this.onTap,
+    this.onLongPressStart,
     this.onPlay,
     this.onAddToQueue,
     this.onLike,
@@ -107,6 +108,10 @@ class VxTrackRow extends StatelessWidget {
   /// 单击整行（§9：单击只选中，不播放）。
   final VoidCallback? onTap;
 
+  /// 长按整行（Phase 7 触屏语义：hover 操作在触屏的可达替代——长按
+  /// 菜单聚合 播放/加入队列/收藏/下载 等真实命令，见 showSongMenu）。
+  final GestureLongPressStartCallback? onLongPressStart;
+
   /// 悬停操作：播放。
   final VoidCallback? onPlay;
 
@@ -133,6 +138,7 @@ class VxTrackRow extends StatelessWidget {
 
     return VxHoverBuilder(
       onTap: onTap,
+      onLongPressStart: onLongPressStart,
       builder: (context, hovering) => AnimatedContainer(
         duration: VxMotion.hoverFade,
         curve: VxMotion.standard,

@@ -6,7 +6,11 @@ plugins {
 
 android {
     namespace = "com.example.voicefox_flutter"
-    compileSdk = flutter.compileSdkVersion
+    // flutter.compileSdkVersion（31）低于 dynamic_color 传递依赖
+    // androidx.appcompat 1.5 的最低要求（≥32）：Phase 7 起动态取色插件
+    // 参与 Android 构建即失败。固定 36（AGP 推荐），targetSdk/minSdk 仍由
+    // Flutter 模板托管。应用 ID/签名/权限整改仍留待 Phase 8。
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

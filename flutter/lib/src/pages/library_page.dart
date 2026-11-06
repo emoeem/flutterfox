@@ -185,7 +185,9 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _tabs(BuildContext context) {
-    return Row(
+    // Wrap：桌面一行放下时与 Row 视觉一致；手机窄宽自动换行不溢出
+    // （Phase 7 触屏适配）。
+    return Wrap(
       children: [
         _tabPill(
           context,
