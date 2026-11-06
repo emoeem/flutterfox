@@ -104,7 +104,7 @@ notify = "8.2"
 cue-rw = "0.2.1"
 
 # Playback
-libmpv2 = { version = "6.0.0", default-features = false }
+libmpv2 = { version = "7.0.0", default-features = false }
 
 # Lyrics
 # lrc = "0.2"  # future: use lrc crate if compatible
