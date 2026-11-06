@@ -1,5 +1,11 @@
-// Voicefox app shell: myune 视觉基底的导航壳。
-// 结构 fork 自 vendored myune/layout/{app_shell,main_view}.dart 与
+// Voicefox app shell（旧壳）。
+//
+// RETIRED (Phase 2)：桌面外壳的唯一实现已迁移到 `src/shell/app_shell.dart`
+// （VoicefoxShell：Header + Sidebar + MainContent + ContextPanel + PlayerBar，
+// 导航收敛 5 一级入口）。main.dart 已不再挂载本壳；文件按计划书 §7.3 保留
+// 不删，请勿在此继续添加功能。
+//
+// 历史：结构 fork 自 vendored myune/layout/{app_shell,main_view}.dart 与
 // widgets/app_window_title_bar.dart（Apache-2.0），页面注册表换成 voicefox
 // 的九入口；voicefox 特有逻辑在此文件内演化，不回写上游树。
 import 'package:flutter/material.dart';

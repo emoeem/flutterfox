@@ -88,7 +88,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('1. 歌名'), findsOneWidget);
+    expect(find.text('歌名'), findsOneWidget);
   });
 
   testWidgets('非镜像平台禁用「我的歌单」并说明原因', (tester) async {

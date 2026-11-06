@@ -1,16 +1,27 @@
-/// 歌单详情页：头信息 + 曲目列表 + 播放全部。
+/// 歌单详情页：DetailHero + 操作区 + 曲目表（§4.7）。
 ///
-/// 独立路由，必须自行订阅 [AppModel]；播放只走现有 `playSongs`/`queueAdd`，
-/// 不新建播放控制。数据结果按 `browseKind + source + id` 从 AppModel 读取。
+/// - 顶部横向 Hero：封面 224px、名称、来源徽章、歌曲数 / 总时长、描述；
+/// - 主按钮「播放全部」、次按钮「随机播放」；收藏 / 同步 / 更多在次级
+///   操作区（同步 Diff、推送等流程都在对话框内收口，不占主页面）；
+/// - 在线歌单展示音源来源；账号歌单（远程镜像）与公开歌单以徽章区分；
+/// - 数据结果按 `browseKind + source + id` 从 AppModel 读取，播放只走
+///   现有 `playSongs` / `queueAdd`，不新建播放控制。
 library;
+
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
+import '../design_system/components/vx_detail_hero.dart';
+import '../design_system/components/vx_section_header.dart';
+import '../design_system/design_tokens.dart';
 import '../widgets/cover_image.dart';
-import '../widgets/empty_state.dart';
-import 'song_tile.dart';
+import '../widgets/push_dialog.dart';
+import '../widgets/song_table_view.dart';
+import '../widgets/sync_dialog.dart';
+import 'song_tile.dart' show songSourceLabel;
 
 class PlaylistDetailPage extends StatefulWidget {
   final AppModel model;
@@ -64,6 +75,39 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     _model.loadPlaylistDetail(_playlist, page: result.page + 1);
   }
 
+  /// 歌单是否已在本地收藏（收藏歌单镜像里按 source + id 匹配）。
+  bool get _isFavoritePlaylist => _model.state.favoritePlaylists.any(
+        (item) => item.id == _playlist.id && item.source == _playlist.source,
+      );
+
+  void _toggleFavoritePlaylist() {
+    _model.dispatch(
+      _isFavoritePlaylist
+          ? bridge.FfiCommand.favoritePlaylistRemove(playlist: _playlist)
+          : bridge.FfiCommand.favoritePlaylistAdd(playlist: _playlist),
+    );
+  }
+
+  /// 随机播放：从已载入曲目随机选一首开始（顺序继续）。
+  void _playShuffled(List<bridge.SongDto> songs) {
+    if (songs.length <= 1) {
+      _model.playSongs(songs);
+      return;
+    }
+    final index = Random().nextInt(songs.length);
+    _model.playSongs(songs, index: index);
+  }
+
+  /// 已载入曲目总时长（缺时长的曲目不计入）。
+  Duration _totalDuration(List<bridge.SongDto> songs) {
+    var ms = 0;
+    for (final song in songs) {
+      final d = song.durationMs.toInt();
+      if (d > 0) ms += d;
+    }
+    return Duration(milliseconds: ms);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -72,183 +116,61 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         final result = _result;
         final songs = result?.songs ?? const <bridge.SongDto>[];
         return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              _playlist.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            actions: [
-              IconButton(
-                tooltip: '刷新',
-                onPressed: _reload,
-                icon: const Icon(Icons.refresh),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _backBar(context),
+              _hero(context, result, songs),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  VxSpacing.xl,
+                  VxSpacing.lg,
+                  VxSpacing.xl,
+                  0,
+                ),
+                child: VxSectionHeader(title: '曲目列表'),
+              ),
+              Expanded(
+                child: VxSongTable(
+                  model: _model,
+                  songs: songs,
+                  loading: result == null || (result.loading && songs.isEmpty),
+                  error: result?.error,
+                  notice: result?.notice,
+                  emptyTitle: '歌单暂无曲目',
+                  emptySubtitle: '换一个歌单试试',
+                  onRetry: _reload,
+                  hasMore: result?.hasMore ?? false,
+                  onLoadMore: _loadMore,
+                ),
               ),
             ],
-          ),
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 840;
-              final header = _Header(
-                playlist: _playlist,
-                songs: songs,
-                account: _account,
-                onPlayAll: songs.isEmpty ? null : () => _model.playSongs(songs),
-              );
-              final list = _buildBody(result, songs);
-              if (!wide) {
-                return Column(
-                  children: [
-                    header,
-                    const Divider(height: 1),
-                    Expanded(child: list),
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 300,
-                    child: SingleChildScrollView(child: header),
-                  ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: list),
-                ],
-              );
-            },
           ),
         );
       },
     );
   }
 
-  Widget _buildBody(BrowseResult? result, List<bridge.SongDto> songs) {
-    if (result == null || (result.loading && songs.isEmpty)) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 12),
-            Text('歌单加载中…'),
-          ],
-        ),
-      );
-    }
-    if (result.error != null) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _backBar(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: Row(
         children: [
-          EmptyState(
-            icon: Icons.cloud_off_outlined,
-            title: '歌单加载失败',
-            subtitle: result.error,
+          const SizedBox(width: VxSpacing.md),
+          IconButton(
+            tooltip: '返回',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back, size: 20),
           ),
-          TextButton(onPressed: _reload, child: const Text('重试')),
-        ],
-      );
-    }
-    if (songs.isEmpty) {
-      return EmptyState(
-        icon: Icons.queue_music_outlined,
-        title: result.notice ?? '歌单暂无曲目',
-        subtitle: result.notice == null ? '换一个歌单试试' : null,
-      );
-    }
-    final hasMore = result.hasMore;
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 4, bottom: 32),
-      itemCount: songs.length + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= songs.length) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: result.loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : TextButton(onPressed: _loadMore, child: const Text('加载更多')),
-            ),
-          );
-        }
-        return SongTile(_model, songs[index], index: index);
-      },
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  final bridge.PlaylistDto playlist;
-  final List<bridge.SongDto> songs;
-  final VoidCallback? onPlayAll;
-  final bool account;
-
-  const _Header({
-    required this.playlist,
-    required this.songs,
-    required this.onPlayAll,
-    required this.account,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final description = playlist.description?.trim();
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: CoverImage(
-              url: playlist.coverUrl,
-              size: 160,
-              radius: 16,
-              icon: Icons.queue_music,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            playlist.name,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _badge(context, playlist.source.toUpperCase()),
-              if (account) _badge(context, '账号镜像'),
-              _badge(context, '${playlist.songCount} 首'),
-              if (songs.isNotEmpty) _badge(context, '已载入 ${songs.length}'),
-            ],
-          ),
-          if (description != null && description.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              description,
-              maxLines: 4,
+          Expanded(
+            child: Text(
+              _playlist.name,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-          ],
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onPlayAll,
-              icon: const Icon(Icons.play_arrow),
-              label: Text(songs.isEmpty ? '暂无可播放曲目' : '播放全部'),
+              style: VxTypography.titleSm.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -256,12 +178,97 @@ class _Header extends StatelessWidget {
     );
   }
 
-  Widget _badge(BuildContext context, String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: Text(text, style: Theme.of(context).textTheme.labelSmall),
-  );
+  Widget _hero(
+    BuildContext context,
+    BrowseResult? result,
+    List<bridge.SongDto> songs,
+  ) {
+    final duration = _totalDuration(songs);
+    final meta = <String>[
+      '${_playlist.songCount} 首',
+      if (songs.isNotEmpty && songs.length != _playlist.songCount)
+        '已载入 ${songs.length}',
+      if (duration.inSeconds > 0) '总时长 ${duration.inMinutes} 分钟',
+    ];
+    final description = _playlist.description?.trim();
+    return VxDetailHero(
+      eyebrow: _account ? '账号歌单' : '歌单',
+      title: _playlist.name,
+      meta: meta,
+      badges: [
+        songSourceLabel(_model, _playlist.source),
+        if (_account) '账号镜像',
+      ],
+      description: (description == null || description.isEmpty)
+          ? null
+          : description,
+      cover: (_playlist.coverUrl == null || _playlist.coverUrl!.isEmpty)
+          ? null
+          : CoverImage(
+              url: _playlist.coverUrl,
+              size: 224,
+              radius: 12,
+              icon: Icons.queue_music_outlined,
+            ),
+      fallbackSeed: _playlist.name,
+      actions: [
+        VxDetailAction(
+          icon: Icons.play_arrow,
+          label: songs.isEmpty ? '暂无可播放曲目' : '播放全部',
+          primary: true,
+          onPressed: songs.isEmpty ? null : () => _model.playSongs(songs),
+        ),
+        VxDetailAction(
+          icon: Icons.shuffle,
+          label: '随机播放',
+          tooltip: songs.isEmpty
+              ? '曲目加载后可用'
+              : '从已载入曲目随机一首开始（顺序继续）',
+          onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
+        ),
+        VxDetailAction(
+          icon: _isFavoritePlaylist ? Icons.favorite : Icons.favorite_border,
+          label: _isFavoritePlaylist ? '取消收藏' : '收藏',
+          onPressed: _toggleFavoritePlaylist,
+        ),
+        // 同步只对账号歌单有意义：Diff 预览/写入都在对话框内收口。
+        if (_account)
+          VxDetailAction(
+            icon: Icons.sync_outlined,
+            label: '同步',
+            tooltip: '预览远端与本地镜像差异并同步（对话框内完成）',
+            onPressed: () =>
+                showSyncDialog(context, _model, _playlist.source),
+          ),
+      ],
+      trailingActions: [
+        PopupMenuButton<String>(
+          tooltip: '更多操作',
+          icon: const Icon(Icons.more_vert),
+          onSelected: (action) {
+            if (action == 'refresh') _reload();
+            if (action == 'push') {
+              showPushDialog(
+                context,
+                _model,
+                localName: _playlist.name,
+                songs: songs,
+                isFavorites: false,
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: 'refresh', child: Text('刷新')),
+            PopupMenuItem(
+              value: 'push',
+              enabled: songs.isNotEmpty,
+              child: Text(
+                songs.isNotEmpty ? '推送到远端' : '推送到远端（曲目加载后可用）',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

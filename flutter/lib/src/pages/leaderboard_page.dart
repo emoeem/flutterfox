@@ -12,7 +12,10 @@ class LeaderboardPage extends StatefulWidget {
   final AppModel model;
   final String? initialSource;
 
-  const LeaderboardPage(this.model, {super.key, this.initialSource});
+  final bool showChrome;
+
+  /// showChrome=false：嵌入 VoicefoxShell 时隐藏自带 AppBar（Shell Header 已有标题/返回）。
+  const LeaderboardPage(this.model, {super.key, this.initialSource, this.showChrome = true});
 
   @override
   State<LeaderboardPage> createState() => _LeaderboardPageState();
@@ -96,7 +99,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('排行榜')),
+      appBar: widget.showChrome ? AppBar(title: const Text('排行榜')) : null,
       body: ListenableBuilder(
         listenable: _model,
         builder: (context, _) {

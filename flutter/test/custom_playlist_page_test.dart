@@ -125,15 +125,16 @@ void main() {
     expect(find.text('重试'), findsOneWidget);
   });
 
-  testWidgets('曲库页提供自建歌单 tab 并可进入列表', (tester) async {
+  testWidgets('我的音乐歌单类别提供自建歌单区块', (tester) async {
     final model = AppModel();
     model.debugSetCustomPlaylists(const [_summary]);
     await tester.pumpWidget(
       MaterialApp(home: Scaffold(body: LibraryPage(model))),
     );
 
-    expect(find.text('自建歌单 1'), findsOneWidget);
-    await tester.tap(find.text('自建歌单 1'));
+    // 二级切换：歌单 tab 徽章计入自建 + 收藏歌单（1 + 0）。
+    expect(find.text('歌单'), findsOneWidget);
+    await tester.tap(find.text('歌单'));
     await tester.pumpAndSettle();
 
     expect(find.text('通勤'), findsOneWidget);

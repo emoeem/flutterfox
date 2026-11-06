@@ -1,7 +1,13 @@
-// Voicefox queue drawer: fork 自 vendored myune/widgets/playing_queue_drawer.dart
+// Voicefox queue drawer（旧队列抽屉）。
+//
+// RETIRED (Phase 2)：队列的唯一常驻入口已迁移到 `src/shell/context_panel.dart`
+// 的「队列」Tab（覆盖式浮层 / ≥1440 内嵌右栏，计划书 §5.3），不再是固定
+// 400px Drawer。main 挂载的新壳已不引用本文件；按 §7.3 保留不删，请勿
+// 在此继续添加功能。
+//
+// 历史：fork 自 vendored myune/widgets/playing_queue_drawer.dart
 // （Apache-2.0），数据源改为直接读 AppModel（真源），并补齐队列管理能力：
-// 当前曲高亮、单曲移除（滑动/按钮）、清空（带确认）。上游的「保存队列为
-// 歌单」依赖 myune 本地文件系统歌单，在 voicefox 外部数据模式下无意义，不搬。
+// 当前曲高亮、单曲移除（滑动/按钮）、清空（带确认）。
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

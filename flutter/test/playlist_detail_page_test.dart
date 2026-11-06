@@ -31,7 +31,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('歌单加载中…'), findsOneWidget);
+    expect(find.text('加载中…'), findsOneWidget);
 
     model.debugBrowseLoaded(
       kind: 'playlist_detail',
@@ -43,9 +43,11 @@ void main() {
     await tester.pump();
 
     expect(find.text('播放全部'), findsOneWidget);
-    expect(find.text('1. 第一首'), findsOneWidget);
-    expect(find.text('2. 第二首'), findsOneWidget);
-    expect(find.text('已载入 2'), findsOneWidget);
+    // VxSongTable：序号独立列，行文本不再带 'N. ' 前缀。
+    expect(find.text('第一首'), findsOneWidget);
+    expect(find.text('第二首'), findsOneWidget);
+    // Hero 元信息：曲目数与总时长（2×3:00 = 6 分钟）。
+    expect(find.text('2 首 · 总时长 6 分钟'), findsOneWidget);
   });
 
   testWidgets('空歌单展示空态', (tester) async {
@@ -94,7 +96,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('歌单加载失败'), findsOneWidget);
+    expect(find.text('加载失败'), findsOneWidget);
     expect(find.text('网络不可用'), findsOneWidget);
     expect(find.text('重试'), findsOneWidget);
   });

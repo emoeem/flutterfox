@@ -60,7 +60,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('尚未配置本地音乐目录'), findsOneWidget);
-    expect(find.text('添加目录'), findsOneWidget);
+    // 顶栏与空态各有一个「添加目录」入口。
+    expect(find.text('添加目录'), findsWidgets);
   });
 
   testWidgets('扫描警告展示错误态与重试', (tester) async {
@@ -90,13 +91,17 @@ void main() {
 
     expect(find.text('共 2 首'), findsOneWidget);
     expect(find.text('播放全部'), findsOneWidget);
-    expect(find.text('目录：/music'), findsOneWidget);
-    expect(find.text('1. 本地一'), findsOneWidget);
-    expect(find.text('2. 本地二'), findsOneWidget);
+    // 目录管理卡逐个列出目录（可移除）。
+    expect(find.text('/music'), findsOneWidget);
+    // VxSongTable：序号独立列，行文本不带 'N. ' 前缀。
+    expect(find.text('本地一'), findsOneWidget);
+    expect(find.text('本地二'), findsOneWidget);
 
-    // 单曲行提供播放（点击整行）与入队（更多菜单）。
-    await tester.tap(find.byIcon(Icons.more_vert).first);
+    // 单曲行提供播放（双击语义由行内承接）与右键菜单（更多按钮）；
+    // 菜单路由有进场动画，需要两次 pump 才可见。
+    await tester.tap(find.byIcon(Icons.more_vert).first, warnIfMissed: false);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('加入队列'), findsOneWidget);
     expect(find.text('立即播放'), findsOneWidget);
   });

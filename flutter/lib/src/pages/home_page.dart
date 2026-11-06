@@ -1,21 +1,30 @@
-/// 首页：播放器式布局（参考 Spotify / QQ 音乐桌面端）——
-/// 「正在播放」hero + 最近在听/热门歌单/排行榜横向书架 + 快捷入口。
-/// 此前是 FlClash 式仪表盘（统计数字卡/快捷开关/下载进度卡），工具面板
-/// 气质太重，v3 视觉迭代中整体替换。
+/// 首页（计划书 §4.1：音乐内容首页，不是统计仪表盘）。
+///
+/// 结构：问候 + 日期页头 → Continue Listening Hero（真实 `state.history` /
+/// 当前播放曲目；无历史时切换「导入本地音乐 / 搜索在线音乐」引导）→
+/// 最近播放封面书架（VxAlbumCard 横向）→ 我的歌单（VxPlaylistCard，
+/// 真实 `state.customPlaylists`）→ 排行榜精选（真实 leaderboard 榜单行卡）。
+///
+/// Phase 0 S1：旧版底部 6 大卡片快捷导航与工具统计卡片已删除；
+/// 空态 / 加载态统一走 design_system 三态组件。
 library;
 
 import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
-import '../myune_shell/myune_player_page.dart';
+import '../design_system/components/vx_album_card.dart';
+import '../design_system/components/vx_empty_state.dart';
+import '../design_system/components/vx_error_state.dart';
+import '../design_system/components/vx_hero.dart';
+import '../design_system/components/vx_hover.dart';
+import '../design_system/components/vx_loading_skeleton.dart';
+import '../design_system/components/vx_playlist_card.dart';
+import '../design_system/components/vx_section_header.dart';
+import '../design_system/design_tokens.dart';
 import '../nav_bus.dart';
-import '../theme/typography.dart' show monoStyle;
 import '../widgets/cover_image.dart';
-import '../widgets/live_progress.dart';
-import '../widgets/song_card.dart';
 import 'leaderboard_page.dart';
-import 'playlist_detail_page.dart';
 
 class HomePage extends StatelessWidget {
   final AppModel model;
@@ -30,39 +39,38 @@ class HomePage extends StatelessWidget {
     return '晚上好';
   }
 
+  String _dateLabel() {
+    final now = DateTime.now();
+    const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    return '${now.month} 月 ${now.day} 日 · ${weekdays[now.weekday - 1]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: model,
       builder: (context, _) {
-        final playback = model.state.playback;
-        final song = playback.song;
+        final history = model.state.history;
+        final greeting = _greeting();
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const EdgeInsets.fromLTRB(
+            VxSpacing.pagePadding,
+            VxSpacing.lg,
+            VxSpacing.pagePadding,
+            VxSpacing.xxl,
+          ),
           children: [
-            Text('首页', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-            _NowPlayingHero(model: model, song: song, greeting: _greeting()),
-            const SizedBox(height: 24),
-            _Section(
-              title: '最近在听',
-              actionLabel: model.state.history.isEmpty ? null : '去曲库',
-              onAction: () => navRequest.value = 2,
-              child: _RecentShelf(model: model),
-            ),
-            _Section(
-              title: '热门歌单',
-              actionLabel: '去歌单浏览',
-              onAction: () => navRequest.value = 3,
-              child: _DiscoverPlaylistsShelf(model: model),
-            ),
-            _Section(
-              title: '排行榜',
-              actionLabel: '去排行榜',
-              onAction: () => navRequest.value = 4,
-              child: _LeaderboardShelf(model: model),
-            ),
-            const _QuickAccess(),
+            _PageHead(greeting: greeting, dateLabel: _dateLabel()),
+            const SizedBox(height: VxSpacing.lg),
+            _ContinueHero(model: model, greeting: greeting),
+            const SizedBox(height: VxSpacing.sectionGap),
+            if (history.isNotEmpty) ...[
+              _RecentShelf(model: model, history: history),
+              const SizedBox(height: VxSpacing.sectionGap),
+            ],
+            _MyPlaylistsSection(model: model),
+            const SizedBox(height: VxSpacing.sectionGap),
+            _LeaderboardSection(model: model),
           ],
         );
       },
@@ -70,280 +78,237 @@ class HomePage extends StatelessWidget {
   }
 }
 
-/// Spotify 式书架分区：标题 + 「查看全部」右对齐。
-class _Section extends StatelessWidget {
-  final String title;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-  final Widget child;
-
-  const _Section({
-    required this.title,
-    required this.child,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (actionLabel != null)
-                TextButton(
-                  onPressed: onAction,
-                  child: Text(actionLabel!),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-/// 「正在播放」hero：有大封面+进度+控制；无歌时是问候+快捷搜索。
-class _NowPlayingHero extends StatelessWidget {
-  final AppModel model;
-  final bridge.SongDto? song;
+/// 页头：问候语（H1）+ 日期（弱色 caption），右侧不放工具开关（§4.1）。
+class _PageHead extends StatelessWidget {
   final String greeting;
+  final String dateLabel;
 
-  const _NowPlayingHero({
-    required this.model,
-    required this.song,
-    required this.greeting,
-  });
+  const _PageHead({required this.greeting, required this.dateLabel});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final song = this.song;
-    if (song == null) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      greeting,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '搜索一首歌，或从下面书架挑个歌单开始听',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              FilledButton.tonalIcon(
-                onPressed: () => navRequest.value = 1,
-                icon: const Icon(Icons.search),
-                label: const Text('去搜索'),
-              ),
-            ],
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          greeting,
+          style: VxTypography.h1.copyWith(color: scheme.onSurface),
         ),
-      );
-    }
-    final playing = model.state.playback.state == 'playing';
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => MyunePlayerPage(model: model),
-          ),
+        const SizedBox(height: VxSpacing.xs),
+        Text(
+          dateLabel,
+          style: VxTypography.caption.copyWith(color: scheme.onSurfaceVariant),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  CoverImage(url: song.coverUrl, size: 88, radius: 10),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('正在播放',
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(color: scheme.primary)),
-                        const SizedBox(height: 4),
-                        Text(
-                          song.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${song.singer}${song.albumName.isEmpty ? '' : ' · ${song.albumName}'}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: FilledButton(
-                      onPressed: model.toggle,
-                      style: FilledButton.styleFrom(
-                        shape: const CircleBorder(),
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: Icon(
-                        playing ? Icons.pause : Icons.play_arrow,
-                        size: 30,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 24,
-                child: LivePlayback(
-                  positionMs: model.state.playback.positionMs,
-                  durationMs: model.state.playback.durationMs,
-                  playing: playing,
-                  builder: (context, position, duration) => Row(
-                    children: [
-                      Text(
-                        '${position.inMinutes}:${(position.inSeconds.remainder(60)).toString().padLeft(2, '0')}',
-                        style: monoStyle(context,
-                            Theme.of(context).textTheme.labelSmall),
-                      ),
-                      Expanded(
-                        child: Slider(
-                          max: 1,
-                          value: duration.inMilliseconds > 0
-                              ? (position.inMilliseconds /
-                                      duration.inMilliseconds)
-                                  .clamp(0.0, 1.0)
-                              : 0.0,
-                          onChanged: duration.inMilliseconds > 0
-                              ? (v) => model.seekMs(
-                                    BigInt.from(
-                                        (duration.inMilliseconds * v).round()),
-                                  )
-                              : null,
-                        ),
-                      ),
-                      Text(
-                        '${duration.inMinutes}:${(duration.inSeconds.remainder(60)).toString().padLeft(2, '0')}',
-                        style: monoStyle(context,
-                            Theme.of(context).textTheme.labelSmall),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      ],
     );
   }
 }
 
-/// 最近在听横向书架：封面 124 卡，点击播放。
-class _RecentShelf extends StatelessWidget {
+/// Continue Listening Hero：有内容时展示最近曲目，无历史时展示引导（§4.1）。
+class _ContinueHero extends StatelessWidget {
   final AppModel model;
+  final String greeting;
 
-  const _RecentShelf({required this.model});
+  const _ContinueHero({required this.model, required this.greeting});
 
   @override
   Widget build(BuildContext context) {
+    final playbackSong = model.state.playback.song;
     final history = model.state.history;
-    if (history.isEmpty) {
-      return _ShelfHint(
-        icon: Icons.history,
-        text: '播放过的歌曲会出现在这里',
+    final bridge.SongDto? song = playbackSong ?? (history.isEmpty ? null : history.first);
+
+    if (song == null) {
+      return VxHero(
+        eyebrow: '开始使用',
+        title: greeting,
+        description: '曲库还是空的：导入本地音乐，或搜索在线音乐开始收听。',
+        // Hero 固定 178px 大封面：窄窗（<960）下文案区只有 ~260px，
+        // 按钮用短文案避免溢出；完整引导写在说明行。
+        primaryLabel: '搜索音乐',
+        onPrimary: () => navRequest.value = 1,
+        secondaryLabel: '导入本地',
+        onSecondary: () => navRequest.value = 5,
+        fallbackSeed: greeting,
       );
     }
-    return SizedBox(
-      height: 172,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: history.length.clamp(0, 20),
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final song = history[index];
-          return SizedBox(
-            width: 128,
-            child: SongCard(model, song),
-          );
-        },
-      ),
+
+    final playing = model.state.playback.state == 'playing';
+    final album = song.albumName;
+    final description = album.isEmpty
+        ? song.singer
+        : '${song.singer} · $album';
+    return VxHero(
+      eyebrow: 'CONTINUE LISTENING',
+      title: song.name,
+      description: description,
+      // 正在播 ⇒ 暂停；否则继续播放（恢复当前曲目或播放最近一首）。
+      primaryLabel: playing ? '暂停' : '继续播放',
+      onPrimary: () => _resume(model, song, playing),
+      cover: (song.coverUrl?.isNotEmpty ?? false)
+          ? null
+          : CoverImage(url: song.coverUrl, size: 178, radius: 0),
+      fallbackSeed: song.name,
+    );
+  }
+
+  void _resume(AppModel model, bridge.SongDto song, bool playing) {
+    if (playing || model.state.playback.song != null) {
+      model.toggle();
+      return;
+    }
+    // 无播放上下文：把最近播放（含这首）作为队列起点。
+    final queue = List<bridge.SongDto>.of(model.state.history);
+    if (queue.isEmpty) {
+      model.playSong(song);
+      return;
+    }
+    model.playSongs(queue, index: 0);
+  }
+}
+
+/// 最近播放封面书架：VxAlbumCard 横向（封面 156px ∈ 148-168），
+/// hover 播放钮 + 双击播放。
+class _RecentShelf extends StatelessWidget {
+  final AppModel model;
+  final List<bridge.SongDto> history;
+
+  const _RecentShelf({required this.model, required this.history});
+
+  void _play(bridge.SongDto song) {
+    final queue = List<bridge.SongDto>.of(model.state.history);
+    final index = queue.indexWhere(
+      (item) => item.id == song.id && item.source == song.source,
+    );
+    model.playSongs(queue, index: index < 0 ? 0 : index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = history.take(12).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        VxSectionHeader(
+          title: '最近播放',
+          onViewAll: () => navRequest.value = 2,
+        ),
+        const SizedBox(height: VxSpacing.md),
+        SizedBox(
+          height: 244,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: cards.length,
+            separatorBuilder: (_, _) => const SizedBox(width: VxSpacing.md),
+            itemBuilder: (context, index) {
+              final song = cards[index];
+              return GestureDetector(
+                onDoubleTap: () => _play(song),
+                child: VxAlbumCard(
+                  title: song.name,
+                  subtitle: song.singer,
+                  width: 156,
+                  cover: (song.coverUrl?.isNotEmpty ?? false)
+                      ? null
+                      : CoverImage(url: song.coverUrl, size: 156, radius: 0),
+                  onTap: () => _play(song),
+                  onPlay: () => _play(song),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// 热门歌单横向书架（数据加载沿用帧后调度模式）。
-class _DiscoverPlaylistsShelf extends StatefulWidget {
+/// 我的歌单：真实 `state.customPlaylists`（本地自建歌单），点卡片进曲库。
+class _MyPlaylistsSection extends StatelessWidget {
   final AppModel model;
 
-  const _DiscoverPlaylistsShelf({required this.model});
+  const _MyPlaylistsSection({required this.model});
 
   @override
-  State<_DiscoverPlaylistsShelf> createState() =>
-      _DiscoverPlaylistsShelfState();
+  Widget build(BuildContext context) {
+    final playlists = model.state.customPlaylists;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        VxSectionHeader(
+          title: '我的歌单',
+          onViewAll: () => navRequest.value = 2,
+        ),
+        const SizedBox(height: VxSpacing.md),
+        if (playlists.isEmpty)
+          SizedBox(
+            height: 280,
+            child: VxEmptyState(
+              icon: Icons.playlist_add,
+              title: '还没有自建歌单',
+              message: '在曲库页点「新建歌单」，或把喜欢的歌曲加入歌单。',
+              actionLabel: '去曲库',
+              onAction: () => navRequest.value = 2,
+            ),
+          )
+        else
+          SizedBox(
+            height: 244,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: playlists.length.clamp(0, 12),
+              separatorBuilder: (_, _) => const SizedBox(width: VxSpacing.md),
+              itemBuilder: (context, index) {
+                final playlist = playlists[index];
+                return VxPlaylistCard(
+                  title: playlist.name,
+                  trackCount: playlist.songCount,
+                  width: 156,
+                  cover: (playlist.coverUrl?.isNotEmpty ?? false)
+                      ? null
+                      : CoverImage(
+                          url: playlist.coverUrl,
+                          size: 156,
+                          radius: 0,
+                          icon: Icons.queue_music,
+                        ),
+                  onTap: () => navRequest.value = 2,
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
 }
 
-class _DiscoverPlaylistsShelfState extends State<_DiscoverPlaylistsShelf> {
+/// 排行榜精选：真实 leaderboard 榜单行卡（概念稿 `.chart` 形态），
+/// 不是统计卡片。数据取首个支持榜单的音源。
+class _LeaderboardSection extends StatefulWidget {
+  final AppModel model;
+
+  const _LeaderboardSection({required this.model});
+
+  @override
+  State<_LeaderboardSection> createState() => _LeaderboardSectionState();
+}
+
+class _LeaderboardSectionState extends State<_LeaderboardSection> {
   String? _requestedSource;
 
-  String? _pickSource() {
-    for (final source in widget.model.state.sources) {
-      if (source.playlists) return source.id;
-    }
-    return null;
-  }
+  AppModel get _model => widget.model;
 
   @override
   void initState() {
     super.initState();
     // 加载触发挂在模型监听里；调度 defer 到帧后执行——模型通知可能发生在
     // build 期，直接触发会让祖先 AnimatedBuilder 在 build 中被标脏。
-    widget.model.addListener(_maybeLoad);
+    _model.addListener(_maybeLoad);
     _maybeLoad();
   }
 
   @override
-  void didUpdateWidget(covariant _DiscoverPlaylistsShelf oldWidget) {
+  void didUpdateWidget(covariant _LeaderboardSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.model != widget.model) {
       oldWidget.model.removeListener(_maybeLoad);
@@ -354,7 +319,7 @@ class _DiscoverPlaylistsShelfState extends State<_DiscoverPlaylistsShelf> {
 
   @override
   void dispose() {
-    widget.model.removeListener(_maybeLoad);
+    _model.removeListener(_maybeLoad);
     super.dispose();
   }
 
@@ -371,211 +336,190 @@ class _DiscoverPlaylistsShelfState extends State<_DiscoverPlaylistsShelf> {
   }
 
   void _loadNow() {
-    final source = _pickSource();
-    if (source == null || _requestedSource == source) return;
-    _requestedSource = source;
-    widget.model.loadPlaylists(source: source);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.model,
-      builder: (context, _) {
-        final source = _pickSource();
-        final result =
-            source == null ? null : widget.model.browse('playlists', source, '');
-        if (source == null) {
-          return const _ShelfHint(
-            icon: Icons.queue_music_outlined,
-            text: '没有支持歌单的音源',
-          );
-        }
-        if (result == null || (result.loading && result.playlists.isEmpty)) {
-          return const _ShelfHint(
-            icon: null,
-            text: '热门歌单加载中…',
-            loading: true,
-          );
-        }
-        if (result.error != null && result.playlists.isEmpty) {
-          return _ShelfHint(
-            icon: Icons.cloud_off,
-            text: '加载失败：${result.error}',
-          );
-        }
-        if (result.playlists.isEmpty) {
-          return _ShelfHint(
-            icon: Icons.queue_music_outlined,
-            text: result.notice ?? '暂无推荐歌单',
-          );
-        }
-        return SizedBox(
-          height: 172,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: result.playlists.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              final playlist = result.playlists[index];
-              return SizedBox(
-                width: 132,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          PlaylistDetailPage(widget.model, playlist),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CoverImage(
-                        url: playlist.coverUrl,
-                        size: 128,
-                        radius: 10,
-                        icon: Icons.queue_music,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        playlist.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// 排行榜书架：支持榜单的音源 chip 行，点击直达该音源榜单。
-class _LeaderboardShelf extends StatelessWidget {
-  final AppModel model;
-
-  const _LeaderboardShelf({required this.model});
-
-  @override
-  Widget build(BuildContext context) {
-    final capable = model.state.sources
+    final capable = _model.state.sources
         .where((source) => source.leaderboard)
         .toList();
-    if (capable.isEmpty) {
-      return const _ShelfHint(
-        icon: Icons.leaderboard_outlined,
-        text: '没有支持排行榜的音源，可在设置中启用',
-      );
-    }
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final source in capable)
-          ActionChip(
-            avatar: const Icon(Icons.leaderboard_outlined, size: 16),
-            label: Text(source.name),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('排行榜')),
-                  body: LeaderboardPage(model, initialSource: source.id),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
+    if (capable.isEmpty) return;
+    final source = capable.first.id;
+    if (_requestedSource == source) return;
+    _requestedSource = source;
+    _model.loadLeaderboardBoards(source);
   }
-}
 
-/// 快捷入口行：shell 导航索引见 app_shell 注册表。
-class _QuickAccess extends StatelessWidget {
-  const _QuickAccess();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final entries = const [
-      (Icons.search, '搜索', 1),
-      (Icons.favorite_border, '曲库', 2),
-      (Icons.playlist_play_outlined, '在线歌单', 3),
-      (Icons.library_music_outlined, '本地音乐', 5),
-      (Icons.download_outlined, '下载', 6),
-      (Icons.settings_outlined, '设置', 7),
-    ];
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (final (icon, label, index) in entries)
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => navRequest.value = index,
-            child: Container(
-              width: 108,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Icon(icon, size: 22, color: scheme.primary),
-                  const SizedBox(height: 6),
-                  Text(label, style: Theme.of(context).textTheme.labelSmall),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _ShelfHint extends StatelessWidget {
-  final IconData? icon;
-  final String text;
-  final bool loading;
-
-  const _ShelfHint({required this.text, this.icon, this.loading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      height: 64,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        children: [
-          if (loading)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else if (icon != null)
-            Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
-        ],
+  void _openBoard(String sourceId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          body: LeaderboardPage(_model, initialSource: sourceId, showChrome: false),
+        ),
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final capable = _model.state.sources
+        .where((source) => source.leaderboard)
+        .toList();
+    final source = capable.isEmpty ? null : capable.first;
+    final result =
+        source == null ? null : _model.browse('leaderboard_boards', source.id, '');
+    final boards = result?.boards ?? const <bridge.LeaderboardDto>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        VxSectionHeader(
+          title: '热门榜单',
+          actions: source == null
+              ? const <Widget>[]
+              : [
+                  Padding(
+                    padding: const EdgeInsets.only(right: VxSpacing.sm),
+                    child: Text(
+                      source.name,
+                      style: VxTypography.caption.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+          onViewAll: source == null ? null : () => _openBoard(source.id),
+        ),
+        const SizedBox(height: VxSpacing.md),
+        _body(context, source, result, boards),
+      ],
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    bridge.SourceCapabilitiesDto? source,
+    BrowseResult? result,
+    List<bridge.LeaderboardDto> boards,
+  ) {
+    if (source == null) {
+      return SizedBox(
+        height: 260,
+        child: VxEmptyState(
+          icon: Icons.leaderboard_outlined,
+          title: '没有支持排行榜的音源',
+          message: '可在设置中启用支持排行榜的音源，榜单会显示在这里。',
+        ),
+      );
+    }
+    if (result == null || (result.loading && boards.isEmpty)) {
+      return const Align(
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          height: 200,
+          width: 480,
+          child: VxLoadingSkeleton.tracks(rows: 3),
+        ),
+      );
+    }
+    if (result.error != null) {
+      return SizedBox(
+        height: 320,
+        child: VxErrorState(
+          title: '榜单加载失败',
+          message: '无法读取「${source.name}」的排行榜目录。',
+          detail: result.error,
+          icon: Icons.cloud_off,
+          onRetry: () {
+            _requestedSource = null;
+            _maybeLoad();
+          },
+        ),
+      );
+    }
+    if (boards.isEmpty) {
+      return SizedBox(
+        height: 260,
+        child: VxEmptyState(
+          icon: Icons.leaderboard_outlined,
+          title: result.notice ?? '暂无榜单数据',
+          message: '该音源没有返回可用榜单。',
+        ),
+      );
+    }
+    return Wrap(
+      spacing: VxSpacing.md,
+      runSpacing: VxSpacing.md,
+      children: [
+        for (final board in boards.take(8)) _chartCard(context, board),
+      ],
+    );
+  }
+
+  /// 榜单行卡：渐变封面 + 榜单名 + 更新说明（概念稿 `.chart`）。
+  Widget _chartCard(BuildContext context, bridge.LeaderboardDto board) {
+    final scheme = Theme.of(context).colorScheme;
+    return VxHoverBuilder(
+      onTap: () => _openBoard(board.source),
+      builder: (context, hovering) => AnimatedContainer(
+        duration: VxMotion.hoverFade,
+        curve: VxMotion.standard,
+        width: 300,
+        padding: const EdgeInsets.all(VxSpacing.md),
+        decoration: BoxDecoration(
+          color: hovering
+              ? scheme.surfaceContainerHighest
+              : scheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(VxRadius.lg),
+          border: Border.all(color: scheme.surfaceContainerHighest),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                gradient: VxCoverGradients.forSeed(board.name),
+                borderRadius: BorderRadius.circular(VxRadius.sm),
+              ),
+              child: const Icon(
+                Icons.leaderboard_outlined,
+                size: 22,
+                color: Color(0xCCFFFFFF),
+              ),
+            ),
+            const SizedBox(width: VxSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    board.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VxTypography.titleSm.copyWith(
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    [_sourceName(board.source), ?board.update].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VxTypography.caption.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _sourceName(String source) =>
+      widget.model.capability(source)?.name ?? source;
 }

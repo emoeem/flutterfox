@@ -1,38 +1,60 @@
-/// 歌手详情：歌曲 / 专辑两个页签；专辑可继续进入曲目页。
+/// 歌手详情：Banner + 热门歌曲 + 专辑网格（§4.6）。
+///
+/// - Banner 高 240（220-260 区间）：有照片用整幅照片，没有照片（或加载
+///   失败）用封面渐变色板生成背景，不显示破图；
+/// - 「收藏歌手」后端无对应命令：按钮禁用并说明，不伪造；
+/// - 相关歌手区域：后端无数据来源，直接隐藏（不造假数据）；
+/// - `presetSongs`：本地歌手等无后端详情命令的场景直接展示本地曲目。
 library;
+
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
-import '../widgets/browse_songs_view.dart';
+import '../design_system/components/vx_artist_banner.dart';
+import '../design_system/components/vx_album_card.dart';
+import '../design_system/components/vx_cover_fallback.dart';
+import '../design_system/components/vx_empty_state.dart';
+import '../design_system/components/vx_section_header.dart';
+import '../design_system/design_tokens.dart';
 import '../widgets/cover_image.dart';
-import '../widgets/empty_state.dart';
+import '../widgets/song_table_view.dart';
 import 'album_songs_page.dart';
+import 'song_tile.dart' show songSourceLabel;
 
 class ArtistDetailPage extends StatefulWidget {
   final AppModel model;
   final bridge.ArtistDto artist;
 
-  const ArtistDetailPage(this.model, this.artist, {super.key});
+  /// 本地歌手等场景：直接展示的曲目（来自本地曲库快照）。
+  final List<bridge.SongDto>? presetSongs;
+
+  const ArtistDetailPage(
+    this.model,
+    this.artist, {
+    super.key,
+    this.presetSongs,
+  });
 
   @override
   State<ArtistDetailPage> createState() => _ArtistDetailPageState();
 }
 
-class _ArtistDetailPageState extends State<ArtistDetailPage>
-    with SingleTickerProviderStateMixin {
+class _ArtistDetailPageState extends State<ArtistDetailPage> {
   static const _songsKind = 'artist_songs';
   static const _albumsKind = 'artist_albums';
-
-  late final TabController _tabs = TabController(length: 2, vsync: this);
 
   AppModel get _model => widget.model;
   bridge.ArtistDto get _artist => widget.artist;
 
+  bool get _preset => widget.presetSongs != null;
+
   @override
   void initState() {
     super.initState();
+    if (_preset) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _model.loadArtistSongs(_artist);
@@ -40,89 +62,61 @@ class _ArtistDetailPageState extends State<ArtistDetailPage>
     });
   }
 
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
+  BrowseResult? get _songs =>
+      _preset ? null : _model.browse(_songsKind, _artist.source, _artist.id);
+  BrowseResult? get _albums =>
+      _preset ? null : _model.browse(_albumsKind, _artist.source, _artist.id);
+
+  void _reloadSongs() {
+    if (_preset) return;
+    _model.loadArtistSongs(_artist);
   }
 
-  BrowseResult? get _songs => _model.browse(_songsKind, _artist.source, _artist.id);
-  BrowseResult? get _albums =>
-      _model.browse(_albumsKind, _artist.source, _artist.id);
+  /// 随机播放：从热门歌曲随机一首开始（顺序继续）。
+  void _playShuffled(List<bridge.SongDto> songs) {
+    if (songs.length <= 1) {
+      _model.playSongs(songs);
+      return;
+    }
+    final index = Random().nextInt(songs.length);
+    _model.playSongs(songs, index: index);
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _model,
       builder: (context, _) {
-        final songs = _songs?.songs ?? const <bridge.SongDto>[];
+        final songsResult = _songs;
+        final hotSongs = _preset
+            ? widget.presetSongs!
+            : (songsResult?.songs ?? const <bridge.SongDto>[]);
         return Scaffold(
-          appBar: AppBar(
-            title: Text(_artist.name, maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-            actions: [
-              IconButton(
-                tooltip: '刷新',
-                onPressed: () {
-                  _model.loadArtistSongs(_artist);
-                  _model.loadArtistAlbums(_artist);
-                },
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-            bottom: TabBar(
-              controller: _tabs,
-              tabs: const [
-                Tab(text: '歌曲'),
-                Tab(text: '专辑'),
-              ],
-            ),
-          ),
           body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _header(context),
+              _backBar(context),
               Expanded(
-                child: TabBarView(
-                  controller: _tabs,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    VxSpacing.xl,
+                    0,
+                    VxSpacing.xl,
+                    VxSpacing.xl,
+                  ),
                   children: [
-                    Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  songs.isEmpty ? '暂无曲目' : '已载入 ${songs.length} 首',
-                                  style:
-                                      Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ),
-                              FilledButton.icon(
-                                onPressed: songs.isEmpty
-                                    ? null
-                                    : () => _model.playSongs(songs),
-                                icon: const Icon(Icons.play_arrow, size: 18),
-                                label: const Text('播放全部'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: BrowseSongsView(
-                            model: _model,
-                            result: _songs,
-                            onRetry: () => _model.loadArtistSongs(_artist),
-                            onLoadMore: () => _model.loadArtistSongs(
-                              _artist,
-                              page: (_songs?.page ?? 0) + 1,
-                            ),
-                            emptyTitle: '歌手暂无歌曲',
-                          ),
-                        ),
-                      ],
+                    VxArtistBanner(
+                      name: _artist.name,
+                      photoUrl: _artist.coverUrl,
+                      sourceLabel: songSourceLabel(_model, _artist.source),
+                      subtitle: hotSongs.isEmpty ? null : '热门歌曲 ${hotSongs.length} 首',
                     ),
-                    _albumsTab(context),
+                    const SizedBox(height: VxSpacing.lg),
+                    _actionRow(context, hotSongs),
+                    const SizedBox(height: VxSpacing.sectionGap),
+                    _hotSongs(context, songsResult, hotSongs),
+                    const SizedBox(height: VxSpacing.sectionGap),
+                    if (!_preset) _albumsSection(context),
                   ],
                 ),
               ),
@@ -133,40 +127,25 @@ class _ArtistDetailPageState extends State<ArtistDetailPage>
     );
   }
 
-  Widget _header(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+  Widget _backBar(BuildContext context) {
+    return SizedBox(
+      height: 44,
       child: Row(
         children: [
-          CoverImage(
-            url: _artist.coverUrl,
-            size: 72,
-            radius: 999,
-            icon: Icons.person,
+          const SizedBox(width: VxSpacing.md),
+          IconButton(
+            tooltip: '返回',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back, size: 20),
           ),
-          const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _artist.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _artist.source.toUpperCase(),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
+            child: Text(
+              _artist.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VxTypography.titleSm.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -174,108 +153,168 @@ class _ArtistDetailPageState extends State<ArtistDetailPage>
     );
   }
 
-  Widget _albumsTab(BuildContext context) {
+  Widget _actionRow(BuildContext context, List<bridge.SongDto> songs) {
+    return Wrap(
+      spacing: VxSpacing.sm,
+      runSpacing: VxSpacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        FilledButton.icon(
+          onPressed: songs.isEmpty ? null : () => _model.playSongs(songs),
+          icon: const Icon(Icons.play_arrow, size: 18),
+          label: Text(songs.isEmpty ? '暂无可播放曲目' : '播放'),
+        ),
+        OutlinedButton.icon(
+          onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
+          icon: const Icon(Icons.shuffle, size: 18),
+          label: const Text('随机播放'),
+        ),
+        // 后端没有「关注/收藏歌手」命令：按钮保持可见但禁用并说明原因。
+        Tooltip(
+          message: '后端暂不支持收藏歌手',
+          child: OutlinedButton.icon(
+            onPressed: null,
+            icon: const Icon(Icons.favorite_border, size: 18),
+            label: const Text('收藏歌手'),
+          ),
+        ),
+        IconButton(
+          tooltip: '刷新',
+          onPressed: _reloadSongs,
+          icon: const Icon(Icons.refresh, size: 20),
+        ),
+      ],
+    );
+  }
+
+  Widget _hotSongs(
+    BuildContext context,
+    BrowseResult? result,
+    List<bridge.SongDto> songs,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        VxSectionHeader(title: '热门歌曲'),
+        const SizedBox(height: VxSpacing.sm),
+        SizedBox(
+          height: _tableHeight(context, songs.length, result),
+          child: VxSongTable(
+            model: _model,
+            songs: songs,
+            loading: !_preset && (result == null || result.loading),
+            error: result?.error,
+            notice: result?.notice,
+            emptyTitle: '歌手暂无歌曲',
+            onRetry: _reloadSongs,
+            hasMore: result?.hasMore ?? false,
+            onLoadMore: () {
+              if (result == null || result.loading) return;
+              _model.loadArtistSongs(_artist, page: result.page + 1);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _tableHeight(BuildContext context, int count, BrowseResult? result) {
+    if (result?.hasMore ?? false) return 400;
+    // 全部载入时按行数给高度（每行 58px），至少占位两行。
+    return (count * 58.0 + 8).clamp(120.0, 640.0);
+  }
+
+  Widget _albumsSection(BuildContext context) {
     final result = _albums;
     final albums = result?.albums ?? const <bridge.AlbumDto>[];
     if (result == null || (result.loading && albums.isEmpty)) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 12),
-            Text('专辑加载中…'),
-          ],
-        ),
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
     if (result.error != null) {
       return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          EmptyState(
-            icon: Icons.cloud_off_outlined,
+          VxSectionHeader(title: '专辑'),
+          const SizedBox(height: VxSpacing.sm),
+          VxEmptyState(
+            icon: Icons.album_outlined,
             title: '专辑加载失败',
-            subtitle: result.error,
-          ),
-          TextButton(
-            onPressed: () => _model.loadArtistAlbums(_artist),
-            child: const Text('重试'),
+            message: result.error!,
+            actionLabel: '重试',
+            onAction: () => _model.loadArtistAlbums(_artist),
           ),
         ],
       );
     }
     if (albums.isEmpty) {
-      return EmptyState(
+      // 没有专辑数据就整块收起标题，只留一句说明；不伪造占位专辑。
+      return VxEmptyState(
         icon: Icons.album_outlined,
-        title: result.notice ?? '歌手暂无专辑',
+        title: result.notice ?? '暂无专辑数据',
+        message: '该音源未返回歌手的专辑列表。',
       );
     }
-    final hasMore = result.hasMore;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final items = [
-          for (final album in albums) _albumTile(context, album),
-          if (hasMore)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: result.loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : TextButton(
-                        onPressed: () => _model.loadArtistAlbums(
-                          _artist,
-                          page: result.page + 1,
-                        ),
-                        child: const Text('加载更多'),
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        VxSectionHeader(
+          title: '专辑',
+          onViewAll: result.hasMore
+              ? () =>
+                  _model.loadArtistAlbums(_artist, page: result.page + 1)
+              : null,
+          viewAllLabel: result.hasMore ? '加载更多' : '查看全部',
+        ),
+        const SizedBox(height: VxSpacing.md),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const minCard = 156;
+            final columns =
+                (constraints.maxWidth ~/ minCard).clamp(2, 6);
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisSpacing: VxSpacing.lg,
+                crossAxisSpacing: VxSpacing.lg,
+                // VxCardShell 内容高 ≈ 宽+60（两行标题），0.72 留余量。
+                childAspectRatio: 0.72,
               ),
-            ),
-        ];
-        if (constraints.maxWidth < 840) {
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 32),
-            children: items,
-          );
-        }
-        return GridView.count(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
-          crossAxisCount: 2,
-          childAspectRatio: 5.4,
-          children: items,
-        );
-      },
+              itemCount: albums.length,
+              itemBuilder: (context, index) =>
+                  _albumCard(context, albums[index]),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  Widget _albumTile(BuildContext context, bridge.AlbumDto album) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        leading: CoverImage(
-          url: album.coverUrl,
-          size: 48,
-          radius: 8,
-          icon: Icons.album,
-        ),
-        title: Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-          [album.artist, album.source.toUpperCase()]
-              .where((part) => part.isNotEmpty)
-              .join(' · '),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => AlbumSongsPage(_model, album),
-          ),
-        ),
+  Widget _albumCard(BuildContext context, bridge.AlbumDto album) {
+    final url = album.coverUrl;
+    return Center(
+      child: VxAlbumCard(
+        title: album.name,
+        subtitle: album.artist.trim().isEmpty ? null : album.artist,
+        cover: (url == null || url.isEmpty)
+            // 无封面：渐变首字母占位，不用灰音符块。
+            ? VxCoverFallback(title: album.name, radius: VxRadius.lg)
+            : CoverImage.expand(
+                url: url,
+                radius: VxRadius.lg,
+                icon: Icons.album_outlined,
+              ),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => AlbumSongsPage(_model, album),
+            ),
+          );
+        },
       ),
     );
   }

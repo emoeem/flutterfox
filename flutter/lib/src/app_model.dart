@@ -804,19 +804,26 @@ class AppModel extends ChangeNotifier {
     List<bridge.SourceCapabilitiesDto>? sources,
     List<bridge.SongDto>? localSongs,
     List<bridge.CustomPlaylistSummaryDto>? customPlaylists,
+    List<bridge.SongDto>? queue,
+    int? queueIndex,
+    bridge.LyricsDto? lyrics,
+    List<bridge.SongDto>? history,
+    bridge.SearchDto? search,
+    List<bridge.DownloadTaskDto>? downloads,
+    List<bridge.SongDto>? favoritesOverride,
   }) {
     _state = bridge.VoicefoxState(
       playback: _state.playback,
-      queue: _state.queue,
-      queueIndex: _state.queueIndex,
-      search: _state.search,
-      lyrics: _state.lyrics,
+      queue: queue ?? _state.queue,
+      queueIndex: queueIndex ?? _state.queueIndex,
+      search: search ?? _state.search,
+      lyrics: lyrics ?? _state.lyrics,
       playlists: _state.playlists,
-      favorites: _state.favorites,
+      favorites: favoritesOverride ?? _state.favorites,
       favoritePlaylists: _state.favoritePlaylists,
-      history: _state.history,
+      history: history ?? _state.history,
       customPlaylists: customPlaylists ?? _state.customPlaylists,
-      downloads: _state.downloads,
+      downloads: downloads ?? _state.downloads,
       sources: sources ?? _state.sources,
       localSongs: localSongs ?? _state.localSongs,
     );
@@ -873,6 +880,11 @@ class AppModel extends ChangeNotifier {
     List<bridge.CustomPlaylistSummaryDto> playlists,
   ) => _replaceState(customPlaylists: playlists);
 
+  /// 测试钩子：替换下载任务快照（不起 Rust 控制器）。
+  @visibleForTesting
+  void debugSetDownloads(List<bridge.DownloadTaskDto> tasks) =>
+      _replaceState(downloads: tasks);
+
   /// 测试钩子：替换音源能力位，避免起 Rust 控制器。
   @visibleForTesting
   void debugSetSources(List<bridge.SourceCapabilitiesDto> sources) =>
@@ -882,6 +894,31 @@ class AppModel extends ChangeNotifier {
   @visibleForTesting
   void debugSetLocalSongs(List<bridge.SongDto> songs) =>
       _replaceState(localSongs: songs);
+
+  /// 测试钩子：替换歌词快照（不起 Rust 控制器）。
+  @visibleForTesting
+  void debugSetLyrics(bridge.LyricsDto lyrics) =>
+      _replaceState(lyrics: lyrics);
+
+  /// 测试钩子：替换最近播放历史（不起 Rust 控制器）。
+  @visibleForTesting
+  void debugSetHistory(List<bridge.SongDto> history) =>
+      _replaceState(history: history);
+
+  /// 测试钩子：替换本地收藏（不起 Rust 控制器）。
+  @visibleForTesting
+  void debugSetFavorites(List<bridge.SongDto> favorites) =>
+      _replaceState(favoritesOverride: favorites);
+
+  /// 测试钩子：替换搜索快照（不起 Rust 控制器）。
+  @visibleForTesting
+  void debugSetSearch(bridge.SearchDto search) =>
+      _replaceState(search: search);
+
+  /// 测试钩子：替换队列与当前索引（不起 Rust 控制器）。
+  @visibleForTesting
+  void debugSetQueue(List<bridge.SongDto> queue, {int index = 0}) =>
+      _replaceState(queue: queue, queueIndex: index);
 
   /// 测试钩子：替换配置（本地音乐目录等）。
   @visibleForTesting

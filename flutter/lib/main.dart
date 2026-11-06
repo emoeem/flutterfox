@@ -2,11 +2,14 @@
 ///
 /// 桌面：Rust 侧 newDesktop()（mpv 播放）引导；移动端（Phase 4）由宿主注入
 /// ApplicationService 后走 AppModel.attach。
-/// UI 壳为 myune 基底：Rust 引导完成后 `MyuneHost` 挂起 app 级 Provider 图
-/// （存活全程），`MyuneProjection` 把 AppModel 快照常驻投影进 vendored 组件。
+/// UI 壳：Phase 2 起为 `src/shell/VoicefoxShell`（Header+Sidebar+内容区+
+/// ContextPanel+PlayerBar 唯一外壳）。Rust 引导完成后 `MyuneHost` 挂起
+/// app 级 Provider 图（存活全程），`MyuneProjection` 把 AppModel 快照常驻
+/// 投影进 vendored 组件。旧壳 myune_shell/app_shell.dart 已退役。
 library;
 
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -20,21 +23,93 @@ import 'src/myune/services/notification_service.dart';
 import 'src/myune/theme/theme_provider.dart';
 import 'src/myune_seam/app_model_audio_backend.dart'
     show attachVoicefoxAudioBackend;
-import 'src/myune_shell/app_shell.dart';
 import 'src/myune_shell/projection.dart' show MyuneHost;
+import 'src/shell/app_shell.dart' show ShellDetailSeed, VoicefoxShell;
+import 'src/shell/app_sidebar.dart' show ShellDestination;
+
+/// 验收截图起始页（与 VOICEFOX_START_SIZE 同一约定）：VOICEFOX_START_PAGE=
+/// home|discover|search|library|downloads|settings|help，缺省 home，
+/// 运行时行为一致。
+ShellDestination? _startDestinationFromEnv() {
+  final raw = Platform.environment['VOICEFOX_START_PAGE']?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  return switch (raw) {
+    'home' => ShellDestination.home,
+    'discover' => ShellDestination.discover,
+    'search' => ShellDestination.search,
+    'library' => ShellDestination.library,
+    'downloads' => ShellDestination.downloads,
+    'settings' => ShellDestination.settings,
+    'help' => ShellDestination.help,
+    _ => null,
+  };
+}
+
+/// 我的音乐初始二级类别：VOICEFOX_START_TAB=songs|albums|artists|playlists。
+String? _startLibraryTabFromEnv() {
+  final raw = Platform.environment['VOICEFOX_START_TAB']?.trim();
+  return (raw == null || raw.isEmpty) ? null : raw;
+}
+
+/// 设置页初始分组：VOICEFOX_START_SECTION=appearance 等（验收截图用）。
+String? _startSettingsSectionFromEnv() {
+  final raw = Platform.environment['VOICEFOX_START_SECTION']?.trim();
+  return (raw == null || raw.isEmpty) ? null : raw;
+}
+
+/// 详情页下钻种子：VOICEFOX_START_DETAIL=album|artist|playlist|local，
+/// 配 VOICEFOX_START_KEYWORD（album/artist 的搜索词）与
+/// VOICEFOX_START_SOURCE（playlist 的音源，默认 kw）。
+ShellDetailSeed? _startDetailSeedFromEnv() {
+  final raw = Platform.environment['VOICEFOX_START_DETAIL']?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  final keyword =
+      Platform.environment['VOICEFOX_START_KEYWORD']?.trim() ?? '';
+  final source =
+      Platform.environment['VOICEFOX_START_SOURCE']?.trim() ?? 'kw';
+  return ShellDetailSeed(kind: raw, keyword: keyword, source: source);
+}
+
+/// 验收截图搜索种子：VOICEFOX_START_SEARCH=关键词，配 search 起始页使用。
+String _startSearchSeedFromEnv() =>
+    Platform.environment['VOICEFOX_START_SEARCH']?.trim() ?? '';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 自绘标题栏（VoicefoxWindowTitleBar）依赖隐藏系统标题栏。
+  // 自绘标题栏（AppHeader）依赖隐藏系统标题栏。
   await windowManager.ensureInitialized();
-  const windowOptions = WindowOptions(
+  // 初始窗口尺寸：默认 1150x720；VOICEFOX_START_SIZE=1440x900 可覆盖
+  // （用于断点验收截图，运行时行为与默认完全一致）。
+  Size startSize = const Size(1150, 720);
+  final envSize = Platform.environment['VOICEFOX_START_SIZE'];
+  if (envSize != null) {
+    final match = RegExp(r'^(\d+)x(\d+)$').firstMatch(envSize.trim());
+    if (match != null) {
+      startSize = Size(double.parse(match.group(1)!), double.parse(match.group(2)!));
+    }
+  }
+  // 可选起始位置：VOICEFOX_START_POS=x,y（X11 后端 + 验收截图用；
+  // Wayland 合成器可能忽略，运行时行为不受影响）。
+  Offset? startPos;
+  final envPos = Platform.environment['VOICEFOX_START_POS'];
+  if (envPos != null) {
+    final posMatch = RegExp(r'^(-?\d+),(-?\d+)$').firstMatch(envPos.trim());
+    if (posMatch != null) {
+      startPos = Offset(
+        double.parse(posMatch.group(1)!),
+        double.parse(posMatch.group(2)!),
+      );
+    }
+  }
+  final windowOptions = WindowOptions(
     title: 'voicefox',
-    size: Size(1150, 720),
-    minimumSize: Size(560, 480),
+    size: startSize,
+    minimumSize: const Size(560, 480),
     titleBarStyle: TitleBarStyle.hidden,
   );
   unawaited(
     windowManager.waitUntilReadyToShow(windowOptions, () async {
+      if (startPos != null) await windowManager.setPosition(startPos);
       await windowManager.show();
     }),
   );
@@ -42,7 +117,14 @@ Future<void> main() async {
   final model = AppModel();
   // myune 壳的播放接缝：vendored UI 全部通过 shim 走 AppModel。
   attachVoicefoxAudioBackend(model);
-  final app = VoicefoxApp(model: model);
+  final app = VoicefoxApp(
+    model: model,
+    initialDestination: _startDestinationFromEnv(),
+    searchSeed: _startSearchSeedFromEnv(),
+    libraryTab: _startLibraryTabFromEnv(),
+    detailSeed: _startDetailSeedFromEnv(),
+    settingsSection: _startSettingsSectionFromEnv(),
+  );
   // Rust 引导放后台：窗口先起，骨架屏等待；就绪后 VoicefoxApp 挂 Provider 图。
   unawaited(
     model.bootstrapDesktop().catchError(model.reportBootstrapError),
@@ -53,7 +135,30 @@ Future<void> main() async {
 class VoicefoxApp extends StatefulWidget {
   final AppModel model;
 
-  const VoicefoxApp({super.key, required this.model});
+  /// 初始目的地（VOICEFOX_START_PAGE，验收截图用）；null 从首页开始。
+  final ShellDestination? initialDestination;
+
+  /// 搜索页种子关键词（VOICEFOX_START_SEARCH，验收截图用）。
+  final String searchSeed;
+
+  /// 我的音乐初始二级类别（VOICEFOX_START_TAB，验收截图用）。
+  final String? libraryTab;
+
+  /// 设置页初始分组（VOICEFOX_START_SECTION，验收截图用）。
+  final String? settingsSection;
+
+  /// 详情页下钻种子（VOICEFOX_START_DETAIL，验收截图用）。
+  final ShellDetailSeed? detailSeed;
+
+  const VoicefoxApp({
+    super.key,
+    required this.model,
+    this.initialDestination,
+    this.searchSeed = '',
+    this.libraryTab,
+    this.detailSeed,
+    this.settingsSection,
+  });
 
   @override
   State<VoicefoxApp> createState() => _VoicefoxAppState();
@@ -146,7 +251,14 @@ class _VoicefoxAppState extends State<VoicefoxApp> {
                 theme: host.theme.lightThemeData,
                 darkTheme: host.theme.darkThemeData,
                 themeMode: host.theme.themeMode,
-                home: VoicefoxAppShell(model: widget.model),
+                home: VoicefoxShell(
+                  model: widget.model,
+                  initialDestination: widget.initialDestination,
+                  searchSeed: widget.searchSeed,
+                  libraryTab: widget.libraryTab,
+                  detailSeed: widget.detailSeed,
+                  settingsSection: widget.settingsSection,
+                ),
               );
             },
           );

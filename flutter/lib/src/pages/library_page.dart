@@ -1,162 +1,57 @@
-/// 库页：收藏歌曲 / 历史 两个 tab，封面网格（spec §2：最小列宽 120dp）。
+/// 我的音乐（§4.4）：统一歌曲、专辑、歌手、歌单。
+///
+/// - 二级切换：歌曲 / 专辑 / 歌手 / 歌单（计数徽章，0 值弱化不隐藏）；
+/// - 右侧工具：搜索当前视图 + 排序 + 网格/列表切换（按视图可用性显示）+ 刷新；
+/// - 歌曲 = 喜欢的歌曲（含账号红心镜像，平台来源明确标注）；
+///   专辑 / 歌手 = 本地收藏、最近播放与本地音乐里出现过的专辑 / 歌手聚合
+///   （本地曲库快照派生，无伪造数据）；歌单 = 自建歌单 + 收藏歌单；
+/// - 最近播放 / 本地音乐 / 喜欢的歌曲三个入口语义独立（入口卡）。
 library;
 
 import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
+import '../design_system/components/vx_album_card.dart';
+import '../design_system/components/vx_artist_card.dart';
+import '../design_system/components/vx_cover_fallback.dart';
+import '../design_system/components/vx_empty_state.dart';
+import '../design_system/design_tokens.dart';
 import '../widgets/cover_image.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/push_dialog.dart';
-import '../widgets/song_card.dart';
+import '../widgets/song_table_view.dart';
+import 'album_songs_page.dart';
+import 'artist_detail_page.dart';
 import 'custom_playlists_page.dart';
 import 'local_music_page.dart';
 import 'playlist_detail_page.dart';
+import 'song_tile.dart' show songSourceLabel;
 
-class LibraryPage extends StatelessWidget {
+/// 二级类别。
+enum LibraryTab { songs, albums, artists, playlists }
+
+class LibraryPage extends StatefulWidget {
   final AppModel model;
 
-  const LibraryPage(this.model, {super.key});
+  /// 初始二级类别（验收截图用）；null 从歌曲开始。
+  final LibraryTab? initialTab;
+
+  const LibraryPage(this.model, {super.key, this.initialTab});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                Expanded(child: pageTitle(context, '曲库')),
-                TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => LocalMusicPage(model),
-                    ),
-                  ),
-                  icon: const Icon(Icons.folder_outlined, size: 20),
-                  label: const Text('本地音乐'),
-                ),
-              ],
-            ),
-          ),
-          TabBar(
-            tabs: [
-              Tab(text: '收藏 ${model.state.favorites.length}'),
-              Tab(text: '收藏歌单 ${model.state.favoritePlaylists.length}'),
-              Tab(text: '历史 ${model.state.history.length}'),
-              Tab(text: '自建歌单 ${model.state.customPlaylists.length}'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _Favorites(model),
-                _FavoritePlaylists(model),
-                _History(model),
-                CustomPlaylistsSection(model),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<LibraryPage> createState() => _LibraryPageState();
 }
 
-/// 收藏的歌单（远端歌单收藏到本地库）。点击进入在线歌单详情。
-class _FavoritePlaylists extends StatelessWidget {
-  final AppModel model;
+class _LibraryPageState extends State<LibraryPage> {
+  late LibraryTab _tab = widget.initialTab ?? LibraryTab.songs;
+  String _query = '';
+  String _sort = 'default';
+  bool _grid = true;
 
-  const _FavoritePlaylists(this.model);
-
-  @override
-  Widget build(BuildContext context) {
-    final playlists = model.state.favoritePlaylists;
-    if (playlists.isEmpty) {
-      return const EmptyState(
-        icon: Icons.playlist_add_check,
-        title: '还没有收藏歌单',
-        subtitle: '在歌单详情页点收藏把远端歌单存进本地库',
-      );
-    }
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-      gridDelegate: _gridDelegate,
-      itemCount: playlists.length,
-      itemBuilder: (context, index) {
-        final playlist = playlists[index];
-        return _PlaylistCard(model, playlist);
-      },
-    );
-  }
-}
-
-class _PlaylistCard extends StatelessWidget {
-  final AppModel model;
-  final bridge.PlaylistDto playlist;
-
-  const _PlaylistCard(this.model, this.playlist);
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => PlaylistDetailPage(model, playlist),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              child: CoverImage.expand(url: playlist.coverUrl),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            playlist.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// spec §2 封面网格：最小列宽 120、圆角 12、间距 8。
-const _gridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
-  maxCrossAxisExtent: 150,
-  mainAxisSpacing: 8,
-  crossAxisSpacing: 8,
-  childAspectRatio: 0.72,
-);
-
-class _Favorites extends StatefulWidget {
-  final AppModel model;
-
-  const _Favorites(this.model);
-
-  @override
-  State<_Favorites> createState() => _FavoritesState();
-}
-
-class _FavoritesState extends State<_Favorites> {
-  String _view = 'local';
+  /// 红心镜像视图：local = 本地收藏；wy/tx = 账号镜像（来源明确标注）。
+  String _favoriteView = 'local';
+  static const _mirrorPlatforms = [('wy', '网易云'), ('tx', 'QQ')];
 
   AppModel get _model => widget.model;
-
-  /// 有红心镜像缓存的平台。镜像读的是本地缓存（Rust remote_cache 只实现
-  /// wy/tx），与音源当前是否启用无关，因此保持静态列出。
-  static const _mirrorPlatforms = [('wy', '网易云'), ('tx', 'QQ')];
 
   @override
   Widget build(BuildContext context) {
@@ -164,162 +59,883 @@ class _FavoritesState extends State<_Favorites> {
       listenable: _model,
       builder: (context, _) {
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: SegmentedButton<String>(
-                segments: [
-                  const ButtonSegment(value: 'local', label: Text('本地')),
-                  for (final (id, label) in _mirrorPlatforms)
-                    ButtonSegment(value: id, label: Text(label)),
-                ],
-                selected: {_view},
-                onSelectionChanged: (value) {
-                  setState(() => _view = value.first);
-                  if (_view != 'local') _model.loadAccountFavorites(_view);
-                },
-              ),
-            ),
-            Expanded(
-              child: _view == 'local'
-                  ? _localFavorites(context)
-                  : _accountFavorites(context, _view),
-            ),
+            _header(context),
+            if (_tab == LibraryTab.songs) _favoriteViewSwitch(context),
+            Expanded(child: _body(context)),
           ],
         );
       },
     );
   }
 
-  Widget _localFavorites(BuildContext context) {
-    final favorites = _model.state.favorites;
-    if (favorites.isEmpty) {
-      return const EmptyState(
-        icon: Icons.favorite_border,
-        title: '还没有收藏',
-        subtitle: '搜索页点击心形添加',
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: TextButton.icon(
-              onPressed: () => showPushDialog(
-                context,
-                _model,
-                localName: '收藏',
-                songs: favorites,
-                isFavorites: true,
+  // ── 头部：标题 + 三入口 + 二级切换 + 工具 ──
+
+  Widget _header(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '我的音乐',
+                  style: VxTypography.h1.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.cloud_upload_outlined, size: 18),
-              label: const Text('推送收藏'),
-            ),
+              _tools(context),
+            ],
           ),
+          const SizedBox(height: VxSpacing.md),
+          _entryCards(context),
+          const SizedBox(height: VxSpacing.sm),
+          _tabs(context),
+        ],
+      ),
+    );
+  }
+
+  /// 独立入口：最近播放 / 本地音乐 / 喜欢的歌曲（语义互不混用）。
+  Widget _entryCards(BuildContext context) {
+    return Row(
+      children: [
+        _entryCard(
+          context,
+          icon: Icons.history,
+          label: '最近播放',
+          count: _model.state.history.length,
+          unit: '首',
+          onTap: () => _openRecent(context),
         ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-            gridDelegate: _gridDelegate,
-            itemCount: favorites.length,
-            itemBuilder: (context, index) =>
-                SongCard(_model, favorites[index]),
-          ),
+        _entryCard(
+          context,
+          icon: Icons.speaker_outlined,
+          label: '本地音乐',
+          count: _model.state.localSongs.length,
+          unit: '首',
+          onTap: () => _openLocalMusic(context),
+        ),
+        _entryCard(
+          context,
+          icon: Icons.favorite_border,
+          label: '喜欢的歌曲',
+          count: _model.state.favorites.length,
+          unit: '首',
+          onTap: () => setState(() => _tab = LibraryTab.songs),
         ),
       ],
     );
   }
 
-  Widget _accountFavorites(BuildContext context, String source) {
-    final result = _model.accountFavorites(source);
-    if (result == null || result.loading) {
+  Widget _entryCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required int count,
+    required String unit,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(VxRadius.md),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: VxSpacing.md,
+            vertical: VxSpacing.sm + 2,
+          ),
+          margin: const EdgeInsets.only(right: VxSpacing.sm),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(VxRadius.md),
+            border:
+                Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: scheme.primary),
+              const SizedBox(width: VxSpacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VxTypography.titleSm.copyWith(
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+              Text(
+                '$count $unit',
+                style: VxTypography.mono.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tabs(BuildContext context) {
+    return Row(
+      children: [
+        _tabPill(
+          context,
+          tab: LibraryTab.songs,
+          label: '歌曲',
+          count: _model.state.favorites.length,
+        ),
+        _tabPill(
+          context,
+          tab: LibraryTab.albums,
+          label: '专辑',
+          count: _albumGroups().length,
+        ),
+        _tabPill(
+          context,
+          tab: LibraryTab.artists,
+          label: '歌手',
+          count: _artistGroups().length,
+        ),
+        _tabPill(
+          context,
+          tab: LibraryTab.playlists,
+          label: '歌单',
+          count:
+              _model.state.customPlaylists.length +
+              _model.state.favoritePlaylists.length,
+        ),
+      ],
+    );
+  }
+
+  Widget _tabPill(
+    BuildContext context, {
+    required LibraryTab tab,
+    required String label,
+    required int count,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final selected = _tab == tab;
+    return Padding(
+      padding: const EdgeInsets.only(right: VxSpacing.sm),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(VxRadius.md),
+        onTap: () => setState(() => _tab = tab),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: VxSpacing.md,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.14)
+                : scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(VxRadius.md),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: VxTypography.titleSm.copyWith(
+                  color: selected ? scheme.primary : scheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: count == 0
+                      ? scheme.surfaceContainerHighest
+                      : scheme.primary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  style: VxTypography.mono.copyWith(
+                    fontSize: 11,
+                    color: count == 0
+                        ? scheme.onSurfaceVariant
+                        : scheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tools(BuildContext context) {
+    final showSort = _tab != LibraryTab.playlists;
+    final showViewToggle = _tab == LibraryTab.albums || _tab == LibraryTab.artists;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 200,
+          child: TextField(
+            onChanged: (value) => setState(() => _query = value.trim()),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: '在当前视图中搜索…',
+              prefixIcon: const Icon(Icons.search, size: 18),
+              prefixIconConstraints: const BoxConstraints(minWidth: 34),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(VxRadius.md),
+              ),
+            ),
+          ),
+        ),
+        if (showSort) ...[
+          const SizedBox(width: VxSpacing.sm),
+          PopupMenuButton<String>(
+            tooltip: '排序',
+            onSelected: (value) => setState(() => _sort = value),
+            icon: const Icon(Icons.sort, size: 20),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'default', child: Text('默认排序')),
+              const PopupMenuItem(value: 'title', child: Text('按标题')),
+              if (_tab == LibraryTab.songs)
+                const PopupMenuItem(value: 'artist', child: Text('按歌手')),
+              if (_tab == LibraryTab.songs)
+                const PopupMenuItem(value: 'duration', child: Text('按时长')),
+              if (_tab != LibraryTab.songs)
+                const PopupMenuItem(value: 'count', child: Text('按曲目数')),
+            ],
+          ),
+        ],
+        if (showViewToggle) ...[
+          const SizedBox(width: VxSpacing.xs),
+          IconButton(
+            tooltip: _grid ? '切换为列表' : '切换为网格',
+            onPressed: () => setState(() => _grid = !_grid),
+            icon: Icon(_grid ? Icons.view_list_outlined : Icons.grid_view_outlined,
+                size: 20),
+          ),
+        ],
+        const SizedBox(width: VxSpacing.xs),
+        IconButton(
+          tooltip: '刷新曲库',
+          onPressed: () {
+            _model.dispatch(const bridge.FfiCommand.libraryRefresh());
+            if (_favoriteView != 'local') {
+              _model.loadAccountFavorites(_favoriteView);
+            }
+          },
+          icon: const Icon(Icons.refresh, size: 20),
+        ),
+      ],
+    );
+  }
+
+  // ── 歌曲视图 ──
+
+  Widget _favoriteViewSwitch(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SegmentedButton<String>(
+          segments: [
+            const ButtonSegment(value: 'local', label: Text('本地')),
+            for (final (id, label) in _mirrorPlatforms)
+              ButtonSegment(value: id, label: Text(label)),
+          ],
+          selected: {_favoriteView},
+          onSelectionChanged: (value) {
+            setState(() => _favoriteView = value.first);
+            if (_favoriteView != 'local') {
+              _model.loadAccountFavorites(_favoriteView);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  List<bridge.SongDto> _sortedSongs(List<bridge.SongDto> songs) {
+    final list = [...songs];
+    switch (_sort) {
+      case 'title':
+        list.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+      case 'artist':
+        list.sort((a, b) => a.singer.compareTo(b.singer));
+      case 'duration':
+        list.sort(
+          (a, b) => b.durationMs.toInt().compareTo(a.durationMs.toInt()),
+        );
+      default:
+        break;
+    }
+    return list;
+  }
+
+  bool _matchesSong(bridge.SongDto song) {
+    final q = _query.toLowerCase();
+    if (q.isEmpty) return true;
+    return song.name.toLowerCase().contains(q) ||
+        song.singer.toLowerCase().contains(q) ||
+        song.albumName.toLowerCase().contains(q);
+  }
+
+  Widget _songsBody(BuildContext context) {
+    if (_favoriteView == 'local') {
+      final songs = _sortedSongs(
+        _model.state.favorites.where(_matchesSong).toList(),
+      );
+      return VxSongTable(
+        model: _model,
+        songs: songs,
+        emptyTitle: _query.isEmpty ? '还没有收藏' : '没有匹配的歌曲',
+        emptySubtitle:
+            _query.isEmpty ? '在搜索页点击心形把歌曲收进来' : '换个关键词试试',
+      );
+    }
+    final result = _model.accountFavorites(_favoriteView);
+    if (result == null || (result.loading && result.songs.isEmpty)) {
       return const Center(child: CircularProgressIndicator());
     }
     if (result.error != null) {
-      return EmptyState(
-        icon: Icons.error_outline,
+      return VxEmptyState(
+        icon: Icons.cloud_off_outlined,
         title: '红心镜像读取失败',
-        subtitle: result.error,
+        message: result.error!,
+        actionLabel: '重试',
+        onAction: () => _model.loadAccountFavorites(_favoriteView),
       );
     }
-    if (result.songs.isEmpty) {
-      return EmptyState(
-        icon: Icons.favorite_border,
-        title: result.notice ?? '暂无账号红心镜像',
-        subtitle: '请先在「我的歌单」中同步账号歌单',
+    final songs = _sortedSongs(
+      result.songs.where(_matchesSong).toList(),
+    );
+    return VxSongTable(
+      model: _model,
+      songs: songs,
+      emptyTitle: result.notice ?? '暂无账号红心镜像',
+      emptySubtitle:
+          result.notice == null ? '请先在「发现 → 我的歌单」中同步账号歌单' : null,
+    );
+  }
+
+  // ── 专辑 / 歌手聚合视图 ──
+
+  /// 本地收藏 + 最近播放 + 本地音乐里出现过的专辑（来源 + 专辑名聚合）。
+  List<_AlbumGroup> _albumGroups() {
+    final songs = [
+      ..._model.state.favorites,
+      ..._model.state.history,
+      ..._model.state.localSongs,
+    ];
+    final Map<String, _AlbumGroup> groups = {};
+    for (final song in songs) {
+      final name = song.albumName.trim();
+      if (name.isEmpty) continue;
+      final key = '${song.source}|$name';
+      final group = groups.putIfAbsent(
+        key,
+        () => _AlbumGroup(
+          name: name,
+          singer: song.singer,
+          source: song.source,
+          coverUrl: song.coverUrl,
+        ),
+      );
+      group.songs.add(song);
+      if (group.albumId == null) {
+        final id = song.albumId?.trim();
+        if (id != null && id.isNotEmpty) group.albumId = id;
+      }
+    }
+    return groups.values.toList();
+  }
+
+  /// 同理聚合歌手。
+  List<_ArtistGroup> _artistGroups() {
+    final songs = [
+      ..._model.state.favorites,
+      ..._model.state.history,
+      ..._model.state.localSongs,
+    ];
+    final Map<String, _ArtistGroup> groups = {};
+    for (final song in songs) {
+      final name = song.singer.trim();
+      if (name.isEmpty) continue;
+      final key = '${song.source}|$name';
+      final group = groups.putIfAbsent(
+        key,
+        () => _ArtistGroup(name: name, source: song.source),
+      );
+      group.songs.add(song);
+      if (group.artistId == null) {
+        final id = song.artistId?.trim();
+        if (id != null && id.isNotEmpty) group.artistId = id;
+      }
+    }
+    return groups.values.toList();
+  }
+
+  List<_AlbumGroup> _sortedAlbums(List<_AlbumGroup> groups) {
+    final q = _query.toLowerCase();
+    final filtered = q.isEmpty
+        ? groups
+        : groups
+            .where((g) =>
+                g.name.toLowerCase().contains(q) ||
+                g.singer.toLowerCase().contains(q))
+            .toList();
+    final list = [...filtered];
+    switch (_sort) {
+      case 'title':
+        list.sort((a, b) => a.name.compareTo(b.name));
+      case 'count':
+        list.sort((a, b) => b.songs.length.compareTo(a.songs.length));
+      default:
+        break;
+    }
+    return list;
+  }
+
+  List<_ArtistGroup> _sortedArtists(List<_ArtistGroup> groups) {
+    final q = _query.toLowerCase();
+    final filtered = q.isEmpty
+        ? groups
+        : groups.where((g) => g.name.toLowerCase().contains(q)).toList();
+    final list = [...filtered];
+    switch (_sort) {
+      case 'title':
+        list.sort((a, b) => a.name.compareTo(b.name));
+      case 'count':
+        list.sort((a, b) => b.songs.length.compareTo(a.songs.length));
+      default:
+        break;
+    }
+    return list;
+  }
+
+  Widget _albumsBody(BuildContext context) {
+    final groups = _sortedAlbums(_albumGroups());
+    if (groups.isEmpty) {
+      return VxEmptyState(
+        icon: Icons.album_outlined,
+        title: _query.isEmpty ? '还没有专辑' : '没有匹配的专辑',
+        message: '收藏歌曲、播放历史或本地音乐里出现过的专辑会聚在这里。',
       );
     }
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-      gridDelegate: _gridDelegate,
-      itemCount: result.songs.length,
-      itemBuilder: (context, index) => SongCard(_model, result.songs[index]),
+    if (_grid) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          const minCard = 156;
+          final columns = (constraints.maxWidth ~/ minCard).clamp(2, 8);
+          return GridView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              mainAxisSpacing: VxSpacing.lg,
+              crossAxisSpacing: VxSpacing.lg,
+              // VxCardShell 内容高 ≈ 宽+60（两行标题），0.68 留余量。
+              childAspectRatio: 0.68,
+            ),
+            itemCount: groups.length,
+            itemBuilder: (context, index) => _albumCell(context, groups[index]),
+          );
+        },
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: groups.length,
+      itemBuilder: (context, index) => _albumListRow(context, groups[index]),
+    );
+  }
+
+  bridge.AlbumDto _albumDtoOf(_AlbumGroup group) => bridge.AlbumDto(
+        id: group.albumId ?? group.name,
+        name: group.name,
+        source: group.source,
+        coverUrl: group.coverUrl,
+        artist: group.singer,
+      );
+
+  void _openAlbum(BuildContext context, _AlbumGroup group) {
+    final album = _albumDtoOf(group);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _model.supportsAlbum(group.source)
+            ? AlbumSongsPage(_model, album)
+            : AlbumSongsPage(
+                _model,
+                album,
+                presetSongs: [...group.songs],
+              ),
+      ),
+    );
+  }
+
+  Widget _albumCell(BuildContext context, _AlbumGroup group) {
+    final url = group.coverUrl;
+    return Center(
+      child: VxAlbumCard(
+        title: group.name,
+        subtitle:
+            '${group.singer.isEmpty ? '未知歌手' : group.singer} · ${group.songs.length} 首',
+        cover: (url == null || url.isEmpty)
+            ? VxCoverFallback(title: group.name, radius: VxRadius.lg)
+            : CoverImage.expand(
+                url: url,
+                radius: VxRadius.lg,
+                icon: Icons.album_outlined,
+              ),
+        onTap: () => _openAlbum(context, group),
+      ),
+    );
+  }
+
+  Widget _albumListRow(BuildContext context, _AlbumGroup group) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: CoverImage(
+        url: group.coverUrl,
+        size: 44,
+        radius: 8,
+        icon: Icons.album_outlined,
+      ),
+      title: Text(group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        '${group.singer.isEmpty ? '未知歌手' : group.singer} · '
+        '${songSourceLabel(_model, group.source)} · ${group.songs.length} 首',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _openAlbum(context, group),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      iconColor: scheme.onSurfaceVariant,
+    );
+  }
+
+  Widget _artistsBody(BuildContext context) {
+    final groups = _sortedArtists(_artistGroups());
+    if (groups.isEmpty) {
+      return VxEmptyState(
+        icon: Icons.person_outline,
+        title: _query.isEmpty ? '还没有歌手' : '没有匹配的歌手',
+        message: '收藏歌曲、播放历史或本地音乐里出现过的歌手会聚在这里。',
+      );
+    }
+    if (_grid) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          const minCard = 156;
+          final columns = (constraints.maxWidth ~/ minCard).clamp(2, 8);
+          return GridView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              mainAxisSpacing: VxSpacing.lg,
+              crossAxisSpacing: VxSpacing.lg,
+              childAspectRatio: 0.70,
+            ),
+            itemCount: groups.length,
+            itemBuilder: (context, index) =>
+                _artistCell(context, groups[index]),
+          );
+        },
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: groups.length,
+      itemBuilder: (context, index) => _artistListRow(context, groups[index]),
+    );
+  }
+
+  void _openArtist(BuildContext context, _ArtistGroup group) {
+    final artist = bridge.ArtistDto(
+      id: group.artistId ?? group.name,
+      name: group.name,
+      source: group.source,
+      coverUrl: null,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _model.supportsArtist(group.source)
+            ? ArtistDetailPage(_model, artist)
+            : ArtistDetailPage(
+                _model,
+                artist,
+                presetSongs: [...group.songs],
+              ),
+      ),
+    );
+  }
+
+  Widget _artistCell(BuildContext context, _ArtistGroup group) {
+    return Center(
+      child: VxArtistCard(
+        title: group.name,
+        subtitle: '${group.songs.length} 首',
+        shape: VxArtistCardShape.square,
+        onTap: () => _openArtist(context, group),
+      ),
+    );
+  }
+
+  Widget _artistListRow(BuildContext context, _ArtistGroup group) {
+    return ListTile(
+      leading: VxCoverFallback(title: group.name, radius: 999),
+      title: Text(group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        '${songSourceLabel(_model, group.source)} · ${group.songs.length} 首',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _openArtist(context, group),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  // ── 歌单视图 ──
+
+  Widget _playlistsBody(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: CustomPlaylistsSection(_model, query: _query),
+        ),
+        const Divider(height: 1),
+        _favoritePlaylists(context),
+      ],
+    );
+  }
+
+  /// 收藏歌单（远端歌单收藏到本地库）；封面列表形态（§4.4）。
+  Widget _favoritePlaylists(BuildContext context) {
+    final playlists = _model.state.favoritePlaylists;
+    final q = _query.toLowerCase();
+    final filtered = q.isEmpty
+        ? playlists
+        : playlists
+            .where((p) => p.name.toLowerCase().contains(q))
+            .toList();
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            child: Text(
+              '收藏歌单（${filtered.length}）',
+              style: VxTypography.titleSm.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: filtered.isEmpty
+                ? const VxEmptyState(
+                    icon: Icons.playlist_add_check,
+                    title: '还没有收藏歌单',
+                    message: '在歌单详情页点收藏，把远端歌单存进本地库。',
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) =>
+                        _favoritePlaylistRow(context, filtered[index]),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _favoritePlaylistRow(
+    BuildContext context,
+    bridge.PlaylistDto playlist,
+  ) {
+    return ListTile(
+      leading: CoverImage(
+        url: playlist.coverUrl,
+        size: 48,
+        radius: 8,
+        icon: Icons.queue_music,
+      ),
+      title: Text(playlist.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        '${songSourceLabel(_model, playlist.source)} · ${playlist.songCount} 首',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PlaylistDetailPage(_model, playlist),
+        ),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  // ── 路由分发 ──
+
+  Widget _body(BuildContext context) {
+    return switch (_tab) {
+      LibraryTab.songs => _songsBody(context),
+      LibraryTab.albums => _albumsBody(context),
+      LibraryTab.artists => _artistsBody(context),
+      LibraryTab.playlists => _playlistsBody(context),
+    };
+  }
+
+  void _openRecent(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => RecentSongsPage(_model)),
+    );
+  }
+
+  void _openLocalMusic(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => LocalMusicPage(_model)),
     );
   }
 }
 
-class _History extends StatelessWidget {
+/// 由歌曲聚合出的专辑组（本地派生数据，非伪造）。
+class _AlbumGroup {
+  final String name;
+  final String singer;
+  final String source;
+  final String? coverUrl;
+  String? albumId;
+  final List<bridge.SongDto> songs = [];
+
+  _AlbumGroup({
+    required this.name,
+    required this.singer,
+    required this.source,
+    this.coverUrl,
+  });
+}
+
+/// 由歌曲聚合出的歌手组。
+class _ArtistGroup {
+  final String name;
+  final String source;
+  String? artistId;
+  final List<bridge.SongDto> songs = [];
+
+  _ArtistGroup({required this.name, required this.source});
+}
+
+/// 最近播放独立页：三入口语义之一，播放记录可清空。
+class RecentSongsPage extends StatelessWidget {
   final AppModel model;
 
-  const _History(this.model);
+  const RecentSongsPage(this.model, {super.key});
 
   @override
   Widget build(BuildContext context) {
-    final history = model.state.history;
-    if (history.isEmpty) {
-      return const EmptyState(
-        icon: Icons.history,
-        title: '播放记录为空',
-        subtitle: '播放的歌曲会出现在这里',
-      );
-    }
-    return Column(
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextButton(
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('清空播放历史'),
-                    content: const Text('将删除全部播放记录，无法恢复。'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('取消'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: const Text('清空'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed ?? false) {
-                  await model.dispatch(
-                    const bridge.FfiCommand.historyClear(),
-                  );
-                }
-              },
-              child: const Text('清空历史'),
+    return ListenableBuilder(
+      listenable: model,
+      builder: (context, _) {
+        final songs = model.state.history;
+        return Scaffold(
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _topBar(context, songs),
+              Expanded(
+                child: VxSongTable(
+                  model: model,
+                  songs: songs,
+                  emptyTitle: '播放记录为空',
+                  emptySubtitle: '播放的歌曲会出现在这里',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _topBar(BuildContext context, List<bridge.SongDto> songs) {
+    return SizedBox(
+      height: 48,
+      child: Row(
+        children: [
+          const SizedBox(width: VxSpacing.md),
+          IconButton(
+            tooltip: '返回',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back, size: 20),
+          ),
+          const SizedBox(width: VxSpacing.xs),
+          Text(
+            '最近播放',
+            style: VxTypography.sectionTitle.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-            gridDelegate: _gridDelegate,
-            itemCount: history.length,
-            itemBuilder: (context, index) => SongCard(model, history[index]),
+          const SizedBox(width: VxSpacing.sm),
+          Text(
+            '${songs.length} 首',
+            style: VxTypography.mono.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      ],
+          const Spacer(),
+          TextButton(
+            onPressed: songs.isEmpty
+                ? null
+                : () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('清空播放历史'),
+                        content: const Text('将删除全部播放记录，无法恢复。'),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: const Text('取消'),
+                          ),
+                          FilledButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: const Text('清空'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed ?? false) {
+                      await model.dispatch(
+                        const bridge.FfiCommand.historyClear(),
+                      );
+                    }
+                  },
+            child: const Text('清空历史'),
+          ),
+          const SizedBox(width: VxSpacing.lg),
+        ],
+      ),
     );
   }
 }
