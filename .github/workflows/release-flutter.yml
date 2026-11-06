@@ -1,0 +1,249 @@
+name: Release Flutter
+
+# Flutter 应用（桌面 + Android）的发布构建：v* 标签触发，产物挂到与
+# release.yml（TUI）同一个 GitHub Release 上（get-or-create + upload
+# --clobber，与既有发布管线幂等共存）。
+# Linux 与 Android 为全链路验证路径；Windows/macOS 为尝试矩阵
+#（continue-on-error，产物只挂构建成功的平台）。
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-flutter-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    name: Linux x64（Flutter 桌面）
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: 安装构建依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmpv-dev mpv libclang-dev clang pkg-config ninja-build
+
+      - name: 安装 Rust 工具链
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-relf-${{ hashFiles('Cargo.lock') }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 构建 Linux bundle
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter build linux --release
+
+      - name: 打包
+        run: |
+          tar -czf voicefox-flutter-linux-x64.tar.gz -C flutter/build/linux/x64/release bundle
+          sha256sum voicefox-flutter-linux-x64.tar.gz > voicefox-flutter-linux-x64.tar.gz.sha256
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: voicefox-flutter-linux-x64
+          path: |
+            voicefox-flutter-linux-x64.tar.gz
+            voicefox-flutter-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+
+  android:
+    name: Android arm64 APK
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: 安装 Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: 安装 Rust 工具链与 Android target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: 构建 FFI 动态库（NDK 交叉）
+        run: scripts/build-android-ffi.sh
+        env:
+          ANDROID_NDK_HOME: ${{ ANDROID_NDK_HOME != '' && ANDROID_NDK_HOME || ANDROID_NDK_LATEST_HOME }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 构建 APK
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter build apk --release --target-platform android-arm64
+
+      - name: 打包
+        run: |
+          cp flutter/build/app/outputs/flutter-apk/app-release.apk voicefox-android-arm64.apk
+          sha256sum voicefox-android-arm64.apk > voicefox-android-arm64.apk.sha256
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: voicefox-android-arm64
+          path: |
+            voicefox-android-arm64.apk
+            voicefox-android-arm64.apk.sha256
+          if-no-files-found: error
+
+  windows:
+    name: Windows x64（尝试）
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: 安装 Rust 工具链
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 下载 libmpv 开发包（mpv-winbuild）
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest"
+          $asset = $release.assets | Where-Object { $_.name -like "mpv-dev-x86_64-*.7z" } | Select-Object -First 1
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile mpv-dev.7z
+          7z x mpv-dev.7z -oC:\mpv-dev
+          Add-Content $env:GITHUB_ENV "MPV_SOURCE=C:\mpv-dev"
+
+      - name: 构建 Windows
+        working-directory: flutter
+        shell: pwsh
+        run: |
+          flutter pub get
+          flutter build windows --release
+
+      - name: 打包
+        shell: pwsh
+        run: |
+          Compress-Archive -Path flutter/build/windows/x64/runner/Release/* -DestinationPath voicefox-flutter-windows-x64.zip
+          (Get-FileHash voicefox-flutter-windows-x64.zip -Algorithm SHA256).Hash | Out-File voicefox-flutter-windows-x64.zip.sha256
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: voicefox-flutter-windows-x64
+          path: |
+            voicefox-flutter-windows-x64.zip
+            voicefox-flutter-windows-x64.zip.sha256
+          if-no-files-found: error
+
+  macos:
+    name: macOS arm64（尝试，未签名）
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: 安装 mpv
+        run: brew install mpv pkg-config
+
+      - name: 安装 Rust 工具链
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 构建 macOS app
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter build macos --release --no-codesign
+
+      - name: 打包
+        run: |
+          cd flutter/build/macos/Build/Products/Release
+          zip -r -y "$GITHUB_WORKSPACE/voicefox-flutter-macos-arm64.zip" voicefox.app
+          cd "$GITHUB_WORKSPACE"
+          shasum -a 256 voicefox-flutter-macos-arm64.zip > voicefox-flutter-macos-arm64.zip.sha256
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: voicefox-flutter-macos-arm64
+          path: |
+            voicefox-flutter-macos-arm64.zip
+            voicefox-flutter-macos-arm64.zip.sha256
+          if-no-files-found: error
+
+  publish:
+    name: 发布到 GitHub Release
+    needs: [linux, android, windows, macos]
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: 下载全部产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: 挂载到 Release（get-or-create，与 TUI 发布共存）
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "voicefox $tag" \
+              --generate-notes \
+              --verify-tag \
+              --notes "$(cat <<'NOTES'
+            ## Flutter 应用产物（桌面 + Android）
+
+            - Linux x64 bundle：全链路 CI 构建，内含 libvoicefox_ffi.so，解压后运行 bundle/voicefox_flutter（需系统 mpv 运行库）
+            - Android arm64 APK：NDK 交叉 FFI 入包（minSdk 24），debug 签名可直接安装；通知栏/锁屏/耳机键未经真机验证
+            - Windows/macOS：尽力构建，状态以附件为准；macOS 未签名需右键打开
+            - 桌面行为与 0.8.x 一致；移动端为 Phase 7/8 新交付（MobileShell/平板断点/手势全屏播放 + Rust 转发后端 + just_audio/audio_service）
+            NOTES
+            )"
+          fi
+          find artifacts -type f -print0 |
+            while IFS= read -r -d '' asset; do
+              gh release upload "$tag" "$asset" \
+                --repo "$GITHUB_REPOSITORY" \
+                --clobber
+            done
+        env:
+          GH_TOKEN: ${{ github.token }}

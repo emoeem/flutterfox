@@ -362,3 +362,6 @@ jobs:
 
       - name: Analyze (zero warnings)
         run: flutter analyze --fatal-infos
+
+      - name: Test (full widget suite)
+        run: flutter test
