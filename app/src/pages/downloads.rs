@@ -431,6 +431,12 @@ mod tests {
             id: 1,
             name: "晴天".to_string(),
             singer: "周杰伦".to_string(),
+            song: lx_core::model::song::SongInfo::new(
+                "1".to_string(),
+                lx_core::model::source::SourceId::Kw,
+                "晴天".to_string(),
+                "周杰伦".to_string(),
+            ),
             source: lx_core::model::source::SourceId::Kw,
             quality: lx_core::model::source::Quality::Flac,
             dest: std::path::PathBuf::from("/music/voicefox/周杰伦 - 晴天.flac"),
