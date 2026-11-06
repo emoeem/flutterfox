@@ -53,7 +53,6 @@ fn random_other(index: usize, len: usize) -> usize {
     (index + 1 + nanos % (len - 1)) % len
 }
 
-
 use crate::event::{ApplicationCommand, ApplicationEvent, BrowseKind};
 use crate::ports::{ConfigStore, DownloadTaskInfo, DownloadsEngine, LibraryStore};
 use crate::services::{
@@ -83,7 +82,8 @@ pub struct ApplicationService {
     /// 当前账号歌单同步的取消/进度控制；SyncCancel 操作最近一次同步。
     sync_control: Arc<std::sync::Mutex<crate::sync::SyncControl>>,
     /// 推送计划在预览与执行间复用，避免执行时重新读取远端集合。
-    push_plan: Arc<std::sync::Mutex<Option<(lx_core::model::source::SourceId, lx_core::sync::SyncPlan)>>>,
+    push_plan:
+        Arc<std::sync::Mutex<Option<(lx_core::model::source::SourceId, lx_core::sync::SyncPlan)>>>,
     request_id: Arc<AtomicU64>,
     playback_request_id: Arc<AtomicU64>,
     browse_request_id: Arc<AtomicU64>,
@@ -843,10 +843,8 @@ impl ApplicationService {
                 spawn_reported(events.clone(), "推送目标读取", async move {
                     match crate::sync::push_list_targets(source).await {
                         Ok(targets) => {
-                            let _ = events.send(ApplicationEvent::PushTargetsReady {
-                                source,
-                                targets,
-                            });
+                            let _ =
+                                events.send(ApplicationEvent::PushTargetsReady { source, targets });
                         }
                         Err(error) => {
                             let _ = events.send(ApplicationEvent::PushFailed { source, error });
@@ -860,10 +858,8 @@ impl ApplicationService {
                 spawn_reported(events.clone(), "推送歌单创建", async move {
                     match crate::sync::push_create_target(source, &name).await {
                         Ok(target) => {
-                            let _ = events.send(ApplicationEvent::PushTargetCreated {
-                                source,
-                                target,
-                            });
+                            let _ =
+                                events.send(ApplicationEvent::PushTargetCreated { source, target });
                         }
                         Err(error) => {
                             let _ = events.send(ApplicationEvent::PushFailed { source, error });

@@ -126,7 +126,10 @@ fn quarantine_corrupted(config_path: &std::path::Path, reason: &str) -> anyhow::
         .unwrap_or(0);
     let backup = config_path.with_file_name(format!(
         "{}.corrupt-{unique}",
-        config_path.file_name().unwrap_or_default().to_string_lossy(),
+        config_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy(),
     ));
     tracing::warn!(
         "配置文件损坏（{reason}），已备份到 {} 并改用默认配置",
@@ -676,7 +679,10 @@ mod tests {
         let prefix = path.file_name().unwrap().to_string_lossy().to_string();
         let _ = std::fs::remove_file(&path);
         let dir = path.parent().unwrap();
-        for entry in std::fs::read_dir(dir).unwrap().filter_map(|entry| entry.ok()) {
+        for entry in std::fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|entry| entry.ok())
+        {
             let name = entry.file_name().to_string_lossy().to_string();
             if name.starts_with(&prefix) && name.contains(".corrupt-") {
                 let _ = std::fs::remove_file(entry.path());

@@ -177,8 +177,8 @@ impl ApplicationRuntime {
             path: config_path.clone(),
             apply: Some(apply),
         });
-        let downloads: Option<Arc<dyn voicefox_application::DownloadsEngine>> =
-            downloads_manager.map(|manager| {
+        let downloads: Option<Arc<dyn voicefox_application::DownloadsEngine>> = downloads_manager
+            .map(|manager| {
                 Arc::new(RuntimeDownloads {
                     manager,
                     sources: Arc::clone(&sources),
@@ -226,12 +226,15 @@ impl ApplicationRuntime {
 }
 pub mod config_loader;
 
+/// 配置热更新回调：保存后立即把可热更新设置应用到播放器/网络/歌词/下载。
+type ConfigApplyCallback = Arc<dyn Fn(&lx_core::model::config::Config) + Send + Sync>;
+
 /// [`voicefox_application::ConfigStore`] 的 runtime 实现：内存替换 + TOML 落盘，
 /// 并在保存后立即把可热更新的设置应用到播放器/网络/歌词/下载。
 struct RuntimeConfigStore {
     config: Arc<RwLock<lx_core::model::config::Config>>,
     path: std::path::PathBuf,
-    apply: Option<Arc<dyn Fn(&lx_core::model::config::Config) + Send + Sync>>,
+    apply: Option<ConfigApplyCallback>,
 }
 
 impl voicefox_application::ConfigStore for RuntimeConfigStore {

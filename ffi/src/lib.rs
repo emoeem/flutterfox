@@ -1146,11 +1146,9 @@ impl VoicefoxController {
             Arc::clone(&backend) as Arc<dyn PlayerBackend>,
         )
         .map_err(|e| e.to_string())?;
-        Ok(
-            Self::from_application(runtime.application())
-                .with_config_base(Arc::clone(&runtime.config))
-                .with_host_player(backend),
-        )
+        Ok(Self::from_application(runtime.application())
+            .with_config_base(Arc::clone(&runtime.config))
+            .with_host_player(backend))
     }
 
     /// 挂接转发型后端句柄（new_host 内部使用）。
@@ -1242,9 +1240,15 @@ pub enum HostPlayerCommandDto {
     Stop,
     Toggle,
     /// 定位到绝对位置（毫秒）。
-    Seek { position_ms: u64 },
-    SetVolume { volume: u32 },
-    SetSpeed { speed: f64 },
+    Seek {
+        position_ms: u64,
+    },
+    SetVolume {
+        volume: u32,
+    },
+    SetSpeed {
+        speed: f64,
+    },
 }
 
 impl From<HostPlayerCommand> for HostPlayerCommandDto {
@@ -1487,9 +1491,7 @@ impl FfiCommand {
             FfiCommand::Toggle => ApplicationCommand::Toggle,
             FfiCommand::Stop => ApplicationCommand::Stop,
             FfiCommand::SeekMs(ms) => ApplicationCommand::Seek(Duration::from_millis(ms)),
-            FfiCommand::SetVolume { volume } => {
-                ApplicationCommand::SetVolume(volume.min(100))
-            }
+            FfiCommand::SetVolume { volume } => ApplicationCommand::SetVolume(volume.min(100)),
             FfiCommand::PlaySong { song } => ApplicationCommand::Play {
                 songs: vec![song.into_song()?],
                 index: 0,
@@ -1605,12 +1607,10 @@ impl FfiCommand {
             FfiCommand::PushTargets { source } => ApplicationCommand::PushTargets {
                 source: parse_source(&source)?,
             },
-            FfiCommand::PushCreateTarget { source, name } => {
-                ApplicationCommand::PushCreateTarget {
-                    source: parse_source(&source)?,
-                    name,
-                }
-            }
+            FfiCommand::PushCreateTarget { source, name } => ApplicationCommand::PushCreateTarget {
+                source: parse_source(&source)?,
+                name,
+            },
             FfiCommand::PushPlan {
                 source,
                 local_name,
