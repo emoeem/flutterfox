@@ -8,6 +8,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>
+abstract class HostPlayerStream implements RustOpaqueInterface {}
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxController>>
 abstract class VoicefoxController implements RustOpaqueInterface {}
 
@@ -432,6 +435,50 @@ sealed class FfiCommand with _$FfiCommand {
     required List<SongDto> songs,
     required int index,
   }) = FfiCommand_PlaySongs;
+}
+
+/// 自定义请求头键值对（application HostHeaderPair 的 FRB 可翻译镜像；
+/// 外部 crate 类型 FRB 一律 opaque，Dart 拿不到字段，故在 ffi 侧镜像）。
+class HostHeaderDto {
+  final String name;
+  final String value;
+
+  const HostHeaderDto({required this.name, required this.value});
+
+  @override
+  int get hashCode => name.hashCode ^ value.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HostHeaderDto &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          value == other.value;
+}
+
+@freezed
+sealed class HostPlayerCommandDto with _$HostPlayerCommandDto {
+  const HostPlayerCommandDto._();
+
+  /// 播放指定 URL；headers 为国内音源自定义请求头（逐请求透传）。
+  const factory HostPlayerCommandDto.play({
+    required String url,
+    required BigInt generation,
+    required List<HostHeaderDto> headers,
+  }) = HostPlayerCommandDto_Play;
+  const factory HostPlayerCommandDto.pause() = HostPlayerCommandDto_Pause;
+  const factory HostPlayerCommandDto.resume() = HostPlayerCommandDto_Resume;
+  const factory HostPlayerCommandDto.stop() = HostPlayerCommandDto_Stop;
+  const factory HostPlayerCommandDto.toggle() = HostPlayerCommandDto_Toggle;
+
+  /// 定位到绝对位置（毫秒）。
+  const factory HostPlayerCommandDto.seek({required BigInt positionMs}) =
+      HostPlayerCommandDto_Seek;
+  const factory HostPlayerCommandDto.setVolume({required int volume}) =
+      HostPlayerCommandDto_SetVolume;
+  const factory HostPlayerCommandDto.setSpeed({required double speed}) =
+      HostPlayerCommandDto_SetSpeed;
 }
 
 class LeaderboardDto {

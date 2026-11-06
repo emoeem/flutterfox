@@ -10,8 +10,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use lx_core::model::song::SongInfo;
+use lx_core::traits::player::PlayerBackend;
 use voicefox_application::{
     ApplicationCommand, ApplicationEvent, ApplicationEventKind, ApplicationService,
+    HostPlayerBackend, HostPlayerCommand,
 };
 
 pub mod api;
@@ -1103,6 +1105,9 @@ pub struct VoicefoxController {
     application: ApplicationService,
     /// 当前完整配置的共享读取口：ConfigUpdate 每次合并都取最新值。
     config_base: Option<Arc<std::sync::RwLock<lx_core::model::config::Config>>>,
+    /// 移动端转发型播放后端句柄（Phase 8 批次一）；桌面引导为 None，
+    /// 桌面路径不触碰。
+    host_player: Option<Arc<HostPlayerBackend>>,
 }
 
 impl VoicefoxController {
@@ -1122,7 +1127,41 @@ impl VoicefoxController {
         Self {
             application,
             config_base: None,
+            host_player: None,
         }
+    }
+
+    /// Phase 8 移动端引导：转发型播放后端 + 常规 runtime（无 mpv）。
+    ///
+    /// 与 new_desktop 同构，仅播放后端不同：HostPlayerBackend 不做音频
+    /// 解码，把播放指令转发给宿主（Dart 侧 just_audio），宿主回流
+    /// state/position/duration。移动 ABI（--no-default-features）下
+    /// new_desktop 不可用，宿主应走本函数。
+    pub fn new_host() -> Result<Self, String> {
+        let (config, path) = voicefox_runtime::load_config().map_err(|e| e.to_string())?;
+        let backend = Arc::new(HostPlayerBackend::new());
+        let runtime = voicefox_runtime::ApplicationRuntime::from_parts(
+            config,
+            path,
+            Arc::clone(&backend) as Arc<dyn PlayerBackend>,
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(
+            Self::from_application(runtime.application())
+                .with_config_base(Arc::clone(&runtime.config))
+                .with_host_player(backend),
+        )
+    }
+
+    /// 挂接转发型后端句柄（new_host 内部使用）。
+    pub fn with_host_player(mut self, backend: Arc<HostPlayerBackend>) -> Self {
+        self.host_player = Some(backend);
+        self
+    }
+
+    /// 转发型后端句柄（仅 new_host 引导时为 Some；桌面 None）。
+    pub fn host_player(&self) -> Option<Arc<HostPlayerBackend>> {
+        self.host_player.clone()
     }
 
     /// 桌面/宿主引导后调用：注入完整配置的共享读取口（runtime 持有的那份）。
@@ -1178,6 +1217,80 @@ impl VoicefoxController {
 
 pub struct VoicefoxEventStream {
     inner: voicefox_application::ApplicationEventStream,
+}
+
+/// 自定义请求头键值对（application HostHeaderPair 的 FRB 可翻译镜像；
+/// 外部 crate 类型 FRB 一律 opaque，Dart 拿不到字段，故在 ffi 侧镜像）。
+#[derive(Debug, Clone)]
+pub struct HostHeaderDto {
+    pub name: String,
+    pub value: String,
+}
+
+/// 转发给宿主（Dart/just_audio）的播放指令 DTO。
+/// application `HostPlayerCommand` 的镜像，由 [HostPlayerStream] 转换。
+#[derive(Debug, Clone)]
+pub enum HostPlayerCommandDto {
+    /// 播放指定 URL；headers 为国内音源自定义请求头（逐请求透传）。
+    Play {
+        url: String,
+        generation: u64,
+        headers: Vec<HostHeaderDto>,
+    },
+    Pause,
+    Resume,
+    Stop,
+    Toggle,
+    /// 定位到绝对位置（毫秒）。
+    Seek { position_ms: u64 },
+    SetVolume { volume: u32 },
+    SetSpeed { speed: f64 },
+}
+
+impl From<HostPlayerCommand> for HostPlayerCommandDto {
+    fn from(command: HostPlayerCommand) -> Self {
+        match command {
+            HostPlayerCommand::Play {
+                url,
+                generation,
+                headers,
+            } => Self::Play {
+                url,
+                generation,
+                headers: headers
+                    .into_iter()
+                    .map(|pair| HostHeaderDto {
+                        name: pair.name,
+                        value: pair.value,
+                    })
+                    .collect(),
+            },
+            HostPlayerCommand::Pause => Self::Pause,
+            HostPlayerCommand::Resume => Self::Resume,
+            HostPlayerCommand::Stop => Self::Stop,
+            HostPlayerCommand::Toggle => Self::Toggle,
+            HostPlayerCommand::Seek { position_ms } => Self::Seek { position_ms },
+            HostPlayerCommand::SetVolume { volume } => Self::SetVolume { volume },
+            HostPlayerCommand::SetSpeed { speed } => Self::SetSpeed { speed },
+        }
+    }
+}
+
+/// 播放指令流（Dart 持流轮询 next；与 VoicefoxEventStream 同模式）。
+pub struct HostPlayerStream {
+    inner: tokio::sync::broadcast::Receiver<HostPlayerCommand>,
+}
+
+impl HostPlayerStream {
+    pub async fn next(&mut self) -> Result<HostPlayerCommandDto, String> {
+        match self.inner.recv().await {
+            Ok(command) => Ok(command.into()),
+            Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => Err(format!(
+                "host player stream lagged, skipped {skipped} commands; resubscribe and resync"
+            )),
+            Err(e) => Err(e.to_string()),
+        }
+    }
 }
 
 impl VoicefoxEventStream {

@@ -7,6 +7,8 @@ import 'frb_generated.dart';
 import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `parse_host_state`
+
 Future<FfiCommand> commandPause() =>
     RustLib.instance.api.crateApiCommandPause();
 
@@ -60,6 +62,55 @@ Future<VoicefoxController> newDesktop() =>
 /// `"."`（进程工作目录）。宿主应在构造 ApplicationService 之前调用本
 /// 函数，把 PathProvider 拿到的 App 私有目录传进来；有覆盖时跳过旧目录
 /// 迁移。桌面端无需调用（`None` 即回到平台默认路径）。
+/// Phase 8 移动端引导：转发型播放后端 + 常规 runtime（无 mpv）。
+///
+/// 桌面构建也可调用（不触碰 mpv），但桌面验收路径仍是 new_desktop。
+/// 引导后：`host_player_stream` 收播放指令（play/pause/seek/...），
+/// `host_player_report` / `host_player_report_event` 回流真实
+/// state/position/duration 与 Ended/Error 事件。
+Future<VoicefoxController> newHost() => RustLib.instance.api.crateApiNewHost();
+
+/// 播放指令流（Rust→Dart 反向信号面）。与 VoicefoxEventStream 同为
+/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err，
+/// 由 Dart 侧重订阅并重拉状态。
+Future<HostPlayerStream> hostPlayerStream({
+  required VoicefoxController controller,
+}) => RustLib.instance.api.crateApiHostPlayerStream(controller: controller);
+
+/// 宿主回流真实播放状态/进度/时长（Dart→Rust）。写入转发后端的 watch
+/// 观察者，经 service.rs 观察者泵进入既有 ApplicationEventStream →
+/// Flutter 事件流。时长未知报 0（`--:--` 规则）。
+Future<void> hostPlayerReport({
+  required VoicefoxController controller,
+  required String state,
+  required BigInt positionMs,
+  required BigInt durationMs,
+}) => RustLib.instance.api.crateApiHostPlayerReport(
+  controller: controller,
+  state: state,
+  positionMs: positionMs,
+  durationMs: durationMs,
+);
+
+/// 宿主回流离散播放事件：ended（驱动队列推进）/ error / buffering /
+/// playing（generation 对齐宿主当前代次）。
+Future<void> hostPlayerReportEvent({
+  required VoicefoxController controller,
+  required String kind,
+  required BigInt generation,
+  String? message,
+}) => RustLib.instance.api.crateApiHostPlayerReportEvent(
+  controller: controller,
+  kind: kind,
+  generation: generation,
+  message: message,
+);
+
+/// 取一条播放指令（与 event_next 同模式：Dart 持流轮询）。
+Future<HostPlayerCommandDto> hostPlayerNext({
+  required HostPlayerStream stream,
+}) => RustLib.instance.api.crateApiHostPlayerNext(stream: stream);
+
 Future<void> setDataDir({String? path}) =>
     RustLib.instance.api.crateApiSetDataDir(path: path);
 

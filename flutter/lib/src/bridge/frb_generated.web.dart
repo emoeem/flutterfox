@@ -22,12 +22,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   });
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_HostPlayerStreamPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_VoicefoxControllerPtr => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_VoicefoxEventStreamPtr => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream;
+
+  @protected
+  HostPlayerStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    dynamic raw,
+  );
 
   @protected
   VoicefoxController
@@ -42,6 +52,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HostPlayerStream
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    dynamic raw,
+  );
+
+  @protected
   VoicefoxEventStream
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
     dynamic raw,
@@ -50,6 +66,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   VoicefoxController
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    dynamic raw,
+  );
+
+  @protected
+  HostPlayerStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
     dynamic raw,
   );
 
@@ -132,6 +154,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FfiCommand dco_decode_ffi_command(dynamic raw);
 
   @protected
+  HostHeaderDto dco_decode_host_header_dto(dynamic raw);
+
+  @protected
+  HostPlayerCommandDto dco_decode_host_player_command_dto(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
@@ -150,6 +178,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<DownloadTaskDto> dco_decode_list_download_task_dto(dynamic raw);
+
+  @protected
+  List<HostHeaderDto> dco_decode_list_host_header_dto(dynamic raw);
 
   @protected
   List<LeaderboardDto> dco_decode_list_leaderboard_dto(dynamic raw);
@@ -285,6 +316,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   VoicefoxState dco_decode_voicefox_state(dynamic raw);
 
   @protected
+  HostPlayerStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   VoicefoxController
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     SseDeserializer deserializer,
@@ -297,6 +334,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HostPlayerStream
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   VoicefoxEventStream
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
     SseDeserializer deserializer,
@@ -305,6 +348,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   VoicefoxController
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HostPlayerStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
     SseDeserializer deserializer,
   );
 
@@ -401,6 +450,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FfiCommand sse_decode_ffi_command(SseDeserializer deserializer);
 
   @protected
+  HostHeaderDto sse_decode_host_header_dto(SseDeserializer deserializer);
+
+  @protected
+  HostPlayerCommandDto sse_decode_host_player_command_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
@@ -419,6 +476,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<DownloadTaskDto> sse_decode_list_download_task_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<HostHeaderDto> sse_decode_list_host_header_dto(
     SseDeserializer deserializer,
   );
 
@@ -585,6 +647,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    HostPlayerStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     VoicefoxController self,
     SseSerializer serializer,
@@ -599,6 +668,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    HostPlayerStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
     VoicefoxEventStream self,
     SseSerializer serializer,
@@ -608,6 +684,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     VoicefoxController self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    HostPlayerStream self,
     SseSerializer serializer,
   );
 
@@ -731,6 +814,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_ffi_command(FfiCommand self, SseSerializer serializer);
 
   @protected
+  void sse_encode_host_header_dto(HostHeaderDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_host_player_command_dto(
+    HostPlayerCommandDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
@@ -754,6 +846,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_download_task_dto(
     List<DownloadTaskDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_host_header_dto(
+    List<HostHeaderDto> self,
     SseSerializer serializer,
   );
 
@@ -962,6 +1060,22 @@ class RustLibWire implements BaseWire {
   RustLibWire.fromExternalLibrary(ExternalLibrary lib);
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+        ptr,
+      );
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     int ptr,
   ) => wasmModule
@@ -1000,6 +1114,16 @@ external RustLibWasmModule get wasmModule;
 @JS()
 @anonymous
 extension type RustLibWasmModule._(JSObject _) implements JSObject {
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    int ptr,
+  );
+
   external void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     int ptr,

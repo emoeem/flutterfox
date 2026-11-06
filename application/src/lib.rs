@@ -24,8 +24,8 @@ pub use state::{
 };
 
 pub use services::{
-    LyricsService, PlaybackEffects, PlaybackService, PlaylistService, QueueService, SearchService,
-    resolve_cover_url,
+    HostHeaderPair, HostPlayerBackend, HostPlayerCommand, LyricsService, PlaybackEffects,
+    PlaybackService, PlaylistService, QueueService, SearchService, resolve_cover_url,
 };
 
 mod services;

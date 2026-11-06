@@ -65,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -566273971;
+  int get rustContentHash => 1068004663;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -116,7 +116,31 @@ abstract class RustLibApi extends BaseApi {
     required VoicefoxEventStream stream,
   });
 
+  Future<HostPlayerCommandDto> crateApiHostPlayerNext({
+    required HostPlayerStream stream,
+  });
+
+  Future<void> crateApiHostPlayerReport({
+    required VoicefoxController controller,
+    required String state,
+    required BigInt positionMs,
+    required BigInt durationMs,
+  });
+
+  Future<void> crateApiHostPlayerReportEvent({
+    required VoicefoxController controller,
+    required String kind,
+    required BigInt generation,
+    String? message,
+  });
+
+  Future<HostPlayerStream> crateApiHostPlayerStream({
+    required VoicefoxController controller,
+  });
+
   Future<VoicefoxController> crateApiNewDesktop();
+
+  Future<VoicefoxController> crateApiNewHost();
 
   Future<void> crateApiSetDataDir({String? path});
 
@@ -125,6 +149,15 @@ abstract class RustLibApi extends BaseApi {
   Future<VoicefoxEventStream> crateApiSubscribe({
     required VoicefoxController controller,
   });
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_HostPlayerStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_HostPlayerStream;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_HostPlayerStreamPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_VoicefoxController;
@@ -567,6 +600,158 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "event_next", argNames: ["stream"]);
 
   @override
+  Future<HostPlayerCommandDto> crateApiHostPlayerNext({
+    required HostPlayerStream stream,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+            stream,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_host_player_command_dto,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiHostPlayerNextConstMeta,
+        argValues: [stream],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHostPlayerNextConstMeta =>
+      const TaskConstMeta(debugName: "host_player_next", argNames: ["stream"]);
+
+  @override
+  Future<void> crateApiHostPlayerReport({
+    required VoicefoxController controller,
+    required String state,
+    required BigInt positionMs,
+    required BigInt durationMs,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+            controller,
+            serializer,
+          );
+          sse_encode_String(state, serializer);
+          sse_encode_u_64(positionMs, serializer);
+          sse_encode_u_64(durationMs, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiHostPlayerReportConstMeta,
+        argValues: [controller, state, positionMs, durationMs],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHostPlayerReportConstMeta => const TaskConstMeta(
+    debugName: "host_player_report",
+    argNames: ["controller", "state", "positionMs", "durationMs"],
+  );
+
+  @override
+  Future<void> crateApiHostPlayerReportEvent({
+    required VoicefoxController controller,
+    required String kind,
+    required BigInt generation,
+    String? message,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+            controller,
+            serializer,
+          );
+          sse_encode_String(kind, serializer);
+          sse_encode_u_64(generation, serializer);
+          sse_encode_opt_String(message, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 17,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiHostPlayerReportEventConstMeta,
+        argValues: [controller, kind, generation, message],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHostPlayerReportEventConstMeta =>
+      const TaskConstMeta(
+        debugName: "host_player_report_event",
+        argNames: ["controller", "kind", "generation", "message"],
+      );
+
+  @override
+  Future<HostPlayerStream> crateApiHostPlayerStream({
+    required VoicefoxController controller,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+            controller,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 18,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHostPlayerStreamConstMeta,
+        argValues: [controller],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHostPlayerStreamConstMeta => const TaskConstMeta(
+    debugName: "host_player_stream",
+    argNames: ["controller"],
+  );
+
+  @override
   Future<VoicefoxController> crateApiNewDesktop() {
     return handler.executeNormal(
       NormalTask(
@@ -575,7 +760,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 19,
             port: port_,
           );
         },
@@ -595,6 +780,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "new_desktop", argNames: []);
 
   @override
+  Future<VoicefoxController> crateApiNewHost() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 20,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiNewHostConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiNewHostConstMeta =>
+      const TaskConstMeta(debugName: "new_host", argNames: []);
+
+  @override
   Future<void> crateApiSetDataDir({String? path}) {
     return handler.executeNormal(
       NormalTask(
@@ -604,7 +817,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 21,
             port: port_,
           );
         },
@@ -637,7 +850,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 22,
             port: port_,
           );
         },
@@ -670,7 +883,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 23,
             port: port_,
           );
         },
@@ -690,6 +903,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "subscribe", argNames: ["controller"]);
 
   RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_HostPlayerStream => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_HostPlayerStream => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream;
+
+  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_VoicefoxController => wire
       .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController;
 
@@ -704,6 +925,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_VoicefoxEventStream => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream;
+
+  @protected
+  HostPlayerStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return HostPlayerStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
 
   @protected
   VoicefoxController
@@ -724,6 +954,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HostPlayerStream
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return HostPlayerStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   VoicefoxEventStream
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
     dynamic raw,
@@ -739,6 +978,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return VoicefoxControllerImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  HostPlayerStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return HostPlayerStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -1151,6 +1399,47 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HostHeaderDto dco_decode_host_header_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return HostHeaderDto(
+      name: dco_decode_String(arr[0]),
+      value: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  HostPlayerCommandDto dco_decode_host_player_command_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return HostPlayerCommandDto_Play(
+          url: dco_decode_String(raw[1]),
+          generation: dco_decode_u_64(raw[2]),
+          headers: dco_decode_list_host_header_dto(raw[3]),
+        );
+      case 1:
+        return HostPlayerCommandDto_Pause();
+      case 2:
+        return HostPlayerCommandDto_Resume();
+      case 3:
+        return HostPlayerCommandDto_Stop();
+      case 4:
+        return HostPlayerCommandDto_Toggle();
+      case 5:
+        return HostPlayerCommandDto_Seek(positionMs: dco_decode_u_64(raw[1]));
+      case 6:
+        return HostPlayerCommandDto_SetVolume(volume: dco_decode_u_32(raw[1]));
+      case 7:
+        return HostPlayerCommandDto_SetSpeed(speed: dco_decode_f_64(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -1196,6 +1485,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<DownloadTaskDto> dco_decode_list_download_task_dto(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_download_task_dto).toList();
+  }
+
+  @protected
+  List<HostHeaderDto> dco_decode_list_host_header_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_host_header_dto).toList();
   }
 
   @protected
@@ -1683,6 +1978,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HostPlayerStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return HostPlayerStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   VoicefoxController
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     SseDeserializer deserializer,
@@ -1707,6 +2014,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HostPlayerStream
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return HostPlayerStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   VoicefoxEventStream
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
     SseDeserializer deserializer,
@@ -1725,6 +2044,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return VoicefoxControllerImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  HostPlayerStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return HostPlayerStreamImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -2210,6 +2541,53 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HostHeaderDto sse_decode_host_header_dto(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_value = sse_decode_String(deserializer);
+    return HostHeaderDto(name: var_name, value: var_value);
+  }
+
+  @protected
+  HostPlayerCommandDto sse_decode_host_player_command_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_url = sse_decode_String(deserializer);
+        var var_generation = sse_decode_u_64(deserializer);
+        var var_headers = sse_decode_list_host_header_dto(deserializer);
+        return HostPlayerCommandDto_Play(
+          url: var_url,
+          generation: var_generation,
+          headers: var_headers,
+        );
+      case 1:
+        return HostPlayerCommandDto_Pause();
+      case 2:
+        return HostPlayerCommandDto_Resume();
+      case 3:
+        return HostPlayerCommandDto_Stop();
+      case 4:
+        return HostPlayerCommandDto_Toggle();
+      case 5:
+        var var_positionMs = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_Seek(positionMs: var_positionMs);
+      case 6:
+        var var_volume = sse_decode_u_32(deserializer);
+        return HostPlayerCommandDto_SetVolume(volume: var_volume);
+      case 7:
+        var var_speed = sse_decode_f_64(deserializer);
+        return HostPlayerCommandDto_SetSpeed(speed: var_speed);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
@@ -2278,6 +2656,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <DownloadTaskDto>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_download_task_dto(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HostHeaderDto> sse_decode_list_host_header_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HostHeaderDto>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_host_header_dto(deserializer));
     }
     return ans_;
   }
@@ -2995,6 +3387,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    HostPlayerStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as HostPlayerStreamImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
     VoicefoxController self,
     SseSerializer serializer,
@@ -3021,6 +3426,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    HostPlayerStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as HostPlayerStreamImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxEventStream(
     VoicefoxEventStream self,
     SseSerializer serializer,
@@ -3041,6 +3459,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as VoicefoxControllerImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+    HostPlayerStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as HostPlayerStreamImpl).frbInternalSseEncode(move: null),
       serializer,
     );
   }
@@ -3488,6 +3919,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_host_header_dto(
+    HostHeaderDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.value, serializer);
+  }
+
+  @protected
+  void sse_encode_host_player_command_dto(
+    HostPlayerCommandDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case HostPlayerCommandDto_Play(
+        url: final url,
+        generation: final generation,
+        headers: final headers,
+      ):
+        sse_encode_i_32(0, serializer);
+        sse_encode_String(url, serializer);
+        sse_encode_u_64(generation, serializer);
+        sse_encode_list_host_header_dto(headers, serializer);
+      case HostPlayerCommandDto_Pause():
+        sse_encode_i_32(1, serializer);
+      case HostPlayerCommandDto_Resume():
+        sse_encode_i_32(2, serializer);
+      case HostPlayerCommandDto_Stop():
+        sse_encode_i_32(3, serializer);
+      case HostPlayerCommandDto_Toggle():
+        sse_encode_i_32(4, serializer);
+      case HostPlayerCommandDto_Seek(positionMs: final positionMs):
+        sse_encode_i_32(5, serializer);
+        sse_encode_u_64(positionMs, serializer);
+      case HostPlayerCommandDto_SetVolume(volume: final volume):
+        sse_encode_i_32(6, serializer);
+        sse_encode_u_32(volume, serializer);
+      case HostPlayerCommandDto_SetSpeed(speed: final speed):
+        sse_encode_i_32(7, serializer);
+        sse_encode_f_64(speed, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
@@ -3547,6 +4024,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_download_task_dto(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_host_header_dto(
+    List<HostHeaderDto> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_host_header_dto(item, serializer);
     }
   }
 
@@ -4081,6 +4570,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_list_source_capabilities_dto(self.sources, serializer);
     sse_encode_list_song_dto(self.localSongs, serializer);
   }
+}
+
+@sealed
+class HostPlayerStreamImpl extends RustOpaque implements HostPlayerStream {
+  // Not to be used by end users
+  HostPlayerStreamImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  HostPlayerStreamImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_HostPlayerStream,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_HostPlayerStream,
+    rustArcDecrementStrongCountPtr: RustLib
+        .instance
+        .api
+        .rust_arc_decrement_strong_count_HostPlayerStreamPtr,
+  );
 }
 
 @sealed

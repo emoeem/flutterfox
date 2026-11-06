@@ -3722,4 +3722,602 @@ as int,
 
 }
 
+/// @nodoc
+mixin _$HostPlayerCommandDto {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto()';
+}
+
+
+}
+
+/// @nodoc
+class $HostPlayerCommandDtoCopyWith<$Res>  {
+$HostPlayerCommandDtoCopyWith(HostPlayerCommandDto _, $Res Function(HostPlayerCommandDto) __);
+}
+
+
+/// Adds pattern-matching-related methods to [HostPlayerCommandDto].
+extension HostPlayerCommandDtoPatterns on HostPlayerCommandDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( HostPlayerCommandDto_Play value)?  play,TResult Function( HostPlayerCommandDto_Pause value)?  pause,TResult Function( HostPlayerCommandDto_Resume value)?  resume,TResult Function( HostPlayerCommandDto_Stop value)?  stop,TResult Function( HostPlayerCommandDto_Toggle value)?  toggle,TResult Function( HostPlayerCommandDto_Seek value)?  seek,TResult Function( HostPlayerCommandDto_SetVolume value)?  setVolume,TResult Function( HostPlayerCommandDto_SetSpeed value)?  setSpeed,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case HostPlayerCommandDto_Play() when play != null:
+return play(_that);case HostPlayerCommandDto_Pause() when pause != null:
+return pause(_that);case HostPlayerCommandDto_Resume() when resume != null:
+return resume(_that);case HostPlayerCommandDto_Stop() when stop != null:
+return stop(_that);case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle(_that);case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( HostPlayerCommandDto_Play value)  play,required TResult Function( HostPlayerCommandDto_Pause value)  pause,required TResult Function( HostPlayerCommandDto_Resume value)  resume,required TResult Function( HostPlayerCommandDto_Stop value)  stop,required TResult Function( HostPlayerCommandDto_Toggle value)  toggle,required TResult Function( HostPlayerCommandDto_Seek value)  seek,required TResult Function( HostPlayerCommandDto_SetVolume value)  setVolume,required TResult Function( HostPlayerCommandDto_SetSpeed value)  setSpeed,}){
+final _that = this;
+switch (_that) {
+case HostPlayerCommandDto_Play():
+return play(_that);case HostPlayerCommandDto_Pause():
+return pause(_that);case HostPlayerCommandDto_Resume():
+return resume(_that);case HostPlayerCommandDto_Stop():
+return stop(_that);case HostPlayerCommandDto_Toggle():
+return toggle(_that);case HostPlayerCommandDto_Seek():
+return seek(_that);case HostPlayerCommandDto_SetVolume():
+return setVolume(_that);case HostPlayerCommandDto_SetSpeed():
+return setSpeed(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( HostPlayerCommandDto_Play value)?  play,TResult? Function( HostPlayerCommandDto_Pause value)?  pause,TResult? Function( HostPlayerCommandDto_Resume value)?  resume,TResult? Function( HostPlayerCommandDto_Stop value)?  stop,TResult? Function( HostPlayerCommandDto_Toggle value)?  toggle,TResult? Function( HostPlayerCommandDto_Seek value)?  seek,TResult? Function( HostPlayerCommandDto_SetVolume value)?  setVolume,TResult? Function( HostPlayerCommandDto_SetSpeed value)?  setSpeed,}){
+final _that = this;
+switch (_that) {
+case HostPlayerCommandDto_Play() when play != null:
+return play(_that);case HostPlayerCommandDto_Pause() when pause != null:
+return pause(_that);case HostPlayerCommandDto_Resume() when resume != null:
+return resume(_that);case HostPlayerCommandDto_Stop() when stop != null:
+return stop(_that);case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle(_that);case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers)?  play,TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  stop,TResult Function()?  toggle,TResult Function( BigInt positionMs)?  seek,TResult Function( int volume)?  setVolume,TResult Function( double speed)?  setSpeed,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case HostPlayerCommandDto_Play() when play != null:
+return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause() when pause != null:
+return pause();case HostPlayerCommandDto_Resume() when resume != null:
+return resume();case HostPlayerCommandDto_Stop() when stop != null:
+return stop();case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle();case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that.speed);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers)  play,required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  stop,required TResult Function()  toggle,required TResult Function( BigInt positionMs)  seek,required TResult Function( int volume)  setVolume,required TResult Function( double speed)  setSpeed,}) {final _that = this;
+switch (_that) {
+case HostPlayerCommandDto_Play():
+return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause():
+return pause();case HostPlayerCommandDto_Resume():
+return resume();case HostPlayerCommandDto_Stop():
+return stop();case HostPlayerCommandDto_Toggle():
+return toggle();case HostPlayerCommandDto_Seek():
+return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume():
+return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed():
+return setSpeed(_that.speed);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String url,  BigInt generation,  List<HostHeaderDto> headers)?  play,TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  stop,TResult? Function()?  toggle,TResult? Function( BigInt positionMs)?  seek,TResult? Function( int volume)?  setVolume,TResult? Function( double speed)?  setSpeed,}) {final _that = this;
+switch (_that) {
+case HostPlayerCommandDto_Play() when play != null:
+return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause() when pause != null:
+return pause();case HostPlayerCommandDto_Resume() when resume != null:
+return resume();case HostPlayerCommandDto_Stop() when stop != null:
+return stop();case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle();case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that.speed);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_Play extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_Play({required this.url, required this.generation, required final  List<HostHeaderDto> headers}): _headers = headers,super._();
+  
+
+ final  String url;
+ final  BigInt generation;
+ final  List<HostHeaderDto> _headers;
+ List<HostHeaderDto> get headers {
+  if (_headers is EqualUnmodifiableListView) return _headers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_headers);
+}
+
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_PlayCopyWith<HostPlayerCommandDto_Play> get copyWith => _$HostPlayerCommandDto_PlayCopyWithImpl<HostPlayerCommandDto_Play>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other._headers, _headers));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers));
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_PlayCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_PlayCopyWith(HostPlayerCommandDto_Play value, $Res Function(HostPlayerCommandDto_Play) _then) = _$HostPlayerCommandDto_PlayCopyWithImpl;
+@useResult
+$Res call({
+ String url, BigInt generation, List<HostHeaderDto> headers
+});
+
+
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_PlayCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_PlayCopyWith<$Res> {
+  _$HostPlayerCommandDto_PlayCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Play _self;
+  final $Res Function(HostPlayerCommandDto_Play) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? url = null,Object? generation = null,Object? headers = null,}) {
+  return _then(HostPlayerCommandDto_Play(
+url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,headers: null == headers ? _self._headers : headers // ignore: cast_nullable_to_non_nullable
+as List<HostHeaderDto>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_Pause extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_Pause(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.pause()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_Resume extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_Resume(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.resume()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_Stop extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_Stop(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.stop()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_Toggle extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_Toggle(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.toggle()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_Seek extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_Seek({required this.positionMs}): super._();
+  
+
+ final  BigInt positionMs;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_SeekCopyWith<HostPlayerCommandDto_Seek> get copyWith => _$HostPlayerCommandDto_SeekCopyWithImpl<HostPlayerCommandDto_Seek>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,positionMs);
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.seek(positionMs: $positionMs)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_SeekCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_SeekCopyWith(HostPlayerCommandDto_Seek value, $Res Function(HostPlayerCommandDto_Seek) _then) = _$HostPlayerCommandDto_SeekCopyWithImpl;
+@useResult
+$Res call({
+ BigInt positionMs
+});
+
+
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_SeekCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_SeekCopyWith<$Res> {
+  _$HostPlayerCommandDto_SeekCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Seek _self;
+  final $Res Function(HostPlayerCommandDto_Seek) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? positionMs = null,}) {
+  return _then(HostPlayerCommandDto_Seek(
+positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_SetVolume extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_SetVolume({required this.volume}): super._();
+  
+
+ final  int volume;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_SetVolumeCopyWith<HostPlayerCommandDto_SetVolume> get copyWith => _$HostPlayerCommandDto_SetVolumeCopyWithImpl<HostPlayerCommandDto_SetVolume>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,volume);
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.setVolume(volume: $volume)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_SetVolumeCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_SetVolumeCopyWith(HostPlayerCommandDto_SetVolume value, $Res Function(HostPlayerCommandDto_SetVolume) _then) = _$HostPlayerCommandDto_SetVolumeCopyWithImpl;
+@useResult
+$Res call({
+ int volume
+});
+
+
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_SetVolumeCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_SetVolumeCopyWith<$Res> {
+  _$HostPlayerCommandDto_SetVolumeCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_SetVolume _self;
+  final $Res Function(HostPlayerCommandDto_SetVolume) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? volume = null,}) {
+  return _then(HostPlayerCommandDto_SetVolume(
+volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class HostPlayerCommandDto_SetSpeed extends HostPlayerCommandDto {
+  const HostPlayerCommandDto_SetSpeed({required this.speed}): super._();
+  
+
+ final  double speed;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_SetSpeedCopyWith<HostPlayerCommandDto_SetSpeed> get copyWith => _$HostPlayerCommandDto_SetSpeedCopyWithImpl<HostPlayerCommandDto_SetSpeed>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,speed);
+
+@override
+String toString() {
+  return 'HostPlayerCommandDto.setSpeed(speed: $speed)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_SetSpeedCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_SetSpeedCopyWith(HostPlayerCommandDto_SetSpeed value, $Res Function(HostPlayerCommandDto_SetSpeed) _then) = _$HostPlayerCommandDto_SetSpeedCopyWithImpl;
+@useResult
+$Res call({
+ double speed
+});
+
+
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_SetSpeedCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_SetSpeedCopyWith<$Res> {
+  _$HostPlayerCommandDto_SetSpeedCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_SetSpeed _self;
+  final $Res Function(HostPlayerCommandDto_SetSpeed) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? speed = null,}) {
+  return _then(HostPlayerCommandDto_SetSpeed(
+speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
+as double,
+  ));
+}
+
+
+}
+
 // dart format on

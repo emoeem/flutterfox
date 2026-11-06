@@ -14,10 +14,15 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'src/app_model.dart';
+import 'src/bridge/api.dart' as bridge;
+import 'src/bridge/host_player_bridge.dart';
+import 'src/playback/mobile_audio_player.dart';
+import 'src/playback/voicefox_audio_handler.dart';
 import 'src/myune/page/playlist/playlist_content_notifier.dart';
 import 'src/myune/page/setting/settings_provider.dart';
 import 'src/myune/services/notification_service.dart';
@@ -105,6 +110,24 @@ Future<void> main() async {
     runApp(VoicefoxApp(model: AppModel(), uiOnly: true));
     return;
   }
+  // Phase 8 批次二：触屏平台真实引导链（无音频）。数据目录覆盖 →
+  // newHost（转发型后端，无 mpv）→ AppModel.attach → 宿主指令流消费。
+  // 桌面路径不进此分支（零变化）；真实音频输出由批次三 just_audio 承接，
+  // 当前指令仅记录（HostPlayerBridge，不伪造播放状态）。
+  if (isTouchPlatform) {
+    final model = AppModel();
+    final app = VoicefoxApp(
+      model: model,
+      initialDestination: _startDestinationFromEnv(),
+      searchSeed: _startSearchSeedFromEnv(),
+      libraryTab: _startLibraryTabFromEnv(),
+      detailSeed: _startDetailSeedFromEnv(),
+      settingsSection: _startSettingsSectionFromEnv(),
+    );
+    unawaited(_bootstrapTouch(model));
+    runApp(app);
+    return;
+  }
   // 自绘标题栏（AppHeader）依赖隐藏系统标题栏；Android 进程无该插件实现。
   if (_isDesktopWindowPlatform) await windowManager.ensureInitialized();
   // 初始窗口尺寸/位置与隐藏标题栏：仅桌面窗口平台（触屏无 window_manager
@@ -163,6 +186,40 @@ Future<void> main() async {
     model.bootstrapDesktop().catchError(model.reportBootstrapError),
   );
   runApp(app);
+}
+
+/// 触屏平台引导链（Phase 8 批次二骨架 + 批次三音频承接）。
+///
+/// 顺序：
+/// 1. 数据目录覆盖（Android 上 dirs::data_dir() 为 None，宿主必须把
+///    PathProvider 的 App 私有目录传给 setDataDir，迁移文档:360）；
+/// 2. newHost：转发型播放后端 + 常规 runtime（无 mpv，config_base 就绪）；
+/// 3. AppModel.attach：事件泵 + 初始快照 + libraryRefresh/configGet；
+/// 4. audio_service 前台媒体服务（通知栏/锁屏/耳机键/音频焦点，
+///    VoicefoxAudioHandler + JustAudioMobilePlayer）；
+/// 5. HostPlayerBridge：消费 Rust→Dart 播放指令驱动 just_audio，
+///    真实 state/position/duration 回流（hostPlayerReport）。
+///
+/// 任一步失败经 reportBootstrapError 呈现引导错误（不静默吞掉）。
+Future<void> _bootstrapTouch(AppModel model) async {
+  try {
+    final dir = await getApplicationSupportDirectory();
+    bridge.setDataDir(path: dir.path);
+    final controller = await bridge.newHost();
+    await model.attach(controller);
+    final player = JustAudioMobilePlayer();
+    await configureAudioService(
+      handler: VoicefoxAudioHandler(player: player, model: model),
+    );
+    final stream = await bridge.hostPlayerStream(controller: controller);
+    HostPlayerBridge(
+      source: RustHostCommandSource(stream),
+      controller: controller,
+      player: player,
+    ).start();
+  } on Object catch (error) {
+    model.reportBootstrapError(error);
+  }
 }
 
 class VoicefoxApp extends StatefulWidget {

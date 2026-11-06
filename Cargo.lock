@@ -4368,6 +4368,7 @@ dependencies = [
  "libc",
  "lx-core",
  "serde",
+ "tokio",
  "voicefox-application",
  "voicefox-runtime",
 ]

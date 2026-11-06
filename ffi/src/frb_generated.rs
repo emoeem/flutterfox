@@ -40,7 +40,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -566273971;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1068004663;
 
 // Section: executor
 
@@ -557,6 +557,243 @@ fn wire__crate__api__event_next_impl(
         },
     )
 }
+fn wire__crate__api__host_player_next_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "host_player_next",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_stream = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, String>(
+                    (move || async move {
+                        let mut api_stream_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_stream,
+                                    0,
+                                    true,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_stream_guard =
+                                        Some(api_stream.lockable_decode_async_ref_mut().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let mut api_stream_guard = api_stream_guard.unwrap();
+                        let output_ok =
+                            crate::api::host_player_next(&mut *api_stream_guard).await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__host_player_report_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "host_player_report",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_controller = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxController>,
+            >>::sse_decode(&mut deserializer);
+            let api_state = <String>::sse_decode(&mut deserializer);
+            let api_position_ms = <u64>::sse_decode(&mut deserializer);
+            let api_duration_ms = <u64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_controller_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_controller,
+                                0,
+                                false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => {
+                                api_controller_guard =
+                                    Some(api_controller.lockable_decode_sync_ref())
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_controller_guard = api_controller_guard.unwrap();
+                    let output_ok = crate::api::host_player_report(
+                        &*api_controller_guard,
+                        api_state,
+                        api_position_ms,
+                        api_duration_ms,
+                    )?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__host_player_report_event_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "host_player_report_event",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_controller = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxController>,
+            >>::sse_decode(&mut deserializer);
+            let api_kind = <String>::sse_decode(&mut deserializer);
+            let api_generation = <u64>::sse_decode(&mut deserializer);
+            let api_message = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_controller_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_controller,
+                                0,
+                                false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => {
+                                api_controller_guard =
+                                    Some(api_controller.lockable_decode_sync_ref())
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_controller_guard = api_controller_guard.unwrap();
+                    let output_ok = crate::api::host_player_report_event(
+                        &*api_controller_guard,
+                        api_kind,
+                        api_generation,
+                        api_message,
+                    )?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__host_player_stream_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "host_player_stream",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_controller = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxController>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let mut api_controller_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_controller,
+                                0,
+                                false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => {
+                                api_controller_guard =
+                                    Some(api_controller.lockable_decode_sync_ref())
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_controller_guard = api_controller_guard.unwrap();
+                    let output_ok =
+                        Ok::<_, ()>(crate::api::host_player_stream(&*api_controller_guard))?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__new_desktop_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -583,6 +820,38 @@ fn wire__crate__api__new_desktop_impl(
             move |context| {
                 transform_result_sse::<_, String>((move || {
                     let output_ok = crate::api::new_desktop()?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__new_host_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "new_host",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::new_host()?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -736,6 +1005,9 @@ fn wire__crate__api__subscribe_impl(
 // Section: related_funcs
 
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxController>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
@@ -743,6 +1015,16 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
 );
 
 // Section: dart2rust
+
+impl SseDecode for HostPlayerStream {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
 
 impl SseDecode for VoicefoxController {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -761,6 +1043,16 @@ impl SseDecode for VoicefoxEventStream {
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxEventStream>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
     }
 }
 
@@ -1252,6 +1544,66 @@ impl SseDecode for crate::FfiCommand {
     }
 }
 
+impl SseDecode for crate::HostHeaderDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_value = <String>::sse_decode(deserializer);
+        return crate::HostHeaderDto {
+            name: var_name,
+            value: var_value,
+        };
+    }
+}
+
+impl SseDecode for crate::HostPlayerCommandDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_url = <String>::sse_decode(deserializer);
+                let mut var_generation = <u64>::sse_decode(deserializer);
+                let mut var_headers = <Vec<crate::HostHeaderDto>>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::Play {
+                    url: var_url,
+                    generation: var_generation,
+                    headers: var_headers,
+                };
+            }
+            1 => {
+                return crate::HostPlayerCommandDto::Pause;
+            }
+            2 => {
+                return crate::HostPlayerCommandDto::Resume;
+            }
+            3 => {
+                return crate::HostPlayerCommandDto::Stop;
+            }
+            4 => {
+                return crate::HostPlayerCommandDto::Toggle;
+            }
+            5 => {
+                let mut var_positionMs = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::Seek {
+                    position_ms: var_positionMs,
+                };
+            }
+            6 => {
+                let mut var_volume = <u32>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::SetVolume { volume: var_volume };
+            }
+            7 => {
+                let mut var_speed = <f64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::SetSpeed { speed: var_speed };
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseDecode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1318,6 +1670,18 @@ impl SseDecode for Vec<crate::DownloadTaskDto> {
         let mut ans_ = Vec::with_capacity(len_ as usize);
         for idx_ in 0..len_ {
             ans_.push(<crate::DownloadTaskDto>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::HostHeaderDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::HostHeaderDto>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -2042,10 +2406,15 @@ fn pde_ffi_dispatcher_primary_impl(
         12 => wire__crate__api__command_toggle_impl(port, ptr, rust_vec_len, data_len),
         13 => wire__crate__api__dispatch_impl(port, ptr, rust_vec_len, data_len),
         14 => wire__crate__api__event_next_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__new_desktop_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__set_data_dir_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__state_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__subscribe_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__host_player_next_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__host_player_report_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__host_player_report_event_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__host_player_stream_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__new_desktop_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__new_host_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__set_data_dir_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__state_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__subscribe_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2063,6 +2432,21 @@ fn pde_ffi_dispatcher_sync_impl(
 }
 
 // Section: rust2dart
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<HostPlayerStream> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<HostPlayerStream> {}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<HostPlayerStream>> for HostPlayerStream {
+    fn into_into_dart(self) -> FrbWrapper<HostPlayerStream> {
+        self.into()
+    }
+}
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<VoicefoxController> {
@@ -2459,6 +2843,64 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::FfiCommand {}
 impl flutter_rust_bridge::IntoIntoDart<crate::FfiCommand> for crate::FfiCommand {
     fn into_into_dart(self) -> crate::FfiCommand {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::HostHeaderDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.value.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::HostHeaderDto {}
+impl flutter_rust_bridge::IntoIntoDart<crate::HostHeaderDto> for crate::HostHeaderDto {
+    fn into_into_dart(self) -> crate::HostHeaderDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::HostPlayerCommandDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::HostPlayerCommandDto::Play {
+                url,
+                generation,
+                headers,
+            } => [
+                0.into_dart(),
+                url.into_into_dart().into_dart(),
+                generation.into_into_dart().into_dart(),
+                headers.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::Pause => [1.into_dart()].into_dart(),
+            crate::HostPlayerCommandDto::Resume => [2.into_dart()].into_dart(),
+            crate::HostPlayerCommandDto::Stop => [3.into_dart()].into_dart(),
+            crate::HostPlayerCommandDto::Toggle => [4.into_dart()].into_dart(),
+            crate::HostPlayerCommandDto::Seek { position_ms } => {
+                [5.into_dart(), position_ms.into_into_dart().into_dart()].into_dart()
+            }
+            crate::HostPlayerCommandDto::SetVolume { volume } => {
+                [6.into_dart(), volume.into_into_dart().into_dart()].into_dart()
+            }
+            crate::HostPlayerCommandDto::SetSpeed { speed } => {
+                [7.into_dart(), speed.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::HostPlayerCommandDto {}
+impl flutter_rust_bridge::IntoIntoDart<crate::HostPlayerCommandDto>
+    for crate::HostPlayerCommandDto
+{
+    fn into_into_dart(self) -> crate::HostPlayerCommandDto {
         self
     }
 }
@@ -2879,6 +3321,13 @@ impl flutter_rust_bridge::IntoIntoDart<crate::VoicefoxState> for crate::Voicefox
     }
 }
 
+impl SseEncode for HostPlayerStream {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+    }
+}
+
 impl SseEncode for VoicefoxController {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2890,6 +3339,17 @@ impl SseEncode for VoicefoxEventStream {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxEventStream>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+    }
+}
+
+impl SseEncode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
     }
 }
 
@@ -3281,6 +3741,59 @@ impl SseEncode for crate::FfiCommand {
     }
 }
 
+impl SseEncode for crate::HostHeaderDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.value, serializer);
+    }
+}
+
+impl SseEncode for crate::HostPlayerCommandDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::HostPlayerCommandDto::Play {
+                url,
+                generation,
+                headers,
+            } => {
+                <i32>::sse_encode(0, serializer);
+                <String>::sse_encode(url, serializer);
+                <u64>::sse_encode(generation, serializer);
+                <Vec<crate::HostHeaderDto>>::sse_encode(headers, serializer);
+            }
+            crate::HostPlayerCommandDto::Pause => {
+                <i32>::sse_encode(1, serializer);
+            }
+            crate::HostPlayerCommandDto::Resume => {
+                <i32>::sse_encode(2, serializer);
+            }
+            crate::HostPlayerCommandDto::Stop => {
+                <i32>::sse_encode(3, serializer);
+            }
+            crate::HostPlayerCommandDto::Toggle => {
+                <i32>::sse_encode(4, serializer);
+            }
+            crate::HostPlayerCommandDto::Seek { position_ms } => {
+                <i32>::sse_encode(5, serializer);
+                <u64>::sse_encode(position_ms, serializer);
+            }
+            crate::HostPlayerCommandDto::SetVolume { volume } => {
+                <i32>::sse_encode(6, serializer);
+                <u32>::sse_encode(volume, serializer);
+            }
+            crate::HostPlayerCommandDto::SetSpeed { speed } => {
+                <i32>::sse_encode(7, serializer);
+                <f64>::sse_encode(speed, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseEncode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3334,6 +3847,16 @@ impl SseEncode for Vec<crate::DownloadTaskDto> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::DownloadTaskDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::HostHeaderDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::HostHeaderDto>::sse_encode(item, serializer);
         }
     }
 }
@@ -3846,6 +4369,20 @@ mod io {
     flutter_rust_bridge::frb_generated_boilerplate_io!();
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_voicefox_flutter_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_voicefox_flutter_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_voicefox_flutter_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
         ptr: *const std::ffi::c_void,
     ) {
@@ -3897,6 +4434,20 @@ mod web {
     // Section: boilerplate
 
     flutter_rust_bridge::frb_generated_boilerplate_web!();
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHostPlayerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HostPlayerStream>>::decrement_strong_count(ptr as _);
+    }
 
     #[wasm_bindgen]
     pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
