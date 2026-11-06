@@ -4,7 +4,7 @@ publish_to: none
 environment:
   sdk: ">=3.10.0 <4.0.0"
 dependencies:
-  cached_network_image: ">=3.3.0 <4.0.0"
+  cached_network_image: ^4.0.6
   # --- myune_music UI 基底所需（vendored lib/src/myune/，Apache-2.0） ---
   colorgram: ^2.0.0
   crypto: ^3.0.6
