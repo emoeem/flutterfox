@@ -406,7 +406,7 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
     // 沙盒环境）时回退手输绝对路径对话框。
     String? target;
     try {
-      target = await FilePicker.platform.getDirectoryPath(
+      target = await FilePicker.getDirectoryPath(
         dialogTitle: '选择本地音乐目录',
       );
     } on PlatformException {
