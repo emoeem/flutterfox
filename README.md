@@ -6,6 +6,11 @@
 
 voicefox 将多音源音乐搜索、在线播放、本地音乐库、歌词、下载、收藏、历史和歌单管理整合进键盘优先的终端界面。当前 0.8.0 发布线使用稳定旧版 TUI，同时集成新的音源、下载、登录和跨平台能力。
 
+**同一仓库还有一条 Flutter 桌面/移动应用线（v0.9.0 起）**：统一设计系统与深浅主题的
+桌面应用（自绘标题栏、托盘、全局快捷键、断点布局），以及手机/平板形态（底部导航、
+迷你播放栏、手势式全屏播放、平板三态断点）。Android 端经 Rust 转发型播放后端 +
+`just_audio` / `audio_service` 实现后台播放、通知栏、锁屏与耳机键控制。
+
 ## 主要功能
 
 - 多音源聚合搜索与失败换源
@@ -61,7 +66,15 @@ voicefox 将多音源音乐搜索、在线播放、本地音乐库、歌词、�
 
 完整按页面快捷键见 [`KEYBINDINGS.md`](KEYBINDINGS.md)。
 
-## 安装
+## 安装（Flutter 应用）
+
+从 [Release](https://github.com/emoeem/flutterfox/releases/tag/v0.9.0) 获取：
+
+- **Android**：`voicefox-android-arm64.apk`（arm64-v8a，Android 8.0+/minSdk 24，debug 签名可直接安装；通知栏/锁屏/耳机键行为以真机验证进度为准）
+- **Linux**：`voicefox-flutter-linux-x64.tar.gz`，解压后运行 `bundle/voicefox_flutter`，需系统已装 `mpv`
+- **Windows / macOS**：CI 构建产物（Windows 需 `libmpv-2.dll` 同目录，可从 TUI 包中取；macOS 未签名，首启右键打开）
+
+## 安装（TUI）
 
 ### Windows
 
@@ -91,11 +104,23 @@ brew install mpv
 
 ## 从源码构建
 
+TUI（Rust 终端版）：
+
 ```bash
 git clone https://github.com/emoeem/voicefox.git
 cd voicefox
 cargo build --release
 cargo run --release
+```
+
+Flutter 应用（桌面 + Android，FFI 经 Rust 交叉编译）：
+
+```bash
+cd flutter && flutter pub get
+flutter build linux --release        # 桌面（CMake 自动调 cargo 构建 libvoicefox_ffi.so）
+cd ..
+scripts/build-android-ffi.sh         # Android：NDK 交叉产出 libvoicefox_ffi.so 入 jniLibs
+cd flutter && flutter build apk --release --target-platform android-arm64
 ```
 
 ## 文档
@@ -105,6 +130,8 @@ cargo run --release
 - [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — 配置
 - [`docs/SYNC.md`](docs/SYNC.md) — 跨音源同步、Diff、匹配与登录限制
 - [`flutter/README.md`](flutter/README.md) — Flutter/Rust 新架构开发线
+- [`docs/SESSION-HANDOFF.md`](docs/SESSION-HANDOFF.md) — 跨会话交接（当前状态、待办队列、工程事实）
+- [`docs/PHASE8-REPORT.md`](docs/PHASE8-REPORT.md) 等 PHASE 报告 — UI 重构各阶段交付与验收记录
 
 ## 验证
 

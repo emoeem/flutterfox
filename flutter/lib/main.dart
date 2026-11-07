@@ -203,6 +203,7 @@ Future<void> main() async {
 /// 任一步失败经 reportBootstrapError 呈现引导错误（不静默吞掉）。
 Future<void> _bootstrapTouch(AppModel model) async {
   try {
+    await model.ensureRustLib();
     final dir = await getApplicationSupportDirectory();
     bridge.setDataDir(path: dir.path);
     final controller = await bridge.newHost();

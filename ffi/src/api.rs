@@ -142,7 +142,11 @@ pub fn host_player_report_event(
             backend.report_state(PlayerState::Playing);
             PlayerEvent::Playing { generation }
         }
-        other => return Err(format!("未知播放事件 '{other}'（期望 ended/error/buffering/playing）")),
+        other => {
+            return Err(format!(
+                "未知播放事件 '{other}'（期望 ended/error/buffering/playing）"
+            ));
+        }
     };
     backend.report_event(event);
     Ok(())

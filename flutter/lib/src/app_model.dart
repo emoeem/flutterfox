@@ -122,16 +122,25 @@ class AppModel extends ChangeNotifier {
     localSongs: [],
   );
 
+  /// FRB 运行时初始化（幂等）：任何桥调用之前必须就绪，
+  /// 否则生成码访问 instance.api 会抛 Bad state（真机触屏引导踩过）。
+  Future<void>? _rustLibReady;
+
+  Future<void> ensureRustLib() {
+    _rustLibReady ??= RustLib.init();
+    return _rustLibReady!;
+  }
+
   /// 桌面引导：初始化 Rust 库并启动事件泵。
   Future<void> bootstrapDesktop() async {
-    await RustLib.init();
+    await ensureRustLib();
     final controller = await bridge.newDesktop();
     await _attach(controller);
   }
 
   /// 移动端引导由宿主注入 ApplicationService 后构造（Phase 4）。
   Future<void> attach(bridge.VoicefoxController controller) async {
-    await RustLib.init();
+    await ensureRustLib();
     await _attach(controller);
   }
 

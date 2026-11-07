@@ -20,8 +20,8 @@
 //! 每次订阅拿新 receiver）；回流为 `watch`（取最新值，高频不丢帧），与
 //! mpv 后端同构。
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use tokio::sync::{broadcast, mpsc, watch};
@@ -50,9 +50,15 @@ pub enum HostPlayerCommand {
     Stop,
     Toggle,
     /// 定位到绝对位置（毫秒）。
-    Seek { position_ms: u64 },
-    SetVolume { volume: u32 },
-    SetSpeed { speed: f64 },
+    Seek {
+        position_ms: u64,
+    },
+    SetVolume {
+        volume: u32,
+    },
+    SetSpeed {
+        speed: f64,
+    },
 }
 
 /// 转发型播放后端。
@@ -174,11 +180,9 @@ impl PlayerBackend for HostPlayerBackend {
     }
 
     fn seek(&self, position: Duration) {
-        let _ = self
-            .commands
-            .send(HostPlayerCommand::Seek {
-                position_ms: position.as_millis() as u64,
-            });
+        let _ = self.commands.send(HostPlayerCommand::Seek {
+            position_ms: position.as_millis() as u64,
+        });
         // 回流跟随宿主报告；本地乐观写避免 UI 等待往返抖动。
         self.position.send_replace(position);
     }
@@ -211,7 +215,9 @@ impl PlayerBackend for HostPlayerBackend {
     fn set_volume(&self, vol: u32) {
         let clamped = vol.clamp(0, 100);
         *self.volume.lock().unwrap_or_else(|e| e.into_inner()) = clamped;
-        let _ = self.commands.send(HostPlayerCommand::SetVolume { volume: clamped });
+        let _ = self
+            .commands
+            .send(HostPlayerCommand::SetVolume { volume: clamped });
     }
 
     fn volume_up(&self, delta: u32) {
@@ -243,8 +249,7 @@ impl PlayerBackend for HostPlayerBackend {
     fn set_audio_output_device(&self, device: &str) {
         // 设备枚举/路由由宿主桥接（AudioManager.getDevices，批次五）；
         // 此处只记录当前选择，不转发。
-        *self.audio_device.lock().unwrap_or_else(|e| e.into_inner()) =
-            device.to_owned();
+        *self.audio_device.lock().unwrap_or_else(|e| e.into_inner()) = device.to_owned();
     }
 
     fn fade_in(&self, _duration: Duration) {
@@ -304,7 +309,9 @@ mod tests {
         assert_eq!(rx.try_recv().unwrap(), HostPlayerCommand::Resume);
         assert_eq!(
             rx.try_recv().unwrap(),
-            HostPlayerCommand::Seek { position_ms: 42_000 }
+            HostPlayerCommand::Seek {
+                position_ms: 42_000
+            }
         );
         assert_eq!(
             rx.try_recv().unwrap(),
@@ -322,10 +329,7 @@ mod tests {
         backend.report_position(Duration::from_millis(5_000));
         backend.report_duration(Duration::from_millis(244_000));
         assert_eq!(*backend.state_watcher().borrow(), PlayerState::Playing);
-        assert_eq!(
-            backend.position_watcher().borrow().as_millis(),
-            5_000_u128
-        );
+        assert_eq!(backend.position_watcher().borrow().as_millis(), 5_000_u128);
         assert_eq!(
             backend.duration_watcher().borrow().as_millis(),
             244_000_u128
@@ -346,10 +350,7 @@ mod tests {
         backend.stop();
         assert_eq!(*backend.state_watcher().borrow(), PlayerState::Stopped);
         assert!(backend.position_watcher().borrow().is_zero());
-        assert!(matches!(
-            rx.try_recv().unwrap(),
-            HostPlayerCommand::Stop
-        ));
+        assert!(matches!(rx.try_recv().unwrap(), HostPlayerCommand::Stop));
     }
 
     /// 无订阅者时 play 不阻塞也不报错（宿主上线前指令丢弃）。
@@ -365,8 +366,13 @@ mod tests {
     #[test]
     fn report_event_reaches_consumer() {
         let backend = HostPlayerBackend::new();
-        let mut rx = backend.take_event_receiver().expect("首次 take 必须拿到接收端");
-        assert!(backend.take_event_receiver().is_none(), "二次 take 返回 None");
+        let mut rx = backend
+            .take_event_receiver()
+            .expect("首次 take 必须拿到接收端");
+        assert!(
+            backend.take_event_receiver().is_none(),
+            "二次 take 返回 None"
+        );
 
         backend.report_event(PlayerEvent::Ended { generation: 3 });
         backend.report_event(PlayerEvent::Error {

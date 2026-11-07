@@ -177,8 +177,8 @@ impl ApplicationRuntime {
             path: config_path.clone(),
             apply: Some(apply),
         });
-        let downloads: Option<Arc<dyn voicefox_application::DownloadsEngine>> =
-            downloads_manager.map(|manager| {
+        let downloads: Option<Arc<dyn voicefox_application::DownloadsEngine>> = downloads_manager
+            .map(|manager| {
                 Arc::new(RuntimeDownloads {
                     manager,
                     sources: Arc::clone(&sources),
@@ -226,12 +226,15 @@ impl ApplicationRuntime {
 }
 pub mod config_loader;
 
+/// 配置热更新回调：保存后立即把可热更新设置应用到播放器/网络/歌词/下载。
+type ConfigApplyCallback = Arc<dyn Fn(&lx_core::model::config::Config) + Send + Sync>;
+
 /// [`voicefox_application::ConfigStore`] 的 runtime 实现：内存替换 + TOML 落盘，
 /// 并在保存后立即把可热更新的设置应用到播放器/网络/歌词/下载。
 struct RuntimeConfigStore {
     config: Arc<RwLock<lx_core::model::config::Config>>,
     path: std::path::PathBuf,
-    apply: Option<Arc<dyn Fn(&lx_core::model::config::Config) + Send + Sync>>,
+    apply: Option<ConfigApplyCallback>,
 }
 
 impl voicefox_application::ConfigStore for RuntimeConfigStore {
@@ -321,6 +324,12 @@ async fn downloads_bridge(
 }
 
 pub fn default_config_path() -> PathBuf {
+    // 移动端宿主先经 set_data_dir_override 注入 App 私有目录，config 就近落那里：
+    // ProjectDirs/dirs 在 Android 上全是 None，旧回退 "." 会把配置写进只读的
+    // 进程工作目录（真机 EROFS 实测）。
+    if let Some(dir) = lx_core::fsutil::data_dir_override() {
+        return dir.join("config.toml");
+    }
     directories::ProjectDirs::from("", "", "voicefox")
         .map(|project| project.config_dir().to_path_buf())
         .unwrap_or_else(|| {
