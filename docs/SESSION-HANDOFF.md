@@ -34,6 +34,7 @@
 ## 四、工程事实与环境
 
 - Flutter 3.47.9（CI 同版本钉死）；Rust stable + MSRV 1.90.0；NDK 27.2（scripts/build-android-ffi.sh 自适应探测，VOICEFOX_NDK_VERSION 可覆盖）。
+- **官网与文档（2026-11-08）**：site/index.html 升级到双形态定位（Flutter 应用线小节 + 桌面真截图 + Android 下载卡 + FAQ 手机条目，过期 voicefox 链接清零）；README 补界面截图节与 Flutter 线说明；pages.yml 加 enablement 且站点经维护者令牌一次性创建（构建源 = GitHub Actions）后部署全绿，线上 https://emoeem.github.io/flutterfox/ ；版本徽标契约 = 页面内 vN.N.N 出现串去重后必须等于工作区版本（pages.yml 校验），改页面时保持。
 - FRB 生成码入库；再生成命令：`PATH=$HOME/flutter/bin:$PATH flutter_rust_bridge_codegen generate`（避开 /usr/sbin/flutter 卡死）。
 - .cargo/config.toml 不得硬编码本机 NDK 路径（曾致 CI 必炸）；本机个人配置放 ~/.cargo/config.toml。
 - CI runner 的镜像环境变量（ANDROID_NDK_LATEST_HOME 等）不进 GA 的 env 上下文，须在 shell 层 export。
