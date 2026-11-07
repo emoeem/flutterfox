@@ -1562,15 +1562,13 @@ class PlaylistContentNotifier extends ChangeNotifier {
 
     final bool allowAnyFormat = _settingsProvider.allowAnyFormat;
 
-    FilePickerResult? result;
+    List<PlatformFile> result;
     if (allowAnyFormat) {
-      result = await FilePicker.platform.pickFiles(
+      result = await FilePicker.pickFiles(
         type: FileType.any,
-        allowMultiple: true,
-        lockParentWindow: true,
       );
     } else {
-      result = await FilePicker.platform.pickFiles(
+      result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: [
           'wav',
@@ -1588,21 +1586,20 @@ class PlaylistContentNotifier extends ChangeNotifier {
           'aiff',
           'pcm',
         ],
-        allowMultiple: true,
-        lockParentWindow: true,
       );
     }
 
-    if (result == null) {
+    if (result.isEmpty) {
       return false; // 用户取消
     }
 
     final currentPlaylist = _playlists[_selectedIndex];
     final List<String> newSongPaths = [];
 
-    for (final platformFile in result.files) {
-      if (platformFile.path != null) {
-        final pathToAdd = p.normalize(platformFile.path!);
+    for (final platformFile in result) {
+      final filePath = platformFile.path;
+      if (filePath != null) {
+        final pathToAdd = p.normalize(filePath);
         if (!currentPlaylist.songFilePaths.contains(pathToAdd)) {
           newSongPaths.add(pathToAdd);
         }
@@ -1615,7 +1612,7 @@ class PlaylistContentNotifier extends ChangeNotifier {
       return true; // 真的有添加
     }
     // 如果确实选择了文件，但 newSongPaths 为空，说明选择是重复歌曲
-    else if (result.files.isNotEmpty) {
+    else if (result.isNotEmpty) {
       _notificationService.info('所选歌曲已存在于当前歌单中');
       return false;
     }

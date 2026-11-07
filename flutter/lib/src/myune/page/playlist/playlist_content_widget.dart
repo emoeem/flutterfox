@@ -364,9 +364,8 @@ class _FolderManagementWidgetState extends State<_FolderManagementWidget> {
           children: [
             ElevatedButton.icon(
               onPressed: () async {
-                final folder = await FilePicker.platform.getDirectoryPath(
+                final folder = await FilePicker.getDirectoryPath(
                   dialogTitle: '请选择文件夹',
-                  lockParentWindow: true,
                 );
                 if (folder != null) {
                   if (!widget.selectedFolders.contains(folder)) {

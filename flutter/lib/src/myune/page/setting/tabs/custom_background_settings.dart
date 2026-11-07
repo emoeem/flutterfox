@@ -72,15 +72,13 @@ class _CustomBackgroundSettingsState extends State<CustomBackgroundSettings> {
     if (_picking) return;
     setState(() => _picking = true);
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'jfif'],
-        allowMultiple: false,
         dialogTitle: '选择背景图片',
-        lockParentWindow: true,
       );
 
-      final path = result?.files.single.path;
+      final path = result?.path;
       if (path == null || !mounted) return;
 
       final notification = context.read<NotificationService>();

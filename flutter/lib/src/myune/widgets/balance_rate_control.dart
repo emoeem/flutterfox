@@ -512,17 +512,16 @@ class BalanceRateControl extends StatelessWidget {
                       }
 
                       if (needsPicker) {
-                        final result = await FilePicker.platform.pickFiles(
+                        final result = await FilePicker.pickFile(
                           type: FileType.custom,
                           allowedExtensions: ['rnnn'],
                           dialogTitle: '选择 RNN 降噪模型文件',
                         );
-                        if (result == null ||
-                            result.files.single.path == null) {
+                        if (result?.path == null) {
                           return;
                         }
                         await notifier.setArnndnModelPath(
-                          result.files.single.path!,
+                          result!.path!,
                         );
                       }
                     }
