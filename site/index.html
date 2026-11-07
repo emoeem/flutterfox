@@ -161,24 +161,24 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
     <a href="#features">功能</a><a href="#whatsnew">更新</a><a href="#sources">音源</a><a href="#download">下载</a><a href="#faq">FAQ</a>
   </nav>
   <div class="nav-right">
-    <a class="pill" href="https://github.com/emoeem/voicefox"><svg><use href="#i-github"/></svg>GitHub</a>
+    <a class="pill" href="https://github.com/emoeem/flutterfox"><svg><use href="#i-github"/></svg>GitHub</a>
     <span class="pill mono">v0.5.0</span>
-    <a class="btn primary" href="https://github.com/emoeem/voicefox/releases/latest" style="height:34px;padding:0 14px;font-size:13px">下载</a>
+    <a class="btn primary" href="https://github.com/emoeem/flutterfox/releases/latest" style="height:34px;padding:0 14px;font-size:13px">下载</a>
   </div>
 </header>
 
 <main>
 <section class="hero wrap">
   <div>
-    <div class="eyebrow"><span class="dot"></span><span class="mono">v0.5.0 · Rust / ratatui / libmpv</span></div>
-    <h1>音乐，回到<br><span>终端。</span></h1>
-    <p class="lead">VoiceFox 是一个键盘优先的终端音乐播放器：聚合多音源、歌词、本地音乐、下载、收藏、历史与歌单，让完整的音乐工作流留在你的 TUI 里。</p>
+    <div class="eyebrow"><span class="dot"></span><span class="mono">v0.5.0 · Rust + Flutter 双形态</span></div>
+    <h1>音乐，回到终端，<br>也在<span>桌面与手机。</span></h1>
+    <p class="lead">VoiceFox 把聚合搜索、歌词、下载、本地库与跨音源歌单同步做成一个 Rust 内核、两套界面：键盘优先的终端 TUI，与 v0.9 起正式交付的 Flutter 桌面 / 移动应用（Android 后台播放、通知栏与耳机键）。</p>
     <div class="actions">
-      <a class="btn primary" href="https://github.com/emoeem/voicefox/releases/latest">下载 Release</a>
-      <a class="btn" href="https://github.com/emoeem/voicefox">查看源码</a>
+      <a class="btn primary" href="https://github.com/emoeem/flutterfox/releases/latest">下载 Release</a>
+      <a class="btn" href="https://github.com/emoeem/flutterfox">查看源码</a>
     </div>
     <div class="ext">
-      <span>Linux · macOS · Windows</span>
+      <span>Linux · macOS · Windows · Android</span>
       <span>MIT License</span>
       <span>单文件二进制 + libmpv</span>
     </div>
@@ -208,8 +208,8 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
 <section class="stats wrap">
   <div class="stat"><b>13+</b><span>音源 / 本地源</span></div>
   <div class="stat"><b>4</b><span>歌词格式</span></div>
-  <div class="stat"><b>5</b><span>平台构建产物</span></div>
-  <div class="stat"><b>TUI</b><span>键盘优先体验</span></div>
+  <div class="stat"><b>7+</b><span>平台构建产物</span></div>
+  <div class="stat"><b>双形态</b><span>键盘与触屏</span></div>
 </section>
 
 <section id="features" class="section">
@@ -217,7 +217,7 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
     <div class="section-head">
       <div class="kicker">01 / Features</div>
       <h2>一个播放器，完整的音乐工作流。</h2>
-      <p class="section-intro">稳定的 TUI 发布线持续打磨，同时保留 Flutter + Rust 的新架构实验线。</p>
+      <p class="section-intro">稳定的 TUI 发布线持续打磨；Flutter 桌面 / 移动应用自 v0.9 起正式随 Release 交付。</p>
     </div>
     <div class="grid">
       <article class="card"><div class="ico"><svg><use href="#i-search"/></svg></div><h3>多音源聚合</h3><p>跨音源搜索、失败换源、歌手 / 专辑、歌单、分类与排行榜。</p></article>
@@ -230,18 +230,43 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
   </div>
 </section>
 
+<section id="flutter" class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Flutter App</div>
+      <h2>桌面与手机，同一套设计系统。</h2>
+      <p class="section-intro">v0.9 起，Flutter 应用完成 Phase 0-8 全量重构：统一设计系统、深浅主题、断点布局与 Android 媒体能力。</p>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="ico"><svg><use href="#i-desktop"/></svg></div><h3>桌面应用</h3><p>自绘标题栏、托盘与最小化行为、全局快捷键、四档断点布局；首页 / 发现 / 搜索 / 曲库全部迁移到统一组件体系。</p></article>
+      <article class="card"><div class="ico"><svg><use href="#i-wave"/></svg></div><h3>手机与平板</h3><p>MobileShell 底部导航与迷你播放栏；封面 / 歌词 / 队列分层的手势全屏播放；平板按宽度在图标 Rail、双栏与三栏间自适应。</p></article>
+      <article class="card"><div class="ico"><svg><use href="#i-play"/></svg></div><h3>Android 媒体能力</h3><p>Rust 转发型播放后端 + just_audio / audio_service：后台播放、通知栏、锁屏控制与耳机键，自定义请求头不丢失。</p></article>
+    </div>
+    <div class="grid" style="margin-top:18px">
+      <figure class="shot" style="margin:0">
+        <img loading="lazy" src="https://raw.githubusercontent.com/emoeem/flutterfox/main/docs/phase4-shots/01-home-1440x900.png" alt="桌面首页">
+        <figcaption>桌面首页（1440 × 900，深色主题）</figcaption>
+      </figure>
+      <figure class="shot" style="margin:0">
+        <img loading="lazy" src="https://raw.githubusercontent.com/emoeem/flutterfox/main/docs/phase5-shots/01-library-songs-1440x900.png" alt="曲库页">
+        <figcaption>曲库：统一 TrackRow / TrackTable</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
 <section id="whatsnew" class="section">
   <div class="wrap">
     <div class="section-head">
       <div class="kicker">02 / What&#39;s New</div>
-      <h2>0.5.0 新增了什么。</h2>
-      <p class="section-intro">从系统音频频谱到睡眠定时器，再到跨端歌单推送与只读镜像缓存。</p>
+      <h2>v0.9.0 带来了什么。</h2>
+      <p class="section-intro">移动端形态落地、Android 媒体能力接入、桌面重构收官，以及一次全面的依赖更新。</p>
     </div>
     <div class="grid">
-      <article class="card"><div class="ico"><svg><use href="#i-wave"/></svg></div><h3>频谱可视化</h3><p>按 w 在内容区叠加 cava 风格的柱状频谱，采集系统输出监视流；采集断流会自动重连，不再冻结在最后一帧。</p></article>
-      <article class="card"><div class="ico"><svg><use href="#i-timer"/></svg></div><h3>睡眠定时器</h3><p>按 t 选择 15–120 分钟，到点在最长 10 秒内淡出并暂停；启用后底栏显示倒计时。</p></article>
-      <article class="card"><div class="ico"><svg><use href="#i-desktop"/></svg></div><h3>Windows SMTC</h3><p>硬件媒体键、系统媒体浮层与蓝牙耳机按键可控制播放，浮层同步显示封面与歌名。</p></article>
-      <article class="card"><div class="ico"><svg><use href="#i-sync"/></svg></div><h3>歌单互通与推送</h3><p>导入 M3U / M3U8 / LX / 网易云 JSON、导出 M3U8，并把自建歌单或收藏追加推送到网易云。</p></article><article class="card"><div class="ico"><svg><use href="#i-folder"/></svg></div><h3>缓存管理</h3><p>设置页一键清除封面缓存与网易云歌单镜像，值列显示当前体积，清理后按需重建。</p></article><article class="card"><div class="ico"><svg><use href="#i-check"/></svg></div><h3>手感修复</h3><p>拖拽表头列宽不再误触发换列；频谱叠加层不再继承底层 DIM/BOLD，柱子干净不闪。</p></article>
+      <article class="card"><div class="ico"><svg><use href="#i-wave"/></svg></div><h3>手机与平板形态</h3><p>底部导航、迷你播放栏、分层手势全屏播放与平板三态断点；移动形态仅在触屏平台生效，桌面全宽零回归。</p></article>
+      <article class="card"><div class="ico"><svg><use href="#i-timer"/></svg></div><h3>Android 媒体能力</h3><p>audio_service 前台服务：通知栏与锁屏控制、耳机拔出暂停、音频焦点管理；播放指令经 Rust 网关下发。</p></article>
+      <article class="card"><div class="ico"><svg><use href="#i-desktop"/></svg></div><h3>桌面重构收官</h3><p>统一设计系统 + 44 套主题 Token、托盘与全局快捷键、无重复标题栏，桌面冻结基线逐像素零回归。</p></article>
+      <article class="card"><div class="ico"><svg><use href="#i-sync"/></svg></div><h3>歌单互通与推送</h3><p>导入 M3U / M3U8 / LX / 网易云 JSON、导出 M3U8，并把自建歌单或收藏追加推送到网易云。</p></article><article class="card"><div class="ico"><svg><use href="#i-folder"/></svg></div><h3>缓存管理</h3><p>设置页一键清除封面缓存与网易云歌单镜像，值列显示当前体积，清理后按需重建。</p></article><article class="card"><div class="ico"><svg><use href="#i-check"/></svg></div><h3>依赖全面更新</h3><p>十一个 dependabot 升级全部收口：freezed 4、file_picker 13、pointycastle 4、window_manager 0.6 等五个 major 完成迁移，CI 全绿。</p></article>
     </div>
   </div>
 </section>
@@ -281,8 +306,8 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
   <div class="wrap">
     <div class="section-head">
       <div class="kicker">05 / Architecture</div>
-      <h2>Rust 核心，TUI 优先。</h2>
-      <p class="section-intro">把播放器、音源、歌词、下载和本地库拆成清晰模块，同时为跨平台 GUI 保留 FFI 边界。</p>
+      <h2>Rust 核心，双界面。</h2>
+      <p class="section-intro">播放器、音源、歌词、下载与本地库拆成清晰模块；TUI 与 Flutter 界面共享同一批引擎。</p>
     </div>
     <div class="grid two">
       <article class="card">
@@ -292,8 +317,8 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
       </article>
       <article class="card">
         <div class="ico"><svg><use href="#i-sync"/></svg></div>
-        <h3>Flutter + Rust</h3><p>Flutter 前端实验线通过 flutter_rust_bridge 连接 Rust 能力，为桌面与移动端演进预留空间。</p>
-        <div class="stack"><span>Flutter</span><span>FFI</span><span>Rust</span><span>libmpv</span></div>
+        <h3>Flutter + Rust</h3><p>Flutter 前端通过 flutter_rust_bridge 连接 Rust 能力；v0.9 起桌面与 Android 应用正式交付，移动端使用宿主注入的转发型播放后端。</p>
+        <div class="stack"><span>Flutter</span><span>FFI</span><span>just_audio</span><span>audio_service</span></div>
       </article>
     </div>
   </div>
@@ -326,20 +351,29 @@ background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(124,92,255,.04))}
     <div class="section-head">
       <div class="kicker">07 / Download</div>
       <h2>选择你的平台。</h2>
-      <p class="section-intro">每个平台一个 zip；Windows 包内已带 libmpv。</p>
+      <p class="section-intro">TUI 每平台一个 zip（Windows 包内已带 libmpv）；Flutter 应用含桌面 bundle 与 Android APK。</p>
     </div>
     <div class="panel">
       <div class="dl-grid">
-        <a class="dl-card" href="https://github.com/emoeem/voicefox/releases/latest"><b>Linux</b><span>x86_64</span><em>voicefox-linux-x86_64.zip</em></a>
-        <a class="dl-card" href="https://github.com/emoeem/voicefox/releases/latest"><b>Linux</b><span>aarch64</span><em>voicefox-linux-aarch64.zip</em></a>
-        <a class="dl-card" href="https://github.com/emoeem/voicefox/releases/latest"><b>Windows</b><span>x86_64</span><em>voicefox-windows-x86_64.zip</em></a>
-        <a class="dl-card" href="https://github.com/emoeem/voicefox/releases/latest"><b>macOS</b><span>Intel</span><em>voicefox-macos-x86_64.zip</em></a>
-        <a class="dl-card" href="https://github.com/emoeem/voicefox/releases/latest"><b>macOS</b><span>Apple Silicon</span><em>voicefox-macos-aarch64.zip</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>Linux</b><span>x86_64</span><em>voicefox-linux-x86_64.zip</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>Linux</b><span>aarch64</span><em>voicefox-linux-aarch64.zip</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>Windows</b><span>x86_64</span><em>voicefox-windows-x86_64.zip</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>macOS</b><span>Intel</span><em>voicefox-macos-x86_64.zip</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>macOS</b><span>Apple Silicon</span><em>voicefox-macos-aarch64.zip</em></a>
       </div>
-      <div class="cmd"><code>git clone https://github.com/emoeem/voicefox.git
+      <div class="dl-grid" style="margin-top:14px">
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>Android</b><span>arm64 · Flutter</span><em>voicefox-android-arm64.apk</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>Linux</b><span>x64 · Flutter</span><em>voicefox-flutter-linux-x64.tar.gz</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>Windows</b><span>x64 · Flutter</span><em>voicefox-flutter-windows-x64.zip</em></a>
+        <a class="dl-card" href="https://github.com/emoeem/flutterfox/releases/latest"><b>macOS</b><span>arm64 · Flutter</span><em>voicefox-flutter-macos-arm64.zip</em></a>
+      </div>
+      <div class="cmd"><code>git clone https://github.com/emoeem/flutterfox.git
 cd voicefox
-cargo build --release -p voicefox-app --bin voicefox</code></div>
-      <p class="section-intro" style="text-align:left;margin-top:14px">从源码构建需要 libmpv 开发包（Debian/Ubuntu：libmpv-dev，Arch：mpv；macOS：brew install mpv）。频谱可视化在 Linux 需要 pw-record 或 parec。</p>
+cargo build --release -p voicefox-app --bin voicefox   # TUI
+cd flutter && flutter build linux --release            # Flutter 桌面
+cd .. && scripts/build-android-ffi.sh                  # Android FFI
+cd flutter && flutter build apk --release              # Android APK</code></div>
+      <p class="section-intro" style="text-align:left;margin-top:14px">TUI 构建需要 libmpv 开发包（Debian/Ubuntu：libmpv-dev，Arch：mpv；macOS：brew install mpv）；Android 构建需要 NDK（脚本自动探测）。频谱可视化在 Linux 需要 pw-record 或 parec。</p>
     </div>
   </div>
 </section>
@@ -356,7 +390,7 @@ cargo build --release -p voicefox-app --bin voicefox</code></div>
       <details><summary>怎么开启频谱可视化？</summary><p>按 w 即可，状态会写入 [ui] visualizer；也可以设 visualizer = "bars" 默认开启。画的是系统输出监视流，所以 voicefox 自己不出声时柱子是平的。</p></details>
       <details><summary>终端画不出封面怎么办？</summary><p>封面协议支持 Kitty / Sixel / iTerm2，识别不出时回退 Unicode 半格。可在 [ui] cover_protocol 里显式指定，避免自动探测误判。</p></details>
       <details><summary>数据存在哪？怎么备份？</summary><p>配置与会话使用平台配置目录，缓存使用缓存目录。提供 --export-data / --import-data 做整库备份与迁移，导入时会先自动备份原数据。</p></details>
-      <details><summary>开源协议是什么？</summary><p>MIT License，源码在 GitHub：emoeem/voicefox。</p></details>
+      <details><summary>开源协议是什么？</summary><p>MIT License，源码在 GitHub：emoeem/flutterfox。</p></details>
     </div>
   </div>
 </section>
@@ -365,12 +399,13 @@ cargo build --release -p voicefox-app --bin voicefox</code></div>
   <div class="wrap">
     <div class="cta-box">
       <div class="kicker">09 / Project</div>
-      <h2>VoiceFox，给喜欢终端的人一套完整的音乐工具。</h2>
+      <h2>VoiceFox：终端、桌面与手机，一套完整的音乐工具。</h2>
       <p class="section-intro">开源、键盘优先、Rust 驱动。欢迎查看源码、Issue、Release 与开发文档。</p>
       <div class="actions">
-        <a class="btn primary" href="https://github.com/emoeem/voicefox">GitHub 仓库</a>
-        <a class="btn" href="https://github.com/emoeem/voicefox/blob/main/docs/USER_GUIDE.md">用户指南</a>
-        <a class="btn" href="https://github.com/emoeem/voicefox/blob/main/docs/CONFIGURATION.md">配置说明</a>
+        <a class="btn primary" href="https://github.com/emoeem/flutterfox">GitHub 仓库</a>
+        <a class="btn" href="https://github.com/emoeem/flutterfox/blob/main/docs/USER_GUIDE.md">用户指南</a>
+        <a class="btn" href="https://github.com/emoeem/flutterfox/blob/main/docs/CONFIGURATION.md">配置说明</a>
+        <a class="btn" href="https://github.com/emoeem/flutterfox/blob/main/docs/SESSION-HANDOFF.md">工程交接文档</a>
       </div>
     </div>
   </div>
@@ -379,7 +414,7 @@ cargo build --release -p voicefox-app --bin voicefox</code></div>
 
 <footer class="footer wrap">
   <div>© 2026 VoiceFox · MIT License</div>
-  <div><a href="https://github.com/emoeem/voicefox">emoeem/voicefox</a> · Built with Rust</div>
+  <div><a href="https://github.com/emoeem/flutterfox">emoeem/flutterfox</a> · Built with Rust + Flutter</div>
 </footer>
 </body>
 </html>

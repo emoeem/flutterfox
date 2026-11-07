@@ -66,6 +66,14 @@ voicefox 将多音源音乐搜索、在线播放、本地音乐库、歌词、�
 
 完整按页面快捷键见 [`KEYBINDINGS.md`](KEYBINDINGS.md)。
 
+## 界面
+
+| 桌面首页 | 曲库 |
+| --- | --- |
+| ![桌面首页](docs/phase4-shots/01-home-1440x900.png) | ![曲库](docs/phase5-shots/01-library-songs-1440x900.png) |
+
+移动端（MobileShell / 平板三态 / 手势全屏播放）实机截图随真机验证补充，见 [docs/PHASE7-REPORT.md](docs/PHASE7-REPORT.md)。
+
 ## 安装（Flutter 应用）
 
 从 [Release](https://github.com/emoeem/flutterfox/releases/tag/v0.9.0) 获取：
