@@ -357,6 +357,13 @@ jobs:
           channel: stable
           cache: true
 
+      # window_manager 0.6 起依赖 nativeapi(native-assets 构建), Linux 上
+      # pkg-config 需要 GTK3/X11/Xi 开发包
+      - name: Install native assets build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libx11-dev libxi-dev pkg-config
+
       - name: Pub get
         run: flutter pub get
 
