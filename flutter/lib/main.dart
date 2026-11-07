@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use // window_manager 0.6 把 0.5.x API 移入 legacy.dart 桥接层(changelog 指定迁移路径), 后续大版本切 native API
 /// voicefox Flutter 前端入口。
 ///
 /// 桌面：Rust 侧 newDesktop()（mpv 播放）引导；移动端（Phase 4）由宿主注入
@@ -16,7 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:window_manager/legacy.dart';
 
 import 'src/app_model.dart';
 import 'src/bridge/api.dart' as bridge;

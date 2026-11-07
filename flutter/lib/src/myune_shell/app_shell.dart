@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use // window_manager 0.6 把 0.5.x API 移入 legacy.dart 桥接层(changelog 指定迁移路径), 后续大版本切 native API
 // Voicefox app shell（旧壳）。
 //
 // RETIRED (Phase 2)：桌面外壳的唯一实现已迁移到 `src/shell/app_shell.dart`
@@ -11,7 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:window_manager/legacy.dart';
 
 import '../app_model.dart';
 import '../nav_bus.dart';

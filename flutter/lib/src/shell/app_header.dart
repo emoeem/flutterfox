@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use // window_manager 0.6 把 0.5.x API 移入 legacy.dart 桥接层(changelog 指定迁移路径), 后续大版本切 native API
 /// Phase 2 桌面顶部 Header（计划书 §3.3，应用唯一窗口标题/工具栏）。
 ///
 /// 从左至右：品牌字标（宽度与 Sidebar 对齐）/ 后退前进（仅页面导航历史）/
@@ -9,7 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:window_manager/legacy.dart';
 
 import '../app_model.dart';
 import '../design_system/design_tokens.dart';

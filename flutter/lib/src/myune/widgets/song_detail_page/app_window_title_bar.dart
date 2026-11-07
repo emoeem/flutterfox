@@ -3,7 +3,7 @@
 // Upstream logic kept as-is unless the seam (AudioService/adapters) requires it.
 //
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:window_manager/legacy.dart';
 import 'package:provider/provider.dart';
 import '../../page/setting/settings_provider.dart';
 
