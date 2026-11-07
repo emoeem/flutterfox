@@ -70,8 +70,8 @@ pub(super) fn x_jam_call(path: &str, nonce: f64) -> String {
 }
 
 fn random_nonce() -> f64 {
-    use rand::Rng;
-    rand::thread_rng().gen_range(0.1..1.0)
+    use rand::RngExt;
+    rand::rng().random_range(0.1..1.0)
 }
 
 async fn api_get(path: &str, params: &[(&str, &str)]) -> Result<Value, ApiError> {

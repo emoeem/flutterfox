@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
 use lx_core::events::InsertPosition;
 use lx_core::model::song::SongInfo;
-use rand::SeedableRng;
+use rand::make_rng;
 use rand::rngs::StdRng;
 
 use crate::playlist::mode::PlayMode;
@@ -55,7 +55,7 @@ impl PlaylistManager {
             play_mode: Mutex::new(play_mode),
             consecutive_failures: Mutex::new(0),
             shuffle: Mutex::new(ShuffleScheduler::new(
-                StdRng::from_entropy(),
+                make_rng::<StdRng>(),
                 play_mode == PlayMode::Random,
             )),
             shuffle_saved: AtomicU64::new(0),
@@ -497,8 +497,7 @@ impl PlaylistManager {
     ///
     /// 返回状态是否可用。歌曲集合随后由恢复的队列同步。
     pub fn restore_shuffle(&self, state: ShuffleState) -> bool {
-        let Some(mut scheduler) = ShuffleScheduler::from_state(state, StdRng::from_entropy())
-        else {
+        let Some(mut scheduler) = ShuffleScheduler::from_state(state, make_rng::<StdRng>()) else {
             return false;
         };
         let saved = scheduler.revision();

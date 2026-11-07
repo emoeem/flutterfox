@@ -37,11 +37,11 @@ fn token_store() -> &'static Mutex<Option<String>> {
 }
 
 fn random_token() -> String {
-    use rand::Rng;
+    use rand::RngExt;
     const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..TOKEN_LEN)
-        .map(|_| ALPHABET[rng.gen_range(0..ALPHABET.len())] as char)
+        .map(|_| ALPHABET[rng.random_range(0..ALPHABET.len())] as char)
         .collect()
 }
 
@@ -75,8 +75,8 @@ pub(super) fn build_secret(cookie: &str, nonce: u32) -> String {
 
 /// 8 位随机 nonce。
 pub(super) fn random_nonce() -> u32 {
-    use rand::Rng;
-    rand::thread_rng().gen_range(10_000_000..100_000_000)
+    use rand::RngExt;
+    rand::rng().random_range(10_000_000..100_000_000)
 }
 
 /// 请求标识，酷我要求每个请求带不同的 `reqId`（UUIDv4 形态）。

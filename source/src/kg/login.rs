@@ -45,9 +45,9 @@ fn device_cookies() -> BTreeMap<String, String> {
 
 /// 32 位十六进制 GUID，按 UUID v4 的格式带连字符。
 fn random_guid() -> String {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    let bytes: [u8; 16] = rng.r#gen();
+    use rand::RngExt;
+    let mut rng = rand::rng();
+    let bytes: [u8; 16] = rng.random();
     let hex = hex::encode(bytes);
     format!(
         "{}-{}-{}-{}-{}",
@@ -92,11 +92,11 @@ fn mid_from_guid(guid: &str) -> String {
 }
 
 fn random_string(length: usize) -> String {
-    use rand::Rng;
+    use rand::RngExt;
     const CHARS: &[u8] = b"1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..length)
-        .map(|_| char::from(CHARS[rng.gen_range(0..CHARS.len())]))
+        .map(|_| char::from(CHARS[rng.random_range(0..CHARS.len())]))
         .collect()
 }
 

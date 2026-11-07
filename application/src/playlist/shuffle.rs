@@ -19,9 +19,9 @@ use std::sync::Arc;
 use lx_core::model::song::SongInfo;
 use lx_core::model::source::SourceId;
 use lx_source::manager::{builtin_source_for_js, is_local_file_song};
-use rand::Rng;
+use rand::RngExt;
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
+use rand::seq::{IndexedRandom, SliceRandom};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// jitter 的幅度系数
@@ -223,7 +223,7 @@ impl ShuffleScheduler {
     }
 
     fn draw_jitter(&mut self) -> f64 {
-        self.rng.r#gen::<f64>() * ALPHA * self.n().max(1) as f64
+        self.rng.random::<f64>() * ALPHA * self.n().max(1) as f64
     }
 
     fn push(&mut self, song: &SongKey, base: f64, jit: f64) {
@@ -281,7 +281,7 @@ impl ShuffleScheduler {
             // 新歌没有真实播放记录，不受冷却期约束。虚拟 lastPlayed 只决定优先级，取在冷却期与 n 之间
             let cooldown = self.cooldown();
             let spread = self.n().saturating_sub(cooldown) as f64;
-            let last = tick - cooldown as f64 - self.rng.r#gen::<f64>() * spread;
+            let last = tick - cooldown as f64 - self.rng.random::<f64>() * spread;
             let jit = self.draw_jitter();
             self.songs.insert(
                 song.clone(),
@@ -1454,7 +1454,7 @@ mod tests {
             let mut seen = keys(0..n);
             let mut real_last: HashMap<SongKey, u64> = HashMap::new();
             for step in 0..10_000 {
-                let roll = rng.gen_range(0..100);
+                let roll = rng.random_range(0..100);
                 match roll {
                     0..=82 => {
                         let cd = s.cooldown() as u64;
@@ -1512,10 +1512,9 @@ mod tests {
                     }
                     96 => {
                         let ctx = sorted_ctx(&s);
-                        let mut list: Vec<SongKey> =
-                            ctx.choose_multiple(&mut rng, n / 2).cloned().collect();
+                        let mut list: Vec<SongKey> = ctx.sample(&mut rng, n / 2).cloned().collect();
                         let pool = &seen[seen.len().saturating_sub(4 * n)..];
-                        list.extend(pool.choose_multiple(&mut rng, n / 4).cloned());
+                        list.extend(pool.sample(&mut rng, n / 4).cloned());
                         while list.len() < n.max(1) {
                             let fresh = key(&format!("s{next_id}"));
                             next_id += 1;
@@ -1530,7 +1529,7 @@ mod tests {
                     97..=98 => {
                         s.set_random(false);
                         let ctx = sorted_ctx(&s);
-                        for song in ctx.iter().take(rng.gen_range(1..=20)) {
+                        for song in ctx.iter().take(rng.random_range(1..=20)) {
                             let tick = s.tick;
                             s.observe(song);
                             assert_eq!(s.tick, tick + 1);
