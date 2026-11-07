@@ -324,6 +324,12 @@ async fn downloads_bridge(
 }
 
 pub fn default_config_path() -> PathBuf {
+    // 移动端宿主先经 set_data_dir_override 注入 App 私有目录，config 就近落那里：
+    // ProjectDirs/dirs 在 Android 上全是 None，旧回退 "." 会把配置写进只读的
+    // 进程工作目录（真机 EROFS 实测）。
+    if let Some(dir) = lx_core::fsutil::data_dir_override() {
+        return dir.join("config.toml");
+    }
     directories::ProjectDirs::from("", "", "voicefox")
         .map(|project| project.config_dir().to_path_buf())
         .unwrap_or_else(|| {
