@@ -2,7 +2,7 @@
 // License: Apache-2.0 (see /home/emo/code/myune_music-reference/LICENSE)
 // Upstream logic kept as-is unless the seam (AudioService/adapters) requires it.
 //
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../lyrics/lyric_source.dart';
 

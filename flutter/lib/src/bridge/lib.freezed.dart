@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'lib.dart';
@@ -9,6 +9,7 @@ part of 'lib.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand()';
+    return 'FfiCommand()';
 }
 
 
@@ -503,7 +504,7 @@ class FfiCommand_Pause extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Pause);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Pause);
 }
 
 
@@ -512,7 +513,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.pause()';
+    return 'FfiCommand.pause()';
 }
 
 
@@ -535,7 +536,7 @@ class FfiCommand_Resume extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Resume);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Resume);
 }
 
 
@@ -544,7 +545,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.resume()';
+    return 'FfiCommand.resume()';
 }
 
 
@@ -567,7 +568,7 @@ class FfiCommand_Toggle extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Toggle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Toggle);
 }
 
 
@@ -576,7 +577,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.toggle()';
+    return 'FfiCommand.toggle()';
 }
 
 
@@ -599,7 +600,7 @@ class FfiCommand_Stop extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Stop);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Stop);
 }
 
 
@@ -608,7 +609,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.stop()';
+    return 'FfiCommand.stop()';
 }
 
 
@@ -636,16 +637,18 @@ $FfiCommand_SeekMsCopyWith<FfiCommand_SeekMs> get copyWith => _$FfiCommand_SeekM
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SeekMs&&(identical(other.field0, field0) || other.field0 == field0));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SeekMs&&(identical(other.field0, field0) || other.field0 == field0));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0);
+int get hashCode {
+    return Object.hash(runtimeType,field0);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.seekMs(field0: $field0)';
+    return 'FfiCommand.seekMs(field0: $field0)';
 }
 
 
@@ -702,16 +705,18 @@ $FfiCommand_SetVolumeCopyWith<FfiCommand_SetVolume> get copyWith => _$FfiCommand
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,volume);
+int get hashCode {
+    return Object.hash(runtimeType,volume);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.setVolume(volume: $volume)';
+    return 'FfiCommand.setVolume(volume: $volume)';
 }
 
 
@@ -768,16 +773,18 @@ $FfiCommand_PlaySongCopyWith<FfiCommand_PlaySong> get copyWith => _$FfiCommand_P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaySong&&(identical(other.song, song) || other.song == song));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaySong&&(identical(other.song, song) || other.song == song));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,song);
+int get hashCode {
+    return Object.hash(runtimeType,song);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.playSong(song: $song)';
+    return 'FfiCommand.playSong(song: $song)';
 }
 
 
@@ -835,16 +842,18 @@ $FfiCommand_QueueAddCopyWith<FfiCommand_QueueAdd> get copyWith => _$FfiCommand_Q
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QueueAdd&&(identical(other.song, song) || other.song == song)&&(identical(other.next, next) || other.next == next));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QueueAdd&&(identical(other.song, song) || other.song == song)&&(identical(other.next, next) || other.next == next));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,song,next);
+int get hashCode {
+    return Object.hash(runtimeType,song,next);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.queueAdd(song: $song, next: $next)';
+    return 'FfiCommand.queueAdd(song: $song, next: $next)';
 }
 
 
@@ -902,16 +911,18 @@ $FfiCommand_QueueRemoveCopyWith<FfiCommand_QueueRemove> get copyWith => _$FfiCom
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QueueRemove&&(identical(other.index, index) || other.index == index));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QueueRemove&&(identical(other.index, index) || other.index == index));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index);
+int get hashCode {
+    return Object.hash(runtimeType,index);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.queueRemove(index: $index)';
+    return 'FfiCommand.queueRemove(index: $index)';
 }
 
 
@@ -963,7 +974,7 @@ class FfiCommand_QueueClear extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QueueClear);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QueueClear);
 }
 
 
@@ -972,7 +983,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.queueClear()';
+    return 'FfiCommand.queueClear()';
 }
 
 
@@ -995,7 +1006,7 @@ class FfiCommand_Next extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Next);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Next);
 }
 
 
@@ -1004,7 +1015,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.next()';
+    return 'FfiCommand.next()';
 }
 
 
@@ -1027,7 +1038,7 @@ class FfiCommand_Previous extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Previous);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Previous);
 }
 
 
@@ -1036,7 +1047,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.previous()';
+    return 'FfiCommand.previous()';
 }
 
 
@@ -1066,16 +1077,18 @@ $FfiCommand_SearchCopyWith<FfiCommand_Search> get copyWith => _$FfiCommand_Searc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Search&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_Search&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,keyword,source);
+int get hashCode {
+    return Object.hash(runtimeType,keyword,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.search(keyword: $keyword, source: $source)';
+    return 'FfiCommand.search(keyword: $keyword, source: $source)';
 }
 
 
@@ -1134,16 +1147,18 @@ $FfiCommand_SearchMoreCopyWith<FfiCommand_SearchMore> get copyWith => _$FfiComma
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SearchMore&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SearchMore&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,keyword,page);
+int get hashCode {
+    return Object.hash(runtimeType,keyword,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.searchMore(keyword: $keyword, page: $page)';
+    return 'FfiCommand.searchMore(keyword: $keyword, page: $page)';
 }
 
 
@@ -1196,7 +1211,7 @@ class FfiCommand_LibraryRefresh extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LibraryRefresh);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LibraryRefresh);
 }
 
 
@@ -1205,7 +1220,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.libraryRefresh()';
+    return 'FfiCommand.libraryRefresh()';
 }
 
 
@@ -1233,16 +1248,18 @@ $FfiCommand_FavoritesAddCopyWith<FfiCommand_FavoritesAdd> get copyWith => _$FfiC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritesAdd&&(identical(other.song, song) || other.song == song));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritesAdd&&(identical(other.song, song) || other.song == song));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,song);
+int get hashCode {
+    return Object.hash(runtimeType,song);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.favoritesAdd(song: $song)';
+    return 'FfiCommand.favoritesAdd(song: $song)';
 }
 
 
@@ -1299,16 +1316,18 @@ $FfiCommand_FavoritesRemoveCopyWith<FfiCommand_FavoritesRemove> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritesRemove&&(identical(other.song, song) || other.song == song));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritesRemove&&(identical(other.song, song) || other.song == song));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,song);
+int get hashCode {
+    return Object.hash(runtimeType,song);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.favoritesRemove(song: $song)';
+    return 'FfiCommand.favoritesRemove(song: $song)';
 }
 
 
@@ -1365,16 +1384,18 @@ $FfiCommand_FavoritePlaylistAddCopyWith<FfiCommand_FavoritePlaylistAdd> get copy
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritePlaylistAdd&&(identical(other.playlist, playlist) || other.playlist == playlist));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritePlaylistAdd&&(identical(other.playlist, playlist) || other.playlist == playlist));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,playlist);
+int get hashCode {
+    return Object.hash(runtimeType,playlist);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.favoritePlaylistAdd(playlist: $playlist)';
+    return 'FfiCommand.favoritePlaylistAdd(playlist: $playlist)';
 }
 
 
@@ -1431,16 +1452,18 @@ $FfiCommand_FavoritePlaylistRemoveCopyWith<FfiCommand_FavoritePlaylistRemove> ge
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritePlaylistRemove&&(identical(other.playlist, playlist) || other.playlist == playlist));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_FavoritePlaylistRemove&&(identical(other.playlist, playlist) || other.playlist == playlist));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,playlist);
+int get hashCode {
+    return Object.hash(runtimeType,playlist);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.favoritePlaylistRemove(playlist: $playlist)';
+    return 'FfiCommand.favoritePlaylistRemove(playlist: $playlist)';
 }
 
 
@@ -1497,16 +1520,18 @@ $FfiCommand_HistoryRemoveCopyWith<FfiCommand_HistoryRemove> get copyWith => _$Ff
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_HistoryRemove&&(identical(other.song, song) || other.song == song));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_HistoryRemove&&(identical(other.song, song) || other.song == song));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,song);
+int get hashCode {
+    return Object.hash(runtimeType,song);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.historyRemove(song: $song)';
+    return 'FfiCommand.historyRemove(song: $song)';
 }
 
 
@@ -1558,7 +1583,7 @@ class FfiCommand_HistoryClear extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_HistoryClear);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_HistoryClear);
 }
 
 
@@ -1567,7 +1592,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.historyClear()';
+    return 'FfiCommand.historyClear()';
 }
 
 
@@ -1595,16 +1620,18 @@ $FfiCommand_CustomPlaylistCreateCopyWith<FfiCommand_CustomPlaylistCreate> get co
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistCreate&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistCreate&&(identical(other.name, name) || other.name == name));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name);
+int get hashCode {
+    return Object.hash(runtimeType,name);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.customPlaylistCreate(name: $name)';
+    return 'FfiCommand.customPlaylistCreate(name: $name)';
 }
 
 
@@ -1662,16 +1689,18 @@ $FfiCommand_CustomPlaylistRenameCopyWith<FfiCommand_CustomPlaylistRename> get co
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistRename&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistRename&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.customPlaylistRename(id: $id, name: $name)';
+    return 'FfiCommand.customPlaylistRename(id: $id, name: $name)';
 }
 
 
@@ -1729,16 +1758,18 @@ $FfiCommand_CustomPlaylistDeleteCopyWith<FfiCommand_CustomPlaylistDelete> get co
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistDelete&&(identical(other.id, id) || other.id == id));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistDelete&&(identical(other.id, id) || other.id == id));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.customPlaylistDelete(id: $id)';
+    return 'FfiCommand.customPlaylistDelete(id: $id)';
 }
 
 
@@ -1780,7 +1811,7 @@ as String,
 
 
 class FfiCommand_CustomPlaylistAddSongs extends FfiCommand {
-  const FfiCommand_CustomPlaylistAddSongs({required this.id, required final  List<SongDto> songs}): _songs = songs,super._();
+  const FfiCommand_CustomPlaylistAddSongs({required this.id, required  List<SongDto> songs}): _songs = songs,super._();
   
 
  final  String id;
@@ -1802,16 +1833,18 @@ $FfiCommand_CustomPlaylistAddSongsCopyWith<FfiCommand_CustomPlaylistAddSongs> ge
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistAddSongs&&(identical(other.id, id) || other.id == id)&&const DeepCollectionEquality().equals(other._songs, _songs));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistAddSongs&&(identical(other.id, id) || other.id == id)&&const DeepCollectionEquality().equals(other.songs, _songs));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,const DeepCollectionEquality().hash(_songs));
+int get hashCode {
+    return Object.hash(runtimeType,id,const DeepCollectionEquality().hash(_songs));
+}
 
 @override
 String toString() {
-  return 'FfiCommand.customPlaylistAddSongs(id: $id, songs: $songs)';
+    return 'FfiCommand.customPlaylistAddSongs(id: $id, songs: $songs)';
 }
 
 
@@ -1870,16 +1903,18 @@ $FfiCommand_CustomPlaylistRemoveSongCopyWith<FfiCommand_CustomPlaylistRemoveSong
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistRemoveSong&&(identical(other.id, id) || other.id == id)&&(identical(other.song, song) || other.song == song));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistRemoveSong&&(identical(other.id, id) || other.id == id)&&(identical(other.song, song) || other.song == song));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,song);
+int get hashCode {
+    return Object.hash(runtimeType,id,song);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.customPlaylistRemoveSong(id: $id, song: $song)';
+    return 'FfiCommand.customPlaylistRemoveSong(id: $id, song: $song)';
 }
 
 
@@ -1937,16 +1972,18 @@ $FfiCommand_CustomPlaylistDetailCopyWith<FfiCommand_CustomPlaylistDetail> get co
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistDetail&&(identical(other.id, id) || other.id == id));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_CustomPlaylistDetail&&(identical(other.id, id) || other.id == id));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.customPlaylistDetail(id: $id)';
+    return 'FfiCommand.customPlaylistDetail(id: $id)';
 }
 
 
@@ -1998,7 +2035,7 @@ class FfiCommand_ConfigGet extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ConfigGet);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ConfigGet);
 }
 
 
@@ -2007,7 +2044,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.configGet()';
+    return 'FfiCommand.configGet()';
 }
 
 
@@ -2035,16 +2072,18 @@ $FfiCommand_ConfigUpdateCopyWith<FfiCommand_ConfigUpdate> get copyWith => _$FfiC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ConfigUpdate&&(identical(other.config, config) || other.config == config));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ConfigUpdate&&(identical(other.config, config) || other.config == config));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,config);
+int get hashCode {
+    return Object.hash(runtimeType,config);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.configUpdate(config: $config)';
+    return 'FfiCommand.configUpdate(config: $config)';
 }
 
 
@@ -2101,16 +2140,18 @@ $FfiCommand_DownloadEnqueueCopyWith<FfiCommand_DownloadEnqueue> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadEnqueue&&(identical(other.song, song) || other.song == song));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadEnqueue&&(identical(other.song, song) || other.song == song));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,song);
+int get hashCode {
+    return Object.hash(runtimeType,song);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.downloadEnqueue(song: $song)';
+    return 'FfiCommand.downloadEnqueue(song: $song)';
 }
 
 
@@ -2167,16 +2208,18 @@ $FfiCommand_DownloadCancelCopyWith<FfiCommand_DownloadCancel> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadCancel&&(identical(other.id, id) || other.id == id));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadCancel&&(identical(other.id, id) || other.id == id));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.downloadCancel(id: $id)';
+    return 'FfiCommand.downloadCancel(id: $id)';
 }
 
 
@@ -2228,7 +2271,7 @@ class FfiCommand_DownloadClearFinished extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadClearFinished);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadClearFinished);
 }
 
 
@@ -2237,7 +2280,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.downloadClearFinished()';
+    return 'FfiCommand.downloadClearFinished()';
 }
 
 
@@ -2266,16 +2309,18 @@ $FfiCommand_QrLoginStartCopyWith<FfiCommand_QrLoginStart> get copyWith => _$FfiC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QrLoginStart&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QrLoginStart&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,kind);
+int get hashCode {
+    return Object.hash(runtimeType,source,kind);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.qrLoginStart(source: $source, kind: $kind)';
+    return 'FfiCommand.qrLoginStart(source: $source, kind: $kind)';
 }
 
 
@@ -2328,7 +2373,7 @@ class FfiCommand_QrLoginCancel extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QrLoginCancel);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_QrLoginCancel);
 }
 
 
@@ -2337,7 +2382,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.qrLoginCancel()';
+    return 'FfiCommand.qrLoginCancel()';
 }
 
 
@@ -2350,7 +2395,7 @@ String toString() {
 
 
 class FfiCommand_LocalScan extends FfiCommand {
-  const FfiCommand_LocalScan({required final  List<String> paths, required this.maxDepth}): _paths = paths,super._();
+  const FfiCommand_LocalScan({required  List<String> paths, required this.maxDepth}): _paths = paths,super._();
   
 
  final  List<String> _paths;
@@ -2372,16 +2417,18 @@ $FfiCommand_LocalScanCopyWith<FfiCommand_LocalScan> get copyWith => _$FfiCommand
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LocalScan&&const DeepCollectionEquality().equals(other._paths, _paths)&&(identical(other.maxDepth, maxDepth) || other.maxDepth == maxDepth));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LocalScan&&const DeepCollectionEquality().equals(other.paths, _paths)&&(identical(other.maxDepth, maxDepth) || other.maxDepth == maxDepth));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_paths),maxDepth);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_paths),maxDepth);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.localScan(paths: $paths, maxDepth: $maxDepth)';
+    return 'FfiCommand.localScan(paths: $paths, maxDepth: $maxDepth)';
 }
 
 
@@ -2439,16 +2486,18 @@ $FfiCommand_AccountPlaylistsCopyWith<FfiCommand_AccountPlaylists> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountPlaylists&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountPlaylists&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.accountPlaylists(source: $source)';
+    return 'FfiCommand.accountPlaylists(source: $source)';
 }
 
 
@@ -2505,16 +2554,18 @@ $FfiCommand_AccountFavoritesCopyWith<FfiCommand_AccountFavorites> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountFavorites&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountFavorites&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.accountFavorites(source: $source)';
+    return 'FfiCommand.accountFavorites(source: $source)';
 }
 
 
@@ -2572,16 +2623,18 @@ $FfiCommand_AccountPlaylistDetailCopyWith<FfiCommand_AccountPlaylistDetail> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountPlaylistDetail&&(identical(other.source, source) || other.source == source)&&(identical(other.playlistId, playlistId) || other.playlistId == playlistId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AccountPlaylistDetail&&(identical(other.source, source) || other.source == source)&&(identical(other.playlistId, playlistId) || other.playlistId == playlistId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,playlistId);
+int get hashCode {
+    return Object.hash(runtimeType,source,playlistId);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.accountPlaylistDetail(source: $source, playlistId: $playlistId)';
+    return 'FfiCommand.accountPlaylistDetail(source: $source, playlistId: $playlistId)';
 }
 
 
@@ -2639,16 +2692,18 @@ $FfiCommand_SyncPreviewCopyWith<FfiCommand_SyncPreview> get copyWith => _$FfiCom
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncPreview&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncPreview&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.syncPreview(source: $source)';
+    return 'FfiCommand.syncPreview(source: $source)';
 }
 
 
@@ -2705,16 +2760,18 @@ $FfiCommand_SyncRunCopyWith<FfiCommand_SyncRun> get copyWith => _$FfiCommand_Syn
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncRun&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncRun&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.syncRun(source: $source)';
+    return 'FfiCommand.syncRun(source: $source)';
 }
 
 
@@ -2766,7 +2823,7 @@ class FfiCommand_SyncCancel extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncCancel);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SyncCancel);
 }
 
 
@@ -2775,7 +2832,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.syncCancel()';
+    return 'FfiCommand.syncCancel()';
 }
 
 
@@ -2803,16 +2860,18 @@ $FfiCommand_PushTargetsCopyWith<FfiCommand_PushTargets> get copyWith => _$FfiCom
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushTargets&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushTargets&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.pushTargets(source: $source)';
+    return 'FfiCommand.pushTargets(source: $source)';
 }
 
 
@@ -2870,16 +2929,18 @@ $FfiCommand_PushCreateTargetCopyWith<FfiCommand_PushCreateTarget> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushCreateTarget&&(identical(other.source, source) || other.source == source)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushCreateTarget&&(identical(other.source, source) || other.source == source)&&(identical(other.name, name) || other.name == name));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,name);
+int get hashCode {
+    return Object.hash(runtimeType,source,name);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.pushCreateTarget(source: $source, name: $name)';
+    return 'FfiCommand.pushCreateTarget(source: $source, name: $name)';
 }
 
 
@@ -2922,7 +2983,7 @@ as String,
 
 
 class FfiCommand_PushPlan extends FfiCommand {
-  const FfiCommand_PushPlan({required this.source, required this.localName, required final  List<SongDto> localSongs, required this.isFavorites, required this.targetKind, required this.targetId, required this.targetName, required this.targetSongCount}): _localSongs = localSongs,super._();
+  const FfiCommand_PushPlan({required this.source, required this.localName, required  List<SongDto> localSongs, required this.isFavorites, required this.targetKind, required this.targetId, required this.targetName, required this.targetSongCount}): _localSongs = localSongs,super._();
   
 
  final  String source;
@@ -2950,16 +3011,18 @@ $FfiCommand_PushPlanCopyWith<FfiCommand_PushPlan> get copyWith => _$FfiCommand_P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushPlan&&(identical(other.source, source) || other.source == source)&&(identical(other.localName, localName) || other.localName == localName)&&const DeepCollectionEquality().equals(other._localSongs, _localSongs)&&(identical(other.isFavorites, isFavorites) || other.isFavorites == isFavorites)&&(identical(other.targetKind, targetKind) || other.targetKind == targetKind)&&(identical(other.targetId, targetId) || other.targetId == targetId)&&(identical(other.targetName, targetName) || other.targetName == targetName)&&(identical(other.targetSongCount, targetSongCount) || other.targetSongCount == targetSongCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushPlan&&(identical(other.source, source) || other.source == source)&&(identical(other.localName, localName) || other.localName == localName)&&const DeepCollectionEquality().equals(other.localSongs, _localSongs)&&(identical(other.isFavorites, isFavorites) || other.isFavorites == isFavorites)&&(identical(other.targetKind, targetKind) || other.targetKind == targetKind)&&(identical(other.targetId, targetId) || other.targetId == targetId)&&(identical(other.targetName, targetName) || other.targetName == targetName)&&(identical(other.targetSongCount, targetSongCount) || other.targetSongCount == targetSongCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,localName,const DeepCollectionEquality().hash(_localSongs),isFavorites,targetKind,targetId,targetName,targetSongCount);
+int get hashCode {
+    return Object.hash(runtimeType,source,localName,const DeepCollectionEquality().hash(_localSongs),isFavorites,targetKind,targetId,targetName,targetSongCount);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.pushPlan(source: $source, localName: $localName, localSongs: $localSongs, isFavorites: $isFavorites, targetKind: $targetKind, targetId: $targetId, targetName: $targetName, targetSongCount: $targetSongCount)';
+    return 'FfiCommand.pushPlan(source: $source, localName: $localName, localSongs: $localSongs, isFavorites: $isFavorites, targetKind: $targetKind, targetId: $targetId, targetName: $targetName, targetSongCount: $targetSongCount)';
 }
 
 
@@ -3023,16 +3086,18 @@ $FfiCommand_PushRunCopyWith<FfiCommand_PushRun> get copyWith => _$FfiCommand_Pus
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushRun&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushRun&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.pushRun(source: $source)';
+    return 'FfiCommand.pushRun(source: $source)';
 }
 
 
@@ -3084,7 +3149,7 @@ class FfiCommand_PushCancel extends FfiCommand {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushCancel);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PushCancel);
 }
 
 
@@ -3093,7 +3158,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'FfiCommand.pushCancel()';
+    return 'FfiCommand.pushCancel()';
 }
 
 
@@ -3121,16 +3186,18 @@ $FfiCommand_PlaylistCategoriesCopyWith<FfiCommand_PlaylistCategories> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistCategories&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistCategories&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.playlistCategories(source: $source)';
+    return 'FfiCommand.playlistCategories(source: $source)';
 }
 
 
@@ -3189,16 +3256,18 @@ $FfiCommand_PlaylistListCopyWith<FfiCommand_PlaylistList> get copyWith => _$FfiC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistList&&(identical(other.source, source) || other.source == source)&&(identical(other.category, category) || other.category == category)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistList&&(identical(other.source, source) || other.source == source)&&(identical(other.category, category) || other.category == category)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,category,page);
+int get hashCode {
+    return Object.hash(runtimeType,source,category,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.playlistList(source: $source, category: $category, page: $page)';
+    return 'FfiCommand.playlistList(source: $source, category: $category, page: $page)';
 }
 
 
@@ -3259,16 +3328,18 @@ $FfiCommand_PlaylistDetailCopyWith<FfiCommand_PlaylistDetail> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistDetail&&(identical(other.source, source) || other.source == source)&&(identical(other.playlistId, playlistId) || other.playlistId == playlistId)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaylistDetail&&(identical(other.source, source) || other.source == source)&&(identical(other.playlistId, playlistId) || other.playlistId == playlistId)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,playlistId,page);
+int get hashCode {
+    return Object.hash(runtimeType,source,playlistId,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.playlistDetail(source: $source, playlistId: $playlistId, page: $page)';
+    return 'FfiCommand.playlistDetail(source: $source, playlistId: $playlistId, page: $page)';
 }
 
 
@@ -3327,16 +3398,18 @@ $FfiCommand_LeaderboardBoardsCopyWith<FfiCommand_LeaderboardBoards> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LeaderboardBoards&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LeaderboardBoards&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source);
+int get hashCode {
+    return Object.hash(runtimeType,source);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.leaderboardBoards(source: $source)';
+    return 'FfiCommand.leaderboardBoards(source: $source)';
 }
 
 
@@ -3395,16 +3468,18 @@ $FfiCommand_LeaderboardSongsCopyWith<FfiCommand_LeaderboardSongs> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LeaderboardSongs&&(identical(other.source, source) || other.source == source)&&(identical(other.boardId, boardId) || other.boardId == boardId)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LeaderboardSongs&&(identical(other.source, source) || other.source == source)&&(identical(other.boardId, boardId) || other.boardId == boardId)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,source,boardId,page);
+int get hashCode {
+    return Object.hash(runtimeType,source,boardId,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.leaderboardSongs(source: $source, boardId: $boardId, page: $page)';
+    return 'FfiCommand.leaderboardSongs(source: $source, boardId: $boardId, page: $page)';
 }
 
 
@@ -3464,16 +3539,18 @@ $FfiCommand_ArtistSongsCopyWith<FfiCommand_ArtistSongs> get copyWith => _$FfiCom
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ArtistSongs&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ArtistSongs&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,artist,page);
+int get hashCode {
+    return Object.hash(runtimeType,artist,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.artistSongs(artist: $artist, page: $page)';
+    return 'FfiCommand.artistSongs(artist: $artist, page: $page)';
 }
 
 
@@ -3532,16 +3609,18 @@ $FfiCommand_ArtistAlbumsCopyWith<FfiCommand_ArtistAlbums> get copyWith => _$FfiC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ArtistAlbums&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_ArtistAlbums&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,artist,page);
+int get hashCode {
+    return Object.hash(runtimeType,artist,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.artistAlbums(artist: $artist, page: $page)';
+    return 'FfiCommand.artistAlbums(artist: $artist, page: $page)';
 }
 
 
@@ -3600,16 +3679,18 @@ $FfiCommand_AlbumSongsCopyWith<FfiCommand_AlbumSongs> get copyWith => _$FfiComma
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AlbumSongs&&(identical(other.album, album) || other.album == album)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_AlbumSongs&&(identical(other.album, album) || other.album == album)&&(identical(other.page, page) || other.page == page));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,album,page);
+int get hashCode {
+    return Object.hash(runtimeType,album,page);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.albumSongs(album: $album, page: $page)';
+    return 'FfiCommand.albumSongs(album: $album, page: $page)';
 }
 
 
@@ -3652,7 +3733,7 @@ as int,
 
 
 class FfiCommand_PlaySongs extends FfiCommand {
-  const FfiCommand_PlaySongs({required final  List<SongDto> songs, required this.index}): _songs = songs,super._();
+  const FfiCommand_PlaySongs({required  List<SongDto> songs, required this.index}): _songs = songs,super._();
   
 
  final  List<SongDto> _songs;
@@ -3674,16 +3755,18 @@ $FfiCommand_PlaySongsCopyWith<FfiCommand_PlaySongs> get copyWith => _$FfiCommand
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaySongs&&const DeepCollectionEquality().equals(other._songs, _songs)&&(identical(other.index, index) || other.index == index));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_PlaySongs&&const DeepCollectionEquality().equals(other.songs, _songs)&&(identical(other.index, index) || other.index == index));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_songs),index);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_songs),index);
+}
 
 @override
 String toString() {
-  return 'FfiCommand.playSongs(songs: $songs, index: $index)';
+    return 'FfiCommand.playSongs(songs: $songs, index: $index)';
 }
 
 
@@ -3731,7 +3814,7 @@ mixin _$HostPlayerCommandDto {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto);
 }
 
 
@@ -3740,7 +3823,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto()';
+    return 'HostPlayerCommandDto()';
 }
 
 
@@ -3922,7 +4005,7 @@ return setSpeed(_that.speed);case _:
 
 
 class HostPlayerCommandDto_Play extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Play({required this.url, required this.generation, required final  List<HostHeaderDto> headers}): _headers = headers,super._();
+  const HostPlayerCommandDto_Play({required this.url, required this.generation, required  List<HostHeaderDto> headers}): _headers = headers,super._();
   
 
  final  String url;
@@ -3945,16 +4028,18 @@ $HostPlayerCommandDto_PlayCopyWith<HostPlayerCommandDto_Play> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other._headers, _headers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other.headers, _headers));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers));
+int get hashCode {
+    return Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers));
+}
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers)';
+    return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers)';
 }
 
 
@@ -4008,7 +4093,7 @@ class HostPlayerCommandDto_Pause extends HostPlayerCommandDto {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause);
 }
 
 
@@ -4017,7 +4102,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.pause()';
+    return 'HostPlayerCommandDto.pause()';
 }
 
 
@@ -4040,7 +4125,7 @@ class HostPlayerCommandDto_Resume extends HostPlayerCommandDto {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume);
 }
 
 
@@ -4049,7 +4134,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.resume()';
+    return 'HostPlayerCommandDto.resume()';
 }
 
 
@@ -4072,7 +4157,7 @@ class HostPlayerCommandDto_Stop extends HostPlayerCommandDto {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop);
 }
 
 
@@ -4081,7 +4166,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.stop()';
+    return 'HostPlayerCommandDto.stop()';
 }
 
 
@@ -4104,7 +4189,7 @@ class HostPlayerCommandDto_Toggle extends HostPlayerCommandDto {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle);
 }
 
 
@@ -4113,7 +4198,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.toggle()';
+    return 'HostPlayerCommandDto.toggle()';
 }
 
 
@@ -4141,16 +4226,18 @@ $HostPlayerCommandDto_SeekCopyWith<HostPlayerCommandDto_Seek> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,positionMs);
+int get hashCode {
+    return Object.hash(runtimeType,positionMs);
+}
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.seek(positionMs: $positionMs)';
+    return 'HostPlayerCommandDto.seek(positionMs: $positionMs)';
 }
 
 
@@ -4207,16 +4294,18 @@ $HostPlayerCommandDto_SetVolumeCopyWith<HostPlayerCommandDto_SetVolume> get copy
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,volume);
+int get hashCode {
+    return Object.hash(runtimeType,volume);
+}
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.setVolume(volume: $volume)';
+    return 'HostPlayerCommandDto.setVolume(volume: $volume)';
 }
 
 
@@ -4273,16 +4362,18 @@ $HostPlayerCommandDto_SetSpeedCopyWith<HostPlayerCommandDto_SetSpeed> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,speed);
+int get hashCode {
+    return Object.hash(runtimeType,speed);
+}
 
 @override
 String toString() {
-  return 'HostPlayerCommandDto.setSpeed(speed: $speed)';
+    return 'HostPlayerCommandDto.setSpeed(speed: $speed)';
 }
 
 
