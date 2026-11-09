@@ -177,7 +177,9 @@ class AppHeader extends StatelessWidget {
           icon: Icon(
             Icons.arrow_back_ios_new,
             size: 17,
-            color: canBack ? scheme.onSurfaceVariant : scheme.onSurface.withValues(alpha: 0.25),
+            color: canBack
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface.withValues(alpha: 0.25),
           ),
         ),
         const SizedBox(width: 2),
@@ -187,7 +189,9 @@ class AppHeader extends StatelessWidget {
           icon: Icon(
             Icons.arrow_forward_ios,
             size: 17,
-            color: canForward ? scheme.onSurfaceVariant : scheme.onSurface.withValues(alpha: 0.25),
+            color: canForward
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface.withValues(alpha: 0.25),
           ),
         ),
       ],
@@ -213,7 +217,11 @@ class AppHeader extends StatelessWidget {
                 fontSize: 13,
                 color: scheme.onSurfaceVariant,
               ),
-              prefixIcon: Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
+              prefixIcon: Icon(
+                Icons.search,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
               prefixIconConstraints: const BoxConstraints(minWidth: 36),
               suffixIcon: _KbdChip(),
               suffixIconConstraints: const BoxConstraints(minWidth: 0),

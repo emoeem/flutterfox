@@ -96,10 +96,14 @@ class _TouchShellState extends State<TouchShell> {
         // 平台隔离：桌面平台任何宽度不进移动/平板壳（正常路由根本不会
         // 挂 TouchShell；此处兜底防御，误挂时渲染空而不是移动壳）。
         return switch (factor) {
-          DeviceFormFactor.tablet =>
-            TabletShell(model: widget.model, session: _session),
-          DeviceFormFactor.handset =>
-            MobileShell(model: widget.model, session: _session),
+          DeviceFormFactor.tablet => TabletShell(
+            model: widget.model,
+            session: _session,
+          ),
+          DeviceFormFactor.handset => MobileShell(
+            model: widget.model,
+            session: _session,
+          ),
           DeviceFormFactor.desktop => const SizedBox.shrink(),
         };
       },
@@ -119,13 +123,7 @@ Widget _fullscreenTransition(Widget child, Animation<double> animation) {
 }
 
 Widget _fullscreenLayoutBuilder(Widget? currentChild, List<Widget> previous) =>
-    Stack(
-      alignment: Alignment.center,
-      children: [
-        ...previous,
-        ?currentChild,
-      ],
-    );
+    Stack(alignment: Alignment.center, children: [...previous, ?currentChild]);
 
 /// 触屏壳自持顶栏（不复用桌面 AppHeader：其窗控/DragToMoveArea 已按平台
 /// 安全引导限定桌面）。品牌 + 可选右栏面板开关（平板档）+ 更多按钮
@@ -134,8 +132,10 @@ class _ShellTopBar extends StatelessWidget implements PreferredSizeWidget {
   const _ShellTopBar({this.panelToggles});
 
   /// 平板档右栏面板开关规格（正在播放/歌词/队列）；手机档为空。
-  final List<({IconData icon, String tooltip, bool active, VoidCallback onTap})>?
-      panelToggles;
+  final List<
+    ({IconData icon, String tooltip, bool active, VoidCallback onTap})
+  >?
+  panelToggles;
 
   @override
   Size get preferredSize =>
@@ -351,8 +351,7 @@ class _MobileShellState extends State<MobileShell> {
                   bottomNavigationBar: AnimatedBuilder(
                     animation: widget.model,
                     builder: (context, _) {
-                      final hasSong =
-                          widget.model.state.playback.song != null;
+                      final hasSong = widget.model.state.playback.song != null;
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -482,7 +481,8 @@ class _TabletShellState extends State<TabletShell> {
                       (
                         icon: Icons.album_outlined,
                         tooltip: '正在播放面板',
-                        active: _contextOpen &&
+                        active:
+                            _contextOpen &&
                             _contextTab == ContextTab.nowPlaying,
                         onTap: () => _togglePanel(ContextTab.nowPlaying),
                       ),
@@ -496,8 +496,7 @@ class _TabletShellState extends State<TabletShell> {
                       (
                         icon: Icons.queue_music_outlined,
                         tooltip: '队列面板',
-                        active:
-                            _contextOpen && _contextTab == ContextTab.queue,
+                        active: _contextOpen && _contextTab == ContextTab.queue,
                         onTap: () => _togglePanel(ContextTab.queue),
                       ),
                     ],
@@ -512,8 +511,8 @@ class _TabletShellState extends State<TabletShell> {
                     animation: widget.model,
                     builder: (context, _) =>
                         widget.model.state.playback.song != null
-                            ? MiniPlayerBar(model: widget.model)
-                            : const SizedBox.shrink(),
+                        ? MiniPlayerBar(model: widget.model)
+                        : const SizedBox.shrink(),
                   ),
                   body: LayoutBuilder(
                     builder: (context, constraints) =>

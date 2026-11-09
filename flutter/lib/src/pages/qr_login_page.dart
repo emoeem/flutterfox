@@ -35,8 +35,11 @@ class QrLoginPage extends StatelessWidget {
                 }.entries)
                   FilledButton.tonal(
                     onPressed: () => model.dispatch(
-                        bridge.FfiCommand.qrLoginStart(
-                            source: entry.key, kind: 'standard')),
+                      bridge.FfiCommand.qrLoginStart(
+                        source: entry.key,
+                        kind: 'standard',
+                      ),
+                    ),
                     child: Text(entry.value),
                   ),
               ],
@@ -124,14 +127,9 @@ class _QrView extends StatelessWidget {
     final image = session.imagePngBase64;
     if (image != null && image.isNotEmpty) {
       // 部分平台返回图片字节（base64），直接渲染
-      final raw = image.contains(',')
-          ? image.split(',')[1]
-          : image;
+      final raw = image.contains(',') ? image.split(',')[1] : image;
       try {
-        return Image.memory(
-          base64Decode(raw),
-          fit: BoxFit.contain,
-        );
+        return Image.memory(base64Decode(raw), fit: BoxFit.contain);
       } on FormatException {
         // fallthrough 到 URL 渲染
       }

@@ -61,7 +61,13 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (collapsed) return _CollapsedSidebar(model: model, current: current, onSelect: onSelect);
+    if (collapsed) {
+      return _CollapsedSidebar(
+        model: model,
+        current: current,
+        onSelect: onSelect,
+      );
+    }
     return _ExpandedSidebar(model: model, current: current, onSelect: onSelect);
   }
 }
@@ -229,14 +235,14 @@ class _CollapsedSidebar extends StatelessWidget {
 
 /// ShellDestination → 导航图标（桌面侧栏与手机底部导航/Rail 共享，Phase 7 提取公开）。
 IconData shellDestinationIcon(ShellDestination dest) => switch (dest) {
-      ShellDestination.home => Icons.home_outlined,
-      ShellDestination.discover => Icons.explore_outlined,
-      ShellDestination.search => Icons.search,
-      ShellDestination.library => Icons.library_music_outlined,
-      ShellDestination.downloads => Icons.download_outlined,
-      ShellDestination.settings => Icons.settings_outlined,
-      ShellDestination.help => Icons.help_outline,
-    };
+  ShellDestination.home => Icons.home_outlined,
+  ShellDestination.discover => Icons.explore_outlined,
+  ShellDestination.search => Icons.search,
+  ShellDestination.library => Icons.library_music_outlined,
+  ShellDestination.downloads => Icons.download_outlined,
+  ShellDestination.settings => Icons.settings_outlined,
+  ShellDestination.help => Icons.help_outline,
+};
 
 // ── 公共小件 ────────────────────────────────────────────────────────────
 
@@ -444,7 +450,10 @@ class _PlaylistTile extends StatelessWidget {
                     playlist.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 6),

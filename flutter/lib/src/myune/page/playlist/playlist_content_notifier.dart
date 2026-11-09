@@ -773,7 +773,7 @@ class PlaylistContentNotifier extends ChangeNotifier {
     final key = lines.length == 0
         ? '0'
         : '${lines.length}:${lines.first.timestamp.inMilliseconds}:'
-            '${lines.last.timestamp.inMilliseconds}';
+              '${lines.last.timestamp.inMilliseconds}';
     if (key == _externalLyricsKey) return;
     _externalLyricsKey = key;
     _lyricsHandler.adoptExternalLyrics(lines);
@@ -1564,9 +1564,7 @@ class PlaylistContentNotifier extends ChangeNotifier {
 
     List<PlatformFile> result;
     if (allowAnyFormat) {
-      result = await FilePicker.pickFiles(
-        type: FileType.any,
-      );
+      result = await FilePicker.pickFiles(type: FileType.any);
     } else {
       result = await FilePicker.pickFiles(
         type: FileType.custom,

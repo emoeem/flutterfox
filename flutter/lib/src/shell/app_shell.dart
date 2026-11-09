@@ -63,14 +63,14 @@ const List<ShellDestination> kShellPrimaryDestinations = [
 /// 1=搜索 2=曲库 3=在线歌单 4=排行榜 5=本地音乐 6=下载 7=设置。
 /// 桌面与移动壳同样消费（Phase 7 提取共享）。
 ShellDestination? mapLegacyNavIndex(int index) => switch (index) {
-      1 => ShellDestination.search,
-      2 => ShellDestination.library,
-      3 || 4 => ShellDestination.discover,
-      5 => ShellDestination.library,
-      6 => ShellDestination.downloads,
-      7 => ShellDestination.settings,
-      _ => null,
-    };
+  1 => ShellDestination.search,
+  2 => ShellDestination.library,
+  3 || 4 => ShellDestination.discover,
+  5 => ShellDestination.library,
+  6 => ShellDestination.downloads,
+  7 => ShellDestination.settings,
+  _ => null,
+};
 
 /// 详情页自动下钻种子（VOICEFOX_START_DETAIL 联动，验收截图专用）。
 ///
@@ -205,9 +205,7 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
             builder: (_) => ArtistDetailPage(
               model,
               bridge.ArtistDto(
-                id: (artistId != null && artistId.isNotEmpty)
-                    ? artistId
-                    : name,
+                id: (artistId != null && artistId.isNotEmpty) ? artistId : name,
                 name: name,
                 source: song.source,
                 coverUrl: null,
@@ -234,9 +232,7 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
     if (keyword.isEmpty) return null;
     final model = widget.model;
     final requestIdAtStart = model.state.search.requestId;
-    await model.dispatch(
-      bridge.FfiCommand.search(keyword: keyword),
-    );
+    await model.dispatch(bridge.FfiCommand.search(keyword: keyword));
     final deadline = DateTime.now().add(const Duration(seconds: 20));
     while (DateTime.now().isBefore(deadline)) {
       await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -399,10 +395,7 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
             ),
             layoutBuilder: (currentChild, previousChildren) => Stack(
               alignment: Alignment.center,
-              children: [
-                ...previousChildren,
-                ?currentChild,
-              ],
+              children: [...previousChildren, ?currentChild],
             ),
             child: _nowPlayingOpen
                 ? NowPlayingPage(
@@ -462,9 +455,9 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
   }
 
   SidebarMode get _metricsSidebarMode => resolveShellMetrics(
-        MediaQuery.sizeOf(context).width,
-        contextOpen: _contextOpen,
-      ).sidebar;
+    MediaQuery.sizeOf(context).width,
+    contextOpen: _contextOpen,
+  ).sidebar;
 
   Widget _buildBody(BuildContext context) {
     final metrics = resolveShellMetrics(
@@ -602,21 +595,21 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
   }
 
   Widget _pageFor(ShellDestination dest) => buildShellPage(
-        widget.model,
-        dest,
-        searchSeed: _searchSeed,
-        libraryTab: _libraryTabFromSeed(),
-        settingsSection: _settingsSectionFromSeed(),
-      );
+    widget.model,
+    dest,
+    searchSeed: _searchSeed,
+    libraryTab: _libraryTabFromSeed(),
+    settingsSection: _settingsSectionFromSeed(),
+  );
 
   /// VOICEFOX_START_TAB → 我的音乐二级类别（验收截图用）。
   LibraryTab? _libraryTabFromSeed() => switch (widget.libraryTab) {
-        'albums' => LibraryTab.albums,
-        'artists' => LibraryTab.artists,
-        'playlists' => LibraryTab.playlists,
-        'songs' => LibraryTab.songs,
-        _ => null,
-      };
+    'albums' => LibraryTab.albums,
+    'artists' => LibraryTab.artists,
+    'playlists' => LibraryTab.playlists,
+    'songs' => LibraryTab.songs,
+    _ => null,
+  };
 
   /// VOICEFOX_START_SECTION → 设置初始分组（验收截图用）。
   SettingsSection? _settingsSectionFromSeed() {
@@ -643,12 +636,15 @@ Widget buildShellPage(
     ShellDestination.home => HomePage(model),
     ShellDestination.discover => DiscoverPage(model),
     ShellDestination.search => KeyedSubtree(
-        key: ValueKey('search-page:$searchSeed'),
-        child: SearchPage(model, seedKeyword: searchSeed),
-      ),
+      key: ValueKey('search-page:$searchSeed'),
+      child: SearchPage(model, seedKeyword: searchSeed),
+    ),
     ShellDestination.library => LibraryPage(model, initialTab: libraryTab),
     ShellDestination.downloads => DownloadsPage(model),
-    ShellDestination.settings => SettingsPage(model, initialSection: settingsSection),
+    ShellDestination.settings => SettingsPage(
+      model,
+      initialSection: settingsSection,
+    ),
     ShellDestination.help => const HelpPage(),
   };
 }

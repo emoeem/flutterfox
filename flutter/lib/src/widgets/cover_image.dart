@@ -28,20 +28,23 @@ class CoverImage extends StatelessWidget {
     required this.url,
     this.radius = 12,
     this.icon = Icons.music_note_outlined,
-  })  : size = 0,
-        expand = true;
+  }) : size = 0,
+       expand = true;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     Widget placeholder() => DecoratedBox(
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-          child: Icon(icon,
-              size: expand ? 32 : size * 0.4, color: scheme.onSurfaceVariant),
-        );
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Icon(
+        icon,
+        size: expand ? 32 : size * 0.4,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
     final source = url;
     final image = source == null || source.isEmpty
         ? placeholder()

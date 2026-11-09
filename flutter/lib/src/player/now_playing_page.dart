@@ -33,11 +33,7 @@ import 'queue_panel.dart';
 
 /// 全屏播放页。
 class NowPlayingPage extends StatefulWidget {
-  const NowPlayingPage({
-    super.key,
-    required this.model,
-    required this.onClose,
-  });
+  const NowPlayingPage({super.key, required this.model, required this.onClose});
 
   final AppModel model;
 
@@ -102,8 +98,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                                 child: VxEmptyState(
                                   icon: Icons.album_outlined,
                                   title: '未在播放',
-                                  message:
-                                      '从搜索、曲库或歌单挑一首开始播放，这里会显示封面与歌词。',
+                                  message: '从搜索、曲库或歌单挑一首开始播放，这里会显示封面与歌词。',
                                   actionLabel: '返回应用',
                                   onAction: widget.onClose,
                                 ),
@@ -210,7 +205,11 @@ class _CoverPalette {
 /// 封面 URL 变化时自动重取主色（Phase 7 提取公开；取色实现
 /// _CoverPalette 保持私有，失败回退 null 由背景走主题色）。
 class NowPlayingAutoPalette extends StatefulWidget {
-  const NowPlayingAutoPalette({super.key, required this.url, required this.onColor});
+  const NowPlayingAutoPalette({
+    super.key,
+    required this.url,
+    required this.onColor,
+  });
 
   final String? url;
   final ValueChanged<Color?> onColor;
@@ -567,7 +566,11 @@ class CrossfadeCover extends StatelessWidget {
 /// 操作行：收藏 / 添加到歌单 / 下载 / 更多（Phase 7 提取公开；全部真实
 /// 命令，窄宽自动换行）。
 class NowPlayingActionRow extends StatelessWidget {
-  const NowPlayingActionRow({super.key, required this.model, required this.song});
+  const NowPlayingActionRow({
+    super.key,
+    required this.model,
+    required this.song,
+  });
 
   final AppModel model;
   final bridge.SongDto song;
@@ -596,13 +599,22 @@ class NowPlayingActionRow extends StatelessWidget {
             ),
             IconButton(
               tooltip: '添加到歌单',
-              onPressed: () => showAddToCustomPlaylistSheet(context, model, [song]),
-              icon: Icon(Icons.playlist_add, size: 22, color: scheme.onSurfaceVariant),
+              onPressed: () =>
+                  showAddToCustomPlaylistSheet(context, model, [song]),
+              icon: Icon(
+                Icons.playlist_add,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
             IconButton(
               tooltip: '下载',
               onPressed: () => model.download(song),
-              icon: Icon(Icons.download_outlined, size: 22, color: scheme.onSurfaceVariant),
+              icon: Icon(
+                Icons.download_outlined,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
             PopupMenuButton<String>(
               tooltip: '更多',
@@ -618,7 +630,11 @@ class NowPlayingActionRow extends StatelessWidget {
                   model.dispatch(const bridge.FfiCommand.stop());
                 }
               },
-              icon: Icon(Icons.more_horiz, size: 22, color: scheme.onSurfaceVariant),
+              icon: Icon(
+                Icons.more_horiz,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ],
         );
@@ -670,10 +686,12 @@ class _BottomRow extends StatelessWidget {
                     child: SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 3,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 5),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 10),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 5,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 10,
+                        ),
                       ),
                       child: Slider(
                         value: (volume / 100).clamp(0.0, 1.0),
@@ -708,12 +726,20 @@ class _BottomRow extends StatelessWidget {
               child: Text('由系统管理（后端未提供设备枚举）'),
             ),
           ],
-          icon: Icon(Icons.speaker_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.speaker_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         IconButton(
           tooltip: '队列面板',
           onPressed: onToggleQueue,
-          icon: Icon(Icons.queue_music_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.queue_music_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

@@ -165,24 +165,21 @@ class HostPlayerBridge {
         _player.play(
           url,
           generation: generation,
-          headers: {
-            for (final pair in headers) pair.name: pair.value,
-          },
+          headers: {for (final pair in headers) pair.name: pair.value},
         ),
       HostPlayerCommandDto_Pause() => _player.pause(),
       HostPlayerCommandDto_Resume() => _player.resume(),
       HostPlayerCommandDto_Stop() => _player.stop(),
       // Toggle：宿主按当前 playing 二选一（Rust 命令不带状态）。
-      HostPlayerCommandDto_Toggle() => _player.playing
-          ? _player.pause()
-          : _player.resume(),
+      HostPlayerCommandDto_Toggle() =>
+        _player.playing ? _player.pause() : _player.resume(),
       HostPlayerCommandDto_Seek(:final positionMs) => _player.seek(
-          Duration(milliseconds: positionMs.toInt()),
-        ),
+        Duration(milliseconds: positionMs.toInt()),
+      ),
       // Rust SetVolume 0-100 → 播放器 0..1。
       HostPlayerCommandDto_SetVolume(:final volume) => _player.setVolume(
-          volume / 100,
-        ),
+        volume / 100,
+      ),
       HostPlayerCommandDto_SetSpeed(:final speed) => _player.setSpeed(speed),
     };
   }

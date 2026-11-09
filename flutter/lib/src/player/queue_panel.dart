@@ -216,11 +216,7 @@ class _QueueRow extends StatelessWidget {
                 Row(
                   children: [
                     if (current) ...[
-                      Icon(
-                        Icons.graphic_eq,
-                        size: 13,
-                        color: scheme.primary,
-                      ),
+                      Icon(Icons.graphic_eq, size: 13, color: scheme.primary),
                       const SizedBox(width: 4),
                     ],
                     Expanded(
@@ -269,17 +265,11 @@ class _QueueRow extends StatelessWidget {
               // 禁用并说明（queueAdd 只会重复入列，不伪装成移动）。
               const PopupMenuItem<String>(
                 enabled: false,
-                child: _DisabledMenuItem(
-                  label: '立即播放',
-                  reason: '后端暂无队列跳播命令',
-                ),
+                child: _DisabledMenuItem(label: '立即播放', reason: '后端暂无队列跳播命令'),
               ),
               const PopupMenuItem<String>(
                 enabled: false,
-                child: _DisabledMenuItem(
-                  label: '下一首播放',
-                  reason: '后端暂无队列移动命令',
-                ),
+                child: _DisabledMenuItem(label: '下一首播放', reason: '后端暂无队列移动命令'),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem<String>(
@@ -293,7 +283,11 @@ class _QueueRow extends StatelessWidget {
                 model.queueRemove(index);
               }
             },
-            icon: Icon(Icons.more_horiz, size: 16, color: scheme.onSurfaceVariant),
+            icon: Icon(
+              Icons.more_horiz,
+              size: 16,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

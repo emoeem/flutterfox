@@ -52,7 +52,15 @@ void main() {
 
   group('resolveDeviceFormFactor 纯函数', () {
     test('桌面平台（isTouch=false）所有宽度恒 desktop，宽度不参与', () {
-      for (final width in [320.0, 599.0, 600.0, 900.0, 1200.0, 1920.0, 4000.0]) {
+      for (final width in [
+        320.0,
+        599.0,
+        600.0,
+        900.0,
+        1200.0,
+        1920.0,
+        4000.0,
+      ]) {
         expect(
           resolveDeviceFormFactor(width, isTouch: false),
           DeviceFormFactor.desktop,
@@ -99,9 +107,7 @@ void main() {
       await tester.pumpWidget(_harness(model));
       await tester.pumpAndSettle();
 
-      final rail = tester.widget<NavigationRail>(
-        find.byType(NavigationRail),
-      );
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.extended, isFalse, reason: '600-899 为图标 rail 档');
       expect(rail.destinations.length, 5);
 
@@ -124,9 +130,7 @@ void main() {
       await tester.pumpWidget(_harness(model));
       await tester.pumpAndSettle();
 
-      final rail = tester.widget<NavigationRail>(
-        find.byType(NavigationRail),
-      );
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.extended, isTrue, reason: '900-1199 为展开 Rail 双栏档');
 
       await tester.tap(find.byTooltip('队列面板'));
@@ -178,16 +182,17 @@ void main() {
       // 有歌：底部迷你播放栏常驻并显示当前曲目。
       expect(find.byType(MiniPlayerBar), findsOneWidget);
       expect(
-        find.descendant(of: find.byType(MiniPlayerBar), matching: find.text('夜航')),
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
         findsOneWidget,
       );
 
       // Rail 第 5 项（下载）。
       await tester.tap(find.text('下载').last);
       await tester.pumpAndSettle();
-      final rail = tester.widget<NavigationRail>(
-        find.byType(NavigationRail),
-      );
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.selectedIndex, 4);
       expect(model.state.playback.positionMs, BigInt.from(42000));
       // 切页后迷你播放栏仍在。

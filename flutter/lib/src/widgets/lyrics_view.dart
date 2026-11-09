@@ -117,16 +117,17 @@ class _LyricsViewState extends State<LyricsView> {
     final scheme = theme.colorScheme;
     final activeStyle = (theme.textTheme.displaySmall ?? const TextStyle())
         .copyWith(
-      fontSize: 32,
-      fontWeight: FontWeight.w600,
-      color: scheme.primary,
-    );
+          fontSize: 32,
+          fontWeight: FontWeight.w600,
+          color: scheme.primary,
+        );
     final idleStyle = (theme.textTheme.titleLarge ?? const TextStyle())
         .copyWith(fontSize: 22, color: scheme.onSurfaceVariant);
 
     // Rust 只随快照带回「一行」翻译（没有逐行翻译表）；仅当快照行与本地
     // 推导行一致时才展示，避免把第 0 行的翻译挂到别的行上。
-    final showTranslation = widget.translation != null &&
+    final showTranslation =
+        widget.translation != null &&
         widget.currentIndex == widget.snapshotCurrentLine;
 
     return SingleChildScrollView(
@@ -146,8 +147,7 @@ class _LyricsViewState extends State<LyricsView> {
                   idleStyle: idleStyle,
                   onTap: widget.onSeekMs == null
                       ? null
-                      : () =>
-                          widget.onSeekMs!(lines[i].timestampMs.toInt()),
+                      : () => widget.onSeekMs!(lines[i].timestampMs.toInt()),
                 ),
                 if (i == widget.currentIndex && showTranslation)
                   Padding(

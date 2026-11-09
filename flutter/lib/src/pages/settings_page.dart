@@ -213,9 +213,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         VxSpacing.xl,
         VxSpacing.xxl,
       ),
-      children: [
-        for (final group in _groups(context)) group,
-      ],
+      children: [for (final group in _groups(context)) group],
     );
   }
 
@@ -224,292 +222,224 @@ class _SettingsBodyState extends State<_SettingsBody> {
     if (config == null) return const [];
     return switch (_section) {
       SettingsSection.playback => [
-          _group(
-            context,
-            '播放',
-            [
-              _VolumeRow(model: _model, volume: config.volume),
-              _playModeRow(context, config),
-              _sliderRow(
-                title: '历史记录条数',
-                valueText: '${config.historyLimit} 条',
-                slider: Slider(
-                  min: 10,
-                  max: 500,
-                  divisions: 49,
-                  label: '${config.historyLimit}',
-                  value: config.historyLimit.clamp(10, 500).toDouble(),
-                  onChanged: (value) => _model.updateConfig(
-                    (config) => config.copyWith(historyLimit: value.round()),
-                  ),
-                ),
+        _group(context, '播放', [
+          _VolumeRow(model: _model, volume: config.volume),
+          _playModeRow(context, config),
+          _sliderRow(
+            title: '历史记录条数',
+            valueText: '${config.historyLimit} 条',
+            slider: Slider(
+              min: 10,
+              max: 500,
+              divisions: 49,
+              label: '${config.historyLimit}',
+              value: config.historyLimit.clamp(10, 500).toDouble(),
+              onChanged: (value) => _model.updateConfig(
+                (config) => config.copyWith(historyLimit: value.round()),
               ),
-            ],
+            ),
           ),
-        ],
+        ]),
+      ],
       SettingsSection.sources => [
-          _group(
-            context,
-            '音源选择',
-            [
-              _defaultSourceRow(context, config),
-              _switchRow(
-                title: 'JS 自定义音源优先',
-                subtitle: '解析播放地址时先尝试 lx-music 自定义音源',
-                value: config.jsSourcesFirst,
-                onChanged: (value) => _model.updateConfig(
-                  (config) => config.copyWith(jsSourcesFirst: value),
-                ),
-              ),
-            ],
+        _group(context, '音源选择', [
+          _defaultSourceRow(context, config),
+          _switchRow(
+            title: 'JS 自定义音源优先',
+            subtitle: '解析播放地址时先尝试 lx-music 自定义音源',
+            value: config.jsSourcesFirst,
+            onChanged: (value) => _model.updateConfig(
+              (config) => config.copyWith(jsSourcesFirst: value),
+            ),
           ),
-          _group(
-            context,
-            '启用的音源',
-            [
-              for (final source in _model.state.sources)
-                _switchRow(
-                  title: source.name,
-                  value: config.enabledSources.contains(source.id),
-                  onChanged: (value) {
-                    final enabled = Set<String>.from(config.enabledSources);
-                    value ? enabled.add(source.id) : enabled.remove(source.id);
-                    // 至少保留一个音源，避免搜索/播放全面失效。
-                    if (enabled.isEmpty) return;
-                    _model.updateConfig(
-                      (config) =>
-                          config.copyWith(enabledSources: enabled.toList()),
-                    );
-                  },
-                ),
-              if (_model.state.sources.isEmpty)
-                _row(title: '音源能力尚未加载', subtitle: '启动后自动刷新'),
-            ],
-          ),
-        ],
+        ]),
+        _group(context, '启用的音源', [
+          for (final source in _model.state.sources)
+            _switchRow(
+              title: source.name,
+              value: config.enabledSources.contains(source.id),
+              onChanged: (value) {
+                final enabled = Set<String>.from(config.enabledSources);
+                value ? enabled.add(source.id) : enabled.remove(source.id);
+                // 至少保留一个音源，避免搜索/播放全面失效。
+                if (enabled.isEmpty) return;
+                _model.updateConfig(
+                  (config) => config.copyWith(enabledSources: enabled.toList()),
+                );
+              },
+            ),
+          if (_model.state.sources.isEmpty)
+            _row(title: '音源能力尚未加载', subtitle: '启动后自动刷新'),
+        ]),
+      ],
       SettingsSection.download => [
-          _group(
-            context,
-            '下载目录与音质',
-            [
-              _TextFieldRow(
-                label: '下载目录',
-                hint: '/home/用户名/Music',
-                initial: config.downloadDir,
-                onSubmit: (value) => _model.updateConfig(
-                  (config) => config.copyWith(downloadDir: value.trim()),
-                ),
-              ),
-              _qualityRow(context, config),
-            ],
+        _group(context, '下载目录与音质', [
+          _TextFieldRow(
+            label: '下载目录',
+            hint: '/home/用户名/Music',
+            initial: config.downloadDir,
+            onSubmit: (value) => _model.updateConfig(
+              (config) => config.copyWith(downloadDir: value.trim()),
+            ),
           ),
-          _group(
-            context,
-            '并发',
-            [
-              _sliderRow(
-                title: '同时下载数',
-                valueText: '${config.downloadConcurrency} 首',
-                slider: Slider(
-                  min: 1,
-                  max: 8,
-                  divisions: 7,
-                  label: '${config.downloadConcurrency}',
-                  value: config.downloadConcurrency.clamp(1, 8).toDouble(),
-                  onChanged: (value) => _model.updateConfig(
-                    (config) =>
-                        config.copyWith(downloadConcurrency: value.round()),
-                  ),
-                ),
+          _qualityRow(context, config),
+        ]),
+        _group(context, '并发', [
+          _sliderRow(
+            title: '同时下载数',
+            valueText: '${config.downloadConcurrency} 首',
+            slider: Slider(
+              min: 1,
+              max: 8,
+              divisions: 7,
+              label: '${config.downloadConcurrency}',
+              value: config.downloadConcurrency.clamp(1, 8).toDouble(),
+              onChanged: (value) => _model.updateConfig(
+                (config) => config.copyWith(downloadConcurrency: value.round()),
               ),
-            ],
+            ),
           ),
-        ],
+        ]),
+      ],
       SettingsSection.lyrics => [
-          _group(
-            context,
-            '歌词显示',
-            [
-              _switchRow(
-                title: '显示翻译',
-                subtitle: '有翻译歌词时在歌词面板中同时展示',
-                value: config.showTranslation,
-                onChanged: (value) => _model.updateConfig(
-                  (config) => config.copyWith(showTranslation: value),
-                ),
-              ),
-              _switchRow(
-                title: '逐字歌词 (YRC)',
-                subtitle: '支持逐字 Karaoke 效果的歌词按逐字模式渲染',
-                value: config.showYrc,
-                onChanged: (value) => _model.updateConfig(
-                  (config) => config.copyWith(showYrc: value),
-                ),
-              ),
-            ],
+        _group(context, '歌词显示', [
+          _switchRow(
+            title: '显示翻译',
+            subtitle: '有翻译歌词时在歌词面板中同时展示',
+            value: config.showTranslation,
+            onChanged: (value) => _model.updateConfig(
+              (config) => config.copyWith(showTranslation: value),
+            ),
           ),
-        ],
+          _switchRow(
+            title: '逐字歌词 (YRC)',
+            subtitle: '支持逐字 Karaoke 效果的歌词按逐字模式渲染',
+            value: config.showYrc,
+            onChanged: (value) => _model.updateConfig(
+              (config) => config.copyWith(showYrc: value),
+            ),
+          ),
+        ]),
+      ],
       SettingsSection.appearance => [
-          _group(
-            context,
-            '明暗',
-            [
-              _themeModeRow(context, config),
-              _switchRow(
-                title: '跟随系统动态取色',
-                subtitle: '开启时优先用系统 Material You 调色板',
-                value: config.dynamicColor,
-                onChanged: (value) => _model.updateConfig(
-                  (config) => config.copyWith(dynamicColor: value),
-                ),
-              ),
-            ],
+        _group(context, '明暗', [
+          _themeModeRow(context, config),
+          _switchRow(
+            title: '跟随系统动态取色',
+            subtitle: '开启时优先用系统 Material You 调色板',
+            value: config.dynamicColor,
+            onChanged: (value) => _model.updateConfig(
+              (config) => config.copyWith(dynamicColor: value),
+            ),
           ),
-          _group(
-            context,
-            '同步主题（与 TUI 同源）',
-            [
-              Padding(
-                padding: const EdgeInsets.all(VxSpacing.md),
-                child: Wrap(
-                  spacing: VxSpacing.sm,
-                  runSpacing: VxSpacing.sm,
-                  children: [
-                    for (final entry in kSyncedThemes)
-                      _ThemeCard(
-                        entry: entry,
-                        selected: _model.themeKey == entry.key,
-                        onTap: () => _model.setTheme(entry.key),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+        ]),
+        _group(context, '同步主题（与 TUI 同源）', [
+          Padding(
+            padding: const EdgeInsets.all(VxSpacing.md),
+            child: Wrap(
+              spacing: VxSpacing.sm,
+              runSpacing: VxSpacing.sm,
+              children: [
+                for (final entry in kSyncedThemes)
+                  _ThemeCard(
+                    entry: entry,
+                    selected: _model.themeKey == entry.key,
+                    onTap: () => _model.setTheme(entry.key),
+                  ),
+              ],
+            ),
           ),
-          _group(
-            context,
-            '内置扩展（flex_color_scheme）',
-            [
-              Padding(
-                padding: const EdgeInsets.all(VxSpacing.md),
-                child: Wrap(
-                  spacing: VxSpacing.sm,
-                  runSpacing: VxSpacing.sm,
-                  children: [
-                    for (final entry in [kFlClashTheme, ...kBuiltinThemes])
-                      _ThemeCard(
-                        entry: entry,
-                        selected: _model.themeKey == entry.key,
-                        onTap: () => _model.setTheme(entry.key),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+        ]),
+        _group(context, '内置扩展（flex_color_scheme）', [
+          Padding(
+            padding: const EdgeInsets.all(VxSpacing.md),
+            child: Wrap(
+              spacing: VxSpacing.sm,
+              runSpacing: VxSpacing.sm,
+              children: [
+                for (final entry in [kFlClashTheme, ...kBuiltinThemes])
+                  _ThemeCard(
+                    entry: entry,
+                    selected: _model.themeKey == entry.key,
+                    onTap: () => _model.setTheme(entry.key),
+                  ),
+              ],
+            ),
           ),
-        ],
+        ]),
+      ],
       SettingsSection.network => [
-          _group(
-            context,
-            '代理',
-            [
-              _TextFieldRow(
-                label: '代理地址',
-                hint: 'http://127.0.0.1:7890（留空直连）',
-                initial: config.proxyUrl,
-                onSubmit: (value) => _model.updateConfig(
-                  (config) => config.copyWith(proxyUrl: value.trim()),
+        _group(context, '代理', [
+          _TextFieldRow(
+            label: '代理地址',
+            hint: 'http://127.0.0.1:7890（留空直连）',
+            initial: config.proxyUrl,
+            onSubmit: (value) => _model.updateConfig(
+              (config) => config.copyWith(proxyUrl: value.trim()),
+            ),
+          ),
+        ]),
+        _group(context, '超时', [
+          _sliderRow(
+            title: '请求超时',
+            valueText: '${config.networkTimeoutSecs.toInt()} 秒',
+            slider: Slider(
+              min: 5,
+              max: 60,
+              divisions: 11,
+              label: '${config.networkTimeoutSecs.toInt()}',
+              value: config.networkTimeoutSecs.toInt().clamp(5, 60).toDouble(),
+              onChanged: (value) => _model.updateConfig(
+                (config) => config.copyWith(
+                  networkTimeoutSecs: BigInt.from(value.round()),
                 ),
               ),
-            ],
+            ),
           ),
-          _group(
-            context,
-            '超时',
-            [
-              _sliderRow(
-                title: '请求超时',
-                valueText: '${config.networkTimeoutSecs.toInt()} 秒',
-                slider: Slider(
-                  min: 5,
-                  max: 60,
-                  divisions: 11,
-                  label: '${config.networkTimeoutSecs.toInt()}',
-                  value: config.networkTimeoutSecs
-                      .toInt()
-                      .clamp(5, 60)
-                      .toDouble(),
-                  onChanged: (value) => _model.updateConfig(
-                    (config) => config.copyWith(
-                      networkTimeoutSecs: BigInt.from(value.round()),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ]),
+      ],
       SettingsSection.account => [
-          _group(
-            context,
-            '账号登录',
-            [
-              _row(
-                title: '扫码登录',
-                subtitle: '网易云 / QQ 音乐 / 酷狗 / 哔哩哔哩；登录状态在对话框内反馈',
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _openQrLogin(context),
-              ),
-            ],
+        _group(context, '账号登录', [
+          _row(
+            title: '扫码登录',
+            subtitle: '网易云 / QQ 音乐 / 酷狗 / 哔哩哔哩；登录状态在对话框内反馈',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openQrLogin(context),
           ),
-        ],
+        ]),
+      ],
       SettingsSection.shortcuts => [
-          _group(
-            context,
-            '播放',
-            [
-              _shortcutRow('空格', '播放 / 暂停'),
-              _shortcutRow('← / →', '快退 / 快进 5 秒'),
-            ],
-          ),
-          _group(
-            context,
-            '导航',
-            [
-              _shortcutRow('Ctrl / ⌘ + K', '聚焦全局搜索'),
-              _shortcutRow('Esc', '关闭浮层 / 返回'),
-              _shortcutRow('Enter', '播放选中歌曲（列表内）'),
-              _shortcutRow('双击歌曲行', '从该歌曲开始播放'),
-            ],
-          ),
-        ],
+        _group(context, '播放', [
+          _shortcutRow('空格', '播放 / 暂停'),
+          _shortcutRow('← / →', '快退 / 快进 5 秒'),
+        ]),
+        _group(context, '导航', [
+          _shortcutRow('Ctrl / ⌘ + K', '聚焦全局搜索'),
+          _shortcutRow('Esc', '关闭浮层 / 返回'),
+          _shortcutRow('Enter', '播放选中歌曲（列表内）'),
+          _shortcutRow('双击歌曲行', '从该歌曲开始播放'),
+        ]),
+      ],
       SettingsSection.about => [
-          _group(
-            context,
-            '关于 voicefox',
-            [
-              _row(title: '版本', subtitle: appVersion),
-              _row(title: '前端', subtitle: 'Flutter + flutter_rust_bridge'),
-              _row(
-                title: '核心',
-                subtitle: '与 TUI 版共用同一套 Rust 播放 / 音源 / 存储实现',
-              ),
-              _row(
-                title: '帮助与关于',
-                subtitle: '功能地图、自建歌单说明、版本信息',
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('帮助与关于')),
-                      body: const HelpPage(),
-                    ),
-                  ),
+        _group(context, '关于 voicefox', [
+          _row(title: '版本', subtitle: appVersion),
+          _row(title: '前端', subtitle: 'Flutter + flutter_rust_bridge'),
+          _row(title: '核心', subtitle: '与 TUI 版共用同一套 Rust 播放 / 音源 / 存储实现'),
+          _row(
+            title: '帮助与关于',
+            subtitle: '功能地图、自建歌单说明、版本信息',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('帮助与关于')),
+                  body: const HelpPage(),
                 ),
               ),
-            ],
+            ),
           ),
-        ],
+        ]),
+      ],
     };
   }
 
@@ -626,8 +556,9 @@ class _SettingsBodyState extends State<_SettingsBody> {
         decoration: BoxDecoration(
           color: scheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(VxRadius.lg),
-          border:
-              Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -695,10 +626,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
     );
   }
 
-  Widget _defaultSourceRow(
-    BuildContext context,
-    bridge.ConfigDto config,
-  ) {
+  Widget _defaultSourceRow(BuildContext context, bridge.ConfigDto config) {
     final ids = [for (final source in _model.state.sources) source.id];
     final value = ids.contains(config.defaultSource)
         ? config.defaultSource
@@ -839,9 +767,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                   ],
                 ),
               ),
-              Flexible(
-                child: QrLoginPage(_model),
-              ),
+              Flexible(child: QrLoginPage(_model)),
             ],
           ),
         ),
@@ -917,10 +843,7 @@ class _TextFieldRowState extends State<_TextFieldRow> {
             child: TextField(
               controller: _controller,
               focusNode: _focus,
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                isDense: true,
-              ),
+              decoration: InputDecoration(hintText: widget.hint, isDense: true),
               onSubmitted: widget.onSubmit,
             ),
           ),

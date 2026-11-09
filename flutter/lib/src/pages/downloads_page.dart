@@ -123,8 +123,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
     };
   }
 
-  bool get _hasFinished =>
-      _tasks.any((task) => !downloadTaskActive(task));
+  bool get _hasFinished => _tasks.any((task) => !downloadTaskActive(task));
 
   int _count(bool Function(bridge.DownloadTaskDto) predicate) =>
       _tasks.where(predicate).length;
@@ -148,8 +147,8 @@ class _DownloadsPageState extends State<DownloadsPage> {
                     child: TextButton(
                       onPressed: _hasFinished
                           ? () => _model.dispatch(
-                                const bridge.FfiCommand.downloadClearFinished(),
-                              )
+                              const bridge.FfiCommand.downloadClearFinished(),
+                            )
                           : null,
                       child: const Text('清除已完成'),
                     ),
@@ -213,7 +212,10 @@ class _DownloadsPageState extends State<DownloadsPage> {
           Expanded(flex: 4, child: Text('歌曲', style: style)),
           SizedBox(width: 56, child: Text('音质', style: style)),
           Expanded(flex: 3, child: Text('状态 / 进度', style: style)),
-          SizedBox(width: _opsWidth, child: Text('操作', style: style)),
+          SizedBox(
+            width: _opsWidth,
+            child: Text('操作', style: style),
+          ),
         ],
       ),
     );
@@ -229,11 +231,8 @@ class _DownloadsPageState extends State<DownloadsPage> {
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 24),
       itemCount: tasks.length,
-      itemBuilder: (context, index) => _TaskRow(
-        model: _model,
-        task: tasks[index],
-        opsWidth: _opsWidth,
-      ),
+      itemBuilder: (context, index) =>
+          _TaskRow(model: _model, task: tasks[index], opsWidth: _opsWidth),
     );
   }
 
@@ -242,9 +241,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
     return EmptyState(
       icon: Icons.download_outlined,
       title: filtered ? '该分组下没有任务' : '暂无下载任务',
-      subtitle: filtered
-          ? '切换筛选查看其他任务'
-          : '在歌曲行点下载按钮开始；下载目录与音质在设置页调整',
+      subtitle: filtered ? '切换筛选查看其他任务' : '在歌曲行点下载按钮开始；下载目录与音质在设置页调整',
     );
   }
 }
@@ -316,10 +313,9 @@ class _TaskRow extends StatelessWidget {
 
   Widget _status(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final success =
-        Theme.of(context).brightness == Brightness.dark
-            ? VxColors.success
-            : VxLightColors.success;
+    final success = Theme.of(context).brightness == Brightness.dark
+        ? VxColors.success
+        : VxLightColors.success;
     final total = task.total?.toInt() ?? 0;
     final downloaded = task.downloaded.toInt();
     final hasProgress = total > 0;
@@ -343,8 +339,8 @@ class _TaskRow extends StatelessWidget {
                   color: failed
                       ? scheme.error
                       : completed
-                          ? success
-                          : scheme.onSurfaceVariant,
+                      ? success
+                      : scheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -368,8 +364,8 @@ class _TaskRow extends StatelessWidget {
             color: failed
                 ? scheme.error
                 : completed
-                    ? success
-                    : scheme.primary,
+                ? success
+                : scheme.primary,
             backgroundColor: scheme.surfaceContainerHighest,
           ),
         ),
@@ -397,8 +393,8 @@ class _TaskRow extends StatelessWidget {
           tooltip: '取消该下载任务',
           onPressed: ops.canCancel
               ? () => model.dispatch(
-                    bridge.FfiCommand.downloadCancel(id: task.id),
-                  )
+                  bridge.FfiCommand.downloadCancel(id: task.id),
+                )
               : null,
         ),
       ] else if (downloadTaskFailed(task)) ...[
@@ -409,8 +405,8 @@ class _TaskRow extends StatelessWidget {
           tooltip: '重新排队下载',
           onPressed: ops.canRetry
               ? () => model.dispatch(
-                    bridge.FfiCommand.downloadEnqueue(song: task.song),
-                  )
+                  bridge.FfiCommand.downloadEnqueue(song: task.song),
+                )
               : null,
         ),
       ] else ...[
@@ -430,10 +426,7 @@ class _TaskRow extends StatelessWidget {
         ),
       ],
     ];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: buttons,
-    );
+    return Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons);
   }
 
   Widget _opButton(

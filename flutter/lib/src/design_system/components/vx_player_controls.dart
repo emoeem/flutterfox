@@ -59,12 +59,14 @@ class VxPlayerControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final playIconColor = dark
-        ? VxColors.onPlayIcon
-        : VxLightColors.onPlayIcon;
+    final playIconColor = dark ? VxColors.onPlayIcon : VxLightColors.onPlayIcon;
 
-    Widget ctrl(IconData icon, String tooltip, VoidCallback? onPressed,
-        {bool active = false}) {
+    Widget ctrl(
+      IconData icon,
+      String tooltip,
+      VoidCallback? onPressed, {
+      bool active = false,
+    }) {
       return IconButton(
         onPressed: enabled ? onPressed : null,
         tooltip: tooltip,
@@ -99,9 +101,7 @@ class VxPlayerControls extends StatelessWidget {
               height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: enabled
-                    ? scheme.onSurface
-                    : scheme.surfaceContainerHigh,
+                color: enabled ? scheme.onSurface : scheme.surfaceContainerHigh,
               ),
               child: Icon(
                 isPlaying ? Icons.pause : Icons.play_arrow,

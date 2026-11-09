@@ -109,7 +109,9 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                       name: _artist.name,
                       photoUrl: _artist.coverUrl,
                       sourceLabel: songSourceLabel(_model, _artist.source),
-                      subtitle: hotSongs.isEmpty ? null : '热门歌曲 ${hotSongs.length} 首',
+                      subtitle: hotSongs.isEmpty
+                          ? null
+                          : '热门歌曲 ${hotSongs.length} 首',
                     ),
                     const SizedBox(height: VxSpacing.lg),
                     _actionRow(context, hotSongs),
@@ -263,8 +265,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
         VxSectionHeader(
           title: '专辑',
           onViewAll: result.hasMore
-              ? () =>
-                  _model.loadArtistAlbums(_artist, page: result.page + 1)
+              ? () => _model.loadArtistAlbums(_artist, page: result.page + 1)
               : null,
           viewAllLabel: result.hasMore ? '加载更多' : '查看全部',
         ),
@@ -272,8 +273,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
         LayoutBuilder(
           builder: (context, constraints) {
             const minCard = 156;
-            final columns =
-                (constraints.maxWidth ~/ minCard).clamp(2, 6);
+            final columns = (constraints.maxWidth ~/ minCard).clamp(2, 6);
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

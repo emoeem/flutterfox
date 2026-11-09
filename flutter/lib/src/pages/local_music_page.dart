@@ -57,19 +57,19 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
                         ),
                       )
                     : songs.isEmpty && config == null
-                        ? const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 12),
-                                Text('正在加载配置…'),
-                              ],
-                            ),
-                          )
-                        : songs.isEmpty
-                            ? _empty(context, config!)
-                            : _library(context, songs, scanning),
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 12),
+                            Text('正在加载配置…'),
+                          ],
+                        ),
+                      )
+                    : songs.isEmpty
+                    ? _empty(context, config!)
+                    : _library(context, songs, scanning),
               ),
             ],
           ),
@@ -340,17 +340,14 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
       children: [
         Icon(icon, size: 40, color: Theme.of(context).colorScheme.error),
         const SizedBox(height: 12),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 4),
         Text(
           subtitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -367,10 +364,9 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
       ),
       child: Text(
         '扫描警告：${warnings.join('；')}',
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: scheme.onErrorContainer),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
       ),
     );
   }
@@ -406,9 +402,7 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
     // 沙盒环境）时回退手输绝对路径对话框。
     String? target;
     try {
-      target = await FilePicker.getDirectoryPath(
-        dialogTitle: '选择本地音乐目录',
-      );
+      target = await FilePicker.getDirectoryPath(dialogTitle: '选择本地音乐目录');
     } on PlatformException {
       target = null;
     }
@@ -491,5 +485,7 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
 }
 
 /// 目录移除后的列表（纯函数，便于测试）：保持原顺序，仅去掉目标路径。
-List<String> localMusicPathsAfterRemove(List<String> paths, String path) =>
-    [for (final item in paths) if (item != path) item];
+List<String> localMusicPathsAfterRemove(List<String> paths, String path) => [
+  for (final item in paths)
+    if (item != path) item,
+];

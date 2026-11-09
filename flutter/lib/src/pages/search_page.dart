@@ -33,12 +33,12 @@ import 'artist_detail_page.dart';
 enum SearchType { all, songs, albums, artists, playlists }
 
 String _searchTypeLabel(SearchType type) => switch (type) {
-      SearchType.all => '全部',
-      SearchType.songs => '歌曲',
-      SearchType.albums => '专辑',
-      SearchType.artists => '歌手',
-      SearchType.playlists => '歌单',
-    };
+  SearchType.all => '全部',
+  SearchType.songs => '歌曲',
+  SearchType.albums => '专辑',
+  SearchType.artists => '歌手',
+  SearchType.playlists => '歌单',
+};
 
 class SearchPage extends StatefulWidget {
   final AppModel model;
@@ -140,9 +140,11 @@ class _SearchPageState extends State<SearchPage> {
       _anchorRow = -1;
       _moreInFlight = false;
     });
-    unawaited(widget.model.dispatch(
-      bridge.FfiCommand.search(keyword: keyword, source: _dispatchSource),
-    ));
+    unawaited(
+      widget.model.dispatch(
+        bridge.FfiCommand.search(keyword: keyword, source: _dispatchSource),
+      ),
+    );
   }
 
   void _onSearchTextChanged(String text) {
@@ -158,10 +160,14 @@ class _SearchPageState extends State<SearchPage> {
     if (state.keyword.isEmpty) return;
     _moreInFlight = true;
     if (mounted) setState(() {});
-    unawaited(widget.model.dispatch(bridge.FfiCommand.searchMore(
-      keyword: state.keyword,
-      page: state.page + 1,
-    )));
+    unawaited(
+      widget.model.dispatch(
+        bridge.FfiCommand.searchMore(
+          keyword: state.keyword,
+          page: state.page + 1,
+        ),
+      ),
+    );
   }
 
   // ── 选择 ──
@@ -228,8 +234,7 @@ class _SearchPageState extends State<SearchPage> {
       final name = song.albumName.trim();
       if (name.isEmpty) continue;
       final id = song.albumId?.trim();
-      final key =
-          '${(id != null && id.isNotEmpty) ? id : name}|${song.source}';
+      final key = '${(id != null && id.isNotEmpty) ? id : name}|${song.source}';
       if (!seen.add(key)) continue;
       result.add(song);
     }
@@ -244,8 +249,7 @@ class _SearchPageState extends State<SearchPage> {
       final name = song.singer.trim();
       if (name.isEmpty) continue;
       final id = song.artistId?.trim();
-      final key =
-          '${(id != null && id.isNotEmpty) ? id : name}|${song.source}';
+      final key = '${(id != null && id.isNotEmpty) ? id : name}|${song.source}';
       if (!seen.add(key)) continue;
       result.add(song);
     }
@@ -339,10 +343,7 @@ class _SearchPageState extends State<SearchPage> {
     return SegmentedButton<SearchType>(
       segments: [
         for (final type in SearchType.values)
-          ButtonSegment(
-            value: type,
-            label: Text(_searchTypeLabel(type)),
-          ),
+          ButtonSegment(value: type, label: Text(_searchTypeLabel(type))),
       ],
       selected: {_type},
       showSelectedIcon: false,
@@ -490,10 +491,10 @@ class _SearchPageState extends State<SearchPage> {
       SearchType.albums => _albumGrid(context),
       SearchType.artists => _artistGrid(context),
       SearchType.playlists => VxEmptyState(
-          icon: Icons.queue_music_outlined,
-          title: '聚合搜索不返回歌单结果',
-          message: _playlistsExplain(),
-        ),
+        icon: Icons.queue_music_outlined,
+        title: '聚合搜索不返回歌单结果',
+        message: _playlistsExplain(),
+      ),
     };
   }
 
@@ -537,10 +538,9 @@ class _SearchPageState extends State<SearchPage> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: selected
-                        ? Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.08)
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.08)
                         : Colors.transparent,
                   ),
                   child: VxTrackRow(
@@ -556,10 +556,8 @@ class _SearchPageState extends State<SearchPage> {
                     isLiked: widget.model.isFavorite(song),
                     onTap: () => _onRowTap(index),
                     onPlay: () => _playRow(index),
-                    onAddToQueue: () =>
-                        unawaited(widget.model.queueAdd(song)),
-                    onLike: () =>
-                        unawaited(widget.model.toggleFavorite(song)),
+                    onAddToQueue: () => unawaited(widget.model.queueAdd(song)),
+                    onLike: () => unawaited(widget.model.toggleFavorite(song)),
                     onMore: () => _showRowMenu(rowContext, song),
                   ),
                 ),
@@ -664,18 +662,20 @@ class _SearchPageState extends State<SearchPage> {
     final name = song.albumName.trim();
     if (name.isEmpty || !widget.model.supportsAlbum(song.source)) return;
     final id = song.albumId?.trim();
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => AlbumSongsPage(
-        widget.model,
-        bridge.AlbumDto(
-          id: (id != null && id.isNotEmpty) ? id : name,
-          name: name,
-          source: song.source,
-          coverUrl: song.coverUrl,
-          artist: song.singer,
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AlbumSongsPage(
+          widget.model,
+          bridge.AlbumDto(
+            id: (id != null && id.isNotEmpty) ? id : name,
+            name: name,
+            source: song.source,
+            coverUrl: song.coverUrl,
+            artist: song.singer,
+          ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _artistGrid(BuildContext context) {
@@ -718,17 +718,19 @@ class _SearchPageState extends State<SearchPage> {
     final name = song.singer.trim();
     if (name.isEmpty || !widget.model.supportsArtist(song.source)) return;
     final id = song.artistId?.trim();
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => ArtistDetailPage(
-        widget.model,
-        bridge.ArtistDto(
-          id: (id != null && id.isNotEmpty) ? id : name,
-          name: name,
-          source: song.source,
-          coverUrl: null,
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ArtistDetailPage(
+          widget.model,
+          bridge.ArtistDto(
+            id: (id != null && id.isNotEmpty) ? id : name,
+            name: name,
+            source: song.source,
+            coverUrl: null,
+          ),
         ),
       ),
-    ));
+    );
   }
 
   /// 分页三态尾行：加载中 / 失败重试 / 没有更多。
@@ -760,10 +762,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
               const SizedBox(width: VxSpacing.md),
-              TextButton(
-                onPressed: _loadMoreIfNeeded,
-                child: const Text('重试'),
-              ),
+              TextButton(onPressed: _loadMoreIfNeeded, child: const Text('重试')),
             ],
           ),
         ),

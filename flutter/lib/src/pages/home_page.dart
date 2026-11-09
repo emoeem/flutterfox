@@ -116,7 +116,8 @@ class _ContinueHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final playbackSong = model.state.playback.song;
     final history = model.state.history;
-    final bridge.SongDto? song = playbackSong ?? (history.isEmpty ? null : history.first);
+    final bridge.SongDto? song =
+        playbackSong ?? (history.isEmpty ? null : history.first);
 
     if (song == null) {
       return VxHero(
@@ -135,9 +136,7 @@ class _ContinueHero extends StatelessWidget {
 
     final playing = model.state.playback.state == 'playing';
     final album = song.albumName;
-    final description = album.isEmpty
-        ? song.singer
-        : '${song.singer} · $album';
+    final description = album.isEmpty ? song.singer : '${song.singer} · $album';
     return VxHero(
       eyebrow: 'CONTINUE LISTENING',
       title: song.name,
@@ -189,10 +188,7 @@ class _RecentShelf extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        VxSectionHeader(
-          title: '最近播放',
-          onViewAll: () => navRequest.value = 2,
-        ),
+        VxSectionHeader(title: '最近播放', onViewAll: () => navRequest.value = 2),
         const SizedBox(height: VxSpacing.md),
         SizedBox(
           height: 244,
@@ -235,10 +231,7 @@ class _MyPlaylistsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        VxSectionHeader(
-          title: '我的歌单',
-          onViewAll: () => navRequest.value = 2,
-        ),
+        VxSectionHeader(title: '我的歌单', onViewAll: () => navRequest.value = 2),
         const SizedBox(height: VxSpacing.md),
         if (playlists.isEmpty)
           SizedBox(
@@ -350,7 +343,11 @@ class _LeaderboardSectionState extends State<_LeaderboardSection> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
-          body: LeaderboardPage(_model, initialSource: sourceId, showChrome: false),
+          body: LeaderboardPage(
+            _model,
+            initialSource: sourceId,
+            showChrome: false,
+          ),
         ),
       ),
     );
@@ -362,8 +359,9 @@ class _LeaderboardSectionState extends State<_LeaderboardSection> {
         .where((source) => source.leaderboard)
         .toList();
     final source = capable.isEmpty ? null : capable.first;
-    final result =
-        source == null ? null : _model.browse('leaderboard_boards', source.id, '');
+    final result = source == null
+        ? null
+        : _model.browse('leaderboard_boards', source.id, '');
     final boards = result?.boards ?? const <bridge.LeaderboardDto>[];
 
     return Column(
@@ -509,11 +507,7 @@ class _LeaderboardSectionState extends State<_LeaderboardSection> {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: scheme.onSurfaceVariant,
-            ),
+            Icon(Icons.chevron_right, size: 18, color: scheme.onSurfaceVariant),
           ],
         ),
       ),

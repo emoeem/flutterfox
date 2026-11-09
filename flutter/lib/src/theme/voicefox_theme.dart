@@ -28,8 +28,11 @@ SeedTheme seedThemeOf(String key) {
 
 /// 构建明/暗两套 ThemeData。dynamicScheme 非 null 时以其 primary 为种子，
 /// 表面仍按命名主题 bg 分层（保持主题个性）。
-ThemeData buildVoicefoxTheme(String themeKey, Brightness brightness,
-    {ColorScheme? dynamicScheme}) {
+ThemeData buildVoicefoxTheme(
+  String themeKey,
+  Brightness brightness, {
+  ColorScheme? dynamicScheme,
+}) {
   final entry = themeEntryOf(themeKey);
   final ThemeData base;
 
@@ -72,8 +75,7 @@ ThemeData _voicefoxComponents(ThemeData base) {
   return withFonts.copyWith(
     // spec §2：深色卡片=surfaceContainer、浅色卡片=surface（更浅）；
     // 页面底浅色时用 surfaceContainer。
-    scaffoldBackgroundColor:
-        dark ? scheme.surface : scheme.surfaceContainer,
+    scaffoldBackgroundColor: dark ? scheme.surface : scheme.surfaceContainer,
     cardTheme: CardThemeData(
       elevation: 0,
       color: dark ? scheme.surfaceContainer : scheme.surface,
@@ -150,7 +152,8 @@ class GappedSliderTrackShape extends RoundedRectSliderTrackShape {
     final activePaint = Paint()
       ..color = sliderTheme.activeTrackColor ?? const Color(0xFF2196F3);
     final inactivePaint = Paint()
-      ..color = sliderTheme.inactiveTrackColor ??
+      ..color =
+          sliderTheme.inactiveTrackColor ??
           activePaint.color.withValues(alpha: 0.24);
 
     void drawSegment(double left, double right, Paint paint) {

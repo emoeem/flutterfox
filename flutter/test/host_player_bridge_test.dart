@@ -61,7 +61,8 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
   final volumes = <double>[];
   final seeks = <Duration>[];
   final speeds = <double>[];
-  final played = <({String url, BigInt generation, Map<String, String> headers})>[];
+  final played =
+      <({String url, BigInt generation, Map<String, String> headers})>[];
 
   bool _playing = false;
   BigInt _generation = BigInt.zero;
@@ -72,8 +73,9 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
   void emit(MobilePlaybackSnapshot snapshot) => _snapshots.add(snapshot);
   void emitEnded(BigInt generation) =>
       _events.add(MobilePlaybackEnded(generation: generation));
-  void emitFailed(BigInt generation, String message) =>
-      _events.add(MobilePlaybackFailed(generation: generation, message: message));
+  void emitFailed(BigInt generation, String message) => _events.add(
+    MobilePlaybackFailed(generation: generation, message: message),
+  );
   void setPlaying(bool value) {
     _playing = value;
   }
@@ -142,9 +144,7 @@ class FakeHostStateSink implements HostStateSink {
     required BigInt positionMs,
     required BigInt durationMs,
   }) async {
-    reports.add(
-      (state: state, positionMs: positionMs, durationMs: durationMs),
-    );
+    reports.add((state: state, positionMs: positionMs, durationMs: durationMs));
   }
 
   @override
@@ -184,7 +184,9 @@ void main() {
       HostPlayerCommandDto_Play(
         url: 'https://example.com/a.mp3',
         generation: BigInt.from(7),
-        headers: const [HostHeaderDto(name: 'Referer', value: 'https://example.com')],
+        headers: const [
+          HostHeaderDto(name: 'Referer', value: 'https://example.com'),
+        ],
       ),
     );
     await Future<void>.delayed(Duration.zero);
@@ -192,11 +194,9 @@ void main() {
     expect(player.played, hasLength(1));
     expect(player.played.single.url, 'https://example.com/a.mp3');
     expect(player.played.single.generation, BigInt.from(7));
-    expect(
-      player.played.single.headers,
-      {'Referer': 'https://example.com'},
-      reason: 'headers 必须逐请求透传（国内音源必需）',
-    );
+    expect(player.played.single.headers, {
+      'Referer': 'https://example.com',
+    }, reason: 'headers 必须逐请求透传（国内音源必需）');
   });
 
   test('控制指令与 FfiCommand 语义对齐：volume 折算/seek 毫秒/Toggle 二选一', () async {
@@ -205,8 +205,7 @@ void main() {
     final sink = FakeHostStateSink();
     final bridge = _bridge(source, player, sink);
 
-    for (var i = 0; i < 6; i++) {
-      }
+    for (var i = 0; i < 6; i++) {}
     bridge.start();
     await Future<void>.delayed(Duration.zero);
 

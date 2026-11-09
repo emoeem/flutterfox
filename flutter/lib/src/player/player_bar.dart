@@ -91,10 +91,13 @@ class _PlayerBarState extends State<PlayerBar> {
                         playing: playing,
                         builder: (context, position, duration) {
                           final total = duration.inMilliseconds;
-                          final fraction = _dragFraction ??
+                          final fraction =
+                              _dragFraction ??
                               (total > 0
-                                  ? (position.inMilliseconds / total)
-                                      .clamp(0.0, 1.0)
+                                  ? (position.inMilliseconds / total).clamp(
+                                      0.0,
+                                      1.0,
+                                    )
                                   : null);
                           return _ProgressLine(fraction: fraction);
                         },
@@ -127,9 +130,8 @@ class _PlayerBarState extends State<PlayerBar> {
                               model: model,
                               playing: playing,
                               compact: barWidth < 700,
-                              onDragPreview: (fraction) => setState(
-                                () => _dragFraction = fraction,
-                              ),
+                              onDragPreview: (fraction) =>
+                                  setState(() => _dragFraction = fraction),
                             ),
                           ),
                         ),
@@ -213,11 +215,7 @@ class _TrackInfo extends StatelessWidget {
               width: 56,
               height: 56,
               child: hasSong
-                  ? CoverImage(
-                      url: s.coverUrl,
-                      size: 56,
-                      radius: VxRadius.sm,
-                    )
+                  ? CoverImage(url: s.coverUrl, size: 56, radius: VxRadius.sm)
                   : ColoredBox(
                       color: scheme.surfaceContainerHigh,
                       child: Icon(
@@ -243,9 +241,7 @@ class _TrackInfo extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                s == null
-                    ? '选择一首歌曲开始播放'
-                    : '${s.singer} · ${s.source}',
+                s == null ? '选择一首歌曲开始播放' : '${s.singer} · ${s.source}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: VxTypography.caption.copyWith(
@@ -307,11 +303,7 @@ class _CenterTransport extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (compact)
-          _CompactTransport(
-            model: model,
-            playing: playing,
-            enabled: hasSong,
-          )
+          _CompactTransport(model: model, playing: playing, enabled: hasSong)
         else
           VxPlayerControls(
             isPlaying: playing,
@@ -401,9 +393,7 @@ class _CompactTransport extends StatelessWidget {
               height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: enabled
-                    ? scheme.onSurface
-                    : scheme.surfaceContainerHigh,
+                color: enabled ? scheme.onSurface : scheme.surfaceContainerHigh,
               ),
               child: Icon(
                 playing ? Icons.pause : Icons.play_arrow,
@@ -458,19 +448,31 @@ class _RightZone extends StatelessWidget {
                 child: Text('由系统管理（后端未提供设备枚举）'),
               ),
             ],
-            icon: Icon(Icons.speaker_outlined, size: 20, color: scheme.onSurfaceVariant),
+            icon: Icon(
+              Icons.speaker_outlined,
+              size: 20,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         IconButton(
           tooltip: '歌词',
           visualDensity: VisualDensity.compact,
           onPressed: onOpenLyrics,
-          icon: Icon(Icons.lyrics_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.lyrics_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         IconButton(
           tooltip: '队列',
           visualDensity: VisualDensity.compact,
           onPressed: onOpenQueue,
-          icon: Icon(Icons.queue_music_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.queue_music_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         if (showOutputAndMore)
           PopupMenuButton<String>(
@@ -487,7 +489,11 @@ class _RightZone extends StatelessWidget {
                 model.dispatch(const bridge.FfiCommand.stop());
               }
             },
-            icon: Icon(Icons.more_horiz, size: 20, color: scheme.onSurfaceVariant),
+            icon: Icon(
+              Icons.more_horiz,
+              size: 20,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
       ],
     );
@@ -546,10 +552,12 @@ class _VolumeControlState extends State<_VolumeControl> {
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       trackHeight: 3,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 5),
-                      overlayShape:
-                          const RoundSliderOverlayShape(overlayRadius: 10),
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 5,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 10,
+                      ),
                     ),
                     child: Slider(
                       value: volume.clamp(0.0, 1.0),

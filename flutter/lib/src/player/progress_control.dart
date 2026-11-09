@@ -102,16 +102,17 @@ class _LiveSeekRowState extends State<LiveSeekRow> {
                                 : null,
                             onHorizontalDragStart: _hasDuration
                                 ? (details) => _preview(
-                                    (details.localPosition.dx / width)
-                                        .clamp(0.0, 1.0),
+                                    (details.localPosition.dx / width).clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
                                   )
                                 : null,
                             onHorizontalDragUpdate: _hasDuration
                                 ? (details) {
                                     final current = _drag ?? 0.0;
                                     _preview(
-                                      current +
-                                          details.delta.dx / width,
+                                      current + details.delta.dx / width,
                                     );
                                   }
                                 : null,

@@ -28,12 +28,7 @@ class AlbumSongsPage extends StatefulWidget {
   /// 本地专辑等场景：直接展示的曲目（来自本地曲库快照）。
   final List<bridge.SongDto>? presetSongs;
 
-  const AlbumSongsPage(
-    this.model,
-    this.album, {
-    super.key,
-    this.presetSongs,
-  });
+  const AlbumSongsPage(this.model, this.album, {super.key, this.presetSongs});
 
   @override
   State<AlbumSongsPage> createState() => _AlbumSongsPageState();
@@ -255,9 +250,7 @@ class _AlbumSongsPageState extends State<AlbumSongsPage> {
         VxDetailAction(
           icon: Icons.shuffle,
           label: '随机播放',
-          tooltip: songs.isEmpty
-              ? '曲目加载后可用'
-              : '从已载入曲目随机一首开始（顺序继续）',
+          tooltip: songs.isEmpty ? '曲目加载后可用' : '从已载入曲目随机一首开始（顺序继续）',
           onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
         ),
       ],

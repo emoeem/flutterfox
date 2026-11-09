@@ -52,10 +52,7 @@ void main() {
       expect(m.sidebar, SidebarMode.expanded);
       expect(m.context, ContextPanelMode.inline);
       expect(m.contentPadding, 28);
-      expect(
-        resolveShellMetrics(1600, contextOpen: true).contentPadding,
-        32,
-      );
+      expect(resolveShellMetrics(1600, contextOpen: true).contentPadding, 32);
     });
 
     test('1200–1439：侧栏展开、右栏浮层', () {
@@ -70,8 +67,10 @@ void main() {
       expect(m.sidebar, SidebarMode.collapsed);
       expect(m.context, ContextPanelMode.overlay);
       expect(m.contentPadding, 20);
-      expect(resolveShellMetrics(959, contextOpen: true).sidebar,
-          SidebarMode.hidden);
+      expect(
+        resolveShellMetrics(959, contextOpen: true).sidebar,
+        SidebarMode.hidden,
+      );
     });
 
     test('<960：降级布局侧栏隐藏', () {
@@ -83,8 +82,7 @@ void main() {
   });
 
   group('Shell 渲染与断点', () {
-    testWidgets('渲染：PlayerBar 常驻、侧栏 5 一级入口、Header 搜索框、右栏默认关闭',
-        (tester) async {
+    testWidgets('渲染：PlayerBar 常驻、侧栏 5 一级入口、Header 搜索框、右栏默认关闭', (tester) async {
       _setSize(tester, const Size(1440, 900));
       final model = AppModel();
       await tester.pumpWidget(_harness(model));
@@ -94,7 +92,10 @@ void main() {
       // 侧栏 5 个一级入口（探索组 3 项 + 我的音乐 + 底部下载）。
       for (final label in ['首页', '发现', '搜索', '我的音乐', '下载']) {
         expect(
-          find.descendant(of: find.byType(AppSidebar), matching: find.text(label)),
+          find.descendant(
+            of: find.byType(AppSidebar),
+            matching: find.text(label),
+          ),
           findsWidgets,
           reason: '侧栏缺少一级入口：$label',
         );
@@ -201,7 +202,12 @@ void main() {
       // 从首页切到「我的音乐」（侧栏导航行文字；组标签与导航行同名，
       // 取文档序最后的导航行）。
       await tester.tap(
-        find.descendant(of: find.byType(AppSidebar), matching: find.text('我的音乐')).last,
+        find
+            .descendant(
+              of: find.byType(AppSidebar),
+              matching: find.text('我的音乐'),
+            )
+            .last,
       );
       await tester.pumpAndSettle();
       // 我的音乐页出现（Phase 5 入口卡；页面标题与侧栏同名，改用

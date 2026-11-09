@@ -50,8 +50,7 @@ bool get _isDesktopWindowPlatform => !isTouchPlatform;
 /// 该分支只渲染壳与各页真实空/错误态（无 Rust 时 dispatch 安全返回
 /// 错误串，app_model.dart `_sendCommand`），不引入任何原生媒体能力
 /// （计划书 §11.4 边界）。
-const bool kUiOnly =
-    bool.fromEnvironment('VOICEFOX_UI_ONLY') && kDebugMode;
+const bool kUiOnly = bool.fromEnvironment('VOICEFOX_UI_ONLY') && kDebugMode;
 
 /// 验收截图起始页（与 VOICEFOX_START_SIZE 同一约定）：VOICEFOX_START_PAGE=
 /// home|discover|search|library|downloads|settings|help，缺省 home，
@@ -89,10 +88,8 @@ String? _startSettingsSectionFromEnv() {
 ShellDetailSeed? _startDetailSeedFromEnv() {
   final raw = Platform.environment['VOICEFOX_START_DETAIL']?.trim();
   if (raw == null || raw.isEmpty) return null;
-  final keyword =
-      Platform.environment['VOICEFOX_START_KEYWORD']?.trim() ?? '';
-  final source =
-      Platform.environment['VOICEFOX_START_SOURCE']?.trim() ?? 'kw';
+  final keyword = Platform.environment['VOICEFOX_START_KEYWORD']?.trim() ?? '';
+  final source = Platform.environment['VOICEFOX_START_SOURCE']?.trim() ?? 'kw';
   return ShellDetailSeed(kind: raw, keyword: keyword, source: source);
 }
 
@@ -141,7 +138,10 @@ Future<void> main() async {
     if (envSize != null) {
       final match = RegExp(r'^(\d+)x(\d+)$').firstMatch(envSize.trim());
       if (match != null) {
-        startSize = Size(double.parse(match.group(1)!), double.parse(match.group(2)!));
+        startSize = Size(
+          double.parse(match.group(1)!),
+          double.parse(match.group(2)!),
+        );
       }
     }
     // 可选起始位置：VOICEFOX_START_POS=x,y（X11 后端 + 验收截图用；
@@ -183,9 +183,7 @@ Future<void> main() async {
     settingsSection: _startSettingsSectionFromEnv(),
   );
   // Rust 引导放后台：窗口先起，骨架屏等待；就绪后 VoicefoxApp 挂 Provider 图。
-  unawaited(
-    model.bootstrapDesktop().catchError(model.reportBootstrapError),
-  );
+  unawaited(model.bootstrapDesktop().catchError(model.reportBootstrapError));
   runApp(app);
 }
 

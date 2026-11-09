@@ -12,7 +12,8 @@ import 'dart:typed_data';
 const int _maxEntries = 32;
 const Duration _timeout = Duration(seconds: 12);
 
-final LinkedHashMap<String, Uint8List> _memory = LinkedHashMap<String, Uint8List>();
+final LinkedHashMap<String, Uint8List> _memory =
+    LinkedHashMap<String, Uint8List>();
 final Map<String, Future<Uint8List?>> _inflight = {};
 
 /// 读取封面字节；`url` 支持 http(s)、file:// 与本地绝对路径。
@@ -25,15 +26,17 @@ Future<Uint8List?> loadCoverBytes(String? url) {
   }
   final pending = _inflight[url];
   if (pending != null) return pending;
-  final future = _fetch(url).then((bytes) {
-    if (bytes != null) {
-      _memory[url] = bytes;
-      while (_memory.length > _maxEntries) {
-        _memory.remove(_memory.keys.first);
-      }
-    }
-    return bytes;
-  }).whenComplete(() => _inflight.remove(url));
+  final future = _fetch(url)
+      .then((bytes) {
+        if (bytes != null) {
+          _memory[url] = bytes;
+          while (_memory.length > _maxEntries) {
+            _memory.remove(_memory.keys.first);
+          }
+        }
+        return bytes;
+      })
+      .whenComplete(() => _inflight.remove(url));
   _inflight[url] = future;
   return future;
 }

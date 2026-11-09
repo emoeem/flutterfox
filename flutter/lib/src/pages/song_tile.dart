@@ -80,8 +80,7 @@ bool showSongMenu(
   Offset? position,
   VoidCallback? onRemove,
 }) {
-  final overlay =
-      Overlay.of(context).context.findRenderObject() as RenderBox?;
+  final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
   if (overlay == null) return false;
   final anchor = position ?? const Offset(120, 120);
   final scheme = Theme.of(context).colorScheme;
@@ -298,96 +297,102 @@ class SongTile extends StatelessWidget {
     return Material(
       color: selected ? scheme.primaryContainer : Colors.transparent,
       child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      leading: CoverImage(url: song.coverUrl, size: 48),
-      title: Text(
-        index >= 0 ? '${index + 1}. ${song.name}' : song.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.titleMedium,
-      ),
-      subtitle: Text(
-        '${song.singer} · ${songSourceLabel(model, song.source)}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: favorite ? '取消收藏' : '收藏',
-            icon: Icon(
-              favorite ? Icons.favorite : Icons.favorite_border,
-              size: 20,
-              color: favorite ? Theme.of(context).colorScheme.primary : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        leading: CoverImage(url: song.coverUrl, size: 48),
+        title: Text(
+          index >= 0 ? '${index + 1}. ${song.name}' : song.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          '${song.singer} · ${songSourceLabel(model, song.source)}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: favorite ? '取消收藏' : '收藏',
+              icon: Icon(
+                favorite ? Icons.favorite : Icons.favorite_border,
+                size: 20,
+                color: favorite ? Theme.of(context).colorScheme.primary : null,
+              ),
+              onPressed: () => model.toggleFavorite(song),
             ),
-            onPressed: () => model.toggleFavorite(song),
-          ),
-          IconButton(
-            tooltip: '下载',
-            icon: const Icon(Icons.download_outlined, size: 20),
-            onPressed: () => model.download(song),
-          ),
-          PopupMenuButton<String>(
-            tooltip: '更多',
-            icon: const Icon(Icons.more_vert, size: 20),
-            onSelected: (action) {
-              if (action == 'queue') model.queueAdd(song);
-              if (action == 'play') model.playSong(song);
-              if (action == 'playlist') {
-                showAddToCustomPlaylistSheet(context, model, [song]);
-              }
-              if (action == 'remove') onRemove?.call();
-              if (action == 'artist') {
-                final artist = artistOfSong(model, song);
-                if (artist != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ArtistDetailPage(model, artist),
-                    ),
-                  );
+            IconButton(
+              tooltip: '下载',
+              icon: const Icon(Icons.download_outlined, size: 20),
+              onPressed: () => model.download(song),
+            ),
+            PopupMenuButton<String>(
+              tooltip: '更多',
+              icon: const Icon(Icons.more_vert, size: 20),
+              onSelected: (action) {
+                if (action == 'queue') model.queueAdd(song);
+                if (action == 'play') model.playSong(song);
+                if (action == 'playlist') {
+                  showAddToCustomPlaylistSheet(context, model, [song]);
                 }
-              }
-              if (action == 'album') {
-                final album = albumOfSong(model, song);
-                if (album != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => AlbumSongsPage(model, album),
-                    ),
-                  );
+                if (action == 'remove') onRemove?.call();
+                if (action == 'artist') {
+                  final artist = artistOfSong(model, song);
+                  if (artist != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ArtistDetailPage(model, artist),
+                      ),
+                    );
+                  }
                 }
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'queue', child: Text('加入队列')),
-              const PopupMenuItem(value: 'playlist', child: Text('加入歌单')),
-              const PopupMenuItem(value: 'play', child: Text('立即播放')),
-              if (artistOfSong(model, song) != null)
-                const PopupMenuItem(value: 'artist', child: Text('查看歌手')),
-              if (albumOfSong(model, song) != null)
-                const PopupMenuItem(value: 'album', child: Text('查看专辑')),
-              if (onRemove != null)
-                const PopupMenuItem(value: 'remove', child: Text('从歌单移除')),
-            ],
-          ),
-        ],
-      ),
-      onTap: () => model.playSong(song),
-      // 长按 = 触屏上的完整上下文菜单（hover 无关；桌面行为不变）。
-      onLongPress: () {
-        final box = context.findRenderObject() as RenderBox?;
-        final overlay =
-            Overlay.of(context).context.findRenderObject() as RenderBox?;
-        Offset? anchor;
-        if (box != null && overlay != null) {
-          anchor = box.localToGlobal(
-            Offset(box.size.width / 2, box.size.height / 2),
+                if (action == 'album') {
+                  final album = albumOfSong(model, song);
+                  if (album != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AlbumSongsPage(model, album),
+                      ),
+                    );
+                  }
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'queue', child: Text('加入队列')),
+                const PopupMenuItem(value: 'playlist', child: Text('加入歌单')),
+                const PopupMenuItem(value: 'play', child: Text('立即播放')),
+                if (artistOfSong(model, song) != null)
+                  const PopupMenuItem(value: 'artist', child: Text('查看歌手')),
+                if (albumOfSong(model, song) != null)
+                  const PopupMenuItem(value: 'album', child: Text('查看专辑')),
+                if (onRemove != null)
+                  const PopupMenuItem(value: 'remove', child: Text('从歌单移除')),
+              ],
+            ),
+          ],
+        ),
+        onTap: () => model.playSong(song),
+        // 长按 = 触屏上的完整上下文菜单（hover 无关；桌面行为不变）。
+        onLongPress: () {
+          final box = context.findRenderObject() as RenderBox?;
+          final overlay =
+              Overlay.of(context).context.findRenderObject() as RenderBox?;
+          Offset? anchor;
+          if (box != null && overlay != null) {
+            anchor = box.localToGlobal(
+              Offset(box.size.width / 2, box.size.height / 2),
+            );
+          }
+          showSongMenu(
+            context,
+            model,
+            song,
+            position: anchor,
+            onRemove: onRemove,
           );
-        }
-        showSongMenu(context, model, song, position: anchor, onRemove: onRemove);
-      },
+        },
       ),
     );
   }

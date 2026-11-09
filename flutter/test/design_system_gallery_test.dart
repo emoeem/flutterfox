@@ -106,10 +106,7 @@ void main() {
 
   test('时间显示规则：缺失时长显示 --:--，不伪造 00:00', () {
     expect(vxFormatDuration(null), '--:--');
-    expect(
-      vxFormatDuration(const Duration(minutes: 4, seconds: 32)),
-      '04:32',
-    );
+    expect(vxFormatDuration(const Duration(minutes: 4, seconds: 32)), '04:32');
     expect(
       vxFormatDuration(const Duration(hours: 1, minutes: 2, seconds: 3)),
       '1:02:03',

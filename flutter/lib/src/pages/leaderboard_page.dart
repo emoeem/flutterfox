@@ -15,7 +15,12 @@ class LeaderboardPage extends StatefulWidget {
   final bool showChrome;
 
   /// showChrome=false：嵌入 VoicefoxShell 时隐藏自带 AppBar（Shell Header 已有标题/返回）。
-  const LeaderboardPage(this.model, {super.key, this.initialSource, this.showChrome = true});
+  const LeaderboardPage(
+    this.model, {
+    super.key,
+    this.initialSource,
+    this.showChrome = true,
+  });
 
   @override
   State<LeaderboardPage> createState() => _LeaderboardPageState();
@@ -85,7 +90,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     final boards = result?.boards ?? const <bridge.LeaderboardDto>[];
     if (boards.isEmpty) return;
     // 默认选中首个可用榜单并直接加载榜内歌曲，用户无需先手选。
-    final selected = _boardId != null && boards.any((board) => board.id == _boardId)
+    final selected =
+        _boardId != null && boards.any((board) => board.id == _boardId)
         ? _boardId!
         : boards.first.id;
     _boardId = selected;
@@ -120,8 +126,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           // 触发榜内歌曲加载）；_boardId 尚未就位时回落首榜。
           final selectedBoard =
               _boardId != null && boards.any((board) => board.id == _boardId)
-                  ? _boardId!
-                  : (boards.isEmpty ? '' : boards.first.id);
+              ? _boardId!
+              : (boards.isEmpty ? '' : boards.first.id);
           return Column(
             children: [
               _sourceChips(context, capable, source),
@@ -290,8 +296,7 @@ class LeaderboardSongsPage extends StatefulWidget {
   final String source;
   final bridge.LeaderboardDto board;
 
-  const LeaderboardSongsPage(this.model, this.source, this.board,
-      {super.key});
+  const LeaderboardSongsPage(this.model, this.source, this.board, {super.key});
 
   @override
   State<LeaderboardSongsPage> createState() => _LeaderboardSongsPageState();
@@ -325,8 +330,11 @@ class _LeaderboardSongsPageState extends State<LeaderboardSongsPage> {
         final songs = result?.songs ?? const <bridge.SongDto>[];
         return Scaffold(
           appBar: AppBar(
-            title: Text(widget.board.name, maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+            title: Text(
+              widget.board.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             actions: [
               IconButton(
                 tooltip: '刷新',
@@ -352,8 +360,9 @@ class _LeaderboardSongsPageState extends State<LeaderboardSongsPage> {
                       ),
                     ),
                     FilledButton.icon(
-                      onPressed:
-                          songs.isEmpty ? null : () => _model.playSongs(songs),
+                      onPressed: songs.isEmpty
+                          ? null
+                          : () => _model.playSongs(songs),
                       icon: const Icon(Icons.play_arrow, size: 18),
                       label: const Text('播放全部'),
                     ),

@@ -116,10 +116,9 @@ class _MobileNowPlayingPageState extends State<MobileNowPlayingPage> {
                     ),
                     Expanded(
                       child: AnimatedSwitcher(
-                        duration:
-                            MediaQuery.disableAnimationsOf(context)
-                                ? Duration.zero
-                                : VxMotion.panelExpand,
+                        duration: MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : VxMotion.panelExpand,
                         child: KeyedSubtree(
                           key: ValueKey(_layer),
                           child: _buildLayer(context, song),
@@ -191,7 +190,12 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    Widget toggle(IconData icon, String tooltip, bool active, VoidCallback onTap) {
+    Widget toggle(
+      IconData icon,
+      String tooltip,
+      bool active,
+      VoidCallback onTap,
+    ) {
       return IconButton(
         tooltip: tooltip,
         onPressed: onTap,
@@ -267,8 +271,10 @@ class _CoverLayer extends StatelessWidget {
         final scrollFallback = height < 560;
         final coverSize = scrollFallback
             ? 240.0
-            : ((height - 330).clamp(160.0, 320.0))
-                .clamp(0.0, constraints.maxWidth - 40);
+            : ((height - 330).clamp(
+                160.0,
+                320.0,
+              )).clamp(0.0, constraints.maxWidth - 40);
         final body = _coverBody(context, coverSize);
         return GestureDetector(
           behavior: HitTestBehavior.translucent,

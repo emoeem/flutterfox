@@ -154,8 +154,9 @@ class _LibraryPageState extends State<LibraryPage> {
           decoration: BoxDecoration(
             color: scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(VxRadius.md),
-            border:
-                Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
           child: Row(
             children: [
@@ -166,9 +167,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: VxTypography.titleSm.copyWith(
-                    color: scheme.onSurface,
-                  ),
+                  style: VxTypography.titleSm.copyWith(color: scheme.onSurface),
                 ),
               ),
               Text(
@@ -254,8 +253,7 @@ class _LibraryPageState extends State<LibraryPage> {
               ),
               const SizedBox(width: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: count == 0
                       ? scheme.surfaceContainerHighest
@@ -281,7 +279,8 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _tools(BuildContext context) {
     final showSort = _tab != LibraryTab.playlists;
-    final showViewToggle = _tab == LibraryTab.albums || _tab == LibraryTab.artists;
+    final showViewToggle =
+        _tab == LibraryTab.albums || _tab == LibraryTab.artists;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -294,8 +293,10 @@ class _LibraryPageState extends State<LibraryPage> {
               hintText: '在当前视图中搜索…',
               prefixIcon: const Icon(Icons.search, size: 18),
               prefixIconConstraints: const BoxConstraints(minWidth: 34),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(VxRadius.md),
               ),
@@ -325,8 +326,10 @@ class _LibraryPageState extends State<LibraryPage> {
           IconButton(
             tooltip: _grid ? '切换为列表' : '切换为网格',
             onPressed: () => setState(() => _grid = !_grid),
-            icon: Icon(_grid ? Icons.view_list_outlined : Icons.grid_view_outlined,
-                size: 20),
+            icon: Icon(
+              _grid ? Icons.view_list_outlined : Icons.grid_view_outlined,
+              size: 20,
+            ),
           ),
         ],
         const SizedBox(width: VxSpacing.xs),
@@ -405,8 +408,7 @@ class _LibraryPageState extends State<LibraryPage> {
         model: _model,
         songs: songs,
         emptyTitle: _query.isEmpty ? '还没有收藏' : '没有匹配的歌曲',
-        emptySubtitle:
-            _query.isEmpty ? '在搜索页点击心形把歌曲收进来' : '换个关键词试试',
+        emptySubtitle: _query.isEmpty ? '在搜索页点击心形把歌曲收进来' : '换个关键词试试',
       );
     }
     final result = _model.accountFavorites(_favoriteView);
@@ -422,15 +424,12 @@ class _LibraryPageState extends State<LibraryPage> {
         onAction: () => _model.loadAccountFavorites(_favoriteView),
       );
     }
-    final songs = _sortedSongs(
-      result.songs.where(_matchesSong).toList(),
-    );
+    final songs = _sortedSongs(result.songs.where(_matchesSong).toList());
     return VxSongTable(
       model: _model,
       songs: songs,
       emptyTitle: result.notice ?? '暂无账号红心镜像',
-      emptySubtitle:
-          result.notice == null ? '请先在「发现 → 我的歌单」中同步账号歌单' : null,
+      emptySubtitle: result.notice == null ? '请先在「发现 → 我的歌单」中同步账号歌单' : null,
     );
   }
 
@@ -496,10 +495,12 @@ class _LibraryPageState extends State<LibraryPage> {
     final filtered = q.isEmpty
         ? groups
         : groups
-            .where((g) =>
-                g.name.toLowerCase().contains(q) ||
-                g.singer.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (g) =>
+                    g.name.toLowerCase().contains(q) ||
+                    g.singer.toLowerCase().contains(q),
+              )
+              .toList();
     final list = [...filtered];
     switch (_sort) {
       case 'title':
@@ -566,12 +567,12 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   bridge.AlbumDto _albumDtoOf(_AlbumGroup group) => bridge.AlbumDto(
-        id: group.albumId ?? group.name,
-        name: group.name,
-        source: group.source,
-        coverUrl: group.coverUrl,
-        artist: group.singer,
-      );
+    id: group.albumId ?? group.name,
+    name: group.name,
+    source: group.source,
+    coverUrl: group.coverUrl,
+    artist: group.singer,
+  );
 
   void _openAlbum(BuildContext context, _AlbumGroup group) {
     final album = _albumDtoOf(group);
@@ -579,11 +580,7 @@ class _LibraryPageState extends State<LibraryPage> {
       MaterialPageRoute<void>(
         builder: (_) => _model.supportsAlbum(group.source)
             ? AlbumSongsPage(_model, album)
-            : AlbumSongsPage(
-                _model,
-                album,
-                presetSongs: [...group.songs],
-              ),
+            : AlbumSongsPage(_model, album, presetSongs: [...group.songs]),
       ),
     );
   }
@@ -677,11 +674,7 @@ class _LibraryPageState extends State<LibraryPage> {
       MaterialPageRoute<void>(
         builder: (_) => _model.supportsArtist(group.source)
             ? ArtistDetailPage(_model, artist)
-            : ArtistDetailPage(
-                _model,
-                artist,
-                presetSongs: [...group.songs],
-              ),
+            : ArtistDetailPage(_model, artist, presetSongs: [...group.songs]),
       ),
     );
   }
@@ -718,9 +711,7 @@ class _LibraryPageState extends State<LibraryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: CustomPlaylistsSection(_model, query: _query),
-        ),
+        Expanded(child: CustomPlaylistsSection(_model, query: _query)),
         const Divider(height: 1),
         _favoritePlaylists(context),
       ],
@@ -733,9 +724,7 @@ class _LibraryPageState extends State<LibraryPage> {
     final q = _query.toLowerCase();
     final filtered = q.isEmpty
         ? playlists
-        : playlists
-            .where((p) => p.name.toLowerCase().contains(q))
-            .toList();
+        : playlists.where((p) => p.name.toLowerCase().contains(q)).toList();
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -807,15 +796,15 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   void _openRecent(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => RecentSongsPage(_model)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => RecentSongsPage(_model)));
   }
 
   void _openLocalMusic(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => LocalMusicPage(_model)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => LocalMusicPage(_model)));
   }
 }
 

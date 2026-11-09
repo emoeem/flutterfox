@@ -107,9 +107,7 @@ class _VxSongTableState extends State<VxSongTable> {
       }
       if (isShiftPressed() && _selected.isNotEmpty) {
         // Shift：从既有选区到点击处做范围选择。
-        final anchor = _selected.reduce(
-          (a, b) => a < b ? a : b,
-        );
+        final anchor = _selected.reduce((a, b) => a < b ? a : b);
         final start = anchor < index ? anchor : index;
         final end = anchor < index ? index : anchor;
         _selected

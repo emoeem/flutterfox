@@ -62,10 +62,9 @@ class MyuneProjection {
     );
     _playlist.adoptExternalLyrics(_toLyrics(_model.state.lyrics));
     final queue = _model.state.queue;
-    _playlist.adoptExternalQueue(
-      [for (final item in queue) _toSong(item, null)],
-      _model.state.queueIndex,
-    );
+    _playlist.adoptExternalQueue([
+      for (final item in queue) _toSong(item, null),
+    ], _model.state.queueIndex);
     _pumpToasts();
   }
 
@@ -131,16 +130,18 @@ class MyuneProjection {
     if (url == null || url.isEmpty) {
       return;
     }
-    unawaited(loadCoverBytes(url).then((bytes) {
-      if (url != _coverUrl) return;
-      _cover = bytes;
-      _playlist.adoptExternalState(
-        song: _currentSongWithCover(bytes),
-        position: _currentPosition(),
-        total: _currentTotal(),
-        playing: _currentPlaying(),
-      );
-    }));
+    unawaited(
+      loadCoverBytes(url).then((bytes) {
+        if (url != _coverUrl) return;
+        _cover = bytes;
+        _playlist.adoptExternalState(
+          song: _currentSongWithCover(bytes),
+          position: _currentPosition(),
+          total: _currentTotal(),
+          playing: _currentPlaying(),
+        );
+      }),
+    );
   }
 
   bridge.SongDto? get _currentDto => _model.state.playback.song;
@@ -212,11 +213,7 @@ class MyuneHost {
     final settings = SettingsProvider();
     final theme = ThemeProvider();
     final notifications = NotificationService();
-    final playlist = PlaylistContentNotifier(
-      settings,
-      theme,
-      notifications,
-    );
+    final playlist = PlaylistContentNotifier(settings, theme, notifications);
     // 主题初始化是异步的（字体/配色），失败不影响页面渲染。
     unawaited(theme.initialize());
     MyuneProjection(

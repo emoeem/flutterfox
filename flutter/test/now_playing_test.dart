@@ -33,45 +33,42 @@ class _RecordingModel extends AppModel {
 }
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'netease',
-      name: name,
-      singer: '测试歌手',
-      albumName: '测试专辑',
-      durationMs: BigInt.from(244000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'netease',
+  name: name,
+  singer: '测试歌手',
+  albumName: '测试专辑',
+  durationMs: BigInt.from(244000),
+  coverUrl: null,
+);
 
 bridge.LyricsDto _lyrics() => bridge.LyricsDto(
-      currentLine: 0,
-      positionMs: BigInt.zero,
-      isEmpty: false,
-      lines: [
-        bridge.LyricLineDto(
-          timestampMs: BigInt.zero,
-          durationMs: BigInt.from(10000),
-          text: '第一句歌词',
-        ),
-        bridge.LyricLineDto(
-          timestampMs: BigInt.from(10000),
-          durationMs: BigInt.from(10000),
-          text: '第二句歌词',
-        ),
-        bridge.LyricLineDto(
-          timestampMs: BigInt.from(20000),
-          durationMs: BigInt.from(10000),
-          text: '第三句歌词',
-        ),
-      ],
-    );
+  currentLine: 0,
+  positionMs: BigInt.zero,
+  isEmpty: false,
+  lines: [
+    bridge.LyricLineDto(
+      timestampMs: BigInt.zero,
+      durationMs: BigInt.from(10000),
+      text: '第一句歌词',
+    ),
+    bridge.LyricLineDto(
+      timestampMs: BigInt.from(10000),
+      durationMs: BigInt.from(10000),
+      text: '第二句歌词',
+    ),
+    bridge.LyricLineDto(
+      timestampMs: BigInt.from(20000),
+      durationMs: BigInt.from(10000),
+      text: '第三句歌词',
+    ),
+  ],
+);
 
 Widget _pageHarness(AppModel model, {VoidCallback? onClose}) {
   return MaterialApp(
     home: Scaffold(
-      body: NowPlayingPage(
-        model: model,
-        onClose: onClose ?? () {},
-      ),
+      body: NowPlayingPage(model: model, onClose: onClose ?? () {}),
     ),
   );
 }
@@ -171,8 +168,7 @@ void main() {
   });
 
   group('Shell 集成：全屏进出与 PlayerBar 隐藏', () {
-    testWidgets('点播放栏封面进全屏：PlayerBar 从树中移除；Esc 返回后恢复',
-        (tester) async {
+    testWidgets('点播放栏封面进全屏：PlayerBar 从树中移除；Esc 返回后恢复', (tester) async {
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -195,10 +191,12 @@ void main() {
 
       // 点播放栏封面 → 全屏播放页；PlayerBar 不进树（§5.1 防双重控制）。
       await tester.tap(
-        find.descendant(
-          of: find.byType(PlayerBar),
-          matching: find.byType(ClipRRect),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(PlayerBar),
+              matching: find.byType(ClipRRect),
+            )
+            .first,
       );
       await tester.pumpAndSettle();
       expect(find.byType(NowPlayingPage), findsOneWidget);
@@ -258,13 +256,14 @@ void main() {
       await tester.tap(find.text('第三句歌词'));
       await tester.pumpAndSettle();
 
-      final seeks = model.commands.whereType<bridge.FfiCommand_SeekMs>().toList();
+      final seeks = model.commands
+          .whereType<bridge.FfiCommand_SeekMs>()
+          .toList();
       expect(seeks, hasLength(1));
       expect(seeks.first.field0, BigInt.from(20000));
     });
 
-    testWidgets('无歌词：空态如实说明（后端无重取命令，不伪造重试按钮）',
-        (tester) async {
+    testWidgets('无歌词：空态如实说明（后端无重取命令，不伪造重试按钮）', (tester) async {
       final model = AppModel();
       model.debugSetPlaybackSong(
         id: 's1',
@@ -306,10 +305,11 @@ void main() {
 
     testWidgets('当前曲分组 + 待播列表渲染', (tester) async {
       final model = AppModel();
-      model.debugSetQueue(
-        [_song('a', '第一首'), _song('b', '第二首'), _song('c', '第三首')],
-        index: 0,
-      );
+      model.debugSetQueue([
+        _song('a', '第一首'),
+        _song('b', '第二首'),
+        _song('c', '第三首'),
+      ], index: 0);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -327,10 +327,11 @@ void main() {
 
     testWidgets('行菜单「移出队列」→ 真实 queueRemove 命令', (tester) async {
       final model = _RecordingModel();
-      model.debugSetQueue(
-        [_song('a', '第一首'), _song('b', '第二首'), _song('c', '第三首')],
-        index: 0,
-      );
+      model.debugSetQueue([
+        _song('a', '第一首'),
+        _song('b', '第二首'),
+        _song('c', '第三首'),
+      ], index: 0);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -346,8 +347,9 @@ void main() {
       await tester.tap(find.text('移出队列'));
       await tester.pumpAndSettle();
 
-      final removes =
-          model.commands.whereType<bridge.FfiCommand_QueueRemove>().toList();
+      final removes = model.commands
+          .whereType<bridge.FfiCommand_QueueRemove>()
+          .toList();
       expect(removes, hasLength(1));
       expect(removes.first.index, 1);
     });
@@ -378,13 +380,13 @@ void main() {
       );
     });
 
-    testWidgets('后端缺失能力：拖动排序拖柄禁用；行菜单 立即播放/下一首播放 禁用并说明',
-        (tester) async {
+    testWidgets('后端缺失能力：拖动排序拖柄禁用；行菜单 立即播放/下一首播放 禁用并说明', (tester) async {
       final model = AppModel();
-      model.debugSetQueue(
-        [_song('a', '第一首'), _song('b', '第二首'), _song('c', '第三首')],
-        index: 0,
-      );
+      model.debugSetQueue([
+        _song('a', '第一首'),
+        _song('b', '第二首'),
+        _song('c', '第三首'),
+      ], index: 0);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -395,10 +397,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final handle = tester.widget<IconButton>(
-        find.ancestor(
-          of: find.byIcon(Icons.drag_indicator),
-          matching: find.byType(IconButton),
-        ).first,
+        find
+            .ancestor(
+              of: find.byIcon(Icons.drag_indicator),
+              matching: find.byType(IconButton),
+            )
+            .first,
       );
       expect(handle.onPressed, isNull);
 

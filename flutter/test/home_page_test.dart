@@ -23,16 +23,20 @@ class _RecordingModel extends AppModel {
   }
 }
 
-bridge.SongDto _song(String id, String name, {String singer = '歌手', String source = 'wy'}) =>
-    bridge.SongDto(
-      id: id,
-      source: source,
-      name: name,
-      singer: singer,
-      albumName: '',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+bridge.SongDto _song(
+  String id,
+  String name, {
+  String singer = '歌手',
+  String source = 'wy',
+}) => bridge.SongDto(
+  id: id,
+  source: source,
+  name: name,
+  singer: singer,
+  albumName: '',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 void _useTallViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(1280, 2400);
@@ -41,17 +45,14 @@ void _useTallViewport(WidgetTester tester) {
 }
 
 Future<void> _pumpHome(WidgetTester tester, AppModel model) async {
-  await tester.pumpWidget(
-    MaterialApp(home: Scaffold(body: HomePage(model))),
-  );
+  await tester.pumpWidget(MaterialApp(home: Scaffold(body: HomePage(model))));
   await tester.pump();
   // 首页 leaderboard 区块在帧后触发浏览请求；再给一帧让状态落地。
   await tester.pump(const Duration(milliseconds: 50));
 }
 
 void main() {
-  testWidgets('无历史空态：引导 Hero（搜索/导入）+ 无 6 大卡片快捷导航',
-      (tester) async {
+  testWidgets('无历史空态：引导 Hero（搜索/导入）+ 无 6 大卡片快捷导航', (tester) async {
     final model = AppModel();
     _useTallViewport(tester);
     await _pumpHome(tester, model);
@@ -94,13 +95,9 @@ void main() {
     expect(find.text('搜索音乐'), findsNothing);
   });
 
-  testWidgets('双击最近播放卡片：恰好派发一次 playSongs（单击不重复派发）',
-      (tester) async {
+  testWidgets('双击最近播放卡片：恰好派发一次 playSongs（单击不重复派发）', (tester) async {
     final model = _RecordingModel();
-    model.debugSetHistory([
-      _song('s1', '夜航'),
-      _song('s2', 'Blue Hour'),
-    ]);
+    model.debugSetHistory([_song('s1', '夜航'), _song('s2', 'Blue Hour')]);
     _useTallViewport(tester);
     await _pumpHome(tester, model);
 
@@ -112,7 +109,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 400));
 
-    final plays = model.commands.whereType<bridge.FfiCommand_PlaySongs>().toList();
+    final plays = model.commands
+        .whereType<bridge.FfiCommand_PlaySongs>()
+        .toList();
     expect(plays, hasLength(1), reason: '双击应只派发一次播放命令');
   });
 
@@ -120,11 +119,7 @@ void main() {
     final model = AppModel();
     model.debugSetHistory([_song('s1', '夜航')]);
     model.debugSetCustomPlaylists([
-      bridge.CustomPlaylistSummaryDto(
-        id: 'p1',
-        name: '深夜开车',
-        songCount: 12,
-      ),
+      bridge.CustomPlaylistSummaryDto(id: 'p1', name: '深夜开车', songCount: 12),
     ]);
     _useTallViewport(tester);
     await _pumpHome(tester, model);

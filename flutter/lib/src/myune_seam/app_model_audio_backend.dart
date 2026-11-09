@@ -46,10 +46,9 @@ class AppModelAudioBackend implements AudioBackend {
   @override
   Stream<FftFrame> get fftStream => const Stream<FftFrame>.empty();
   @override
-  Stream<List<Device>> get audioDevicesStream =>
-      Stream<List<Device>>.value(const [
-        Device(name: 'auto', description: '系统默认'),
-      ]);
+  Stream<List<Device>> get audioDevicesStream => Stream<List<Device>>.value(
+    const [Device(name: 'auto', description: '系统默认')],
+  );
   @override
   Stream<Device> get audioDeviceStream =>
       Stream<Device>.value(const Device(name: 'auto', description: '系统默认'));
@@ -76,16 +75,14 @@ class AppModelAudioBackend implements AudioBackend {
   bool get playing => model.state.playback.state == 'playing';
   @override
   List<Device> get audioDevices => const [
-        Device(name: 'auto', description: '系统默认'),
-      ];
+    Device(name: 'auto', description: '系统默认'),
+  ];
 
   @override
   Playlist get playlist => Playlist(
-        items: [
-          for (final song in model.state.queue) Media(song.id),
-        ],
-        index: model.state.queueIndex,
-      );
+    items: [for (final song in model.state.queue) Media(song.id)],
+    index: model.state.queueIndex,
+  );
 
   /// Resolve a myune file path to a voicefox SongDto (queue first, then the
   /// local library; unknown paths fall back to a synthesized local entry).
@@ -107,24 +104,27 @@ class AppModelAudioBackend implements AudioBackend {
       return;
     }
     final name = path.split(RegExp(r'[/\\]')).last;
-    await model.playSong(bridge.SongDto(
-      id: path,
-      source: 'local',
-      name: name,
-      singer: '',
-      artistId: null,
-      albumName: '',
-      albumId: null,
-      durationMs: BigInt.zero,
-      coverUrl: null,
-    ));
+    await model.playSong(
+      bridge.SongDto(
+        id: path,
+        source: 'local',
+        name: name,
+        singer: '',
+        artistId: null,
+        albumName: '',
+        albumId: null,
+        durationMs: BigInt.zero,
+        coverUrl: null,
+      ),
+    );
   }
 
   @override
   Future<void> openAll(List<String> paths, {bool play = true}) async {
     final songs = <bridge.SongDto>[];
     for (final path in paths) {
-      final song = _resolve(path) ??
+      final song =
+          _resolve(path) ??
           bridge.SongDto(
             id: path,
             source: 'local',

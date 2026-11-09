@@ -30,12 +30,12 @@ enum DiscoverTab { playlists, leaderboard, artists, albums, categories }
 
 /// Tab 标题（与计划书 §4.2 子导航一致）。
 String discoverTabLabel(DiscoverTab tab) => switch (tab) {
-      DiscoverTab.playlists => '精选歌单',
-      DiscoverTab.leaderboard => '排行榜',
-      DiscoverTab.artists => '歌手',
-      DiscoverTab.albums => '专辑',
-      DiscoverTab.categories => '分类',
-    };
+  DiscoverTab.playlists => '精选歌单',
+  DiscoverTab.leaderboard => '排行榜',
+  DiscoverTab.artists => '歌手',
+  DiscoverTab.albums => '专辑',
+  DiscoverTab.categories => '分类',
+};
 
 /// Tab 是否可用（真实 SourceCapabilitiesDto）。
 ///
@@ -60,12 +60,12 @@ bool discoverTabEnabled(
 
 /// Tab 禁用时的解释文案。
 String discoverTabDisabledReason(DiscoverTab tab) => switch (tab) {
-      DiscoverTab.playlists => '当前音源不支持浏览歌单',
-      DiscoverTab.leaderboard => '当前音源不支持排行榜',
-      DiscoverTab.artists => '当前音源不支持歌手浏览',
-      DiscoverTab.albums => '当前音源不支持专辑浏览',
-      DiscoverTab.categories => '当前音源不提供歌单分类',
-    };
+  DiscoverTab.playlists => '当前音源不支持浏览歌单',
+  DiscoverTab.leaderboard => '当前音源不支持排行榜',
+  DiscoverTab.artists => '当前音源不支持歌手浏览',
+  DiscoverTab.albums => '当前音源不支持专辑浏览',
+  DiscoverTab.categories => '当前音源不提供歌单分类',
+};
 
 class DiscoverPage extends StatefulWidget {
   final AppModel model;
@@ -263,8 +263,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
   Widget _pageHead(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final selected =
-        _source != null ? _model.capability(_source!) : null;
+    final selected = _source != null ? _model.capability(_source!) : null;
     return Padding(
       padding: const EdgeInsets.only(top: VxSpacing.sm),
       child: Row(
@@ -311,16 +310,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
       initialValue: _source,
       onSelected: _selectSource,
       itemBuilder: (context) => [
-        const PopupMenuItem<String?>(
-          value: null,
-          child: Text('全部音源'),
-        ),
+        const PopupMenuItem<String?>(value: null, child: Text('全部音源')),
         const PopupMenuDivider(),
         for (final source in _model.state.sources)
-          PopupMenuItem<String?>(
-            value: source.id,
-            child: Text(source.name),
-          ),
+          PopupMenuItem<String?>(value: source.id, child: Text(source.name)),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -410,8 +403,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   color: !enabled
                       ? scheme.onSurfaceVariant.withValues(alpha: 0.45)
                       : selected
-                          ? scheme.primary
-                          : scheme.onSurface,
+                      ? scheme.primary
+                      : scheme.onSurface,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                 ),
               ),
@@ -487,10 +480,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
         : sources.where((s) => s.id == _source).toList();
     return ListView(
       padding: const EdgeInsets.only(bottom: VxSpacing.xl),
-      children: [
-        for (final source in scoped)
-          _playlistGroup(context, source),
-      ],
+      children: [for (final source in scoped) _playlistGroup(context, source)],
     );
   }
 
@@ -532,9 +522,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
         child: VxEmptyState(
           icon: Icons.queue_music_outlined,
           title: result.notice ?? '暂无歌单数据',
-          message: _category.isEmpty
-              ? '该音源没有返回推荐歌单。'
-              : '该分类下没有返回歌单，可以换一个分类。',
+          message: _category.isEmpty ? '该音源没有返回推荐歌单。' : '该分类下没有返回歌单，可以换一个分类。',
         ),
       );
     } else {
@@ -600,9 +588,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
   // ── 排行榜 ──
 
   Widget _leaderboardBody(BuildContext context) {
-    final capable = _model.state.sources
-        .where((s) => s.leaderboard)
-        .toList();
+    final capable = _model.state.sources.where((s) => s.leaderboard).toList();
     if (capable.isEmpty) {
       return const VxEmptyState(
         icon: Icons.leaderboard_outlined,
@@ -616,8 +602,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     return ListView(
       padding: const EdgeInsets.only(bottom: VxSpacing.xl),
       children: [
-        for (final source in scoped)
-          _leaderboardGroup(context, source),
+        for (final source in scoped) _leaderboardGroup(context, source),
       ],
     );
   }
@@ -716,7 +701,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
-          body: LeaderboardPage(_model, initialSource: sourceId, showChrome: false),
+          body: LeaderboardPage(
+            _model,
+            initialSource: sourceId,
+            showChrome: false,
+          ),
         ),
       ),
     );
@@ -740,10 +729,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
         : capable.where((s) => s.id == _source).toList();
     return ListView(
       padding: const EdgeInsets.only(bottom: VxSpacing.xl),
-      children: [
-        for (final source in scoped)
-          _categoryGroup(context, source),
-      ],
+      children: [for (final source in scoped) _categoryGroup(context, source)],
     );
   }
 

@@ -79,7 +79,8 @@ class _LyricsPanelState extends State<LyricsPanel> {
     if (_active < 0 || _active >= _lineKeys.length) return;
     final viewport =
         _viewportKey.currentContext?.findRenderObject() as RenderBox?;
-    final box = _lineKeys[_active].currentContext?.findRenderObject() as RenderBox?;
+    final box =
+        _lineKeys[_active].currentContext?.findRenderObject() as RenderBox?;
     if (viewport == null || box == null || !box.attached) return;
     if (!_controller.hasClients) return;
     final topInViewport = box.localToGlobal(Offset.zero, ancestor: viewport).dy;
@@ -149,7 +150,8 @@ class _LyricsPanelState extends State<LyricsPanel> {
           return _Status(
             icon: Icons.lyrics_outlined,
             title: '暂无歌词',
-            message: '当前曲目没有可用的歌词数据。歌词由后端在切歌时自动获取，'
+            message:
+                '当前曲目没有可用的歌词数据。歌词由后端在切歌时自动获取，'
                 '本版本暂无手动重新获取入口。',
           );
         }
@@ -343,7 +345,10 @@ class _Status extends StatelessWidget {
         children: [
           Icon(icon, size: 40, color: scheme.onSurfaceVariant),
           const SizedBox(height: 10),
-          Text(title, style: VxTypography.title.copyWith(color: scheme.onSurface)),
+          Text(
+            title,
+            style: VxTypography.title.copyWith(color: scheme.onSurface),
+          ),
           const SizedBox(height: 4),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 360),
@@ -401,10 +406,7 @@ class _LyricLine extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: compact ? 7 : 9,
-          horizontal: 2,
-        ),
+        padding: EdgeInsets.symmetric(vertical: compact ? 7 : 9, horizontal: 2),
         child: AnimatedOpacity(
           duration: duration,
           opacity: opacity,

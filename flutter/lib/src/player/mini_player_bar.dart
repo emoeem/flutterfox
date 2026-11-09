@@ -41,14 +41,15 @@ class MiniPlayerBar extends StatelessWidget {
         final playing = playback.state == 'playing';
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap:
-              onOpenNowPlaying ?? () => nowPlayingRequest.value = true,
+          onTap: onOpenNowPlaying ?? () => nowPlayingRequest.value = true,
           child: Container(
             height: 64,
             decoration: BoxDecoration(
               color: scheme.surfaceContainerLow,
               border: Border(
-                top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+                top: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.4),
+                ),
               ),
             ),
             child: Stack(
@@ -67,8 +68,7 @@ class MiniPlayerBar extends StatelessWidget {
                       builder: (context, position, duration) {
                         final total = duration.inMilliseconds;
                         final fraction = total > 0
-                            ? (position.inMilliseconds / total)
-                                .clamp(0.0, 1.0)
+                            ? (position.inMilliseconds / total).clamp(0.0, 1.0)
                             : 0.0;
                         return ColoredBox(
                           color: scheme.surfaceContainerHighest,
@@ -121,8 +121,9 @@ class MiniPlayerBar extends StatelessWidget {
                               song?.name ?? '未在播放',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: VxTypography.titleSm
-                                  .copyWith(color: scheme.onSurface),
+                              style: VxTypography.titleSm.copyWith(
+                                color: scheme.onSurface,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(

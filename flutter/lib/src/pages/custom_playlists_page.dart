@@ -52,8 +52,8 @@ class CustomPlaylistsSection extends StatelessWidget {
         final playlists = keyword.isEmpty
             ? model.state.customPlaylists
             : model.state.customPlaylists
-                .where((p) => p.name.toLowerCase().contains(keyword))
-                .toList();
+                  .where((p) => p.name.toLowerCase().contains(keyword))
+                  .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -83,9 +83,7 @@ class CustomPlaylistsSection extends StatelessWidget {
               child: playlists.isEmpty
                   ? EmptyState(
                       icon: Icons.playlist_add,
-                      title: keyword.isEmpty
-                          ? '还没有自建歌单'
-                          : '没有匹配的歌单',
+                      title: keyword.isEmpty ? '还没有自建歌单' : '没有匹配的歌单',
                       subtitle: keyword.isEmpty
                           ? '点「新建歌单」，或在歌曲菜单里选择「加入歌单」'
                           : '换个关键词试试',

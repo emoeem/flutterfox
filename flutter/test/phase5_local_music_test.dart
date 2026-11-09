@@ -8,38 +8,38 @@ import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
 import 'package:voicefox_flutter/src/pages/local_music_page.dart';
 
 bridge.ConfigDto _config({List<String> paths = const []}) => bridge.ConfigDto(
-      theme: 'catppuccin-mocha',
-      dynamicColor: false,
-      themeMode: 'system',
-      volume: 100,
-      playbackSpeed: 1.0,
-      playMode: 'none',
-      historyLimit: 100,
-      defaultSource: 'kw',
-      enabledSources: const ['kw'],
-      jsSourcesFirst: false,
-      downloadDir: '/tmp',
-      downloadQuality: null,
-      downloadConcurrency: 2,
-      showTranslation: true,
-      showYrc: false,
-      lyricOffsetMs: 0,
-      proxyUrl: '',
-      networkTimeoutSecs: BigInt.from(30),
-      localMusicEnabled: true,
-      localMusicPaths: paths,
-      localMusicMaxDepth: 0,
-    );
+  theme: 'catppuccin-mocha',
+  dynamicColor: false,
+  themeMode: 'system',
+  volume: 100,
+  playbackSpeed: 1.0,
+  playMode: 'none',
+  historyLimit: 100,
+  defaultSource: 'kw',
+  enabledSources: const ['kw'],
+  jsSourcesFirst: false,
+  downloadDir: '/tmp',
+  downloadQuality: null,
+  downloadConcurrency: 2,
+  showTranslation: true,
+  showYrc: false,
+  lyricOffsetMs: 0,
+  proxyUrl: '',
+  networkTimeoutSecs: BigInt.from(30),
+  localMusicEnabled: true,
+  localMusicPaths: paths,
+  localMusicMaxDepth: 0,
+);
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'local',
-      name: name,
-      singer: '本地歌手',
-      albumName: '本地专辑',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'local',
+  name: name,
+  singer: '本地歌手',
+  albumName: '本地专辑',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -60,10 +60,7 @@ Future<void> _pump(
 void main() {
   group('目录管理', () {
     test('localMusicPathsAfterRemove 仅移除目标且保持顺序', () {
-      final next = localMusicPathsAfterRemove(
-        ['/a', '/b', '/c'],
-        '/b',
-      );
+      final next = localMusicPathsAfterRemove(['/a', '/b', '/c'], '/b');
       expect(next, ['/a', '/c']);
       // 目标不存在时原样返回。
       expect(localMusicPathsAfterRemove(['/a'], '/x'), ['/a']);
@@ -110,10 +107,12 @@ void main() {
       expect(find.text('本地二'), findsOneWidget);
       // 播放全部在顶栏可用。
       final play = tester.widget<FilledButton>(
-        find.ancestor(
-          of: find.text('播放全部'),
-          matching: find.byType(FilledButton),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('播放全部'),
+              matching: find.byType(FilledButton),
+            )
+            .first,
       );
       expect(play.onPressed, isNotNull);
     });

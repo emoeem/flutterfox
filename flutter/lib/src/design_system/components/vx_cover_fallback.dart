@@ -36,11 +36,7 @@ class VxCoverFallback extends StatelessWidget {
   Widget _label() {
     final trimmed = title.trim();
     if (trimmed.isEmpty) {
-      return const Icon(
-        Icons.music_note,
-        size: 16,
-        color: Color(0xCCFFFFFF),
-      );
+      return const Icon(Icons.music_note, size: 16, color: Color(0xCCFFFFFF));
     }
     final first = String.fromCharCode(trimmed.runes.first).toUpperCase();
     return Text(

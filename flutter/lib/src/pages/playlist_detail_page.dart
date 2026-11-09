@@ -77,8 +77,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   /// 歌单是否已在本地收藏（收藏歌单镜像里按 source + id 匹配）。
   bool get _isFavoritePlaylist => _model.state.favoritePlaylists.any(
-        (item) => item.id == _playlist.id && item.source == _playlist.source,
-      );
+    (item) => item.id == _playlist.id && item.source == _playlist.source,
+  );
 
   void _toggleFavoritePlaylist() {
     _model.dispatch(
@@ -195,10 +195,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       eyebrow: _account ? '账号歌单' : '歌单',
       title: _playlist.name,
       meta: meta,
-      badges: [
-        songSourceLabel(_model, _playlist.source),
-        if (_account) '账号镜像',
-      ],
+      badges: [songSourceLabel(_model, _playlist.source), if (_account) '账号镜像'],
       description: (description == null || description.isEmpty)
           ? null
           : description,
@@ -221,9 +218,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         VxDetailAction(
           icon: Icons.shuffle,
           label: '随机播放',
-          tooltip: songs.isEmpty
-              ? '曲目加载后可用'
-              : '从已载入曲目随机一首开始（顺序继续）',
+          tooltip: songs.isEmpty ? '曲目加载后可用' : '从已载入曲目随机一首开始（顺序继续）',
           onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
         ),
         VxDetailAction(
@@ -237,8 +232,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             icon: Icons.sync_outlined,
             label: '同步',
             tooltip: '预览远端与本地镜像差异并同步（对话框内完成）',
-            onPressed: () =>
-                showSyncDialog(context, _model, _playlist.source),
+            onPressed: () => showSyncDialog(context, _model, _playlist.source),
           ),
       ],
       trailingActions: [
@@ -262,9 +256,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             PopupMenuItem(
               value: 'push',
               enabled: songs.isNotEmpty,
-              child: Text(
-                songs.isNotEmpty ? '推送到远端' : '推送到远端（曲目加载后可用）',
-              ),
+              child: Text(songs.isNotEmpty ? '推送到远端' : '推送到远端（曲目加载后可用）'),
             ),
           ],
         ),

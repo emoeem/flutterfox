@@ -84,7 +84,10 @@ enum TabletLayout {
 
 /// 解析宽度 → 设备形态。桌面平台（[isTouch] = false）恒为
 /// [DeviceFormFactor.desktop]，宽度完全不参与，保证桌面四档零变化。
-DeviceFormFactor resolveDeviceFormFactor(double width, {required bool isTouch}) {
+DeviceFormFactor resolveDeviceFormFactor(
+  double width, {
+  required bool isTouch,
+}) {
   if (!isTouch) return DeviceFormFactor.desktop;
   return width < MobileBreakpoints.handsetMax
       ? DeviceFormFactor.handset

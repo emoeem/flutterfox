@@ -11,41 +11,41 @@ import 'package:voicefox_flutter/src/pages/library_page.dart';
 import 'package:voicefox_flutter/src/pages/local_music_page.dart';
 
 bridge.SourceCapabilitiesDto _caps() => const bridge.SourceCapabilitiesDto(
-      id: 'kw',
-      name: 'KW',
-      playlists: true,
-      playlistCategories: false,
-      playlistSearch: true,
-      album: true,
-      artist: true,
-      leaderboard: true,
-      login: false,
-      qrLogin: false,
-    );
+  id: 'kw',
+  name: 'KW',
+  playlists: true,
+  playlistCategories: false,
+  playlistSearch: true,
+  album: true,
+  artist: true,
+  leaderboard: true,
+  login: false,
+  qrLogin: false,
+);
 
 bridge.ConfigDto _config() => bridge.ConfigDto(
-      theme: 'catppuccin-mocha',
-      dynamicColor: false,
-      themeMode: 'system',
-      volume: 60,
-      playbackSpeed: 1.0,
-      playMode: 'none',
-      historyLimit: 100,
-      defaultSource: 'kw',
-      enabledSources: ['kw'],
-      jsSourcesFirst: false,
-      downloadDir: '/tmp/music',
-      downloadQuality: null,
-      downloadConcurrency: 2,
-      showTranslation: true,
-      showYrc: false,
-      lyricOffsetMs: 0,
-      proxyUrl: '',
-      networkTimeoutSecs: BigInt.from(30),
-      localMusicEnabled: true,
-      localMusicPaths: ['/music'],
-      localMusicMaxDepth: 0,
-    );
+  theme: 'catppuccin-mocha',
+  dynamicColor: false,
+  themeMode: 'system',
+  volume: 60,
+  playbackSpeed: 1.0,
+  playMode: 'none',
+  historyLimit: 100,
+  defaultSource: 'kw',
+  enabledSources: ['kw'],
+  jsSourcesFirst: false,
+  downloadDir: '/tmp/music',
+  downloadQuality: null,
+  downloadConcurrency: 2,
+  showTranslation: true,
+  showYrc: false,
+  lyricOffsetMs: 0,
+  proxyUrl: '',
+  networkTimeoutSecs: BigInt.from(30),
+  localMusicEnabled: true,
+  localMusicPaths: ['/music'],
+  localMusicMaxDepth: 0,
+);
 
 bridge.SongDto _song(
   String id,
@@ -53,16 +53,15 @@ bridge.SongDto _song(
   String singer = '歌手甲',
   String album = '专辑壹',
   String source = 'kw',
-}) =>
-    bridge.SongDto(
-      id: id,
-      source: source,
-      name: name,
-      singer: singer,
-      albumName: album,
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+}) => bridge.SongDto(
+  id: id,
+  source: source,
+  name: name,
+  singer: singer,
+  albumName: album,
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 Future<AppModel> _pump(
   WidgetTester tester, {
@@ -108,7 +107,10 @@ void main() {
   testWidgets('歌曲视图 TrackTable 展示收藏并可搜索过滤', (tester) async {
     await _pump(
       tester,
-      favorites: [_song('f1', '夜航'), _song('f2', '白昼', singer: '歌手乙')],
+      favorites: [
+        _song('f1', '夜航'),
+        _song('f2', '白昼', singer: '歌手乙'),
+      ],
       withOthers: false,
     );
 

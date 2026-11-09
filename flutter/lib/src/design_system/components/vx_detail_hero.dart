@@ -95,8 +95,7 @@ class VxDetailHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final metaText =
-        meta.where((item) => item.trim().isNotEmpty).join(' · ');
+    final metaText = meta.where((item) => item.trim().isNotEmpty).join(' · ');
     return Padding(
       padding: padding,
       child: Row(
@@ -148,8 +147,7 @@ class VxDetailHero extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (description != null &&
-                    description!.trim().isNotEmpty) ...[
+                if (description != null && description!.trim().isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
                     description!,
@@ -181,14 +179,19 @@ class VxDetailHero extends StatelessWidget {
   }
 
   Widget _coverBox() {
-    final inner = cover ??
+    final inner =
+        cover ??
         VxCoverFallback(title: fallbackSeed ?? title, radius: VxRadius.lg);
     return Container(
       width: coverSize,
       height: coverSize,
       decoration: const BoxDecoration(
         boxShadow: [
-          BoxShadow(color: Color(0x59000000), blurRadius: 28, offset: Offset(0, 12)),
+          BoxShadow(
+            color: Color(0x59000000),
+            blurRadius: 28,
+            offset: Offset(0, 12),
+          ),
         ],
       ),
       child: ClipRRect(

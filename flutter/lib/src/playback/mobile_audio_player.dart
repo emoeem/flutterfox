@@ -99,7 +99,8 @@ abstract class MobileAudioPlayer {
 
 /// just_audio 生产实现。
 class JustAudioMobilePlayer implements MobileAudioPlayer {
-  JustAudioMobilePlayer({AudioPlayer? player}) : _player = player ?? AudioPlayer() {
+  JustAudioMobilePlayer({AudioPlayer? player})
+    : _player = player ?? AudioPlayer() {
     _subscriptions.addAll([
       _player.playerStateStream.listen(_onPlayerState),
       _player.positionStream.listen(_onPosition),
@@ -127,10 +128,8 @@ class JustAudioMobilePlayer implements MobileAudioPlayer {
 
   /// just_audio 处理状态 → 桥接相位（host_player_report 的状态字符串
   /// 与 Rust parse_host_state 一一对应）。
-  static MobilePlaybackPhase _mapPhase(
-    ProcessingState state,
-    bool playing,
-  ) => switch (state) {
+  static MobilePlaybackPhase _mapPhase(ProcessingState state, bool playing) =>
+      switch (state) {
         ProcessingState.idle => MobilePlaybackPhase.idle,
         ProcessingState.loading ||
         ProcessingState.buffering => MobilePlaybackPhase.loading,
@@ -209,7 +208,8 @@ class JustAudioMobilePlayer implements MobileAudioPlayer {
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
-  Future<void> setVolume(double volume) => _player.setVolume(volume.clamp(0.0, 1.0));
+  Future<void> setVolume(double volume) =>
+      _player.setVolume(volume.clamp(0.0, 1.0));
 
   @override
   Future<void> setSpeed(double speed) => _player.setSpeed(speed);

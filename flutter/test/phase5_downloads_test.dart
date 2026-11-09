@@ -8,14 +8,14 @@ import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
 import 'package:voicefox_flutter/src/pages/downloads_page.dart';
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'kw',
-      name: name,
-      singer: '歌手',
-      albumName: '专辑',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'kw',
+  name: name,
+  singer: '歌手',
+  albumName: '专辑',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 bridge.DownloadTaskDto _task(
   BigInt id,
@@ -25,24 +25,26 @@ bridge.DownloadTaskDto _task(
   int downloaded = 0,
   int? total,
   String? error,
-}) =>
-    bridge.DownloadTaskDto(
-      id: id,
-      name: name,
-      singer: '歌手',
-      source: 'kw',
-      quality: 'flac',
-      dest: '/tmp/$name.flac',
-      song: _song('s$id', name),
-      state: state,
-      active: active,
-      downloaded: BigInt.from(downloaded),
-      total: total == null ? null : BigInt.from(total),
-      error: error,
-      triggerAutoCache: false,
-    );
+}) => bridge.DownloadTaskDto(
+  id: id,
+  name: name,
+  singer: '歌手',
+  source: 'kw',
+  quality: 'flac',
+  dest: '/tmp/$name.flac',
+  song: _song('s$id', name),
+  state: state,
+  active: active,
+  downloaded: BigInt.from(downloaded),
+  total: total == null ? null : BigInt.from(total),
+  error: error,
+  triggerAutoCache: false,
+);
 
-Future<void> _pump(WidgetTester tester, List<bridge.DownloadTaskDto> tasks) async {
+Future<void> _pump(
+  WidgetTester tester,
+  List<bridge.DownloadTaskDto> tasks,
+) async {
   final model = AppModel();
   model.debugSetDownloads(tasks);
   await tester.pumpWidget(MaterialApp(home: DownloadsPage(model)));
@@ -79,8 +81,7 @@ void main() {
     });
 
     test('已完成/已跳过：无任何可用命令（打开/定位禁用占位）', () {
-      final ops =
-          downloadRowOpsFor(_task(BigInt.one, 'a', state: 'completed'));
+      final ops = downloadRowOpsFor(_task(BigInt.one, 'a', state: 'completed'));
       expect(ops.canOpenFile, isFalse);
       expect(ops.canRetry, isFalse);
       expect(ops.canCancel, isFalse);
@@ -110,8 +111,14 @@ void main() {
   group('下载页表格', () {
     testWidgets('进行中任务显示进度与取消，完成显示已完成的中文状态', (tester) async {
       await _pump(tester, [
-        _task(BigInt.one, '进行中歌曲',
-            state: 'downloading', active: true, downloaded: 720, total: 1000),
+        _task(
+          BigInt.one,
+          '进行中歌曲',
+          state: 'downloading',
+          active: true,
+          downloaded: 720,
+          total: 1000,
+        ),
         _task(BigInt.two, '已完成歌曲', state: 'completed'),
       ]);
 
@@ -120,10 +127,9 @@ void main() {
       expect(find.text('已完成'), findsOneWidget);
       // 取消按钮对进行中任务可用。
       final cancel = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('取消'),
-          matching: find.byType(TextButton),
-        ).first,
+        find
+            .ancestor(of: find.text('取消'), matching: find.byType(TextButton))
+            .first,
       );
       expect(cancel.onPressed, isNotNull);
     });
@@ -134,38 +140,39 @@ void main() {
       ]);
       expect(find.textContaining('失败 · 网络超时'), findsOneWidget);
       final retry = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('重试'),
-          matching: find.byType(TextButton),
-        ).first,
+        find
+            .ancestor(of: find.text('重试'), matching: find.byType(TextButton))
+            .first,
       );
       expect(retry.onPressed, isNotNull);
     });
 
     testWidgets('已完成任务的打开/定位按钮禁用并说明（无后端命令）', (tester) async {
-      await _pump(tester, [
-        _task(BigInt.one, '完成歌曲', state: 'completed'),
-      ]);
+      await _pump(tester, [_task(BigInt.one, '完成歌曲', state: 'completed')]);
       final open = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('打开'),
-          matching: find.byType(TextButton),
-        ).first,
+        find
+            .ancestor(of: find.text('打开'), matching: find.byType(TextButton))
+            .first,
       );
       expect(open.onPressed, isNull, reason: '后端没有打开文件命令，按钮必须禁用');
       final locate = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('定位'),
-          matching: find.byType(TextButton),
-        ).first,
+        find
+            .ancestor(of: find.text('定位'), matching: find.byType(TextButton))
+            .first,
       );
       expect(locate.onPressed, isNull);
     });
 
     testWidgets('筛选切换只显示对应分组，计数徽章汇总', (tester) async {
       await _pump(tester, [
-        _task(BigInt.one, '进行中歌曲',
-            state: 'downloading', active: true, downloaded: 10, total: 100),
+        _task(
+          BigInt.one,
+          '进行中歌曲',
+          state: 'downloading',
+          active: true,
+          downloaded: 10,
+          total: 100,
+        ),
         _task(BigInt.two, '完成歌曲', state: 'completed'),
         _task(BigInt.from(3), '失败歌曲', state: 'failed', error: '网络错误'),
       ]);
@@ -184,25 +191,27 @@ void main() {
 
     testWidgets('无已完成任务时清除已完成禁用；有则启用', (tester) async {
       await _pump(tester, [
-        _task(BigInt.one, '进行中歌曲',
-            state: 'downloading', active: true, downloaded: 10, total: 100),
+        _task(
+          BigInt.one,
+          '进行中歌曲',
+          state: 'downloading',
+          active: true,
+          downloaded: 10,
+          total: 100,
+        ),
       ]);
       final clear = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('清除已完成'),
-          matching: find.byType(TextButton),
-        ).first,
+        find
+            .ancestor(of: find.text('清除已完成'), matching: find.byType(TextButton))
+            .first,
       );
       expect(clear.onPressed, isNull);
 
-      await _pump(tester, [
-        _task(BigInt.two, '完成歌曲', state: 'completed'),
-      ]);
+      await _pump(tester, [_task(BigInt.two, '完成歌曲', state: 'completed')]);
       final clear2 = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('清除已完成'),
-          matching: find.byType(TextButton),
-        ).first,
+        find
+            .ancestor(of: find.text('清除已完成'), matching: find.byType(TextButton))
+            .first,
       );
       expect(clear2.onPressed, isNotNull);
     });

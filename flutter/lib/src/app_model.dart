@@ -47,6 +47,7 @@ class AppModel extends ChangeNotifier {
   // 打开后 Android 12+/桌面跟随系统 accent，持久化于 config.theme.dynamic_color。
   bool useDynamicColor = false;
   String? lastNotification;
+
   /// 最近一次可见错误（命令失败、搜索/播放/登录失败）。Shell 统一用
   /// SnackBar 呈现；`clearError` 由用户关闭提示时调用。
   String? lastError;
@@ -608,7 +609,7 @@ class AppModel extends ChangeNotifier {
   BrowseResult? accountPlaylists(String source) =>
       browse(accountPlaylistsKind, source, '');
 
-    BrowseResult? accountFavorites(String source) =>
+  BrowseResult? accountFavorites(String source) =>
       browse(accountFavoritesKind, source, 'favorites');
 
   BrowseResult? accountPlaylistDetail(String source, String id) =>
@@ -766,8 +767,7 @@ class AppModel extends ChangeNotifier {
     return dispatch(bridge.FfiCommand.pushRun(source: source));
   }
 
-  Future<void> cancelPush() =>
-      dispatch(const bridge.FfiCommand.pushCancel());
+  Future<void> cancelPush() => dispatch(const bridge.FfiCommand.pushCancel());
 
   void resetPush() {
     pushPhase = 'idle';
@@ -906,8 +906,7 @@ class AppModel extends ChangeNotifier {
 
   /// 测试钩子：替换歌词快照（不起 Rust 控制器）。
   @visibleForTesting
-  void debugSetLyrics(bridge.LyricsDto lyrics) =>
-      _replaceState(lyrics: lyrics);
+  void debugSetLyrics(bridge.LyricsDto lyrics) => _replaceState(lyrics: lyrics);
 
   /// 测试钩子：替换最近播放历史（不起 Rust 控制器）。
   @visibleForTesting
@@ -921,8 +920,7 @@ class AppModel extends ChangeNotifier {
 
   /// 测试钩子：替换搜索快照（不起 Rust 控制器）。
   @visibleForTesting
-  void debugSetSearch(bridge.SearchDto search) =>
-      _replaceState(search: search);
+  void debugSetSearch(bridge.SearchDto search) => _replaceState(search: search);
 
   /// 测试钩子：替换队列与当前索引（不起 Rust 控制器）。
   @visibleForTesting

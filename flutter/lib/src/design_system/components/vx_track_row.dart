@@ -127,9 +127,12 @@ class VxTrackRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final callbacks = [onPlay, onAddToQueue, onLike, onMore]
-        .whereType<VoidCallback>()
-        .length;
+    final callbacks = [
+      onPlay,
+      onAddToQueue,
+      onLike,
+      onMore,
+    ].whereType<VoidCallback>().length;
     final hasActions = callbacks > 0;
     final normalBg = isPlaying
         ? scheme.primary.withValues(alpha: 0.10)
@@ -208,10 +211,7 @@ class VxTrackRow extends StatelessWidget {
             if (source != null) ...[
               const SizedBox(width: VxSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(6),
@@ -249,8 +249,12 @@ class VxTrackRow extends StatelessWidget {
                       if (onPlay != null)
                         _rowIcon(context, Icons.play_arrow, '播放', onPlay),
                       if (onAddToQueue != null)
-                        _rowIcon(context, Icons.queue_music, '加入队列',
-                            onAddToQueue),
+                        _rowIcon(
+                          context,
+                          Icons.queue_music,
+                          '加入队列',
+                          onAddToQueue,
+                        ),
                       if (onLike != null)
                         _rowIcon(
                           context,

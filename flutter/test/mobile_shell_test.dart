@@ -99,7 +99,10 @@ void main() {
       expect(find.byType(MiniPlayerBar), findsOneWidget);
       // 首页 Hero 也展示当前曲目，断言限定在迷你播放栏内。
       expect(
-        find.descendant(of: find.byType(MiniPlayerBar), matching: find.text('夜航')),
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
         findsOneWidget,
       );
 
@@ -111,7 +114,10 @@ void main() {
       // IndexedStack 常驻：迷你播放栏与曲目信息不重置。
       expect(find.byType(MiniPlayerBar), findsOneWidget);
       expect(
-        find.descendant(of: find.byType(MiniPlayerBar), matching: find.text('夜航')),
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
         findsOneWidget,
       );
       expect(model.state.playback.positionMs, BigInt.from(42000));
@@ -181,10 +187,9 @@ void main() {
 
       // 侧栏底部「设置」行 → 设置页（抽屉关闭）。
       await tester.tap(
-        find.descendant(
-          of: find.byType(AppSidebar),
-          matching: find.text('设置'),
-        ).last,
+        find
+            .descendant(of: find.byType(AppSidebar), matching: find.text('设置'))
+            .last,
       );
       await tester.pumpAndSettle();
       expect(find.byType(AppSidebar), findsNothing);
@@ -195,10 +200,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.descendant(
-          of: find.byType(AppSidebar),
-          matching: find.text('帮助'),
-        ).last,
+        find
+            .descendant(of: find.byType(AppSidebar), matching: find.text('帮助'))
+            .last,
       );
       await tester.pumpAndSettle();
       expect(find.text('功能地图'), findsOneWidget);
@@ -223,7 +227,10 @@ void main() {
 
       // 点歌名区域（避开行尾控制按钮；限定迷你播放栏内的文本）。
       await tester.tap(
-        find.descendant(of: find.byType(MiniPlayerBar), matching: find.text('夜航')),
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
       );
       await tester.pumpAndSettle();
 

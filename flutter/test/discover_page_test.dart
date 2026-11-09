@@ -31,17 +31,17 @@ bridge.SourceCapabilitiesDto _source(
   bool artist = false,
   bool leaderboard = false,
 }) => bridge.SourceCapabilitiesDto(
-      id: id,
-      name: name,
-      playlists: playlists,
-      playlistCategories: playlistCategories,
-      playlistSearch: playlists,
-      album: album,
-      artist: artist,
-      leaderboard: leaderboard,
-      login: false,
-      qrLogin: false,
-    );
+  id: id,
+  name: name,
+  playlists: playlists,
+  playlistCategories: playlistCategories,
+  playlistSearch: playlists,
+  album: album,
+  artist: artist,
+  leaderboard: leaderboard,
+  login: false,
+  qrLogin: false,
+);
 
 Future<void> _pumpDiscover(WidgetTester tester, AppModel model) async {
   tester.view.physicalSize = const Size(1280, 1600);
@@ -56,53 +56,58 @@ Future<void> _pumpDiscover(WidgetTester tester, AppModel model) async {
 
 void main() {
   group('discoverTabEnabled 禁用逻辑（真实 SourceCapabilitiesDto）', () {
-    final wy = _source('wy', '网易云',
-        playlists: true,
-        playlistCategories: true,
-        leaderboard: true,
-        album: true,
-        artist: true);
+    final wy = _source(
+      'wy',
+      '网易云',
+      playlists: true,
+      playlistCategories: true,
+      leaderboard: true,
+      album: true,
+      artist: true,
+    );
     final tx = _source('tx', 'QQ音乐', playlists: true);
     final sources = [wy, tx];
 
     test('全部音源：按能力并集判定', () {
-      expect(
-        discoverTabEnabled(DiscoverTab.playlists, sources),
-        isTrue,
-      );
-      expect(
-        discoverTabEnabled(DiscoverTab.leaderboard, sources),
-        isTrue,
-      );
-      expect(
-        discoverTabEnabled(DiscoverTab.categories, sources),
-        isTrue,
-      );
+      expect(discoverTabEnabled(DiscoverTab.playlists, sources), isTrue);
+      expect(discoverTabEnabled(DiscoverTab.leaderboard, sources), isTrue);
+      expect(discoverTabEnabled(DiscoverTab.categories, sources), isTrue);
       expect(discoverTabEnabled(DiscoverTab.artists, sources), isTrue);
       expect(discoverTabEnabled(DiscoverTab.albums, sources), isTrue);
     });
 
     test('单源 tx：只支持歌单，其余 Tab 禁用', () {
       const txId = 'tx';
-      expect(discoverTabEnabled(DiscoverTab.playlists, sources, source: txId),
-          isTrue);
       expect(
-          discoverTabEnabled(DiscoverTab.leaderboard, sources, source: txId),
-          isFalse);
+        discoverTabEnabled(DiscoverTab.playlists, sources, source: txId),
+        isTrue,
+      );
       expect(
-          discoverTabEnabled(DiscoverTab.categories, sources, source: txId),
-          isFalse);
-      expect(discoverTabEnabled(DiscoverTab.artists, sources, source: txId),
-          isFalse);
-      expect(discoverTabEnabled(DiscoverTab.albums, sources, source: txId),
-          isFalse);
+        discoverTabEnabled(DiscoverTab.leaderboard, sources, source: txId),
+        isFalse,
+      );
+      expect(
+        discoverTabEnabled(DiscoverTab.categories, sources, source: txId),
+        isFalse,
+      );
+      expect(
+        discoverTabEnabled(DiscoverTab.artists, sources, source: txId),
+        isFalse,
+      );
+      expect(
+        discoverTabEnabled(DiscoverTab.albums, sources, source: txId),
+        isFalse,
+      );
     });
 
     test('单源 wy：全 Tab 可用', () {
       const wyId = 'wy';
       for (final tab in DiscoverTab.values) {
-        expect(discoverTabEnabled(tab, sources, source: wyId), isTrue,
-            reason: '${tab.name} 应可用');
+        expect(
+          discoverTabEnabled(tab, sources, source: wyId),
+          isTrue,
+          reason: '${tab.name} 应可用',
+        );
       }
     });
 
@@ -115,9 +120,7 @@ void main() {
 
   testWidgets('渲染：Tab 栏 + 不支持的 Tab 禁用（tooltip 原因）', (tester) async {
     final model = AppModel();
-    model.debugSetSources([
-      _source('wy', '网易云', playlists: true),
-    ]);
+    model.debugSetSources([_source('wy', '网易云', playlists: true)]);
     await _pumpDiscover(tester, model);
 
     expect(find.text('发现音乐'), findsOneWidget);
@@ -133,9 +136,7 @@ void main() {
 
   testWidgets('禁用 Tab 点击不切换', (tester) async {
     final model = AppModel();
-    model.debugSetSources([
-      _source('wy', '网易云', playlists: true),
-    ]);
+    model.debugSetSources([_source('wy', '网易云', playlists: true)]);
     await _pumpDiscover(tester, model);
 
     await tester.tap(find.text('排行榜'), warnIfMissed: false);
@@ -162,12 +163,7 @@ void main() {
       source: 'wy',
       id: '',
       playlists: [
-        bridge.PlaylistDto(
-          id: 'p1',
-          name: '华语经典',
-          source: 'wy',
-          songCount: 30,
-        ),
+        bridge.PlaylistDto(id: 'p1', name: '华语经典', source: 'wy', songCount: 30),
       ],
     );
     model.debugBrowseLoaded(
@@ -175,12 +171,7 @@ void main() {
       source: 'tx',
       id: '',
       playlists: [
-        bridge.PlaylistDto(
-          id: 'p2',
-          name: '欧美热榜',
-          source: 'tx',
-          songCount: 50,
-        ),
+        bridge.PlaylistDto(id: 'p2', name: '欧美热榜', source: 'tx', songCount: 50),
       ],
     );
     await tester.pumpAndSettle();
@@ -199,10 +190,13 @@ void main() {
   testWidgets('单源切换后按新源能力回落 Tab 并加载数据', (tester) async {
     final model = _RecordingModel();
     model.debugSetSources([
-      _source('wy', '网易云',
-          playlists: true,
-          leaderboard: true,
-          playlistCategories: true),
+      _source(
+        'wy',
+        '网易云',
+        playlists: true,
+        leaderboard: true,
+        playlistCategories: true,
+      ),
       _source('tx', 'QQ音乐', playlists: true),
     ]);
     await _pumpDiscover(tester, model);
@@ -213,9 +207,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     // 请求了支持榜单的音源目录。
     expect(
-      model.commands
-          .whereType<bridge.FfiCommand_LeaderboardBoards>()
-          .map((c) => c.source),
+      model.commands.whereType<bridge.FfiCommand_LeaderboardBoards>().map(
+        (c) => c.source,
+      ),
       contains('wy'),
     );
 
@@ -226,16 +220,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('音源：QQ音乐'), findsOneWidget);
-    expect(find.text('今日精选'), findsOneWidget,
-        reason: '排行榜 Tab 不可用时应回落到精选歌单');
+    expect(find.text('今日精选'), findsOneWidget, reason: '排行榜 Tab 不可用时应回落到精选歌单');
     expect(find.byIcon(Icons.block_outlined), findsNWidgets(4));
   });
 
   testWidgets('歌手 / 专辑 Tab：显示解释文案而非伪造数据', (tester) async {
     final model = AppModel();
     model.debugSetSources([
-      _source('wy', '网易云',
-          playlists: true, artist: true, album: true),
+      _source('wy', '网易云', playlists: true, artist: true, album: true),
     ]);
     await _pumpDiscover(tester, model);
 
@@ -251,9 +243,7 @@ void main() {
 
   testWidgets('排行榜 Tab：真实榜单行卡渲染', (tester) async {
     final model = AppModel();
-    model.debugSetSources([
-      _source('wy', '网易云', leaderboard: true),
-    ]);
+    model.debugSetSources([_source('wy', '网易云', leaderboard: true)]);
     await _pumpDiscover(tester, model);
 
     await tester.tap(find.text('排行榜'));
@@ -262,9 +252,7 @@ void main() {
       kind: 'leaderboard_boards',
       source: 'wy',
       id: '',
-      boards: [
-        bridge.LeaderboardDto(id: 'b1', name: '飙升榜', source: 'wy'),
-      ],
+      boards: [bridge.LeaderboardDto(id: 'b1', name: '飙升榜', source: 'wy')],
     );
     await tester.pumpAndSettle();
 

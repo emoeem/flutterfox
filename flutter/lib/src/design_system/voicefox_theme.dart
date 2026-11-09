@@ -23,12 +23,8 @@ ThemeData buildDarkTheme() => _buildTheme(_darkScheme(), _darkTextTheme());
 ThemeData buildLightTheme() => _buildTheme(_lightScheme(), _lightTextTheme());
 
 /// 等宽数字样式：tabular figures + JetBrainsMono（assets/fonts，OFL）。
-TextStyle vxMonoStyle(Color? color, {double? fontSize}) =>
-    VxTypography.mono.copyWith(
-      fontFamily: kMonoFamily,
-      color: color,
-      fontSize: fontSize,
-    );
+TextStyle vxMonoStyle(Color? color, {double? fontSize}) => VxTypography.mono
+    .copyWith(fontFamily: kMonoFamily, color: color, fontSize: fontSize);
 
 ColorScheme _darkScheme() => const ColorScheme.dark(
   primary: VxColors.accent,

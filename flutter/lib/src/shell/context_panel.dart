@@ -82,9 +82,7 @@ class _ContextPanelState extends State<ContextPanel> {
                 Expanded(
                   child: Text(
                     titles,
-                    style: VxTypography.title.copyWith(
-                      color: scheme.onSurface,
-                    ),
+                    style: VxTypography.title.copyWith(color: scheme.onSurface),
                   ),
                 ),
                 IconButton(
@@ -115,14 +113,22 @@ class _ContextPanelState extends State<ContextPanel> {
               ],
             ),
           ),
-          Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+          Divider(
+            height: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.4),
+          ),
           Expanded(
             child: switch (widget.tab) {
               ContextTab.nowPlaying => _NowPlayingTab(model: widget.model),
-              ContextTab.lyrics =>
-                LyricsPanel(key: ValueKey(widget.tab), model: widget.model, compact: true),
-              ContextTab.queue =>
-                QueuePanel(key: ValueKey(widget.tab), model: widget.model),
+              ContextTab.lyrics => LyricsPanel(
+                key: ValueKey(widget.tab),
+                model: widget.model,
+                compact: true,
+              ),
+              ContextTab.queue => QueuePanel(
+                key: ValueKey(widget.tab),
+                model: widget.model,
+              ),
             },
           ),
         ],
@@ -152,10 +158,7 @@ class _ResizeHandle extends StatelessWidget {
             ),
           );
         },
-        child: SizedBox(
-          width: 8,
-          height: ShellBreakpoints.headerHeight,
-        ),
+        child: SizedBox(width: 8, height: ShellBreakpoints.headerHeight),
       ),
     );
   }
@@ -276,7 +279,9 @@ class _NowPlayingTab extends StatelessWidget {
                     icon: Icon(
                       favorite ? Icons.favorite : Icons.favorite_border,
                       size: 20,
-                      color: favorite ? scheme.primary : scheme.onSurfaceVariant,
+                      color: favorite
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
                     ),
                   ),
                   Text(

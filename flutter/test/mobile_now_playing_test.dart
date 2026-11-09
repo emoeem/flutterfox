@@ -20,14 +20,14 @@ import 'package:voicefox_flutter/src/player/now_playing_page.dart';
 import 'package:voicefox_flutter/src/player/queue_panel.dart';
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'netease',
-      name: name,
-      singer: '测试歌手',
-      albumName: '测试专辑',
-      durationMs: BigInt.from(244000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'netease',
+  name: name,
+  singer: '测试歌手',
+  albumName: '测试专辑',
+  durationMs: BigInt.from(244000),
+  coverUrl: null,
+);
 
 Widget _harness(AppModel model, {VoidCallback? onClose}) {
   return MaterialApp(
@@ -119,11 +119,7 @@ void main() {
     await tester.pumpWidget(_harness(model));
     await tester.pumpAndSettle();
 
-    await tester.fling(
-      find.byType(CrossfadeCover),
-      const Offset(0, -200),
-      800,
-    );
+    await tester.fling(find.byType(CrossfadeCover), const Offset(0, -200), 800);
     await tester.pumpAndSettle();
     expect(find.byType(LyricsPanel), findsOneWidget);
   });
@@ -189,8 +185,7 @@ void main() {
     expect(find.text('第一句歌词'), findsOneWidget);
   });
 
-  testWidgets('队列层：QueuePanel 复用；拖拽排序如实禁用并说明（后端无命令）',
-      (tester) async {
+  testWidgets('队列层：QueuePanel 复用；拖拽排序如实禁用并说明（后端无命令）', (tester) async {
     _setSize(tester, const Size(390, 844));
     final model = AppModel();
     model.debugSetPlaybackSong(
@@ -211,10 +206,7 @@ void main() {
     expect(find.byType(QueuePanel), findsOneWidget);
     expect(find.text('队列曲一'), findsOneWidget);
     // 拖柄禁用 + 原因说明（queue_panel.dart:194，不伪造拖拽）。
-    expect(
-      find.byTooltip('后端暂无队列排序命令，暂不支持拖动排序'),
-      findsWidgets,
-    );
+    expect(find.byTooltip('后端暂无队列排序命令，暂不支持拖动排序'), findsWidgets);
   });
 
   testWidgets('空队列：队列为空态', (tester) async {

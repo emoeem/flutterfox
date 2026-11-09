@@ -37,20 +37,22 @@ const _album = bridge.AlbumDto(
 );
 
 bridge.SongDto _song(String name) => bridge.SongDto(
-      id: 's1',
-      source: 'kw',
-      name: name,
-      singer: '歌手',
-      albumName: '专辑',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+  id: 's1',
+  source: 'kw',
+  name: name,
+  singer: '歌手',
+  albumName: '专辑',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 void main() {
   testWidgets('歌手页热门歌曲串到专辑详情', (tester) async {
     final model = AppModel();
     model.debugSetSources([_caps()]);
-    await tester.pumpWidget(MaterialApp(home: ArtistDetailPage(model, _artist)));
+    await tester.pumpWidget(
+      MaterialApp(home: ArtistDetailPage(model, _artist)),
+    );
     await tester.pump();
 
     model.debugBrowseLoaded(
@@ -102,7 +104,9 @@ void main() {
   testWidgets('歌手页不支持时展示能力提示', (tester) async {
     final model = AppModel();
     model.debugSetSources([_caps(artist: false, album: false)]);
-    await tester.pumpWidget(MaterialApp(home: ArtistDetailPage(model, _artist)));
+    await tester.pumpWidget(
+      MaterialApp(home: ArtistDetailPage(model, _artist)),
+    );
     await tester.pump();
 
     model.debugBrowseLoaded(
@@ -121,11 +125,7 @@ void main() {
     await tester.pump();
     expect(find.text('加载中…'), findsOneWidget);
 
-    model.debugBrowseLoaded(
-      kind: 'album_songs',
-      source: 'kw',
-      id: '专辑',
-    );
+    model.debugBrowseLoaded(kind: 'album_songs', source: 'kw', id: '专辑');
     await tester.pump();
     expect(find.text('专辑暂无曲目'), findsOneWidget);
     expect(find.text('暂无可播放曲目'), findsOneWidget);

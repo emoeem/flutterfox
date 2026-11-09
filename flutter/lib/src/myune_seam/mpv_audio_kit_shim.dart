@@ -43,7 +43,10 @@ class Gapless {
 
 /// Configuration accepted by the vendored constructor call sites.
 class PlayerConfiguration {
-  const PlayerConfiguration({this.autoPlay = false, this.resumePlayback = false});
+  const PlayerConfiguration({
+    this.autoPlay = false,
+    this.resumePlayback = false,
+  });
 
   final bool autoPlay;
   final bool resumePlayback;
@@ -89,9 +92,9 @@ class Ebur128 {
   final bool metadata;
 
   Ebur128 copyWith({bool? enabled, bool? metadata}) => Ebur128(
-        enabled: enabled ?? this.enabled,
-        metadata: metadata ?? this.metadata,
-      );
+    enabled: enabled ?? this.enabled,
+    metadata: metadata ?? this.metadata,
+  );
 }
 
 /// One named audio-effect group. The vendored UI turns effects on/off through
@@ -127,8 +130,7 @@ class EffectsSetting {
     String? delays,
     String? decays,
     int? order,
-  }) =>
-      EffectsSetting(enabled: enabled ?? this.enabled);
+  }) => EffectsSetting(enabled: enabled ?? this.enabled);
 }
 
 class AudioEffects {
@@ -149,13 +151,12 @@ class AudioEffects {
     Ebur128? ebur128,
     ArnndnSettings? arnndn,
     Map<String, EffectsSetting>? settings,
-  }) =>
-      AudioEffects(
-        custom: custom ?? this.custom,
-        ebur128: ebur128 ?? this.ebur128,
-        arnndn: arnndn ?? this.arnndn,
-        settings: settings ?? this.settings,
-      );
+  }) => AudioEffects(
+    custom: custom ?? this.custom,
+    ebur128: ebur128 ?? this.ebur128,
+    arnndn: arnndn ?? this.arnndn,
+    settings: settings ?? this.settings,
+  );
 
   AudioEffects updateEbur128(Ebur128 Function(Ebur128) update) =>
       copyWith(ebur128: update(ebur128));
@@ -169,31 +170,56 @@ class AudioEffects {
     return copyWith(settings: next);
   }
 
-  AudioEffects updateAcompressor(EffectsSetting Function(EffectsSetting) fn) => _update('acompressor', fn);
-  AudioEffects updateAcrusher(EffectsSetting Function(EffectsSetting) fn) => _update('acrusher', fn);
-  AudioEffects updateAdeclip(EffectsSetting Function(EffectsSetting) fn) => _update('adeclip', fn);
-  AudioEffects updateAecho(EffectsSetting Function(EffectsSetting) fn) => _update('aecho', fn);
-  AudioEffects updateAemphasis(EffectsSetting Function(EffectsSetting) fn) => _update('aemphasis', fn);
-  AudioEffects updateAexciter(EffectsSetting Function(EffectsSetting) fn) => _update('aexciter', fn);
-  AudioEffects updateAfftdn(EffectsSetting Function(EffectsSetting) fn) => _update('afftdn', fn);
-  AudioEffects updateAgate(EffectsSetting Function(EffectsSetting) fn) => _update('agate', fn);
-  AudioEffects updateAlimiter(EffectsSetting Function(EffectsSetting) fn) => _update('alimiter', fn);
-  AudioEffects updateAsoftclip(EffectsSetting Function(EffectsSetting) fn) => _update('asoftclip', fn);
-  AudioEffects updateAsubboost(EffectsSetting Function(EffectsSetting) fn) => _update('asubboost', fn);
-  AudioEffects updateAtilt(EffectsSetting Function(EffectsSetting) fn) => _update('atilt', fn);
-  AudioEffects updateBass(EffectsSetting Function(EffectsSetting) fn) => _update('bass', fn);
-  AudioEffects updateCrossfeed(EffectsSetting Function(EffectsSetting) fn) => _update('crossfeed', fn);
-  AudioEffects updateCrystalizer(EffectsSetting Function(EffectsSetting) fn) => _update('crystalizer', fn);
-  AudioEffects updateDeesser(EffectsSetting Function(EffectsSetting) fn) => _update('deesser', fn);
-  AudioEffects updateExtrastereo(EffectsSetting Function(EffectsSetting) fn) => _update('extrastereo', fn);
-  AudioEffects updateHaas(EffectsSetting Function(EffectsSetting) fn) => _update('haas', fn);
-  AudioEffects updateHighpass(EffectsSetting Function(EffectsSetting) fn) => _update('highpass', fn);
-  AudioEffects updateLowpass(EffectsSetting Function(EffectsSetting) fn) => _update('lowpass', fn);
-  AudioEffects updateStereotools(EffectsSetting Function(EffectsSetting) fn) => _update('stereotools', fn);
-  AudioEffects updateStereowiden(EffectsSetting Function(EffectsSetting) fn) => _update('stereowiden', fn);
-  AudioEffects updateTiltshelf(EffectsSetting Function(EffectsSetting) fn) => _update('tiltshelf', fn);
-  AudioEffects updateTreble(EffectsSetting Function(EffectsSetting) fn) => _update('treble', fn);
-  AudioEffects updateVirtualbass(EffectsSetting Function(EffectsSetting) fn) => _update('virtualbass', fn);
+  AudioEffects updateAcompressor(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('acompressor', fn);
+  AudioEffects updateAcrusher(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('acrusher', fn);
+  AudioEffects updateAdeclip(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('adeclip', fn);
+  AudioEffects updateAecho(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('aecho', fn);
+  AudioEffects updateAemphasis(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('aemphasis', fn);
+  AudioEffects updateAexciter(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('aexciter', fn);
+  AudioEffects updateAfftdn(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('afftdn', fn);
+  AudioEffects updateAgate(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('agate', fn);
+  AudioEffects updateAlimiter(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('alimiter', fn);
+  AudioEffects updateAsoftclip(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('asoftclip', fn);
+  AudioEffects updateAsubboost(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('asubboost', fn);
+  AudioEffects updateAtilt(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('atilt', fn);
+  AudioEffects updateBass(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('bass', fn);
+  AudioEffects updateCrossfeed(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('crossfeed', fn);
+  AudioEffects updateCrystalizer(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('crystalizer', fn);
+  AudioEffects updateDeesser(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('deesser', fn);
+  AudioEffects updateExtrastereo(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('extrastereo', fn);
+  AudioEffects updateHaas(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('haas', fn);
+  AudioEffects updateHighpass(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('highpass', fn);
+  AudioEffects updateLowpass(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('lowpass', fn);
+  AudioEffects updateStereotools(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('stereotools', fn);
+  AudioEffects updateStereowiden(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('stereowiden', fn);
+  AudioEffects updateTiltshelf(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('tiltshelf', fn);
+  AudioEffects updateTreble(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('treble', fn);
+  AudioEffects updateVirtualbass(EffectsSetting Function(EffectsSetting) fn) =>
+      _update('virtualbass', fn);
 }
 
 /// Spectrum generator settings (mpv_audio_kit SpectrumSettings subset).
@@ -380,13 +406,13 @@ class PlayerState {
   final double rate;
 
   Map<String, Object?> toJson() => {
-        'duration': duration.inMilliseconds,
-        'position': position.inMilliseconds,
-        'playing': playing,
-        'volume': volume,
-        'pitch': pitch,
-        'rate': rate,
-      };
+    'duration': duration.inMilliseconds,
+    'position': position.inMilliseconds,
+    'playing': playing,
+    'volume': volume,
+    'pitch': pitch,
+    'rate': rate,
+  };
 }
 
 /// The playback engine seam. voicefox implements this against AppModel;
@@ -397,6 +423,7 @@ abstract class AudioBackend {
   Stream<Duration> get durationStream;
   Stream<bool> get completedStream;
   Stream<MpvPlayerError> get errorStream;
+
   /// Optional visualiser data; the analysis page tolerates absence.
   Stream<PcmFrame> get pcmStream;
   Stream<FftFrame> get fftStream;
@@ -448,7 +475,8 @@ class NoopAudioBackend implements AudioBackend {
   @override
   Stream<bool> get completedStream => const Stream<bool>.empty();
   @override
-  Stream<MpvPlayerError> get errorStream => const Stream<MpvPlayerError>.empty();
+  Stream<MpvPlayerError> get errorStream =>
+      const Stream<MpvPlayerError>.empty();
   @override
   Stream<PcmFrame> get pcmStream => const Stream<PcmFrame>.empty();
   @override
@@ -490,12 +518,12 @@ class Player {
 
   PlayerStream get stream => PlayerStream._(_backend);
   PlayerState get state => PlayerState(
-        playlist: _backend.playlist,
-        duration: _backend.duration,
-        position: _backend.position,
-        playing: _backend.playing,
-        audioDevices: _backend.audioDevices,
-      );
+    playlist: _backend.playlist,
+    duration: _backend.duration,
+    position: _backend.position,
+    playing: _backend.playing,
+    audioDevices: _backend.audioDevices,
+  );
 
   Future<void> open(Media media, {bool play = false}) =>
       _backend.open(media.uri, play: play);
@@ -516,9 +544,7 @@ class Player {
   Future<void> setAudioDevice(Device device) => _backend.setAudioDevice(device);
   Future<void> setMediaSession(MediaSession? session) =>
       _backend.setMediaSession(session);
-  Future<void> updateAudioEffects(
-    AudioEffects Function(AudioEffects) update,
-  ) =>
+  Future<void> updateAudioEffects(AudioEffects Function(AudioEffects) update) =>
       _backend.updateAudioEffects(update);
   Future<void> setSpectrum(SpectrumSettings settings) =>
       _backend.setSpectrum(settings);
