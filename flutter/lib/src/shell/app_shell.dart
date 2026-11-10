@@ -25,6 +25,7 @@ import '../pages/discover_page.dart';
 import '../pages/downloads_page.dart';
 import '../pages/help_page.dart';
 import '../pages/home_page.dart';
+import '../pages/mobile_home_page.dart';
 import '../pages/library_page.dart';
 import '../pages/local_music_page.dart';
 import '../pages/playlist_detail_page.dart';
@@ -628,20 +629,30 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
   }
 }
 
+/// Shell 页面形态（Phase 2）：同一目的地在不同壳形态下可使用不同页面
+/// 实现。桌面缺省 [desktop]（零变化铁律）；MobileShell 传 [mobile]
+/// （home 槽产 MobileHomePage，§5.2）；TabletShell 显式维持缺省 desktop
+/// （平板 home 槽沿用桌面 HomePage，偏差已登记 04-defect-matrix，
+/// 待平板阶段 §6.3 裁决）。
+enum ShellFormFactor { desktop, mobile }
+
 /// 构造目的地页面（Phase 7 从 _VoicefoxShellState._pageFor 提取共享）：
 /// 桌面 VoicefoxShell 与移动 MobileShell/TabletShell 的 IndexedStack
 /// 都用它建页，保证同一目的地在两种壳里是同一页面实现。
 /// [searchSeed] 搜索页种子（桌面 Header 提交联动）；[libraryTab]/
-/// [settingsSection] 为 VOICEFOX_START_* 验收种子（移动壳默认 null）。
+/// [settingsSection] 为 VOICEFOX_START_* 验收种子（移动壳默认 null）；
+/// [form] 选择壳形态（见 [ShellFormFactor]，缺省 desktop 桌面行为不变）。
 Widget buildShellPage(
   AppModel model,
   ShellDestination dest, {
   String searchSeed = '',
   LibraryTab? libraryTab,
   SettingsSection? settingsSection,
+  ShellFormFactor form = ShellFormFactor.desktop,
 }) {
   return switch (dest) {
-    ShellDestination.home => HomePage(model),
+    ShellDestination.home =>
+      form == ShellFormFactor.mobile ? MobileHomePage(model) : HomePage(model),
     ShellDestination.discover => DiscoverPage(model),
     ShellDestination.search => KeyedSubtree(
       key: ValueKey('search-page:$searchSeed'),

@@ -78,18 +78,39 @@ class _LibraryPageState extends State<LibraryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '我的音乐',
-                  style: VxTypography.h1.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // 窄视口（<512：手机档 360-599 全覆盖）标题独占一行、工具条
+              // 移到下一行（Phase 2 QA P1）：同 Row 时定宽 200 搜索条 +
+              // 三图标占 308-360px，h1「我的音乐」需 ≥113.6px，430 视口
+              // 剩余 90px 必折两行（「我的音/乐」），360 更挤。512 分界由
+              // 最宽工具档（专辑/歌手 360px）反推：宽档需 ≥505.6 才放得下。
+              final compact = constraints.maxWidth < 512;
+              final title = Text(
+                '我的音乐',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VxTypography.h1.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ),
-              _tools(context),
-            ],
+              );
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: VxSpacing.md),
+                    _tools(context, compact: true),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  _tools(context),
+                ],
+              );
+            },
           ),
           const SizedBox(height: VxSpacing.md),
           _entryCards(context),
@@ -277,32 +298,33 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  Widget _tools(BuildContext context) {
+  Widget _tools(BuildContext context, {bool compact = false}) {
     final showSort = _tab != LibraryTab.playlists;
     final showViewToggle =
         _tab == LibraryTab.albums || _tab == LibraryTab.artists;
+    final searchField = TextField(
+      onChanged: (value) => setState(() => _query = value.trim()),
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: '在当前视图中搜索…',
+        prefixIcon: const Icon(Icons.search, size: 18),
+        prefixIconConstraints: const BoxConstraints(minWidth: 34),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(VxRadius.md),
+        ),
+      ),
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: 200,
-          child: TextField(
-            onChanged: (value) => setState(() => _query = value.trim()),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: '在当前视图中搜索…',
-              prefixIcon: const Icon(Icons.search, size: 18),
-              prefixIconConstraints: const BoxConstraints(minWidth: 34),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(VxRadius.md),
-              ),
-            ),
-          ),
-        ),
+        // compact（窄视口独立工具行）：弹性宽度——固定 200 在 360 视口的
+        // 专辑/歌手档（三图标 160 + 分隔 16）会横向溢出；桌面保持 200 定宽
+        // 视觉零变化。
+        if (compact)
+          Expanded(child: searchField)
+        else
+          SizedBox(width: 200, child: searchField),
         if (showSort) ...[
           const SizedBox(width: VxSpacing.sm),
           PopupMenuButton<String>(

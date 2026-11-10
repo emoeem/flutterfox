@@ -51,8 +51,8 @@ abstract final class MobileBreakpoints {
   /// <600：手机形态（MobileShell，底部导航）。
   static const double handsetMax = 600;
 
-  /// <900：平板纯 NavigationRail 档（图标 rail）。
-  static const double tabletRailMax = 900;
+  /// <840：平板纯 NavigationRail 档（图标 rail，§4.1）。
+  static const double tabletRailMax = 840;
 
   /// <1200：平板双栏档（展开 Rail + 内容）；≥1200 三栏（+ ContextPanel 内嵌）。
   static const double tabletDualMax = 1200;
@@ -72,10 +72,10 @@ enum DeviceFormFactor {
 
 /// 平板档内布局（Phase 7 任务：NavigationRail / 双栏 / 三栏三态）。
 enum TabletLayout {
-  /// 600-899：图标 NavigationRail + 内容；右栏浮层。
+  /// 600-839：图标 NavigationRail + 内容；右栏浮层（§4.1）。
   rail,
 
-  /// 900-1199：展开（带标签）Rail + 内容双栏；右栏浮层。
+  /// 840-1199：展开（带标签）Rail + 内容双栏；右栏浮层（§4.1）。
   dual,
 
   /// ≥1200：Rail + 内容 + ContextPanel 内嵌三栏。

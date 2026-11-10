@@ -85,44 +85,67 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
   ) {
     return SizedBox(
       height: 48,
-      child: Row(
-        children: [
-          const SizedBox(width: VxSpacing.md),
-          IconButton(
-            tooltip: '返回',
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back, size: 20),
-          ),
-          const SizedBox(width: VxSpacing.xs),
-          Text(
-            '本地音乐',
-            style: VxTypography.sectionTitle.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(width: VxSpacing.lg),
-          if (scanning)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: scanning ? null : _addDirectory,
-            icon: const Icon(Icons.create_new_folder_outlined, size: 18),
-            label: const Text('添加目录'),
-          ),
-          const SizedBox(width: VxSpacing.sm),
-          FilledButton.icon(
-            onPressed: scanning || songs.isEmpty
-                ? null
-                : () => _model.playSongs(songs),
-            icon: const Icon(Icons.play_arrow, size: 18),
-            label: const Text('播放全部'),
-          ),
-          const SizedBox(width: VxSpacing.lg),
-        ],
+      // 窄视口（手机 <600，§5.10 顶部主按钮仍可达）压缩为图标按钮；
+      // ≥600 保持桌面带标签语义不变。
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 600;
+          return Row(
+            children: [
+              const SizedBox(width: VxSpacing.md),
+              IconButton(
+                tooltip: '返回',
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back, size: 20),
+              ),
+              const SizedBox(width: VxSpacing.xs),
+              Text(
+                '本地音乐',
+                style: VxTypography.sectionTitle.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: VxSpacing.lg),
+              if (scanning)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              const Spacer(),
+              if (compact)
+                IconButton(
+                  tooltip: '添加目录',
+                  onPressed: scanning ? null : _addDirectory,
+                  icon: const Icon(Icons.create_new_folder_outlined, size: 20),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: scanning ? null : _addDirectory,
+                  icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+                  label: const Text('添加目录'),
+                ),
+              const SizedBox(width: VxSpacing.sm),
+              if (compact)
+                IconButton(
+                  tooltip: '播放全部',
+                  onPressed: scanning || songs.isEmpty
+                      ? null
+                      : () => _model.playSongs(songs),
+                  icon: const Icon(Icons.play_arrow, size: 20),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: scanning || songs.isEmpty
+                      ? null
+                      : () => _model.playSongs(songs),
+                  icon: const Icon(Icons.play_arrow, size: 18),
+                  label: const Text('播放全部'),
+                ),
+              const SizedBox(width: VxSpacing.lg),
+            ],
+          );
+        },
       ),
     );
   }
@@ -397,30 +420,7 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
     await _model.scanLocal();
   }
 
-  Future<void> _addDirectory() async {
-    // 优先系统目录选择器（file_picker）；选择器不可用（部分 Wayland
-    // 沙盒环境）时回退手输绝对路径对话框。
-    String? target;
-    try {
-      target = await FilePicker.getDirectoryPath(dialogTitle: '选择本地音乐目录');
-    } on PlatformException {
-      target = null;
-    }
-    target ??= await _manualPathDialog();
-    if (!mounted) return;
-
-    final path = (target ?? '').trim();
-    if (path.isEmpty) return;
-    final config = _model.config;
-    if (config == null) return;
-    final paths = config.localMusicPaths.contains(path)
-        ? config.localMusicPaths
-        : [...config.localMusicPaths, path];
-    await _model.updateConfig(
-      (current) => current.copyWith(localMusicPaths: paths),
-    );
-    await _model.scanLocal(paths: paths);
-  }
+  Future<void> _addDirectory() => importLocalMusicDirectory(context, _model);
 
   Future<void> _removeDirectory(String path) async {
     final confirmed = await showDialog<bool>(
@@ -451,37 +451,6 @@ class _LocalMusicPageState extends State<LocalMusicPage> {
       await _model.scanLocal(paths: paths);
     }
   }
-
-  Future<String?> _manualPathDialog() async {
-    final controller = TextEditingController();
-    final path = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('添加本地音乐目录'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '目录绝对路径',
-            hintText: '/home/用户名/Music',
-          ),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('添加并扫描'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    return path;
-  }
 }
 
 /// 目录移除后的列表（纯函数，便于测试）：保持原顺序，仅去掉目标路径。
@@ -489,3 +458,78 @@ List<String> localMusicPathsAfterRemove(List<String> paths, String path) => [
   for (final item in paths)
     if (item != path) item,
 ];
+
+/// 系统目录选择器挂钩（§5.10 导入流程真实选择步骤）。
+///
+/// 生产缺省为 file_picker 的系统目录选择器；测试环境注入替身以锁定
+/// 「导入 CTA 直接触发文件/目录选择流程，而非跳转介绍页」这一契约层
+/// （选择器本身的系统对话框在宿主测试环境不可用）。
+Future<String?> Function({String? dialogTitle}) localDirectoryPicker =
+    FilePicker.getDirectoryPath;
+
+/// 直接触发本地音乐导入流程（§5.10：导入入口必须直接触发文件/目录
+/// 选择，不得只跳转介绍页）。
+///
+/// 手机首页空库 Hero「导入本地音乐」CTA 与本页顶部「添加目录」按钮
+/// 共用同一实现（单一出处，Phase 2 提取）。流程与原 _addDirectory 一致：
+/// 系统目录选择器（不可用时回退手输绝对路径对话框）→ 追加到配置
+/// `localMusicPaths` → 按新目录集合扫描。
+Future<void> importLocalMusicDirectory(
+  BuildContext context,
+  AppModel model,
+) async {
+  // 优先系统目录选择器（file_picker）；选择器不可用（部分 Wayland
+  // 沙盒环境）时回退手输绝对路径对话框。
+  String? target;
+  try {
+    target = await localDirectoryPicker(dialogTitle: '选择本地音乐目录');
+  } on PlatformException {
+    target = null;
+  }
+  if (!context.mounted) return;
+  target ??= await _manualPathDialog(context);
+  if (!context.mounted) return;
+
+  final path = (target ?? '').trim();
+  if (path.isEmpty) return;
+  final config = model.config;
+  if (config == null) return;
+  final paths = config.localMusicPaths.contains(path)
+      ? config.localMusicPaths
+      : [...config.localMusicPaths, path];
+  await model.updateConfig(
+    (current) => current.copyWith(localMusicPaths: paths),
+  );
+  await model.scanLocal(paths: paths);
+}
+
+Future<String?> _manualPathDialog(BuildContext context) async {
+  final controller = TextEditingController();
+  final path = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('添加本地音乐目录'),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: const InputDecoration(
+          labelText: '目录绝对路径',
+          hintText: '/home/用户名/Music',
+        ),
+        onSubmitted: (value) => Navigator.of(context).pop(value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(controller.text),
+          child: const Text('添加并扫描'),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  return path;
+}

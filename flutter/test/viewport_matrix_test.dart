@@ -237,8 +237,15 @@ void main() {
       await tester.pumpWidget(_harness(model));
       await tester.pumpAndSettle();
 
-      // 手机档：底部导航切到「下载」（第 5 主入口）。
-      await tester.tap(find.text('下载'));
+      // 手机档：底部导航切到「下载」（第 5 主入口）——限定底栏查找：
+      // 手机首页快捷入口也有同名「下载」卡（R5 口径，与 mobile_shell_test
+      // 同一消歧）。
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.text('下载'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(
         tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,

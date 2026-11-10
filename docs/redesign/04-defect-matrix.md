@@ -2,6 +2,7 @@
 
 - 依据：`docs/VOICEFOX_UI_REDESIGN_EXECUTION_GUIDE.md` §5/§6/§7/§8/§12.7，以当前工作区（feat/ui-redesign @ 5725231 + Phase 1 未提交改动）为准逐条验证。
 - 更新（2026-11-11 复验轮）：P1-08/P1-09 关闭（QA 修复批次入树，代码 diff + 回归测试 + 实机目检三重核实）、P1-10 复拍全部完成（激活态实机截图补齐）；P1-11「同类残余」已于 QA 第 2 轮修复时改判已修复。本轮门禁（报告员实跑）：analyze 0 / flutter-test 246 / cargo-test 72+40 / dart-format 0 / cargo-fmt 0；Rust 零改动（git diff 为空）。
+- 更新（2026-11-11 Phase 2 缺陷复验轮）：P1-12/P1-13 登记并关闭（QA 轮发现 → 本轮修复 + 三视口回归测试 + golden 重截目检三重复核，见 P1 节）；新登记 minor 两条（P2-10 入口卡标签截断、P3-08 旧 golden 截图未更新/数据种子不一致）。本轮唯一新增代码改动为 `library_page.dart`（430 视口库页标题折行修复，桌面 ≥512 渲染零变化）；受影响视口仅 library 430×932。报告员实跑定向 7 文件 51 项全绿（`00:05 +51: All tests passed!`）+ 重截 PNG（430x932）目检通过；全量门禁由外部门禁统一执行（本轮已知事实「门禁全绿」），报告员未复跑。Rust 零改动。详见 `docs/redesign/phase-2-report.md`。
 - 实机环境（本轮）：**Xvfb :2（1920x1080x24，无 WM）**，release 构建（`flutter build linux --release` exit 0），XTest 注入交互；另在 :1（niri 26.04 + xwayland-satellite）做窗口行为观察。第一轮会话（niri 全屏 1656x817）的证据仅标注引用，不冒充本轮复现。
 - 评级口径（§12.7）：P0 数据错乱/播放不可用/崩溃；P1 核心操作无法完成/封面普遍缺失/关键页面不可用；P2 视觉与次要功能缺口；P3 可选增强/文档债。
 - 基线事实与门禁数据：`docs/redesign/00-baseline.md`（§3 门禁、§9 播放链、§10 封面链）。
@@ -92,6 +93,20 @@
 - **回归**：`search_page_test.dart`「P1-07 同类缺口回归」（原始 URL 不得直出、[URL] 占位呈现）。
 - **同类残余（QA 第 2 轮 2026-11-11 确认后已修复）**：发现页/歌单页 `BrowseResult.error` 直出（`_applyBrowseEvent` page=0 分支原样落槽）已在本轮修复：错误与 notice 均在 `_applyBrowseEvent` 源头净化（app_model.dart，单点收口覆盖 discover/playlist/leaderboard/library/custom_playlists 全部消费面），错误走 `_logAndSanitize`（原始异常写 stderr）；回归 `playlist_detail_isolation_test.dart`「P1-11 回归」；实机复拍 `linux-discover-1440x900-error-retry.png`（离线 netns 实例，错误框显示 `([URL]`，原始 URL 仅在 stderr 日志）。
 
+### P1-12 曲库页 430 视口「我的音乐」h1 标题折行（Phase 2 QA 轮发现）【已关闭，缺陷复验轮 2026-11-11】
+
+- **现象**：曲库页 header 标题「我的音乐」与定宽 200 搜索条 + 筛选/刷新/视图图标同 Row，430 视口下 h1 仅剩 90px，必折两行（「我的音/乐」）；360 视口更挤。
+- **修复**：`library_page.dart` `_header` 改 `LayoutBuilder`（:81），`maxWidth < 512` 走标题独占一行 + compact 工具行（:88，分界由最宽工具档「专辑/歌手 360px 需 ≥505.6」反推），title 加 `maxLines: 1` + ellipsis（:91，结构上不可能再折行）；`_tools` 增加 `compact` 参数（:301），compact 时搜索框改 `Expanded` 弹性宽度（固定 200 在 360 视口专辑/歌手档会横向溢出）；**≥512 保持原 Row 桌面渲染零变化**。
+- **回归**：`mobile_shell_test.dart:173`「窄视口曲库布局：标题单行不折行、各档工具条无横向溢出（Phase 2 QA P1 回归）」，遍历 430×932 / 390×844 / 360×800 三视口进曲库页断言（上一轮「窄视口曲库布局无测试覆盖」缺口同步补上）；定向 7 文件 51 项全绿（2026-11-11 报告员实跑）。
+- **重截目检**：`fluttertest-library-430x932-dark-default.png`（430x932 dpr=1.0 golden 重截，临时测试已删零残留）中「我的音乐」单行、搜索条 + 筛选/刷新整行移至第二行（报告员目检）；受影响视口仅此一张，home 两视口不含库页不受影响。
+
+### P1-13 首页空库 Hero 两 CTA 横排折行（Phase 2 QA 轮发现）【已关闭，缺陷复验轮 2026-11-11】
+
+- **现象**：空库 Hero「搜索音乐」「导入本地音乐」两按钮横排等分，390 视口每按钮仅 ~149px，按钮文字词中断行。
+- **修复**：`mobile_home_page.dart:152-167` 改竖排 Column 两全宽按钮（`width: double.infinity`；FilledButton「搜索音乐」在上、OutlinedButton「导入本地音乐」在下，各 ~280-310px 单行容纳），横排等分宽度不足的成因已消除，触控目标同步增大（§5.9）。
+- **回归**：`mobile_home_page_test.dart:176-208`「窄视口 390：两 CTA 竖排全宽，按钮文字单行不折行（Phase 2 QA P1 回归）」，断言两按钮宽 >280、纵向排列（导入在上之下）、label 高 <30 单行；定向 7 文件 51 项全绿（2026-11-11 报告员实跑）。
+- **诚实标注**：该文件为未跟踪新文件、无 git diff，以当前源码 + 回归测试为准；无独立 golden（首页空库态以 390×844 emptyhero 既有截图与测试覆盖）。
+
 ## P2（登记）
 
 | ID | 问题 | 证据 | 指南条款 |
@@ -105,6 +120,7 @@
 | P2-07 | 【已修复】设置页左侧分类导航 9 组（播放与音效/音源/下载/歌词/外观/网络/账号与集成/快捷键/关于） | linux-settings-1440x900-default.png | §7.3 |
 | P2-08 | xwayland-satellite 转发的 X 客户端 resize 触发 `Timed out waiting for OpenGL frame`，随后进程静默消失（关联 P1-05 观察）；niri IPC 与 Xvfb 路径未见 | app-run1.log + pgrep/coredump 取证 | §11 |
 | P2-09 | 队列拖动排序 / 队列内跳播：后端无对应 FfiCommand，UI 禁用并说明（不伪造）；§7.4「拖拽排序」目标待后端命令落地 | queue_panel.dart:8-10 | §7.4 |
+| P2-10 | 【Phase 2 复验轮登记，遗留 minor】曲库页快捷入口卡标签省略号截断（430 视口下「最近…/本地…/喜欢…」三列等分标签宽度不足；计数与图标不受影响） | fluttertest-library-430x932-dark-default.png（报告员目检） | §5.5 |
 
 ## P3（可选增强 / 文档债）
 
@@ -117,6 +133,7 @@
 | P3-05 | ATK `atk_socket_embed` 断言失败与 OpenGL frame timeout 告警（运行日志非致命；后者与 P2-08 关联观察） | 运行日志 |
 | P3-06 | CONTRIBUTING.md 基线数字过时（「53 tests」实为 229）；KEYBINDINGS.md 为 TUI 文档，GUI 键位无独立文档 | 文档对照 |
 | P3-07 | 全屏播放页歌词仅空态文案（「本版本暂无手动重新获取入口」自认）；5sing 等源未取到歌词时无手动重取 | linux-nowplaying-1440x900-playing.png |
+| P3-08 | 【Phase 2 复验轮登记，遗留 minor】旧 golden 截图未更新/数据种子不一致；本轮仅覆盖重截受影响的 fluttertest-library-430x932 一张，其余沿用 | phase-2-report.md「截图路径」节 |
 
 ## 已验证正常（本轮实机/门禁证据，避免重复修复）
 
@@ -142,3 +159,17 @@
 | 播放状态/进度/duration/seek/Ended（§8.3） | ✅ 实机走带三连 + 自动切歌 ×2 |
 
 **下一阶段进入条件**：P1 全部关闭（P1-03/04/07/08/09/10/11），Phase 2 可进入；P0-01 继续以「概率性未复现」状态跟进，长时间会话验收前必须定位（ButtonPress 间歇失效同域观察在案）；浅色主题实机整页走查归 Phase 2/7。
+
+## Phase 2 偏差登记（2026-11-11，手机壳收口批次）
+
+以下为 Phase 2 实现中**有意识保留的规格偏差**，逐条给出理由与裁决点；均不冒充已修复：
+
+- **D1 触屏 ≥1200 仍走 TabletShell.triple 而非 §4.1 表的 DesktopShell**（responsive_shell.dart `resolveDeviceFormFactor`；mobile_shell.dart TouchShell switch）：桌面零回归铁律 + window_manager 平台差异，本阶段不动。裁决点：指南 §6.3 是平板验收截图清单、并无 ≥1200 裁决条款，故此条为本矩阵自建裁决点——待平板阶段（§6.3 截图批次）实测 1199/1200 边界后裁决。
+- **D2 TabletShell home 槽维持桌面 HomePage**：`buildShellPage` 的 `ShellFormFactor` 参数缺省 desktop，TabletShell 调用点显式不传（mobile_shell.dart 平板 IndexedStack 有注释标记）；平板首页规格（§6.x）未定义前不擅自套手机首页。裁决点同 D1。
+- **D3 §5.2 第 8 项「最近添加或最近播放列表」整块缺席**：「最近播放」已由第 4 项横滑书架承载（同一真实数据源 `state.history`，纵向列表为同数据重复展示）；「最近添加」需要本地扫描时序元数据，`state.localSongs` 无添加时间字段——不造假数据补位。裁决点：本地曲库元数据补齐后重评。
+- **D4 抽屉塌缩条目落点与高亮规则**（§5.9）：在线歌单/排行榜 → 发现（mapLegacyNavIndex 3/4 同语义）、本地音乐 → 推入真实 LocalMusicPage、音源管理 → 设置页 sources 分组（`SettingsSection.sources`，真实音源开关所在；全仓无独立「音源管理」页，grep 零命中）。高亮塌缩规则：仅规范目的地行（首页/发现/搜索/我的音乐/下载/设置/帮助）在 current==dest 时高亮，塌缩次级行永不高亮（mobile_shell_test 锁定单高亮断言）。
+- **D5 「喜欢的歌曲」快捷入口落点 = LibraryPage songs 档**：曲库 songs 档即「喜欢的歌曲（含账号红心镜像）」语义（library_page.dart 头注与入口卡同口径），非新造收藏页。裁决点：若后续建独立收藏页，本入口换指。
+- **D6 §5.10 导入三落点收口状态**：①首页空库 Hero CTA 已接真实选择器流程（`importLocalMusicDirectory`，与本地音乐页同一实现，picker 挂钩 `localDirectoryPicker` 测试可注入）；②本地音乐页顶部主按钮既有（窄视口 <600 压缩为带 tooltip 图标按钮——本次顺带修复 390dp 下顶栏 Row 溢出 54px 的 RenderFlex 崩溃）；③「我的音乐快捷入口」由曲库页本地音乐入口卡承载（既有桌面语义，移动同页面复用）。导入→扫描→播放链路（无媒体文件/无 Rust 控制器）按既有口径归 Phase 5，测试仅锁回调触发层。
+- **P1-06 维持**：本轮全部新增手机壳/首页测试为 widget 层；§5/§10 真机项（edge-to-edge、手势导航、刘海、系统导航条）依旧未验证，不因测试全绿而改判。
+- **本轮回归**：定向 9 文件（mobile_shell / mobile_home_page / mini_player_interaction / mobile_now_playing_layout / tablet_shell / home_page / android_insets_layout / shell / chrome_theme）65 项全绿（2026-11-11 报告员实跑，含 tablet_shell 断点边界 839/840 改判与 home_page 桌面既有 6 项回归）；dart analyze 0、dart format 12 文件对齐。全量 flutter test / cargo test 由外部门禁统一执行，本轮未跑。
+- **缺陷复验轮回归（2026-11-11，Phase 2 收口轮）**：定向 7 文件（mobile_shell / mobile_home_page / mini_player_interaction / mobile_now_playing_layout / viewport_matrix / phase5_library / local_music_page）**51 项全绿**（`00:05 +51: All tests passed!`，报告员实跑），含 P1-12/P1-13 两条新增回归；`flutter build linux --release` exit 0（RUSTUP_TOOLCHAIN=1.99.0）；golden 重截 fluttertest-library-430x932-dark-default.png（临时测试用后即删，仓库零残留）。QA 复查：两条 P1 均关闭，当前无 P0/P1，遗留 minor 仅 P2-10/P3-08 两条。详见 `docs/redesign/phase-2-report.md`。

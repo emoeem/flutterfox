@@ -3,7 +3,8 @@
 /// 覆盖（验收三点）：
 /// - resolveDeviceFormFactor：桌面平台（isTouch=false）所有宽度恒 desktop，
 ///   宽度不改变桌面行为；触屏平台按宽度分 手机/平板；
-/// - resolveTabletLayout：600/900/1200 三档（NavigationRail / 双栏 / 三栏）；
+/// - resolveTabletLayout：600/840/1200 三档（NavigationRail / 双栏 / 三栏，
+///   §4.1 断点：600–839 窄 rail / 840–1199 展开 rail）；
 /// - 触屏平台三档宽度的壳形态断言：rail 档图标 rail、dual 档展开 rail、
 ///   triple 档右栏内嵌（无 Positioned 祖先），rail/dual 档右栏浮层
 ///   （有 Positioned 祖先）。
@@ -89,11 +90,12 @@ void main() {
     });
   });
 
-  group('resolveTabletLayout 纯函数（600/900/1200 三档）', () {
-    test('<900：rail；900-1199：dual；≥1200：triple', () {
+  group('resolveTabletLayout 纯函数（600/840/1200 三档，§4.1）', () {
+    test('<840：rail；840-1199：dual；≥1200：triple', () {
       expect(resolveTabletLayout(600), TabletLayout.rail);
-      expect(resolveTabletLayout(899), TabletLayout.rail);
-      expect(resolveTabletLayout(900), TabletLayout.dual);
+      expect(resolveTabletLayout(839), TabletLayout.rail);
+      expect(resolveTabletLayout(840), TabletLayout.dual);
+      expect(resolveTabletLayout(899), TabletLayout.dual);
       expect(resolveTabletLayout(1199), TabletLayout.dual);
       expect(resolveTabletLayout(1200), TabletLayout.triple);
       expect(resolveTabletLayout(1920), TabletLayout.triple);
@@ -108,7 +110,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.extended, isFalse, reason: '600-899 为图标 rail 档');
+      expect(rail.extended, isFalse, reason: '600-839 为图标 rail 档（§4.1）');
       expect(rail.destinations.length, 5);
 
       // 右栏打开：浮层（有 Positioned 祖先）。
@@ -124,14 +126,14 @@ void main() {
       );
     });
 
-    testWidgets('900（dual 档）：展开（带标签）Rail + 内容双栏，右栏浮层', (tester) async {
-      _setSize(tester, const Size(900, 900));
+    testWidgets('840（dual 档边界）：展开（带标签）Rail + 内容双栏，右栏浮层', (tester) async {
+      _setSize(tester, const Size(840, 900));
       final model = AppModel();
       await tester.pumpWidget(_harness(model));
       await tester.pumpAndSettle();
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.extended, isTrue, reason: '900-1199 为展开 Rail 双栏档');
+      expect(rail.extended, isTrue, reason: '840-1199 为展开 Rail 双栏档（§4.1）');
 
       await tester.tap(find.byTooltip('队列面板'));
       await tester.pumpAndSettle();
