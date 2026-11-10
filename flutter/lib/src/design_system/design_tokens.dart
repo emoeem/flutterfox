@@ -137,6 +137,25 @@ abstract final class VxDarkSurface {
   static const Color seekTrack = Color(0xFF45404E);
 }
 
+/// Shell Chrome（AppHeader / Sidebar / ContextPanel / PlayerBar 等壳层镶边）
+/// 的主题感知色源（P1-09 收口，§3.2「不使用硬编码页面颜色」）。
+///
+/// 深色分支返回既有 [VxColors] 常量（默认主题像素不变）；浅色分支返回
+/// [VxLightColors] 等值 token。与 player_bar 中 seekTrack/onPlayIcon 的既有
+/// `dark ?` 三元同构（04-defect-matrix P1-09 修复方向备选条款）。
+/// 品牌渐变标记（logo/accent 线）不在本收口范围：其前景 onAccent 依赖
+/// accent 底色，属 Phase 2/3 视觉批次统一处理。
+abstract final class VxChrome {
+  /// 一级表面：AppHeader / Sidebar / ContextPanel / PlayerBar 底色。
+  static Color surface1(Brightness brightness) => brightness == Brightness.dark
+      ? VxColors.surface1
+      : VxLightColors.surface1;
+
+  /// 壳层分隔线。
+  static Color divider(Brightness brightness) =>
+      brightness == Brightness.dark ? VxColors.divider : VxLightColors.divider;
+}
+
 /// Hero 渐变（深色）。值取自概念稿 `.hero` 的字面 CSS 值。
 abstract final class VxDarkHero {
   /// .hero 的 1px 边线。

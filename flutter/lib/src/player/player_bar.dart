@@ -72,9 +72,14 @@ class _PlayerBarState extends State<PlayerBar> {
             final compactLeft = barWidth < 760;
             return Container(
               height: 92,
-              decoration: const BoxDecoration(
-                color: VxColors.surface1,
-                border: Border(top: BorderSide(color: VxColors.divider)),
+              // P1-09：Chrome 底色/分隔线随主题亮暗取 token。
+              decoration: BoxDecoration(
+                color: VxChrome.surface1(Theme.of(context).brightness),
+                border: Border(
+                  top: BorderSide(
+                    color: VxChrome.divider(Theme.of(context).brightness),
+                  ),
+                ),
               ),
               child: Stack(
                 children: [
@@ -264,7 +269,8 @@ class _TrackInfo extends StatelessWidget {
             builder: (context, _) {
               final favorite = model.isFavorite(s);
               return IconButton(
-                tooltip: favorite ? '取消收藏' : '收藏',
+                // §8.5：收藏操作必须说明写入本地还是远端（favorite 只写本地曲库）。
+                tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => model.toggleFavorite(song!),
                 icon: Icon(
@@ -316,6 +322,8 @@ class _CenterTransport extends StatelessWidget {
             isPlaying: playing,
             shuffleOn: mode == 'random',
             repeatOn: mode == 'list-loop' || mode == 'single-loop',
+            // §8.3：单曲循环档独立视觉态（repeat_one 图标 + tooltip）。
+            repeatSingle: mode == 'single-loop',
             enabled: hasSong,
             onShuffle: configReady
                 ? () => _setPlayMode(mode == 'random' ? 'list-loop' : 'random')

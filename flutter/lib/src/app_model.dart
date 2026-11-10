@@ -478,7 +478,12 @@ class AppModel extends ChangeNotifier {
       // 请求在途时错误会短暂落在同一槽上（BrowseFailed 无页码无法甄别），
       // 由随后的新响应覆盖，不产生串槽。
       result.loading = false;
-      result.error = event.message ?? '加载失败';
+      // §9/P1-11（QA 2026-11-11 第 2 轮）：result.error 被发现页/歌单页等
+      // 直接渲染为错误框 detail，Rust 侧错误消息可能携带完整 URL/代理参数
+      // ——在源头净化（原始异常写 stderr 日志），与 lastError/toast 同口径。
+      result.error = event.message != null
+          ? _logAndSanitize(event.message!)
+          : '加载失败';
       notifyListeners();
       return;
     }
@@ -504,7 +509,11 @@ class AppModel extends ChangeNotifier {
     }
     result
       ..error = null
-      ..notice = event.message
+      // notice 同样来自 event.message 且被空态标题直出（如「暂无账号红心
+      // 镜像」附带的服务端说明），同一净化口径；notice 非错误，不写 stderr。
+      ..notice = event.message == null
+          ? null
+          : sanitizeUserFacingMessage(event.message!)
       ..page = event.page
       ..hasMore = event.hasMore
       ..songs.addAll(event.items)
@@ -1184,10 +1193,12 @@ class AppModel extends ChangeNotifier {
   /// 面向用户的错误/通知文案净化（指南 §9：错误消息对用户可读，原始异常
   /// 只写日志，不把 token/cookie/隐私路径/完整 URL 暴露到 UI）。
   ///
-  /// 处理：URL 整体替换为占位符；换行/连续空白折叠成单空格（toast 是
-  /// 单行 Flexible 文本，多行原始异常会把错误浮层撑到整页高——QA 2026-11-10
-  /// P1 实测）；超长截断到 [_maxUserFacingMessageLength]。
-  @visibleForTesting
+  /// 公共 API（QA 2026-11-11 P1：搜索页错误框直出 Rust 快照
+  /// `state.search.error` 原始 URL——该字段不经 lastError/lastNotification
+  /// 净化链路，页面渲染前必须过本函数）。处理：URL 整体替换为占位符；
+  /// 换行/连续空白折叠成单空格（toast 是单行 Flexible 文本，多行原始异常会
+  /// 把错误浮层撑到整页高——QA 2026-11-10 P1 实测）；超长截断到
+  /// [_maxUserFacingMessageLength]。
   static String sanitizeUserFacingMessage(String raw) {
     var msg = raw
         .replaceAll(RegExp(r'https?://\S+'), '[URL]')

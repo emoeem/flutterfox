@@ -61,7 +61,7 @@ void main() {
     expect(find.text('立即播放'), findsOneWidget);
     expect(find.text('下一首播放'), findsOneWidget);
     expect(find.text('加入队列'), findsOneWidget);
-    expect(find.text('收藏'), findsOneWidget);
+    expect(find.text('收藏（本地曲库）'), findsOneWidget);
     expect(find.text('下载'), findsOneWidget);
 
     await tester.tap(find.text('加入队列'));
@@ -99,7 +99,7 @@ void main() {
 
     await _longPressRow(tester);
     expect(find.text('加入队列'), findsOneWidget);
-    await tester.tap(find.text('收藏'));
+    await tester.tap(find.text('收藏（本地曲库）'));
     await tester.pump();
     expect(
       model.commands.contains(bridge.FfiCommand.favoritesAdd(song: _song())),

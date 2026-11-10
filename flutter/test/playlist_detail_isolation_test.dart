@@ -5,6 +5,7 @@
 /// - 相同 ID 不同 source 隔离；
 /// - 公开歌单 vs 账号歌单（同 ID）隔离；
 /// - 迟到的 append 响应不得混入重载后的列表（过期响应丢弃）；
+/// - A 触底分页在途时切到 B：迟到页 2 只落 A 槽（§8.1 序列 7）；
 /// - 重复/乱序分页响应不重复合并；顺序分页正常追加；
 /// - 错误归属正确歌单槽，不串槽；
 /// - 返回已打开过的歌单：首帧显示加载态，不闪现旧曲目。
@@ -44,7 +45,17 @@ Future<void> _pumpDetail(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
-    MaterialApp(home: PlaylistDetailPage(model, playlist, account: account)),
+    // Key：模拟真实导航「每次打开新开一个页面实例」——同类型页面重泵走
+    // element update 会复用 State 跳过 initState（prepareBrowseLoad 不跑），
+    // 与 §8.1「切到另一个歌单先显示 loading」的语义不符。
+    MaterialApp(
+      home: PlaylistDetailPage(
+        model,
+        playlist,
+        account: account,
+        key: ValueKey('${playlist.source}/${playlist.id}/$account'),
+      ),
+    ),
   );
   await tester.pump();
 }
@@ -245,6 +256,59 @@ void main() {
     expect(slot.songs.map((s) => s.name).toList(), ['页1', '页2', '页3']);
   });
 
+  testWidgets('A 触底分页在途时切到 B：A 的迟到页 2 只落 A 槽，不污染 B', (tester) async {
+    // §8.1 测试序列 7：对 A 触底加载下一页，再快速切到 B，分页不串数据。
+    final model = AppModel();
+    final playlistA = _playlist('p1', 'kw');
+    final playlistB = _playlist('p2', 'kw');
+
+    await _pumpDetail(tester, model, playlistA);
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      songs: [_song('s1', 'A页1', 'kw')],
+    );
+    await tester.pump();
+    expect(find.text('A页1'), findsOneWidget);
+
+    // A 触底：派发页 2 append 请求（响应未到，槽标记加载中）。
+    model.debugBeginBrowse(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      append: true,
+    );
+    expect(model.browse('playlist_detail', 'kw', 'p1')!.loading, isTrue);
+
+    // 快速切到 B：B 页面 initState 同步预清自己的槽。
+    await _pumpDetail(tester, model, playlistB);
+    expect(find.text('A页1'), findsNothing, reason: 'B 页面不读 A 槽');
+
+    // A 的迟到页 2 响应此时才到达：只允许落 A 槽。
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      songs: [_song('s2', 'A页2', 'kw')],
+      page: 2,
+      hasMore: false,
+    );
+    expect(
+      model.browse('playlist_detail', 'kw', 'p1')!.songs.map((s) => s.name),
+      ['A页1', 'A页2'],
+      reason: 'A 槽分页正常追加',
+    );
+    final slotB = model.browse('playlist_detail', 'kw', 'p2')!;
+    expect(
+      slotB.songs.where((s) => s.name == 'A页2'),
+      isEmpty,
+      reason: 'B 槽不受 A 的迟到分页影响',
+    );
+    expect(slotB.loading, isTrue, reason: 'B 自己的首屏请求仍在途');
+    expect(slotB.error, isNull);
+  });
+
   testWidgets('错误归属正确歌单槽：B 失败不影响 A 的数据展示', (tester) async {
     final model = AppModel();
     await _pumpDetail(tester, model, _playlist('p1', 'kw'));
@@ -266,6 +330,49 @@ void main() {
     expect(find.text('A曲'), findsOneWidget, reason: 'A 槽不受 B 失败影响');
     expect(model.browse('playlist_detail', 'kw', 'p2')!.error, '歌单不存在');
     expect(model.browse('playlist_detail', 'kw', 'p1')!.error, isNull);
+  });
+
+  testWidgets('P1-11 回归：浏览错误/notice 消息源头净化，原始 URL 不落槽不直出', (tester) async {
+    // §9/P1-11（QA 2026-11-11 第 2 轮）：_applyBrowseEvent 把 event.message
+    // 原样写入 result.error/notice，被发现页/歌单页错误框直出。修复后错误
+    // 与 notice 均在源头过 sanitizeUserFacingMessage（错误另写 stderr）。
+    final model = AppModel();
+    const rawMessage =
+        'network error: error sending request for url '
+        '(http://wapi.kuwo.cn/api/pc/classify/playlist/getRomPlayList?loginUid=0&fmt=json)';
+
+    await _pumpDetail(tester, model, _playlist('p1', 'kw'));
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      failed: true,
+      message: rawMessage,
+    );
+    await tester.pump();
+
+    final slot = model.browse('playlist_detail', 'kw', 'p1')!;
+    expect(slot.error, isNotNull);
+    expect(slot.error, contains('[URL]'), reason: 'URL 打码后落槽');
+    expect(slot.error, isNot(contains('http')), reason: '原始 URL 不得落入用户可见槽');
+    expect(
+      find.textContaining('wapi.kuwo.cn'),
+      findsNothing,
+      reason: '页面错误框（VxErrorState detail）不得直出原始 URL',
+    );
+
+    // 成功响应携带的 notice 同口径净化（空态标题直出）。
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p2',
+      message: '服务端提示: see http://wapi.kuwo.cn/help?uid=1',
+    );
+    expect(
+      model.browse('playlist_detail', 'kw', 'p2')!.notice,
+      contains('[URL]'),
+      reason: 'notice 与 error 同一净化口径',
+    );
   });
 
   testWidgets('返回已打开过的歌单：首帧加载态，不闪现旧曲目', (tester) async {

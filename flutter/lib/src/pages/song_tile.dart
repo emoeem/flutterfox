@@ -99,7 +99,11 @@ bool showSongMenu(
       const PopupMenuItem(value: 'next', child: Text('下一首播放')),
       const PopupMenuItem(value: 'queue', child: Text('加入队列')),
       const PopupMenuItem(value: 'playlist', child: Text('加入歌单')),
-      PopupMenuItem(value: 'like', child: Text(favorite ? '取消收藏' : '收藏')),
+      // §8.5：菜单项同样说明写入本地曲库。
+      PopupMenuItem(
+        value: 'like',
+        child: Text(favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）'),
+      ),
       const PopupMenuItem(value: 'download', child: Text('下载')),
       PopupMenuItem(
         value: 'artist',
@@ -315,7 +319,8 @@ class SongTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: favorite ? '取消收藏' : '收藏',
+              // §8.5：说明写入本地曲库，不假装远端账号红心。
+              tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
               icon: Icon(
                 favorite ? Icons.favorite : Icons.favorite_border,
                 size: 20,

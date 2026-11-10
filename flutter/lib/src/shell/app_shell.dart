@@ -477,9 +477,14 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
                 width: metrics.sidebar == SidebarMode.expanded
                     ? ShellBreakpoints.sidebarWidth
                     : ShellBreakpoints.sidebarCollapsedWidth,
-                decoration: const BoxDecoration(
-                  color: VxColors.surface1,
-                  border: Border(right: BorderSide(color: VxColors.divider)),
+                // P1-09：Chrome 底色/分隔线随主题亮暗取 token。
+                decoration: BoxDecoration(
+                  color: VxChrome.surface1(Theme.of(context).brightness),
+                  border: Border(
+                    right: BorderSide(
+                      color: VxChrome.divider(Theme.of(context).brightness),
+                    ),
+                  ),
                 ),
                 child: AppSidebar(
                   model: widget.model,
@@ -567,10 +572,13 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
             bottom: 0,
             width: ShellBreakpoints.sidebarWidth,
             child: DecoratedBox(
+              // P1-09：浮层侧栏同样随主题亮暗取 token。
               decoration: BoxDecoration(
-                color: VxColors.surface1,
-                border: const Border(
-                  right: BorderSide(color: VxColors.divider),
+                color: VxChrome.surface1(Theme.of(context).brightness),
+                border: Border(
+                  right: BorderSide(
+                    color: VxChrome.divider(Theme.of(context).brightness),
+                  ),
                 ),
                 boxShadow: [
                   BoxShadow(

@@ -125,7 +125,11 @@ class _ExpandedSidebar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Divider(height: 1, color: VxColors.divider),
+                // P1-09：分隔线随主题亮暗取 token。
+                Divider(
+                  height: 1,
+                  color: VxChrome.divider(Theme.of(context).brightness),
+                ),
                 const SizedBox(height: 8),
                 _NavRow(
                   icon: Icons.download_outlined,

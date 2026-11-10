@@ -13,6 +13,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicefox_flutter/src/app_model.dart';
 import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
+import 'package:voicefox_flutter/src/design_system/components/vx_artwork.dart';
+import 'package:voicefox_flutter/src/design_system/components/vx_cover_fallback.dart';
 import 'package:voicefox_flutter/src/pages/search_page.dart';
 
 /// 记录派发命令的测试模型（不起 Rust 控制器）。
@@ -446,5 +448,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('搜索你想听的音乐'), findsOneWidget);
     expect(find.byTooltip('清除'), findsNothing);
+  });
+
+  testWidgets('P1-08 回归：结果行封面走 VxArtwork，song.coverUrl 不再被渐变占位吞掉', (
+    tester,
+  ) async {
+    final model = _RecordingModel();
+    bridge.SongDto song(String id, String name, String? coverUrl) =>
+        bridge.SongDto(
+          id: id,
+          source: 'wy',
+          name: name,
+          singer: '歌手',
+          albumName: '',
+          durationMs: BigInt.from(180000),
+          coverUrl: coverUrl,
+        );
+    model.debugSetSearch(
+      _searchState(
+        keyword: 'kw',
+        requestId: BigInt.one,
+        items: [
+          song('1', '有封面', 'http://origin/cover.jpg'),
+          song('2', '无封面', null),
+        ],
+      ),
+    );
+    await _pumpSearch(tester, model, seedKeyword: 'kw');
+
+    final artworks = tester.widgetList<VxArtwork>(find.byType(VxArtwork));
+    expect(
+      artworks,
+      isNotEmpty,
+      reason: 'P1-08 修复：歌曲行 cover 参数接入统一封面入口 VxArtwork',
+    );
+    expect(
+      artworks.any((a) => a.url == 'http://origin/cover.jpg'),
+      isTrue,
+      reason: 'song.coverUrl 必须传入行封面（此前永远渲染 VxCoverFallback）',
+    );
+    expect(
+      find.byType(VxCoverFallback),
+      findsNothing,
+      reason: '歌曲行不再缺省渲染渐变首字母占位',
+    );
+  });
+
+  testWidgets('P1-07 同类缺口回归：错误框 detail 净化，原始 URL/异常不直出', (tester) async {
+    // QA 2026-11-11（linux-search-1440x900-error-retry.png）：state.search.error
+    // 是 Rust 快照字段，不经 lastError/lastNotification 净化链路；渲染前必须
+    // 过 AppModel.sanitizeUserFacingMessage（§9）。
+    final model = _RecordingModel();
+    model.debugSetSearch(
+      _searchState(
+        keyword: 'kw',
+        requestId: BigInt.one,
+        items: const [],
+        error:
+            '所有音源搜索失败: network error: error sending request for url '
+            '(https://jadeite.migu.cn/music_search/v3/search/searchAll?isCorre=1)',
+      ),
+    );
+    await _pumpSearch(tester, model, seedKeyword: 'kw');
+
+    expect(
+      find.textContaining('https://jadeite.migu.cn'),
+      findsNothing,
+      reason: '§9 原始 URL 不得直出 UI',
+    );
+    expect(
+      find.textContaining('[URL]'),
+      findsWidgets,
+      reason: 'URL 已净化为占位符（与 P1-07 toast 同一口径）',
+    );
+    expect(find.text('搜索失败'), findsOneWidget, reason: '错误态本身保留');
   });
 }

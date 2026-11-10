@@ -57,8 +57,9 @@ class _ContextPanelState extends State<ContextPanel> {
     };
     return Container(
       width: widget.width,
+      // P1-09：面板底色随主题亮暗取 token（左边线保持 scheme token）。
       decoration: BoxDecoration(
-        color: VxColors.surface1,
+        color: VxChrome.surface1(scheme.brightness),
         border: Border(
           left: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
         ),
@@ -274,7 +275,8 @@ class _NowPlayingTab extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    tooltip: favorite ? '取消收藏' : '收藏',
+                    // §8.5：说明写入本地曲库，不假装远端账号红心。
+                    tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
                     onPressed: () => model.toggleFavorite(song),
                     icon: Icon(
                       favorite ? Icons.favorite : Icons.favorite_border,

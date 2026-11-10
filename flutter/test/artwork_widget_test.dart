@@ -436,6 +436,44 @@ void main() {
       await _flushCacheTimers(tester);
     });
 
+    test('非图片内容（解码失败）：markDecodeFailed 归一为失败并进入负缓存退避', () async {
+      // 环境边界（同 phase-1-report 决策 6）：TestWidgetsFlutterBinding 的
+      // fake-async 下真实 codec 解码回调无法完成，「200 + 非图片字节 →
+      // errorWidget → markDecodeFailed」的渲染级触发在本环境不可驱动。
+      // 本用例锁定该路径的契约层：VxArtwork errorBuilder 对解码失败调用的
+      // `markDecodeFailed` 与负缓存/退避行为（真实代码，与 markFetchFailed
+      // 同构；渲染级验证登记待桌面/真机运行）。
+      final resolver = ArtworkResolver.instance;
+      var currentTime = DateTime(2026, 1, 1);
+      resolver.now = () => currentTime;
+      const request = ArtworkRequest(
+        source: 'kw',
+        entityType: 'song',
+        entityId: 'e1',
+        url: 'http://origin/not-image.jpg',
+      );
+
+      // http 首次 resolve 直接 resolved（下载/解码由组件层承担）。
+      final first = await resolver.resolve(request);
+      expect(first.status, ArtworkStatus.resolved);
+
+      // 组件层解码失败回调（errorBuilder 契约入口）。
+      resolver.markDecodeFailed(request);
+      final failed = await resolver.resolve(request);
+      expect(failed.status, ArtworkStatus.failed, reason: '非图片内容归一为失败');
+      expect(failed.failureReason, '封面内容无法解码');
+
+      // 退避期内不再重新解析（不无限重试）。
+      currentTime = currentTime.add(const Duration(seconds: 1));
+      final within = await resolver.resolve(request);
+      expect(within.status, ArtworkStatus.failed);
+
+      // 退避期满（2s = 1²×2）重新允许解析。
+      currentTime = currentTime.add(const Duration(seconds: 3));
+      final after = await resolver.resolve(request);
+      expect(after.status, ArtworkStatus.resolved);
+    });
+
     testWidgets('语义标签携带实体名（§11.2）', (tester) async {
       await tester.pumpWidget(_host(_artwork(null, entityName: 'L-O-V-E')));
       await tester.pump();

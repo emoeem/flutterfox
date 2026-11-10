@@ -220,4 +220,59 @@ void main() {
     expect(mores.last.page, 3, reason: '响应到达后锁释放续载下一页');
     expect(mores.last.keyword, 'love', reason: '分页请求延续同一关键词');
   });
+
+  testWidgets('新查询后旧查询的过期快照（requestId 回退）不覆盖当前结果', (tester) async {
+    // §8.1「过期响应不能覆盖当前页面」的页面级串联：loadMore 在途时用户
+    // 发起新查询，旧查询的迟到快照（requestId 回退）不得把旧结果刷回树。
+    // 正常链路由 Rust 按序广播 + start_search append 守卫拦截；本用例锁定
+    // Dart 层兜底守卫（search_page._onModelChanged 的 requestId 回退检查）。
+    final model = _RecordingModel();
+    model.debugSetSources([_caps('kw', '酷狗')]);
+    await _pumpSearch(tester, model);
+
+    // 旧查询 'love' 首屏。
+    model.debugSetSearch(
+      _searchState(
+        keyword: 'love',
+        page: 1,
+        hasMore: true,
+        requestId: BigInt.one,
+        items: [_song('s1', '旧查询一', 'kw')],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(find.text('旧查询一'), findsOneWidget);
+
+    // 新查询 'rock' 响应到达（requestId 2）→ 页面切到新结果。
+    model.debugSetSearch(
+      _searchState(
+        keyword: 'rock',
+        page: 1,
+        hasMore: false,
+        requestId: BigInt.two,
+        items: [_song('r1', '新查询一', 'kw')],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(find.text('新查询一'), findsOneWidget);
+
+    // 迟到的旧查询快照（requestId 回退到 1，携带旧查询 page2 数据）：
+    // 必须被忽略，不把旧结果刷回树。
+    model.debugSetSearch(
+      _searchState(
+        keyword: 'love',
+        page: 2,
+        hasMore: true,
+        requestId: BigInt.one,
+        items: [_song('s1', '旧查询一', 'kw'), _song('s2', '旧查询迟到曲', 'kw')],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(
+      find.text('旧查询迟到曲'),
+      findsNothing,
+      reason: '§8.1 过期响应（requestId 回退）不得覆盖当前页面',
+    );
+    expect(find.text('新查询一'), findsOneWidget, reason: '新查询结果保持展示');
+  });
 }

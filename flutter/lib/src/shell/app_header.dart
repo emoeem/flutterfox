@@ -68,11 +68,13 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Container(
       height: ShellBreakpoints.headerHeight,
-      decoration: const BoxDecoration(
-        color: VxColors.surface1,
-        border: Border(bottom: BorderSide(color: VxColors.divider)),
+      // P1-09：Chrome 底色/分隔线随主题亮暗取 token（原硬编码 VxColors 仅深色）。
+      decoration: BoxDecoration(
+        color: VxChrome.surface1(brightness),
+        border: Border(bottom: BorderSide(color: VxChrome.divider(brightness))),
       ),
       child: Stack(
         children: [

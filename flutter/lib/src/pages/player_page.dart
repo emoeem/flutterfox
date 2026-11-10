@@ -66,7 +66,8 @@ class PlayerPage extends StatelessWidget {
             actions: [
               if (song != null) ...[
                 IconButton(
-                  tooltip: favorite ? '取消收藏' : '收藏',
+                  // §8.5：说明写入本地曲库，不假装远端账号红心。
+                  tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
                   onPressed: () => model.toggleFavorite(song),
                   icon: Icon(
                     favorite ? Icons.favorite : Icons.favorite_border,

@@ -16,6 +16,7 @@ class VxPlayerControls extends StatelessWidget {
     this.isPlaying = false,
     this.shuffleOn = false,
     this.repeatOn = false,
+    this.repeatSingle = false,
     this.enabled = true,
     this.gap = 18,
     this.onShuffle,
@@ -31,8 +32,13 @@ class VxPlayerControls extends StatelessWidget {
   /// 随机播放开启态。
   final bool shuffleOn;
 
-  /// 循环播放开启态。
+  /// 循环播放开启态（list-loop 或 single-loop 任一档，图标主色）。
   final bool repeatOn;
+
+  /// true = 当前是单曲循环档：图标 repeat_one、tooltip「单曲循环」。
+  /// §8.3/QA 2026-11-11：两档循环此前共用 Icons.repeat 且同为 primary 色，
+  /// 截图与读屏均无法区分第 1/2 档——单曲循环档必须有独立视觉态。
+  final bool repeatSingle;
 
   /// false 时全部按钮禁用（无歌曲时保持布局稳定，§3.5）。
   final bool enabled;
@@ -114,7 +120,14 @@ class VxPlayerControls extends StatelessWidget {
           ),
         ),
         ctrl(Icons.skip_next, '下一首', onNext),
-        ctrl(Icons.repeat, '循环播放', onRepeat, active: repeatOn),
+        // 循环档视觉区分（§8.3）：list-loop = repeat 图标、single-loop =
+        // repeat_one 图标，两者激活时同为主色；none = 灰色中性。
+        ctrl(
+          repeatSingle ? Icons.repeat_one : Icons.repeat,
+          repeatSingle ? '单曲循环' : (repeatOn ? '列表循环' : '循环播放'),
+          onRepeat,
+          active: repeatOn,
+        ),
       ],
     );
   }

@@ -1,6 +1,7 @@
 # 缺陷矩阵（04-defect-matrix，2026-11-10 第二轮全量复审）
 
 - 依据：`docs/VOICEFOX_UI_REDESIGN_EXECUTION_GUIDE.md` §5/§6/§7/§8/§12.7，以当前工作区（feat/ui-redesign @ 5725231 + Phase 1 未提交改动）为准逐条验证。
+- 更新（2026-11-11 复验轮）：P1-08/P1-09 关闭（QA 修复批次入树，代码 diff + 回归测试 + 实机目检三重核实）、P1-10 复拍全部完成（激活态实机截图补齐）；P1-11「同类残余」已于 QA 第 2 轮修复时改判已修复。本轮门禁（报告员实跑）：analyze 0 / flutter-test 246 / cargo-test 72+40 / dart-format 0 / cargo-fmt 0；Rust 零改动（git diff 为空）。
 - 实机环境（本轮）：**Xvfb :2（1920x1080x24，无 WM）**，release 构建（`flutter build linux --release` exit 0），XTest 注入交互；另在 :1（niri 26.04 + xwayland-satellite）做窗口行为观察。第一轮会话（niri 全屏 1656x817）的证据仅标注引用，不冒充本轮复现。
 - 评级口径（§12.7）：P0 数据错乱/播放不可用/崩溃；P1 核心操作无法完成/封面普遍缺失/关键页面不可用；P2 视觉与次要功能缺口；P3 可选增强/文档债。
 - 基线事实与门禁数据：`docs/redesign/00-baseline.md`（§3 门禁、§9 播放链、§10 封面链）。
@@ -15,6 +16,7 @@
 - **第一轮复现步骤（存档，非本轮复现）**：release 构建 + `VOICEFOX_START_PAGE=search VOICEFOX_START_SEARCH=love` 启动 → 等待结果渲染 → XTest 点击任意行/侧栏 → 无响应；`x11tool key Tab` 两次后 `magick compare -metric AE f1.png f2.png` = 0。
 - **影响**：用户视角=应用随机整体无响应；截图回归/交互验收在此缺陷未定位前对「长时间会话」不可信。
 - **嫌疑方向（未定罪）**：AppModel 事件泵热路径（搜索结果 setState）、progress 4Hz 泵、library 事件 `_reloadCustomPlaylistDetails/_reloadAccountBrowse` 重取循环；需 profiler/devtools 定位。
+- **2026-11-11 QA 复拍会话新增观察（同域，变体症状）**：Xvfb :5 多轮 boot 实测，ButtonPress 点击对 PlayerBar IconButton 间歇性完全失效（repeat/shuffle/pause 均复现），同期 hover 高亮与 tooltip 正常、进度渲染走带正常（AE 帧 diff ≠ 0）、事件流正常（19-24/5s），与第一轮「输入全失效 + 帧差=0」症状不同：渲染存活、仅按压失效；且同会话内行双击/next 按钮偶发有效，行为非确定性。两个实例并存、增量构建陈旧等环境变量已逐一排除（清理后仍复现）。定位优先级维持：长时间会话验收前必须定位。
 
 ### P0-02 播放中 position/duration 恒 0——【已关闭，Phase 1；本轮实机复核通过】
 
@@ -55,28 +57,46 @@
 - 修复两层（AppModel `sanitizeUserFacingMessage` 源头净化 + vendored toast maxLines 4/maxHeight 160）本轮代码复核在位（app_model.dart:1184-1208、toast_notification_widget.dart:69,104）；error_toast_test 9 项全绿。
 - 运行时复现声明（维持）：离线失败状态未在运行时强造（隔离代理配置未生效，QA 环境失败条件不可复现），正确性由测试锁定。
 
-### P1-08 搜索结果歌曲行封面普遍缺失（VxTrackRow 调用点漏传 cover）——【本轮新发现，已复现】
+### P1-08 搜索结果歌曲行封面普遍缺失（VxTrackRow 调用点漏传 cover）【已关闭，QA 修复批次 2026-11-11；代码+回归+实机三重复核】
 
 - **现象**：搜索结果列表全部 259 行封面均为「渐变 + 首字母」占位，即使 DTO 带真实 cover_url。
 - **根因**：`search_page.dart:550-568` 的 `VxTrackRow(...)` 未传 `cover:` 参数 → 组件缺省渲染 `VxCoverFallback`（vx_track_row.dart:166 `cover ?? VxCoverFallback(title)`，渐变首字母是 Phase 0 设计占位）。对照正确写法：`song_tile.dart:233` 同组件传了 `cover: CoverImage(url: song.coverUrl, size: 40, radius: 6)`。
 - **实机对照证据（同一首歌、同一数据源）**：Love/Cloudy Skies（千千音乐）在搜索列表为渐变「L」占位（linux-search-1440x900-results.png），在队列面板显示真实封面（linux-queue-1440x900-playing.png 第 8 行，queue_panel.dart:208 CoverImage）。
 - **复现步骤**：启动应用 → 搜索任意关键词 → 观察结果行封面：无一显示真实图片；播放其中一首 → 打开队列面板 → 同曲显示真实封面。
 - **影响**：§12.7「封面普遍缺失」在搜索这一核心路径成立；§8.2「页面散落不同 fallback 决策」的活证据（同一 VxTrackRow，封面行为由调用点各自决定）。
-- **修复方向**：search_page.dart:550 补传 `cover: CoverImage(url: song.coverUrl, size: 40, radius: 6)`（对齐 song_tile）；中期随 §8.2 把行封面统一收口到 VxArtwork。
+- **修复（QA 修复批次 2026-11-11 入树，复验轮补录）**：search_page.dart 结果行 `VxTrackRow` 补传 `cover: VxArtwork(url: song.coverUrl, ...)`，行封面统一走 VxArtwork 路径（负缓存/失败占位/重试与全仓封面策略一致）。
+- **回归**：`search_page_test.dart`「P1-08 回归：结果行封面走 VxArtwork，song.coverUrl 不再被渐变占位吞掉」（全套 flutter test 246 项内通过，2026-11-11 报告员实跑）。
+- **实机复核（复验轮）**：`linux-search-1440x900-repeat-singleloop-active.png` 第 1 行（LOVE/3B LAB.☆）真实封面渲染（报告员目检），不再整列渐变/首字母占位。
 
-### P1-09 浅色主题下 Shell Chrome 对比度破坏（导航/播放栏文字不可读）——【本轮新发现并升级，已复现；由 P2-01 升级】
+### P1-09 浅色主题下 Shell Chrome 对比度破坏（导航/播放栏文字不可读）【已关闭，QA 修复批次 2026-11-11；代码+回归复核；P2-01 并入本行一并关闭】
 
 - **现象**：设置 → 外观 → 明暗模式切「浅色」后：内容区（页面/卡片）正确变浅，但 **AppHeader、Sidebar、PlayerBar 背景仍是硬编码深色（VxColors.surface1 等）**，而其内部文字/图标颜色切为浅色主题的 onSurface（深色）→ 深底深字，左侧导航文字、左上角品牌字标、PlayerBar 歌名几乎不可读。
 - **根因**：shell 组件无条件引用 `VxColors`/`VxDarkSurface` 硬编码深色常量（app_header.dart 4 处、app_shell.dart:481/571、app_sidebar.dart、context_panel.dart、player_bar.dart:76 等；唯 theme-aware 的是 player_bar.dart:177 seekTrack 三元）；MaterialApp 真源是 myune ThemeProvider `ColorScheme.fromSeed`（main.dart:384-386），Chrome 背景不走 ColorScheme。违反 §3.2「不使用硬编码页面颜色，全部从 Theme/ColorScheme token 获取」与「浅色主题必须完整支持」、§11.2 对比度 ≥4.5:1。
 - **复现步骤**：启动应用 → 设置 → 外观 → 明暗模式点「浅色」→ 观察 Header/Sidebar/PlayerBar（截图 docs/redesign/screenshots/baseline/linux-settings-1440x900-light-theme.png）。
 - **影响**：浅色主题下全局 Chrome 可读性破坏 → 「浅色主题完整支持」验收不成立。评级 P1（关键页面不可用级别的主题形态）。
-- **修复方向**：Chrome 背景改读 `ColorScheme.surfaceContainerLow/surface`（或按 brightness 取 VxLightColors/VxDarkSurface 对），与 seekTrack 的既有三元做法对齐。
+- **修复（QA 修复批次 2026-11-11 入树，复验轮补录）**：`design_tokens.dart:148-157` 新增 `VxChrome`（`surface1(brightness)`/`divider(brightness)` 亮度双源：深色侧仍返回原 VxColors 常量、浅色侧返回 VxLightColors，深色像素零变化）；app_header/app_shell/app_sidebar/context_panel/player_bar 全部 Chrome 底色/分隔线改经 VxChrome。
+- **回归**：`chrome_theme_test.dart` 5 项（VxChrome 纯函数双侧取值 + AppHeader/PlayerBar/ContextPanel/AppSidebar/VoicefoxShell 真实组件浅/深渲染色断言；全套 flutter test 246 项内通过，2026-11-11 报告员实跑）。
+- **诚实标注**：浅色主题整页实机走查与对照截图本轮未重采（归 Phase 2/7 视觉批次）；收口由代码链路 + 真实组件渲染色测试锁定。
+
+### P1-10 repeat 模式第 2 档（单曲循环）视觉不可区分 + QA 截图证据失实（QA 2026-11-11 复拍轮）【已关闭，复拍全部完成】
+
+- **现象（QA 复拍轮登记）**：`repeat-mode-2.png` 原采集实际渲染非激活态（图标灰 rgb(167,168,177)）而非预期单曲循环激活态；根因有二：(a) 代码层两档循环共用 `Icons.repeat` 且同为 primary 色，激活态归属不可判定；(b) 采集点击硬编码坐标，实测 PlayerBar 控制列随歌名宽度位移 ±45px，点击可落旧位置。
+- **修复**：`VxPlayerControls` 新增 `repeatSingle` 参数（vx_player_controls.dart），single-loop 档渲染 `Icons.repeat_one` + tooltip「单曲循环」，list-loop 档 tooltip「列表循环」，none 档灰色「循环播放」；`player_bar.dart`/`now_playing_page.dart` 接线。回归 `repeat_mode_test.dart` 4 项（三档视觉 + 循环点击顺序经真实 PlayerBar 代码）。
+- **复拍状态（全部完成，2026-11-11 复验轮）**：`repeat-mode-1.png`（list-loop 激活：播放中 + config.toml 地面真值 + primary 蓝采样 + tooltip）；`repeat-mode-2.png`/`-glyph.png`（single-loop：config 地面真值 + repeat_one 字形 + tooltip「单曲循环」）；**激活态已补齐**：`linux-search-1440x900-repeat-singleloop-active.png`（03:57，真实播放中 repeat_one 字形 primary 蓝激活，报告员目检确认；复验轮记录 config.toml `play_mode="single-loop"` 落盘核对），激活态不再仅由测试锁定。
+- **环境勘误**：增量 release 构建的 MaterialIcons 字体子集陈旧导致新字形（repeat_one）不渲染，`flutter clean` 重建恢复（详见 phase-1-mobile/README.md）。
+
+### P1-11 搜索页错误框直出原始 URL/异常（P1-07 同类新表面，QA 2026-11-11）【已修复】
+
+- **现象**：`linux-search-1440x900-error-retry.png` 错误框 detail 直出 migu 原始 URL；`state.search.error` 为 Rust 快照字段，不经 `lastError/lastNotification` 净化链路（app_model.dart:265-270 search 事件仅 `_refreshState`）。
+- **修复**：`AppModel.sanitizeUserFacingMessage` 公开化（app_model.dart），`search_page.dart` 错误框渲染前净化（URL 打码/空白折叠/截断 140，与 P1-07 toast 同口径）；原始异常仍在命令/事件层写 stderr。
+- **回归**：`search_page_test.dart`「P1-07 同类缺口回归」（原始 URL 不得直出、[URL] 占位呈现）。
+- **同类残余（QA 第 2 轮 2026-11-11 确认后已修复）**：发现页/歌单页 `BrowseResult.error` 直出（`_applyBrowseEvent` page=0 分支原样落槽）已在本轮修复：错误与 notice 均在 `_applyBrowseEvent` 源头净化（app_model.dart，单点收口覆盖 discover/playlist/leaderboard/library/custom_playlists 全部消费面），错误走 `_logAndSanitize`（原始异常写 stderr）；回归 `playlist_detail_isolation_test.dart`「P1-11 回归」；实机复拍 `linux-discover-1440x900-error-retry.png`（离线 netns 实例，错误框显示 `([URL]`，原始 URL 仅在 stderr 日志）。
 
 ## P2（登记）
 
 | ID | 问题 | 证据 | 指南条款 |
 |---|---|---|---|
-| P2-01 | 【并入 P1-09 升级】VxColors/VxDarkSurface 硬编码深色常量被 shell 组件无条件引用（app_header 4 / app_shell 2 / app_sidebar 1 / context_panel 1 / player_bar 4 / mobile_shell 2 处）；浅色行为见 P1-09 | grep + 实机截图 | §3.2 |
+| P2-01 | 【已关闭，随 P1-09 关闭（2026-11-11 复验轮）】VxColors/VxDarkSurface 硬编码深色常量被 shell 组件无条件引用；已收口为 VxChrome 亮度双源 token（design_tokens.dart:148-157，浅色侧 VxLightColors，深色像素零变化） | chrome_theme_test 5 项 + 代码 diff | §3.2 |
 | P2-02 | 双 ThemeData 产源：运行时真源 = myune ThemeProvider；`design_system/voicefox_theme.dart` buildDark/LightTheme 仅 Gallery 页与测试使用（当前只有一套运行时真源，风险受控） | grep buildDarkTheme 调用点 | §1.2-4 |
 | P2-03 | 发现页/首页横向书架最右卡被窗口右缘裁切（实机 1440 视口复现：「伤悲：眼泪的心!」「DJ歌曲抖音…」右缘截断） | linux-discover-1440x900-default.png | §12.5 |
 | P2-04 | 窗口尺寸契约在 niri 下不可靠：请求 1440x900 实得 tile 1212x1274（surface 948x1010，<960 触发降级布局）；Xvfb 下请求即所得。验收截图须在受控显示器采集 | 第一轮 + 本轮 :1 观察；本轮 Xvfb 对照 | §12.4 |
@@ -115,10 +135,10 @@
 | 条件 | 状态 |
 |---|---|
 | P0 清零 | P0-02 已关闭；P0-01 开放但本轮未复现（根因未定位，不能宣称修复） |
-| 歌单隔离测试 | ✅ widget 层 7 项（实机八步未走查，见 P3-03） |
-| 封面错误态 | ✅ 13 项；**但搜索结果行封面 P1-08 新开** |
+| 歌单隔离测试 | ✅ widget 层 9 项（新增 §8.1 序列 7：A 触底分页在途切 B 迟到页 2 只落 A 槽；实机八步未逐项走查，隔离对照三连实机通过，见 P3-03） |
+| 封面错误态 | ✅ 13 项；P1-08 搜索结果行封面已关闭（cover: VxArtwork + 回归 + 实机目检） |
 | 手机系统栏无重叠 | widget 层 ✅；真机未验证（P1-06 环境阻断维持） |
 | 本地音乐真实导入并播放 | 未达成（无媒体文件，Phase 5） |
 | 播放状态/进度/duration/seek/Ended（§8.3） | ✅ 实机走带三连 + 自动切歌 ×2 |
 
-**下一阶段进入条件**：P1-08（单行修复）、P1-09（Chrome 色源收口）建议先修再进入后续 Phase；P0-01 继续以「概率性未复现」状态跟进，长时间会话验收前必须定位。
+**下一阶段进入条件**：P1 全部关闭（P1-03/04/07/08/09/10/11），Phase 2 可进入；P0-01 继续以「概率性未复现」状态跟进，长时间会话验收前必须定位（ButtonPress 间歇失效同域观察在案）；浅色主题实机整页走查归 Phase 2/7。

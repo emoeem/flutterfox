@@ -230,6 +230,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         VxDetailAction(
           icon: _isFavoritePlaylist ? Icons.favorite : Icons.favorite_border,
           label: _isFavoritePlaylist ? '取消收藏' : '收藏',
+          // §8.5：收藏歌单写入本地收藏镜像（favoritePlaylists），不写远端账号。
+          tooltip: '收藏到本地歌单收藏夹（不写入远端账号）',
           onPressed: _toggleFavoritePlaylist,
         ),
         // 同步只对账号歌单有意义：Diff 预览/写入都在对话框内收口。

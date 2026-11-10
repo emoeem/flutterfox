@@ -52,6 +52,10 @@ void main() {
       expect(dark.systemNavigationBarColor, Colors.transparent);
       expect(dark.systemNavigationBarIconBrightness, Brightness.light);
       expect(light.systemNavigationBarIconBrightness, Brightness.dark);
+      // 亮色侧的透明系统栏此前未断言（评审 2026-11-11 指出的真实残余缺口）：
+      // §10.1「背景可延伸系统区域」契约对两个亮暗态同等成立。
+      expect(light.statusBarColor, Colors.transparent);
+      expect(light.systemNavigationBarColor, Colors.transparent);
     });
   });
 

@@ -112,6 +112,10 @@ class _SearchPageState extends State<SearchPage> {
   void _onModelChanged() {
     if (!mounted) return;
     final search = widget.model.state.search;
+    // §8.1「过期响应不能覆盖当前页面」：requestId 回退的快照是旧查询的
+    // 迟到响应——新查询结果已在树时直接忽略（正常链路 Rust 侧按序广播 +
+    // start_search append 守卫拦截，此处为 Dart 层兜底）。
+    if (search.requestId < _seenRequestId) return;
     final responseArrived =
         search.requestId != _seenRequestId || search.error != null;
     if (responseArrived && _moreInFlight) {
@@ -467,10 +471,13 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
     if (state.error != null && state.items.isEmpty) {
+      // P1-07 同类缺口（QA 2026-11-11）：state.search.error 是 Rust 快照
+      // 字段，不经 lastError 净化链路；渲染前必须净化，原始 URL/异常不得
+      // 直出 UI（§9）。原始异常已在命令/事件层写 stderr 日志。
       return VxErrorState(
         title: '搜索失败',
         message: '无法完成「${state.keyword}」的搜索。',
-        detail: state.error,
+        detail: AppModel.sanitizeUserFacingMessage(state.error!),
         icon: Icons.cloud_off,
         onRetry: _runSearch,
       );
@@ -552,6 +559,19 @@ class _SearchPageState extends State<SearchPage> {
                     artist: song.singer,
                     album: song.albumName.isEmpty ? null : song.albumName,
                     source: _sourceName(song.source),
+                    // P1-08：行封面走统一入口 VxArtwork（实体键隔离/负缓存/
+                    // 限尺寸解码）；列表密集场景失败态只显示占位图标，
+                    // 不给每行渲染可聚焦重试钮（allowRetry=false）。
+                    cover: VxArtwork(
+                      url: song.coverUrl,
+                      source: song.source,
+                      entityType: 'song',
+                      entityId: song.id,
+                      entityName: song.name,
+                      size: 40,
+                      radius: 6,
+                      allowRetry: false,
+                    ),
                     duration: song.durationMs.toInt() > 0
                         ? Duration(milliseconds: song.durationMs.toInt())
                         : null,

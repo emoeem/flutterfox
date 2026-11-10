@@ -470,6 +470,8 @@ class _LeftColumn extends StatelessWidget {
                 isPlaying: playing,
                 shuffleOn: mode == 'random',
                 repeatOn: mode == 'list-loop' || mode == 'single-loop',
+                // §8.3：单曲循环档独立视觉态（repeat_one 图标 + tooltip）。
+                repeatSingle: mode == 'single-loop',
                 enabled: true,
                 gap: 22,
                 onShuffle: configReady
@@ -584,7 +586,8 @@ class NowPlayingActionRow extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             IconButton(
-              tooltip: favorite ? '取消收藏' : '收藏',
+              // §8.5：说明写入本地曲库，不假装远端账号红心。
+              tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
               onPressed: () => model.toggleFavorite(song),
               icon: Icon(
                 favorite ? Icons.favorite : Icons.favorite_border,
