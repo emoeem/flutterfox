@@ -34,9 +34,11 @@ Future<FfiCommand> commandSearch({required String keyword, String? source}) =>
 Future<FfiCommand> commandSearchMore({
   required String keyword,
   required int page,
+  String? source,
 }) => RustLib.instance.api.crateApiCommandSearchMore(
   keyword: keyword,
   page: page,
+  source: source,
 );
 
 Future<FfiCommand> commandPlay({required SongDto song}) =>

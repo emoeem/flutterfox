@@ -462,12 +462,7 @@ class _LeftColumn extends StatelessWidget {
               RepaintBoundary(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: LiveSeekRow(
-                    model: model,
-                    positionMs: playback.positionMs,
-                    durationMs: playback.durationMs,
-                    playing: playing,
-                  ),
+                  child: LiveSeekRow(model: model, playing: playing),
                 ),
               ),
               const SizedBox(height: 12),

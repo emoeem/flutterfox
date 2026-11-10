@@ -315,6 +315,10 @@ sealed class FfiCommand with _$FfiCommand {
   const factory FfiCommand.searchMore({
     required String keyword,
     required int page,
+
+    /// 可选音源过滤；None 为聚合搜索（Rust 侧 append 时兜底沿用本次查询
+    /// 建立时的过滤，见 ApplicationService::start_search）。
+    String? source,
   }) = FfiCommand_SearchMore;
   const factory FfiCommand.libraryRefresh() = FfiCommand_LibraryRefresh;
   const factory FfiCommand.favoritesAdd({required SongDto song}) =

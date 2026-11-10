@@ -1,7 +1,11 @@
 /// 封面加载：voicefox 的 SongDto 只带 coverUrl，myune 的 Song 需要字节。
 ///
-/// 带内存 LRU（32 张）+ 磁盘缓存（系统临时目录），避免每次打开播放页都
-/// 重新下载；失败返回 null，播放页回退到占位图而不是崩溃。
+/// 带内存 LRU（32 张）+ in-flight 去重，避免每次打开播放页都重新下载；
+/// 失败返回 null，播放页回退到占位图而不是崩溃。
+/// 注意：**没有磁盘缓存**（旧注释宣称有，实为内存 LRU——P3-01 已更正）；
+/// 新代码请改走 `services/artwork_resolver.dart` + `VxArtwork`（§8.2 唯一
+/// 封面入口，含负缓存/TTL/限尺寸解码），本文件仅为 myune 播放页字节供给
+/// 的兼容层。
 library;
 
 import 'dart:async';

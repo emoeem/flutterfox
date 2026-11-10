@@ -366,11 +366,15 @@ fn wire__crate__api__command_search_more_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_keyword = <String>::sse_decode(&mut deserializer);
             let api_page = <u32>::sse_decode(&mut deserializer);
+            let api_source = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
-                    let output_ok =
-                        Ok::<_, ()>(crate::api::command_search_more(api_keyword, api_page))?;
+                    let output_ok = Ok::<_, ()>(crate::api::command_search_more(
+                        api_keyword,
+                        api_page,
+                        api_source,
+                    ))?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -1293,9 +1297,11 @@ impl SseDecode for crate::FfiCommand {
             13 => {
                 let mut var_keyword = <String>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
+                let mut var_source = <Option<String>>::sse_decode(deserializer);
                 return crate::FfiCommand::SearchMore {
                     keyword: var_keyword,
                     page: var_page,
+                    source: var_source,
                 };
             }
             14 => {
@@ -2641,10 +2647,15 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
                 source.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::FfiCommand::SearchMore { keyword, page } => [
+            crate::FfiCommand::SearchMore {
+                keyword,
+                page,
+                source,
+            } => [
                 13.into_dart(),
                 keyword.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
+                source.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::LibraryRefresh => [14.into_dart()].into_dart(),
@@ -3524,10 +3535,15 @@ impl SseEncode for crate::FfiCommand {
                 <String>::sse_encode(keyword, serializer);
                 <Option<String>>::sse_encode(source, serializer);
             }
-            crate::FfiCommand::SearchMore { keyword, page } => {
+            crate::FfiCommand::SearchMore {
+                keyword,
+                page,
+                source,
+            } => {
                 <i32>::sse_encode(13, serializer);
                 <String>::sse_encode(keyword, serializer);
                 <u32>::sse_encode(page, serializer);
+                <Option<String>>::sse_encode(source, serializer);
             }
             crate::FfiCommand::LibraryRefresh => {
                 <i32>::sse_encode(14, serializer);

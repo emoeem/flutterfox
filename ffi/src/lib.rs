@@ -1339,6 +1339,9 @@ pub enum FfiCommand {
     SearchMore {
         keyword: String,
         page: u32,
+        /// 可选音源过滤；None 为聚合搜索（Rust 侧 append 时兜底沿用本次查询
+        /// 建立时的过滤，见 ApplicationService::start_search）。
+        source: Option<String>,
     },
     // ── 库（收藏/历史/自定义歌单）──
     LibraryRefresh,
@@ -1513,10 +1516,17 @@ impl FfiCommand {
                     None => None,
                 },
             },
-            FfiCommand::SearchMore { keyword, page } => ApplicationCommand::SearchMore {
+            FfiCommand::SearchMore {
                 keyword,
                 page,
-                source: None,
+                source,
+            } => ApplicationCommand::SearchMore {
+                keyword,
+                page,
+                source: match source {
+                    Some(id) => Some(parse_source(&id)?),
+                    None => None,
+                },
             },
             FfiCommand::LibraryRefresh => ApplicationCommand::LibraryRefresh,
             FfiCommand::FavoritesAdd { song } => ApplicationCommand::FavoritesAdd {

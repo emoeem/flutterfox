@@ -5,6 +5,9 @@ environment:
   sdk: ">=3.10.0 <4.0.0"
 dependencies:
   cached_network_image: ^4.0.6
+  # 封面下载层（cached_network_image 的缓存实现）；VxArtwork 需要其
+  # BaseCacheManager 类型支持测试注入 FileService（§8.2）。
+  flutter_cache_manager: ^3.4.8
   # --- myune_music UI 基底所需（vendored lib/src/myune/，Apache-2.0） ---
   colorgram: ^2.0.0
   crypto: ^3.0.6

@@ -32,8 +32,12 @@ pub fn command_previous() -> FfiCommand {
 pub fn command_search(keyword: String, source: Option<String>) -> FfiCommand {
     FfiCommand::Search { keyword, source }
 }
-pub fn command_search_more(keyword: String, page: u32) -> FfiCommand {
-    FfiCommand::SearchMore { keyword, page }
+pub fn command_search_more(keyword: String, page: u32, source: Option<String>) -> FfiCommand {
+    FfiCommand::SearchMore {
+        keyword,
+        page,
+        source,
+    }
 }
 pub fn command_play(song: SongDto) -> FfiCommand {
     FfiCommand::PlaySong { song }

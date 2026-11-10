@@ -20,7 +20,7 @@ import '../design_system/components/vx_loading_skeleton.dart';
 import '../design_system/components/vx_playlist_card.dart';
 import '../design_system/components/vx_section_header.dart';
 import '../design_system/design_tokens.dart';
-import '../widgets/cover_image.dart';
+import '../design_system/components/vx_artwork.dart';
 import 'leaderboard_page.dart';
 import 'playlist_detail_page.dart';
 import 'search_page.dart';
@@ -569,14 +569,17 @@ class _DiscoverPageState extends State<DiscoverPage> {
       trackCount: playlist.songCount > 0 ? playlist.songCount : null,
       source: _sourceName(playlist.source),
       width: 168,
-      cover: (playlist.coverUrl?.isNotEmpty ?? false)
-          ? null
-          : CoverImage(
-              url: playlist.coverUrl,
-              size: 168,
-              radius: 0,
-              icon: Icons.queue_music,
-            ),
+      cover: VxArtwork(
+        url: playlist.coverUrl,
+        source: playlist.source,
+        entityType: 'playlist',
+        entityId: playlist.id,
+        entityName: playlist.name,
+        size: 168,
+        radius: 0,
+        icon: Icons.queue_music,
+        allowRetry: false,
+      ),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => PlaylistDetailPage(_model, playlist),

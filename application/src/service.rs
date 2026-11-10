@@ -168,8 +168,20 @@ impl ApplicationService {
     /// 宿主（runtime/FFI 或移动端）应在 tokio 上下文里调用一次。
     pub fn start_playback_pump(&self) {
         let Ok(handle) = tokio::runtime::Handle::try_current() else {
+            // 静默 return 会让「进度/时长恒 0、Ended 自动切歌失效、播放错误
+            // 不可见」变成不可排查的故障（P0-02 根因即此处）。GUI 路径没有
+            // tracing subscriber，必须 eprintln 才能出现在 stdout/stderr。
+            tracing::warn!(
+                "start_playback_pump: 当前线程无 tokio 上下文，播放泵未启动；\
+                 进度/时长/Ended/播放错误将停更。宿主应在 tokio 上下文调用本函数。"
+            );
+            eprintln!(
+                "voicefox: start_playback_pump 失败——当前线程无 tokio 上下文，\
+                 播放泵未启动（进度/时长/Ended/播放错误将停更）"
+            );
             return;
         };
+        eprintln!("voicefox: playback pump started");
         let service = self.clone();
         let player = self.playback.player();
         let mut state_rx = player.state_watcher();
@@ -1455,10 +1467,24 @@ impl ApplicationService {
         append: bool,
     ) -> Result<(), String> {
         let request_id = self.request_id.fetch_add(1, Ordering::SeqCst) + 1;
+        // SearchMore 兜底必须在覆盖 state.search.source 之前读：append 且调用方
+        // 未带 source（旧客户端/聚合路径之外的兜底）时沿用本次查询建立时的
+        // 音源过滤；若先写 None 再读就永远是 None（P1-04 陷阱）。
+        let effective_source = if append {
+            source.or_else(|| {
+                self.state
+                    .read()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .search
+                    .source
+            })
+        } else {
+            source
+        };
         {
             let mut state = self.state.write().unwrap_or_else(|e| e.into_inner());
             state.search.keyword = keyword.clone();
-            state.search.source = source;
+            state.search.source = effective_source;
             state.search.page = page;
             state.search.request_id = request_id;
             state.search.loading = true;
@@ -1476,7 +1502,7 @@ impl ApplicationService {
         let events = self.events.clone();
         let state = Arc::clone(&self.state);
         spawn_reported(events.clone(), "搜索", async move {
-            match search.search(&keyword, page, source).await {
+            match search.search(&keyword, page, effective_source).await {
                 Ok((items, has_more)) => {
                     let mut current = state.write().unwrap_or_else(|e| e.into_inner());
                     if current.search.request_id != request_id {
@@ -1942,6 +1968,62 @@ mod tests {
         let effects: Arc<dyn crate::services::PlaybackEffects> =
             Arc::new(crate::services::test_support::NullEffects);
         ApplicationService::new(player, sources, lyrics, effects, None, None, None)
+    }
+
+    /// P0-02 回归：泵启动（tokio 上下文内）→ position/duration watcher 变化
+    /// → PlaybackProgress 事件按 4Hz 节流广播。运行环境无 tokio 上下文时泵
+    /// 静默不启动（修复前的桌面路径），本测试因收不到事件而失败。
+    #[tokio::test]
+    async fn playback_pump_broadcasts_progress_for_watch_changes() {
+        let player = crate::services::test_support::manual_player();
+        let sources = Arc::new(SourceManager::new(
+            lx_core::model::source::SourceId::Kw,
+            &[lx_core::model::source::SourceId::Kw],
+        ));
+        let lyrics = Arc::new(LyricService::new(Arc::new(
+            lx_lyric::fetcher::SourceLyricFetcher::new(Arc::clone(&sources)),
+        )));
+        let effects: Arc<dyn crate::services::PlaybackEffects> =
+            Arc::new(crate::services::test_support::NullEffects);
+        let service = ApplicationService::new(
+            Arc::clone(&player) as Arc<dyn PlayerBackend>,
+            Arc::clone(&sources),
+            lyrics,
+            effects,
+            None,
+            None,
+            None,
+        );
+        let mut receiver = service.subscribe();
+
+        service.start_playback_pump();
+        player.push_duration(Duration::from_secs(200));
+        player.push_position(Duration::from_millis(1500));
+
+        // 泵以 250ms 节流；首推在节流窗口内可能被抑制，等窗口过后再推一次。
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        player.push_position(Duration::from_millis(1800));
+
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        let mut progress_seen = None;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(Duration::from_millis(300), receiver.recv()).await {
+                Ok(Ok(ApplicationEvent::PlaybackProgress { position, .. })) => {
+                    progress_seen = Some(position);
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        let position =
+            progress_seen.expect("P0-02：泵应把 position watcher 变化广播为 PlaybackProgress");
+        // 250ms 节流窗口内首推可能先于窗口过期而即时广播（state/首次变更语义），
+        // 因此只断言「事件携带的是推送后的真实位置」，不断言具体哪一次推送。
+        assert!(
+            position >= Duration::from_millis(1500),
+            "广播的位置应来自推送的 watcher 值，实际 {position:?}"
+        );
     }
 
     #[tokio::test]

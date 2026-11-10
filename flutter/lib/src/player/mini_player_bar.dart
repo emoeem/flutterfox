@@ -54,33 +54,43 @@ class MiniPlayerBar extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // 顶部 2px 进度线：复用 LivePlayback 插值（不复制走带逻辑）。
+                // 顶部 2px 进度线：订阅 playbackTick（4Hz 只重建本线，
+                // 不重建整个迷你栏），走带插值复用 LivePlayback。
                 Positioned(
                   left: 0,
                   right: 0,
                   top: 0,
                   height: 2,
                   child: RepaintBoundary(
-                    child: LivePlayback(
-                      positionMs: playback.positionMs,
-                      durationMs: playback.durationMs,
-                      playing: playing,
-                      builder: (context, position, duration) {
-                        final total = duration.inMilliseconds;
-                        final fraction = total > 0
-                            ? (position.inMilliseconds / total).clamp(0.0, 1.0)
-                            : 0.0;
-                        return ColoredBox(
-                          color: scheme.surfaceContainerHighest,
-                          child: fraction <= 0
-                              ? null
-                              : FractionallySizedBox(
-                                  alignment: Alignment.centerLeft,
-                                  widthFactor: fraction,
-                                  child: const ColoredBox(
-                                    color: VxColors.accent,
-                                  ),
-                                ),
+                    child: ListenableBuilder(
+                      listenable: model.playbackTick,
+                      builder: (context, _) {
+                        final playback = model.state.playback;
+                        return LivePlayback(
+                          positionMs: playback.positionMs,
+                          durationMs: playback.durationMs,
+                          playing: playing,
+                          builder: (context, position, duration) {
+                            final total = duration.inMilliseconds;
+                            final fraction = total > 0
+                                ? (position.inMilliseconds / total).clamp(
+                                    0.0,
+                                    1.0,
+                                  )
+                                : 0.0;
+                            return ColoredBox(
+                              color: scheme.surfaceContainerHighest,
+                              child: fraction <= 0
+                                  ? null
+                                  : FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor: fraction,
+                                      child: const ColoredBox(
+                                        color: VxColors.accent,
+                                      ),
+                                    ),
+                            );
+                          },
                         );
                       },
                     ),

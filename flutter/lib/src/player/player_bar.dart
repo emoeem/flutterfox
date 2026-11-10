@@ -79,27 +79,34 @@ class _PlayerBarState extends State<PlayerBar> {
               child: Stack(
                 children: [
                   // 顶部 2px 进度线（时长未知时不显示进度，只留轨道）。
+                  // 订阅 playbackTick：4Hz 进度只重建本线，不重建 PlayerBar。
                   Positioned(
                     left: 0,
                     right: 0,
                     top: 0,
                     height: 2,
                     child: RepaintBoundary(
-                      child: LivePlayback(
-                        positionMs: playback.positionMs,
-                        durationMs: playback.durationMs,
-                        playing: playing,
-                        builder: (context, position, duration) {
-                          final total = duration.inMilliseconds;
-                          final fraction =
-                              _dragFraction ??
-                              (total > 0
-                                  ? (position.inMilliseconds / total).clamp(
-                                      0.0,
-                                      1.0,
-                                    )
-                                  : null);
-                          return _ProgressLine(fraction: fraction);
+                      child: ListenableBuilder(
+                        listenable: model.playbackTick,
+                        builder: (context, _) {
+                          final playback = model.state.playback;
+                          return LivePlayback(
+                            positionMs: playback.positionMs,
+                            durationMs: playback.durationMs,
+                            playing: playing,
+                            builder: (context, position, duration) {
+                              final total = duration.inMilliseconds;
+                              final fraction =
+                                  _dragFraction ??
+                                  (total > 0
+                                      ? (position.inMilliseconds / total).clamp(
+                                          0.0,
+                                          1.0,
+                                        )
+                                      : null);
+                              return _ProgressLine(fraction: fraction);
+                            },
+                          );
                         },
                       ),
                     ),
@@ -319,12 +326,11 @@ class _CenterTransport extends StatelessWidget {
             onRepeat: configReady ? () => _cycleRepeat(mode) : null,
           ),
         const SizedBox(height: 2),
-        // 时间 + 可拖动进度条 + 时间：插值与真实 seek 在共用 LiveSeekRow，
-        // 时长读不到显示 --:--（P0-F1），不伪造 00:00。
+        // 时间 + 可拖动进度条 + 时间：插值与真实 seek 在共用 LiveSeekRow
+        // （内部订阅 playbackTick，4Hz 只重建本行）；时长读不到显示 --:--，
+        // 不伪造 00:00。
         LiveSeekRow(
           model: model,
-          positionMs: playback.positionMs,
-          durationMs: playback.durationMs,
           playing: playing,
           onDragPreview: onDragPreview,
         ),

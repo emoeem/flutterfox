@@ -15,6 +15,80 @@ pub use cover::{CoverService, CoverState, is_usable_remote_url, sweep_temp_files
 pub use storage::{SavedPlayerState, Storage};
 pub use voicefox_application::resolve_cover_url;
 
+/// FFI 同步引导路径（无 ambient tokio）自建的进程级 runtime。
+/// OnceLock 保证进程存活期持有：ApplicationRuntime 局部 drop 后泵任务仍存活
+/// （ffi/src/lib.rs new_desktop/new_host 里的 ApplicationRuntime 是局部变量，
+/// 函数返回即 drop；Arc 只存进去会在几秒后被 shutdown，泵刚启动就被取消）。
+static OWNED_RUNTIME: std::sync::OnceLock<Arc<tokio::runtime::Runtime>> =
+    std::sync::OnceLock::new();
+
+/// 确保当前线程有 tokio 上下文（供 FFI 同步引导与测试复用）。
+///
+/// 返回 Some(guard) = 本线程原本没有 ambient runtime，已进入进程级 owned
+/// multi-thread runtime（multi-thread flavor：泵任务里 advance_after_end 会
+/// await 含同步 mpv FFI 与 JS 音源解析的 play 链，current_thread flavor 会
+/// 把泵阻塞停摆）；返回 None = 已有 ambient runtime，调用方行为不变。
+/// guard 必须活到所有 `tokio::spawn` / `Handle::try_current()` 调用点之后。
+fn enter_sync_bootstrap_runtime() -> Option<tokio::runtime::EnterGuard<'static>> {
+    if tokio::runtime::Handle::try_current().is_ok() {
+        return None;
+    }
+    let runtime: &'static tokio::runtime::Runtime = OWNED_RUNTIME
+        .get_or_init(|| {
+            // GUI 引导没有 tracing subscriber：这条一次性日志直达 stderr，
+            // 用于确认同步引导路径确实拿到了 tokio 上下文（P0-02 诊断锚点）。
+            eprintln!("voicefox: 同步引导路径无 ambient tokio，已创建进程级 multi-thread runtime");
+            Arc::new(
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .expect("build owned tokio runtime for FFI sync bootstrap"),
+            )
+        })
+        .as_ref();
+    Some(runtime.enter())
+}
+
+#[cfg(test)]
+mod sync_bootstrap_tests {
+    use super::*;
+
+    /// P0-02 回归：纯同步线程（模拟 FRB NormalTask 的线程池直跑）调用
+    /// enter_sync_bootstrap_runtime 后，`Handle::try_current()` 必须可用——
+    /// 否则 ApplicationService::start_playback_pump 会静默 return，进度/时长
+    /// 恒 0、Ended/播放错误事件无消费者。
+    #[test]
+    fn sync_bootstrap_path_provides_tokio_context() {
+        std::thread::spawn(|| {
+            assert!(
+                tokio::runtime::Handle::try_current().is_err(),
+                "前置条件：测试线程不应有 ambient tokio runtime"
+            );
+            let guard = enter_sync_bootstrap_runtime();
+            assert!(
+                tokio::runtime::Handle::try_current().is_ok(),
+                "P0-02：同步引导路径必须提供 tokio 上下文，否则播放泵静默不启动"
+            );
+            drop(guard);
+            // guard 释放只退出上下文，runtime 仍被 OnceLock 持有（泵任务存活）。
+            assert!(OWNED_RUNTIME.get().is_some());
+        })
+        .join()
+        .unwrap();
+    }
+
+    /// 有 ambient runtime 的调用方（FRB async 上下文 / TUI block_on）不受影响：
+    /// 不进入 owned runtime，也不污染外部上下文。
+    #[tokio::test]
+    async fn ambient_runtime_path_is_untouched() {
+        let outer = tokio::runtime::Handle::try_current().expect("tokio::test 提供上下文");
+        let guard = enter_sync_bootstrap_runtime();
+        assert!(guard.is_none(), "已有 ambient runtime 时不得再 enter");
+        let inner = tokio::runtime::Handle::try_current().expect("上下文仍在");
+        assert_eq!(outer.id(), inner.id(), "不得切换到 owned runtime");
+    }
+}
+
 struct RuntimePlaybackEffects {
     storage: Arc<Storage>,
     cover: Arc<CoverService>,
@@ -147,8 +221,17 @@ impl ApplicationRuntime {
             cover: Arc::clone(&cover),
             config: Arc::clone(&shared),
         });
-        // DownloadManager 构造需要 tokio 句柄：TUI（block_on 内）与 FRB 异步上下文
-        // 都有；纯同步构造路径（无 tokio）下下载端口留空，playback 不受影响。
+        // FFI 同步引导路径（ffi new_desktop / new_host 都是同步 Rust 函数，经 FRB
+        // NormalTask 在线程池直跑，见 flutter_rust_bridge 2.13.0
+        // handler/implementation/executor.rs execute_sync）没有 ambient tokio 上下文：
+        // 播放泵（ApplicationService::start_playback_pump 的 Handle::try_current
+        // guard）与下面的 downloads spawn 都会静默/直接失败（P0-02 根因）。
+        // enter_sync_bootstrap_runtime 见函数文档；enter 作用域必须覆盖整个
+        // 函数体（downloads 构造 :196、spawn :230 与泵启动 :233）。
+        // 有 ambient runtime 的调用方（FRB async 上下文）行为不变。
+        let _enter_owned = enter_sync_bootstrap_runtime();
+        // DownloadManager 构造需要 tokio 句柄：经上面的 enter 兜底后，
+        // 同步引导路径也能拿到。
         let downloads_manager = tokio::runtime::Handle::try_current()
             .ok()
             .map(|handle| Arc::new(voicefox_download::DownloadManager::new(&config, handle)));

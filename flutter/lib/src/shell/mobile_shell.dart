@@ -29,6 +29,7 @@ import '../nav_bus.dart';
 import '../player/mini_player_bar.dart';
 import '../player/mobile_now_playing_page.dart';
 import 'app_sidebar.dart';
+import 'android_insets.dart';
 import 'app_shell.dart'
     show
         buildShellPage,
@@ -95,17 +96,19 @@ class _TouchShellState extends State<TouchShell> {
         );
         // 平台隔离：桌面平台任何宽度不进移动/平板壳（正常路由根本不会
         // 挂 TouchShell；此处兜底防御，误挂时渲染空而不是移动壳）。
-        return switch (factor) {
-          DeviceFormFactor.tablet => TabletShell(
-            model: widget.model,
-            session: _session,
-          ),
-          DeviceFormFactor.handset => MobileShell(
-            model: widget.model,
-            session: _session,
-          ),
-          DeviceFormFactor.desktop => const SizedBox.shrink(),
-        };
+        return AndroidInsetsLayer(
+          child: switch (factor) {
+            DeviceFormFactor.tablet => TabletShell(
+              model: widget.model,
+              session: _session,
+            ),
+            DeviceFormFactor.handset => MobileShell(
+              model: widget.model,
+              session: _session,
+            ),
+            DeviceFormFactor.desktop => const SizedBox.shrink(),
+          },
+        );
       },
     );
   }

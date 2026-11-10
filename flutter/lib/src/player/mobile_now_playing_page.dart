@@ -333,12 +333,7 @@ class _CoverLayer extends StatelessWidget {
           RepaintBoundary(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: LiveSeekRow(
-                model: model,
-                positionMs: playback.positionMs,
-                durationMs: playback.durationMs,
-                playing: playing,
-              ),
+              child: LiveSeekRow(model: model, playing: playing),
             ),
           ),
           const SizedBox(height: 6),

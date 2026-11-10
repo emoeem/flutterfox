@@ -23,7 +23,7 @@ import '../design_system/components/vx_playlist_card.dart';
 import '../design_system/components/vx_section_header.dart';
 import '../design_system/design_tokens.dart';
 import '../nav_bus.dart';
-import '../widgets/cover_image.dart';
+import '../design_system/components/vx_artwork.dart';
 import 'leaderboard_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -144,9 +144,17 @@ class _ContinueHero extends StatelessWidget {
       // 正在播 ⇒ 暂停；否则继续播放（恢复当前曲目或播放最近一首）。
       primaryLabel: playing ? '暂停' : '继续播放',
       onPrimary: () => _resume(model, song, playing),
-      cover: (song.coverUrl?.isNotEmpty ?? false)
-          ? null
-          : CoverImage(url: song.coverUrl, size: 178, radius: 0),
+      cover: VxArtwork(
+        url: song.coverUrl,
+        source: song.source,
+        entityType: 'song',
+        entityId: song.id,
+        entityName: song.name,
+        size: 178,
+        radius: 0,
+        icon: Icons.music_note_outlined,
+        allowRetry: false,
+      ),
       fallbackSeed: song.name,
     );
   }
@@ -204,9 +212,16 @@ class _RecentShelf extends StatelessWidget {
                   title: song.name,
                   subtitle: song.singer,
                   width: 156,
-                  cover: (song.coverUrl?.isNotEmpty ?? false)
-                      ? null
-                      : CoverImage(url: song.coverUrl, size: 156, radius: 0),
+                  cover: VxArtwork(
+                    url: song.coverUrl,
+                    source: song.source,
+                    entityType: 'song',
+                    entityId: song.id,
+                    entityName: song.name,
+                    size: 156,
+                    radius: 0,
+                    allowRetry: false,
+                  ),
                   onTap: () => _play(song),
                   onPlay: () => _play(song),
                 ),
@@ -257,14 +272,19 @@ class _MyPlaylistsSection extends StatelessWidget {
                   title: playlist.name,
                   trackCount: playlist.songCount,
                   width: 156,
-                  cover: (playlist.coverUrl?.isNotEmpty ?? false)
-                      ? null
-                      : CoverImage(
-                          url: playlist.coverUrl,
-                          size: 156,
-                          radius: 0,
-                          icon: Icons.queue_music,
-                        ),
+                  cover: VxArtwork(
+                    url: playlist.coverUrl,
+                    // 自建歌单是本地实体（CustomPlaylistSummaryDto 无 source
+                    // 字段），缓存键固定 local 命名空间。
+                    source: 'local',
+                    entityType: 'playlist',
+                    entityId: playlist.id,
+                    entityName: playlist.name,
+                    size: 156,
+                    radius: 0,
+                    icon: Icons.queue_music,
+                    allowRetry: false,
+                  ),
                   onTap: () => navRequest.value = 2,
                 );
               },

@@ -101,6 +101,7 @@ abstract class RustLibApi extends BaseApi {
   Future<FfiCommand> crateApiCommandSearchMore({
     required String keyword,
     required int page,
+    String? source,
   });
 
   Future<FfiCommand> crateApiCommandStop();
@@ -445,6 +446,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<FfiCommand> crateApiCommandSearchMore({
     required String keyword,
     required int page,
+    String? source,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -452,6 +454,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(keyword, serializer);
           sse_encode_u_32(page, serializer);
+          sse_encode_opt_String(source, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -464,7 +467,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateApiCommandSearchMoreConstMeta,
-        argValues: [keyword, page],
+        argValues: [keyword, page, source],
         apiImpl: this,
       ),
     );
@@ -472,7 +475,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiCommandSearchMoreConstMeta => const TaskConstMeta(
     debugName: "command_search_more",
-    argNames: ["keyword", "page"],
+    argNames: ["keyword", "page", "source"],
   );
 
   @override
@@ -1242,6 +1245,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return FfiCommand_SearchMore(
           keyword: dco_decode_String(raw[1]),
           page: dco_decode_u_32(raw[2]),
+          source: dco_decode_opt_String(raw[3]),
         );
       case 14:
         return FfiCommand_LibraryRefresh();
@@ -2370,7 +2374,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 13:
         var var_keyword = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
-        return FfiCommand_SearchMore(keyword: var_keyword, page: var_page);
+        var var_source = sse_decode_opt_String(deserializer);
+        return FfiCommand_SearchMore(
+          keyword: var_keyword,
+          page: var_page,
+          source: var_source,
+        );
       case 14:
         return FfiCommand_LibraryRefresh();
       case 15:
@@ -3747,10 +3756,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(12, serializer);
         sse_encode_String(keyword, serializer);
         sse_encode_opt_String(source, serializer);
-      case FfiCommand_SearchMore(keyword: final keyword, page: final page):
+      case FfiCommand_SearchMore(
+        keyword: final keyword,
+        page: final page,
+        source: final source,
+      ):
         sse_encode_i_32(13, serializer);
         sse_encode_String(keyword, serializer);
         sse_encode_u_32(page, serializer);
+        sse_encode_opt_String(source, serializer);
       case FfiCommand_LibraryRefresh():
         sse_encode_i_32(14, serializer);
       case FfiCommand_FavoritesAdd(song: final song):

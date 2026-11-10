@@ -1,117 +1,124 @@
-# 缺陷矩阵（04-defect-matrix，2026-11-10）
+# 缺陷矩阵（04-defect-matrix，2026-11-10 第二轮全量复审）
 
-- 依据：`docs/VOICEFOX_UI_REDESIGN_EXECUTION_GUIDE.md` §5/§6/§7/§8/§12.7，以当前代码（feat/ui-redesign @ d9ee22f）为准逐条验证。
-- 每条 P0/P1 均在本会话真实复现（实机交互或命令输出），附复现步骤与证据；未验证项明确标注。
-- 实机环境：Linux 桌面（niri + xwayland-satellite，DISPLAY=:1），release 构建（`flutter build linux --release` exit 0）。
-- 基线事实与门禁数据见 `docs/redesign/00-baseline.md`。
-
-评级口径（§12.7）：P0 数据错乱/播放不可用/崩溃；P1 核心操作无法完成/封面普遍缺失/关键页面不可用；P2 视觉与次要功能缺口；P3 可选增强/文档债。
+- 依据：`docs/VOICEFOX_UI_REDESIGN_EXECUTION_GUIDE.md` §5/§6/§7/§8/§12.7，以当前工作区（feat/ui-redesign @ 5725231 + Phase 1 未提交改动）为准逐条验证。
+- 实机环境（本轮）：**Xvfb :2（1920x1080x24，无 WM）**，release 构建（`flutter build linux --release` exit 0），XTest 注入交互；另在 :1（niri 26.04 + xwayland-satellite）做窗口行为观察。第一轮会话（niri 全屏 1656x817）的证据仅标注引用，不冒充本轮复现。
+- 评级口径（§12.7）：P0 数据错乱/播放不可用/崩溃；P1 核心操作无法完成/封面普遍缺失/关键页面不可用；P2 视觉与次要功能缺口；P3 可选增强/文档债。
+- 基线事实与门禁数据：`docs/redesign/00-baseline.md`（§3 门禁、§9 播放链、§10 封面链）。
 
 ---
 
-## P0（阻断级，进入 Phase 1 前必须关闭）
+## P0（阻断级）
 
-### P0-01 主 isolate 概率性卡死（搜索结果加载 / 开始播放后 UI 全死）
+### P0-01 主 isolate 概率性卡死（搜索结果/播放后 UI 全死）——【开放；本轮未复现】
 
-- **现象**：UI 渲染完全停止（连播放行动画在内 4 秒两帧逐像素 diff = 0），指针点击、键盘输入全部无响应；进程通常仍存活，1 例最终进程消失（见 P1-05）。
-- **发生率**：本会话 5 个独立实例中 **3 例卡死**（#2/#3/#5），时点分别在搜索结果到达后数秒（#2/#3，未播放）或开始播放后数秒（#5：悬停/行内播放按钮尚可响应，播放启动后全部输入失效）；实例 #1 存活较久（完成搜索+播放）但播放后 position 同样冻结（见 P0-02），最终进程消失（P1-05）；实例 #4 另有「进程存在但窗口从未出现」的启动异常（未诊断，被手动终止）。
-- **复现步骤**（本会话实际操作，桌面 release 构建）：
-  1. `cd flutter/build/linux/x64/release/bundle && setsid env DISPLAY=:1 GDK_BACKEND=x11 VOICEFOX_START_SIZE=1440x900 VOICEFOX_START_PAGE=search VOICEFOX_START_SEARCH=love ./voicefox_flutter`
-  2. 通过 niri IPC FocusWindow + FullscreenWindow 置于前台。
-  3. 等待搜索结果渲染（257 个结果，约 10–15s）。
-  4. 用 XTest（`/tmp/vx-audit/x11tool`，经 :1 X server 注入）点击任意行/侧栏/头部按钮 → 无响应。
-  5. 验证冻结：`x11tool key Tab` 两次后 `magick compare -metric AE f1.png f2.png` → **0**（无焦点环、无任何像素变化）。
-- **证据**：基线截图 linux-search-1656x817-results.png（冻结前最后状态）；4 秒帧差 = 0（实例 #5，正在播放状态下连均衡器动画都停止）；实例 #2/#3 各自 `x11tool key Tab` 两次后帧差 = 0（无焦点环出现）；实例 #2 点击侧栏「首页」两次均不导航。
-- **影响**：任何交互验收/截图回归在此缺陷修复前不可信；用户视角=应用随机整体无响应。
-- **嫌疑方向**（供 Phase 1 排查，未定罪）：AppModel 事件泵与 UI 重建的热路径（搜索结果 257 行 setState）、progress 4Hz 泵、`_reloadCustomPlaylistDetails/_reloadAccountBrowse` 的 library 事件重取循环；需要 profiler/日志定位（RUST_LOG=debug 已开但日志无异常输出——isolate 卡死通常无声）。
+- **状态**：开放。第一轮会话 5 实例 3 复现（搜索结果到达后或播放启动后输入全失效、帧差=0）；**本轮 Xvfb 会话约 8 分钟全流程交互（搜索 259 结果渲染、双击播放、走带 3 分钟、队列/全屏播放页/五个页面导航/主题切换）未复现一次**。概率性缺陷的「未复现」不构成修复证据，根因仍未定位（Phase 1 加的事件速率观测 `voicefox events: N/5 s` 本轮持续输出正常，无洪泛/静默异常）。
+- **第一轮复现步骤（存档，非本轮复现）**：release 构建 + `VOICEFOX_START_PAGE=search VOICEFOX_START_SEARCH=love` 启动 → 等待结果渲染 → XTest 点击任意行/侧栏 → 无响应；`x11tool key Tab` 两次后 `magick compare -metric AE f1.png f2.png` = 0。
+- **影响**：用户视角=应用随机整体无响应；截图回归/交互验收在此缺陷未定位前对「长时间会话」不可信。
+- **嫌疑方向（未定罪）**：AppModel 事件泵热路径（搜索结果 setState）、progress 4Hz 泵、library 事件 `_reloadCustomPlaylistDetails/_reloadAccountBrowse` 重取循环；需 profiler/devtools 定位。
 
-### P0-02 播放中 position/duration 恒 0（进度条不走、总时长 --:--）
+### P0-02 播放中 position/duration 恒 0——【已关闭，Phase 1；本轮实机复核通过】
 
-- **现象**：真实播放已启动（PlayerBar 显示歌曲 L-O-V-E/Aimer·soda、暂停键=播放中、行内均衡器图标），但进度恒 `00:00`、总时长恒 `--:--`，等待 20s、40s、60s 后三张截图均无变化。
-- **与旧审计的关系**：UI_AUDIT_DESKTOP 的 P0-A2 当时只记录「duration 恒 0（position 已实时 00:21 走动）」；本次实测 **position 也不走**——比 11-06 更严重，或与 P0-01 卡死耦合（第一张播放截图拍摄于播放开始后 ~5s，position 已应 >0 仍为 00:00）。
-- **复现步骤**：
-  1. 按搜索页流程得到结果列表（实例 #1：header 搜索框输入 love 回车；实例 #5：VOICEFOX_START_SEARCH=love 种子）。
-  2. 双击或点击行内「播放」按钮（悬停行尾出现 ▶）启动 L-O-V-E（汽水音乐）。
-  3. 观察 PlayerBar：`00:00 / --:--`；sleep 20/40/60 后重截——不变。
-- **证据**：docs/redesign/screenshots/baseline/linux-search-1656x817-playing.png（00:00 / --:--）。
-- **代码层链路完整性**（泵存在、断点在下游）：engine duration observer（engine.rs:453-455）→ application 泵（service.rs:163-247）→ FFI progress 事件 → AppModel `_applyPlaybackProgress`（app_model.dart:255-279）→ PlayerBar。需按 §8.3 逐环断点定位（engine watcher 是否对汽水流吐数、4Hz 泵是否被 P0-01 卡死拖死）。
-- **影响**：§8.3 核心数据正确性破坏：seek 不可用、LivePlayback 插值被 duration>0 挡住、歌词推进失效。
+- **根因与修复**（Phase 1）：FRB 同步引导路径无 ambient tokio → `start_playback_pump` 的 `Handle::try_current()` guard 静默 return → 泵从未启动。修复 = `runtime/src/lib.rs:22-32` `enter_sync_bootstrap_runtime()`（进程级 `OnceLock<Arc<Runtime>>`，enter 作用域覆盖 `from_parts` 全函数体）。
+- **本轮实机复核（Xvfb :2，release）**：
+  1. 启动日志 `voicefox: 同步引导路径无 ambient tokio，已创建进程级 multi-thread runtime` + `voicefox: playback pump started`（app-run3.log）。
+  2. 双击搜索行播放 L-O-V-E（汽水）：PlayerBar `00:02 / 00:30`（docs/redesign/screenshots/baseline/linux-search-1440x900-playing-00-02-progress.png）。
+  3. 曲目结束**自动切换下一首**：LOVE/Aki阿杰·5sing `00:00 / 02:34`（…ended-auto-next-00-00.png）——Ended 自动下一首同时复核通过（旧 P0-03 行为）。
+  4. 26 秒后 `00:26 / 02:34` 走带（…00-26-progress.png）；stderr `voicefox events: 19-22/5 s, last=progress`（≈4Hz）。
+- **回归测试**：runtime `sync_bootstrap_path_provides_tokio_context` / `ambient_runtime_path_is_untouched`；application `playback_pump_broadcasts_progress_for_watch_changes`（cargo-test 816 全绿内）。
 
 ## P1（功能缺口）
 
-### P1-03 封面三元反写：有真实封面 URL 时显示渐变占位（封面普遍缺失）
+### P1-03 封面三元反写（有 URL 显示渐变占位）——【已关闭，Phase 1；本轮实机复核通过】
 
-- **代码证据**（4 处同一反写模式）：
-  - `flutter/lib/src/pages/discover_page.dart:571-578`：`cover: (playlist.coverUrl?.isNotEmpty ?? false) ? null : CoverImage(url: ...)`——URL 非空 → 传 null → `VxCardShell`（vx_card_shell.dart:35-36「null 用渐变首字母占位」）渲染渐变；URL 空 → 才建 CoverImage。
-  - `flutter/lib/src/pages/home_page.dart:147-149`（Continue Hero）、`:207-209`（最近播放书架）、`:260-265`（我的歌单卡）——同样反写。
-  - 对照正确写法：`library_page.dart:595-601`（空 → VxCoverFallback，非空 → CoverImage.expand）。
-- **实机证据**：基线截图中发现页酷我热门歌单卡（古风戏腔/短视频DJ/爱的故事随笔…8+ 张）与首页继续收听/最近播放封面全部为渐变首字母占位；按数据面 kw 歌单通常带 cover_url（被反写丢弃）。
-- **复现步骤**：启动应用 → 发现页 → 观察热门歌单卡：无一显示真实封面。
-- **影响**：§12.7「封面普遍缺失」= P1；§5.3/§7.3 页面视觉围绕封面组织的目标落空。
-- **修复**：4 处条件对齐 library_page 写法（约 4 行改动），随后再进 §8.2 ArtworkResolver 统一改造。
+- **关闭证据（本轮）**：反写模式（`? null : CoverImage`）全仓 grep 为零；home/discover/search(专辑歌手网格)/playlist_detail 共 7 处走 `VxArtwork` + `ArtworkResolver`（负缓存/退避/TTL/单飞/限尺寸解码，13 项 artwork_widget_test 全绿）。
+- **实机复核**：发现页酷我/酷狗热门歌单卡 12+ 张真实封面全部渲染（linux-discover-1440x900-default.png）；队列面板 2 行真实封面；首页最近播放本地曲「晴天」真实照片封面（linux-home-1440x900-playing.png）。
+- **范围声明（维持）**：§8.2 解析优先级第 3 级（音源补全接口）与第 5 级（可靠实体匹配补全）未实现（后端补全链路依赖，phase-1-report 登记）；渲染级两项（本地封面真实解码/非图片字节真实解码）由 TestWidgetsFlutterBinding 环境所限，锁定在 resolver/回调契约层。
 
-### P1-04 搜索「加载更多」丢失音源过滤（第 2 页起回落聚合）
+### P1-04 搜索「加载更多」丢失音源过滤——【已关闭，Phase 1；本轮代码+测试复核通过】
 
-- **代码证据**：`ffi/src/lib.rs:1516-1520`——`FfiCommand::SearchMore { keyword, page } => ApplicationCommand::SearchMore { keyword, page, source: None }` 硬编码 None；而 Search 首页支持 `source: Option<String>`（搜索页单源筛选时下发，search_page.dart:129-132）。
-- **复现步骤**：搜索页音源筛选选 1 个源（如酷狗）→ 搜索 → 触底加载第 2 页 → 第 2 页请求无 source 过滤，混入其他音源结果。
-- **状态**：与 UI_AUDIT_DESKTOP P1-C3 一致（本次代码复核确认未修）。
-- **影响**：违反指南 §5.4「分页响应只能合并到同一 PlaylistKey/同一查询上下文」与 §8.1 过期/异源响应不得覆盖当前页面语义。
+- **修复**：`FfiCommand::SearchMore` 带 `source: Option<String>`（ffi/src/lib.rs:1339-1345）；search_page `_loadMoreIfNeeded` 传 `_dispatchSource`；Rust `start_search` append 且 source=None 时**先读后写**沿用 `state.search.source`（application/src/service.rs:1462-1484）。
+- **回归**：flutter/test/search_pagination_test.dart 4 项（本轮 flutter-test 229 全绿内）。
+- **诚实标注**：本轮实机未做触底多页交互观察；正确性由代码链路核对 + 测试锁定。
 
-### P1-05 进程静默退出（无崩溃日志）
+### P1-05 进程静默退出（无崩溃日志）——【开放；本轮新增 1 例观察】
 
-- **现象**：实例 #1 在成功播放一首（汽水源）并停留约 1 分钟后、第二次双击另一音源（酷狗）曲目时，进程直接消失（`pgrep` 空、niri Windows 列表无窗口）；`app-run3.log` 无任何错误/panic（末行为 PipeWire client.conf 告警）；`/var/lib/systemd/coredump` 无 voicefox core；journalctl 无相关条目。
-- **复现步骤**：实例 #1 流程——搜索 love → 双击行 1（汽水 L-O-V-E）播放 → 停留 ~60s → 双击行 5（酷狗 Love/BEYOND）→ 进程消失（`pgrep -f voicefox_flutter` 为空）。
-- **证据**：/tmp/vx-audit/app-run3.log（无异常）；崩溃时点前后 journal/dmesg 无记录。
-- **影响**：用户丢会话；与 P0-01 同域（疑同根因的不同表现），Phase 1 需一起定位。
-- **诚实声明**：仅 1 例，未稳定复现；不排除外部因素，但同会话内其余进程均存活。
+- **本轮观察（新增）**：:1 会话实例（run1）在经 xwayland-satellite 转发的 X 客户端 configure resize（1212x1274→1600x950→1920x1080，间隔数分钟）并出现 `Timed out waiting for OpenGL frame of size 948x1010 (have 1440x900)`（app-run1.log 23:35:38）后，数分钟内进程消失（pgrep 空、X 窗口消失）；日志无 panic、无 core dump（/var/lib/systemd/coredump 仅 vinput-daemon 旧核）、journal 无条目。
+- **复现步骤（本轮实际操作）**：niri :1 会话启动 release 应用 → 对 X toplevel 连续 `XResizeWindow`（python-xlib configure）→ 等待 GL frame timeout → 数分钟内 `pgrep -f voicefox_flutter` 为空。
+- **诚实声明**：触发链含非用户常规操作（X 客户端直发 configure 经 satellite 转发）；niri IPC 全屏路径（第一轮）与本轮 Xvfb 会话均未复现进程消失。与 P0-01 同域疑云（同属静默死亡），Phase 1 后续需一起定位；正常运行路径下的第一轮复现步骤（搜索+播放后停留，进程消失）保留。
 
-### P1-06 Android 全链不可构建/未验证（环境阻断，非代码缺陷）
+### P1-06 Android 全链不可构建/未验证（环境阻断，非代码缺陷）——【维持】
 
-- **事实**：无 JDK（`java` 不存在）、SDK 无 emulator/system-images、adb 无设备 → `flutter build apk` 与任何真机/模拟器验证均无法执行；Rust Android FFI 交叉链（NDK 存在）也未在本会话执行。
-- **影响**：指南 §5（手机 UI）、§10（Android 系统集成）、§12.6 真机 13 项全部 **未验证**；MobileShell/TabletShell 仅 widget 测试覆盖。
-- **处置**：需要用户环境补 JDK（+ emulator 或真机）后按 §12.6 清单补验；在此之前任何「移动端可用」的说法都不成立。
+- 无 JDK、SDK 无 emulator/system-images、adb 无设备 → `flutter build apk` 与真机/模拟器验证均无法执行；用户已明确搁置 Android 验证（禁止 APK/Gradle 构建与 AVD 创建）。指南 §5/§10/§12.6 真机 13 项全部未验证；MobileShell/TabletShell/AndroidInsets 仅有 widget 测试层覆盖（android_insets_layout_test 7 项）。
 
-## P2（登记，不影响主流程修复优先级排序）
+### P1-07 错误 toast 无高度上限且原始异常直出 UI——【已关闭，Phase 1；维持关闭声明】
+
+- 修复两层（AppModel `sanitizeUserFacingMessage` 源头净化 + vendored toast maxLines 4/maxHeight 160）本轮代码复核在位（app_model.dart:1184-1208、toast_notification_widget.dart:69,104）；error_toast_test 9 项全绿。
+- 运行时复现声明（维持）：离线失败状态未在运行时强造（隔离代理配置未生效，QA 环境失败条件不可复现），正确性由测试锁定。
+
+### P1-08 搜索结果歌曲行封面普遍缺失（VxTrackRow 调用点漏传 cover）——【本轮新发现，已复现】
+
+- **现象**：搜索结果列表全部 259 行封面均为「渐变 + 首字母」占位，即使 DTO 带真实 cover_url。
+- **根因**：`search_page.dart:550-568` 的 `VxTrackRow(...)` 未传 `cover:` 参数 → 组件缺省渲染 `VxCoverFallback`（vx_track_row.dart:166 `cover ?? VxCoverFallback(title)`，渐变首字母是 Phase 0 设计占位）。对照正确写法：`song_tile.dart:233` 同组件传了 `cover: CoverImage(url: song.coverUrl, size: 40, radius: 6)`。
+- **实机对照证据（同一首歌、同一数据源）**：Love/Cloudy Skies（千千音乐）在搜索列表为渐变「L」占位（linux-search-1440x900-results.png），在队列面板显示真实封面（linux-queue-1440x900-playing.png 第 8 行，queue_panel.dart:208 CoverImage）。
+- **复现步骤**：启动应用 → 搜索任意关键词 → 观察结果行封面：无一显示真实图片；播放其中一首 → 打开队列面板 → 同曲显示真实封面。
+- **影响**：§12.7「封面普遍缺失」在搜索这一核心路径成立；§8.2「页面散落不同 fallback 决策」的活证据（同一 VxTrackRow，封面行为由调用点各自决定）。
+- **修复方向**：search_page.dart:550 补传 `cover: CoverImage(url: song.coverUrl, size: 40, radius: 6)`（对齐 song_tile）；中期随 §8.2 把行封面统一收口到 VxArtwork。
+
+### P1-09 浅色主题下 Shell Chrome 对比度破坏（导航/播放栏文字不可读）——【本轮新发现并升级，已复现；由 P2-01 升级】
+
+- **现象**：设置 → 外观 → 明暗模式切「浅色」后：内容区（页面/卡片）正确变浅，但 **AppHeader、Sidebar、PlayerBar 背景仍是硬编码深色（VxColors.surface1 等）**，而其内部文字/图标颜色切为浅色主题的 onSurface（深色）→ 深底深字，左侧导航文字、左上角品牌字标、PlayerBar 歌名几乎不可读。
+- **根因**：shell 组件无条件引用 `VxColors`/`VxDarkSurface` 硬编码深色常量（app_header.dart 4 处、app_shell.dart:481/571、app_sidebar.dart、context_panel.dart、player_bar.dart:76 等；唯 theme-aware 的是 player_bar.dart:177 seekTrack 三元）；MaterialApp 真源是 myune ThemeProvider `ColorScheme.fromSeed`（main.dart:384-386），Chrome 背景不走 ColorScheme。违反 §3.2「不使用硬编码页面颜色，全部从 Theme/ColorScheme token 获取」与「浅色主题必须完整支持」、§11.2 对比度 ≥4.5:1。
+- **复现步骤**：启动应用 → 设置 → 外观 → 明暗模式点「浅色」→ 观察 Header/Sidebar/PlayerBar（截图 docs/redesign/screenshots/baseline/linux-settings-1440x900-light-theme.png）。
+- **影响**：浅色主题下全局 Chrome 可读性破坏 → 「浅色主题完整支持」验收不成立。评级 P1（关键页面不可用级别的主题形态）。
+- **修复方向**：Chrome 背景改读 `ColorScheme.surfaceContainerLow/surface`（或按 brightness 取 VxLightColors/VxDarkSurface 对），与 seekTrack 的既有三元做法对齐。
+
+## P2（登记）
 
 | ID | 问题 | 证据 | 指南条款 |
 |---|---|---|---|
-| P2-01 | `VxColors`/`VxDarkSurface` 硬编码深色常量被 shell 组件**无条件**引用（AppHeader :74-75、Sidebar app_shell.dart:481/571、ContextPanel :61、PlayerBar :76-77 等 11 个文件）；MaterialApp 真源是 myune ThemeProvider 的 `ColorScheme.fromSeed`（main.dart:384-386）。浅色主题下 Chrome（头部/侧栏/右栏/播放栏）预期仍是深色。**未实机验证**（浅色切换被 P0-01 阻断） | 代码 grep；§3.2「不使用硬编码页面颜色」「浅色主题必须完整支持」 | §1.2-4 / §3.2 |
-| P2-02 | 双 ThemeData 产源：运行时真源 = myune ThemeProvider；`design_system/voicefox_theme.dart` buildDark/LightTheme 仅 Gallery 页与测试使用——与 §1.2-4「不得两套 ThemeData 并存为真源」相悖（当前只有一套运行时真源，另一套是画廊预览，风险中等） | grep buildDarkTheme 调用点 | §1.2-4 |
-| P2-03 | 发现页/首页在线歌单卡为横向书架，最右卡被窗口右缘裁切（实机截图 linux-discover-1656x817-default.png 右缘「听」字半截）；与旧 U-07/P2-V2 同类问题在新壳上重现 | 截图 | §12.5 |
-| P2-04 | 窗口尺寸契约在 niri+xwayland-satellite 下不可靠：VOICEFOX_START_SIZE=1440x900 未生效（tile 1212x1274）、FullscreenWindow 后 niri 报 window_size 1920x1080 而 GL frame 报 1440x900（渲染 ~1656x817 居中留黑边）；桌面截图视口命名按实际 1656x817 | 实机日志 + 截图 | §12.4 |
-| P2-05 | 桌面系统集成（MPRIS/托盘/系统通知）GUI 未接；Rust 侧 app/src/mpris.rs（350 行）与 11-06 实机「系统面板显示暂无播放内容」均在。Phase 6 计划项 | 代码 + 旧实机记录 | §12.6-8 |
-| P2-06 | 移动全屏播放页只有竖向手势（下滑关闭，mobile_now_playing_page.dart:160/282），无 §5.7 要求的横向滑动切歌（有视觉反馈且不与系统返回冲突）；未实机验证（无设备） | 代码 | §5.7 |
-| P2-07 | 设置页为单列长页（9 分组），无左侧分类导航（实机截图 linux-settings-1656x817-default.png；9 组内容本身齐备） | 截图 | §7.3 |
+| P2-01 | 【并入 P1-09 升级】VxColors/VxDarkSurface 硬编码深色常量被 shell 组件无条件引用（app_header 4 / app_shell 2 / app_sidebar 1 / context_panel 1 / player_bar 4 / mobile_shell 2 处）；浅色行为见 P1-09 | grep + 实机截图 | §3.2 |
+| P2-02 | 双 ThemeData 产源：运行时真源 = myune ThemeProvider；`design_system/voicefox_theme.dart` buildDark/LightTheme 仅 Gallery 页与测试使用（当前只有一套运行时真源，风险受控） | grep buildDarkTheme 调用点 | §1.2-4 |
+| P2-03 | 发现页/首页横向书架最右卡被窗口右缘裁切（实机 1440 视口复现：「伤悲：眼泪的心!」「DJ歌曲抖音…」右缘截断） | linux-discover-1440x900-default.png | §12.5 |
+| P2-04 | 窗口尺寸契约在 niri 下不可靠：请求 1440x900 实得 tile 1212x1274（surface 948x1010，<960 触发降级布局）；Xvfb 下请求即所得。验收截图须在受控显示器采集 | 第一轮 + 本轮 :1 观察；本轮 Xvfb 对照 | §12.4 |
+| P2-05 | 桌面系统集成（MPRIS/托盘/系统通知）GUI 未接；Rust 侧 app/src/mpris.rs 存在 | 代码 | §12.6-8 |
+| P2-06 | 移动全屏播放页只有竖向手势（下滑关闭），无 §5.7 横向滑动切歌；未实机验证（无设备） | mobile_now_playing_page.dart 代码 | §5.7 |
+| P2-07 | 【已修复】设置页左侧分类导航 9 组（播放与音效/音源/下载/歌词/外观/网络/账号与集成/快捷键/关于） | linux-settings-1440x900-default.png | §7.3 |
+| P2-08 | xwayland-satellite 转发的 X 客户端 resize 触发 `Timed out waiting for OpenGL frame`，随后进程静默消失（关联 P1-05 观察）；niri IPC 与 Xvfb 路径未见 | app-run1.log + pgrep/coredump 取证 | §11 |
+| P2-09 | 队列拖动排序 / 队列内跳播：后端无对应 FfiCommand，UI 禁用并说明（不伪造）；§7.4「拖拽排序」目标待后端命令落地 | queue_panel.dart:8-10 | §7.4 |
 
 ## P3（可选增强 / 文档债）
 
 | ID | 问题 | 证据 |
 |---|---|---|
-| P3-01 | `myune_seam/cover_loader.dart:1-5` 注释宣称「磁盘缓存（系统临时目录）」，实现只有内存 LRU——注释与代码不符 | 代码 |
-| P3-02 | readAudioInfo 悬空桥仍存在（7 处调用、so 无导出），但各调用点均有 try/catch 降级（playlist_content_notifier.dart:1073-1076 等）→ 旧 P0-A1 降级；触发时表现为「未知歌手 (解析失败)」而非崩溃 | grep + nm（导出 0） |
-| P3-03 | 指南 §8.1 建议的显式 PlaylistKey(source,id,type) 抽象未建立；现状以 browseKind 字符串进 key 实现语义隔离（`'$kind|$source|$id'`，app_model.dart:293）——隔离成立但类型化键（含过期响应校验的 request token 化）待 Phase 1 落地 | 代码 |
-| P3-04 | PlaylistDto 无 creator/play_count/link/extra（into_playlist 全丢，ffi/src/lib.rs:448-461），歌单详情 Hero 无法显示创建者等元数据 | 代码 |
-| P3-05 | ATK `atk_socket_embed` 断言失败与 OpenGL frame timeout 告警（运行日志持续出现；Impeller 已禁用仍报）——非致命 | 运行日志 |
-| P3-06 | CONTRIBUTING.md 基线数字过时（「53 tests」实为 189）；KEYBINDINGS.md 为 TUI 文档，GUI 仅 5 键且无键位文档（旧 P2-V6 延续） | 文档对照 |
+| P3-01 | 【已修复】cover_loader.dart 头注释更正为「没有磁盘缓存」 | 代码 |
+| P3-02 | readAudioInfo 悬空桥（7 处调用、so 无导出），调用点均有 try/catch 降级（「未知歌手 (解析失败)」），维持 P3 | 第一轮 nm 取证 + 本轮代码抽查 |
+| P3-03 | 【Phase 1 已落地→长期验证记录】PlaylistKey(kind,source,id) 类型化键 + appendArmed 过期 append 丢弃；playlist_detail_isolation_test 7 项覆盖 §8.1 八步序列的 widget 层映射；实机八步序列未走查 | app_model.dart:23-42,470-516 |
+| P3-04 | PlaylistDto 无 creator/play_count/link（into_playlist 全丢），歌单详情 Hero 元数据受限 | ffi/src/lib.rs:448-461 |
+| P3-05 | ATK `atk_socket_embed` 断言失败与 OpenGL frame timeout 告警（运行日志非致命；后者与 P2-08 关联观察） | 运行日志 |
+| P3-06 | CONTRIBUTING.md 基线数字过时（「53 tests」实为 229）；KEYBINDINGS.md 为 TUI 文档，GUI 键位无独立文档 | 文档对照 |
+| P3-07 | 全屏播放页歌词仅空态文案（「本版本暂无手动重新获取入口」自认）；5sing 等源未取到歌词时无手动重取 | linux-nowplaying-1440x900-playing.png |
 
-## 已验证正常（旧问题确认已修，避免重复修复）
+## 已验证正常（本轮实机/门禁证据，避免重复修复）
 
-- 事件流 lag 自愈：1s 退避重订阅 + 整份重拉快照（app_model.dart:164-186）。
-- SetVolume 真实通路（FFI 命令 → application service → mpv；PlayerBar 滑条下发）。
-- 搜索防抖 300ms + 分页 in-flight 锁 + requestId 失效释放（search_page.dart:74-77/110-125/151-167）。
-- 队列当前曲高亮/单曲移除/清空确认（queue_panel.dart:33-60/114/130）。
-- reduce-motion：`MediaQuery.disableAnimationsOf` 已用于全屏转场等 5 处。
-- 图标按钮 tooltip 覆盖面广（实机悬停可见「播放」tooltip）。
-- 播放历史/继续收听持久化：重启应用后首页 Hero 与最近播放仍在（实机证据 linux-home-1656x817-history.png）。
-- 错误/通知统一出口（lastError/lastNotification → ToastOverlay；空时 SizedBox.shrink 不挡交互）。
-- 静态门禁：dart format / flutter analyze / flutter test 189 / cargo fmt 全绿（见 00-baseline §3）。
+- 播放链路端到端：走带三连证据 + Ended 自动切歌 ×2 + 4Hz 事件泵（§9/矩阵 P0-02）。
+- 封面链路：发现页多源真实封面、队列真实封面、首页本地封面（P1-03 关闭证据）。
+- 队列：当前曲高亮（行内均衡器图标）、单曲移除按钮、清空确认、随机开关、共 259 首/接下来播放 256 计数（linux-queue-1440x900-playing.png）。
+- 全屏播放页：渐变占位封面（非黑块）、进度走带、音量条真实值（80 与配置一致）、诚实歌词空态（linux-nowplaying-1440x900-playing.png）。
+- 设置：左侧分类导航 9 组、明暗三态切换即时生效（深→浅→深往返）、主题矩阵渲染（linux-settings-1440x900-*.png）。
+- 曲库：快捷卡真实计数（最近播放 7/本地 0/喜欢 0）、分类 chips 计数（专辑 6/歌手 5 来自真实聚合）、来源分段（linux-library-1440x900-songs.png）。
+- 下载页四分段 + 表头 + 空态引导（linux-downloads-1440x900-empty.png）。
+- 静态门禁全绿：dart-format/analyze/cargo-fmt exit 0；flutter-test 229、cargo-test 816 全通过（00-baseline §3）。
+- 事件流 lag 自愈、SetVolume 真实通路、搜索防抖/in-flight 锁、reduce-motion、错误净化（代码复核 + 测试维持第一轮结论）。
 
-## Phase 1 进入条件核对（§13）
+## Phase 1 退出条件核对（§13）——【本轮复审后更新】
 
 | 条件 | 状态 |
 |---|---|
-| P0 清零 | **未达成**（P0-01 卡死、P0-02 进度/时长） |
-| 歌单隔离测试 | 代码层 key 隔离成立（kind+source+id）；8 步测试序列未执行（被 P0-01 阻断交互） |
-| 封面错误态 | 组件层占位/重试在；真实封面渲染被 P1-03 反写阻断 |
-| 手机系统栏无重叠 | 未验证（无设备） |
-| 本地音乐真实导入并播放 | 桌面链路代码在；实机未走通（P0-01 阻断交互；本地目录为空也无媒体文件） |
+| P0 清零 | P0-02 已关闭；P0-01 开放但本轮未复现（根因未定位，不能宣称修复） |
+| 歌单隔离测试 | ✅ widget 层 7 项（实机八步未走查，见 P3-03） |
+| 封面错误态 | ✅ 13 项；**但搜索结果行封面 P1-08 新开** |
+| 手机系统栏无重叠 | widget 层 ✅；真机未验证（P1-06 环境阻断维持） |
+| 本地音乐真实导入并播放 | 未达成（无媒体文件，Phase 5） |
+| 播放状态/进度/duration/seek/Ended（§8.3） | ✅ 实机走带三连 + 自动切歌 ×2 |
+
+**下一阶段进入条件**：P1-08（单行修复）、P1-09（Chrome 色源收口）建议先修再进入后续 Phase；P0-01 继续以「概率性未复现」状态跟进，长时间会话验收前必须定位。

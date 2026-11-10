@@ -25,7 +25,7 @@ import '../design_system/components/vx_error_state.dart';
 import '../design_system/components/vx_loading_skeleton.dart';
 import '../design_system/components/vx_track_row.dart';
 import '../design_system/design_tokens.dart';
-import '../widgets/cover_image.dart';
+import '../design_system/components/vx_artwork.dart';
 import 'album_songs_page.dart';
 import 'artist_detail_page.dart';
 
@@ -154,6 +154,9 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   /// 触底加载下一页；in-flight 锁防重复分页。
+  ///
+  /// 分页请求必须携带与首页相同的音源过滤（P1-04）：否则第 2 页起回落
+  /// 聚合搜索，混入其他音源结果——违反「分页响应只能合并到同一查询上下文」。
   void _loadMoreIfNeeded() {
     final state = widget.model.state.search;
     if (_moreInFlight || state.loading || !state.hasMore) return;
@@ -165,6 +168,7 @@ class _SearchPageState extends State<SearchPage> {
         bridge.FfiCommand.searchMore(
           keyword: state.keyword,
           page: state.page + 1,
+          source: _dispatchSource,
         ),
       ),
     );
@@ -648,9 +652,17 @@ class _SearchPageState extends State<SearchPage> {
             title: song.albumName,
             subtitle: '${song.singer} · ${_sourceName(song.source)}',
             width: 168,
-            cover: (song.coverUrl?.isNotEmpty ?? false)
-                ? null
-                : CoverImage(url: song.coverUrl, size: 168, radius: 0),
+            cover: VxArtwork(
+              url: song.coverUrl,
+              source: song.source,
+              entityType: 'album',
+              entityId: song.albumId?.trim() ?? song.albumName,
+              entityName: song.albumName,
+              size: 168,
+              radius: 0,
+              icon: Icons.album_outlined,
+              allowRetry: false,
+            ),
             onTap: () => _openAlbum(context, song),
           ),
         );
@@ -704,9 +716,17 @@ class _SearchPageState extends State<SearchPage> {
             subtitle: _sourceName(song.source),
             width: 168,
             shape: VxArtistCardShape.square,
-            cover: (song.coverUrl?.isNotEmpty ?? false)
-                ? null
-                : CoverImage(url: song.coverUrl, size: 168, radius: 0),
+            cover: VxArtwork(
+              url: song.coverUrl,
+              source: song.source,
+              entityType: 'artist',
+              entityId: song.artistId?.trim() ?? song.singer,
+              entityName: song.singer,
+              size: 168,
+              radius: 0,
+              icon: Icons.person_outline,
+              allowRetry: false,
+            ),
             onTap: () => _openArtist(context, song),
           ),
         );

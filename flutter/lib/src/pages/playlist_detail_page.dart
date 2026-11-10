@@ -14,10 +14,10 @@ import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
+import '../design_system/components/vx_artwork.dart';
 import '../design_system/components/vx_detail_hero.dart';
 import '../design_system/components/vx_section_header.dart';
 import '../design_system/design_tokens.dart';
-import '../widgets/cover_image.dart';
 import '../widgets/push_dialog.dart';
 import '../widgets/song_table_view.dart';
 import '../widgets/sync_dialog.dart';
@@ -45,6 +45,10 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   @override
   void initState() {
     super.initState();
+    // §8.1「页面切换先显示对应 loading，不闪现旧歌单歌曲」：同步预清槽
+    // （不通知——通知会让导航 build 中的祖先 ListenableBuilder 在 build 期
+    // 被标脏），首帧即加载态；真正的请求派发 defer 到帧后。
+    _model.prepareBrowseLoad(_kind, _playlist.source, _playlist.id);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _reload();
     });
@@ -199,14 +203,16 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       description: (description == null || description.isEmpty)
           ? null
           : description,
-      cover: (_playlist.coverUrl == null || _playlist.coverUrl!.isEmpty)
-          ? null
-          : CoverImage(
-              url: _playlist.coverUrl,
-              size: 224,
-              radius: 12,
-              icon: Icons.queue_music_outlined,
-            ),
+      cover: VxArtwork(
+        url: _playlist.coverUrl,
+        source: _playlist.source,
+        entityType: 'playlist',
+        entityId: _playlist.id,
+        entityName: _playlist.name,
+        size: 224,
+        radius: 12,
+        icon: Icons.queue_music_outlined,
+      ),
       fallbackSeed: _playlist.name,
       actions: [
         VxDetailAction(

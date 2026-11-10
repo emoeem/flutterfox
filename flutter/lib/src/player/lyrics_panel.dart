@@ -231,7 +231,8 @@ class _LyricsPanelState extends State<LyricsPanel> {
 }
 
 /// 插值走带时钟（无视觉）：LivePlayback 500ms 插值位置 → 当前行序号回调。
-/// 仅在序号变化时回调，不触发面板按 4Hz 进度事件整列重建。
+/// 仅在序号变化时回调，不触发面板按 4Hz 进度事件整列重建；
+/// 位置订阅 [AppModel.playbackTick]（纯进度节流通知）。
 class _LyricTicker extends StatelessWidget {
   const _LyricTicker({
     super.key,
@@ -246,19 +247,24 @@ class _LyricTicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final playback = model.state.playback;
-    return LivePlayback(
-      positionMs: playback.positionMs,
-      durationMs: playback.durationMs,
-      playing: playback.state == 'playing',
-      builder: (context, position, duration) => _IndexReporter(
-        position: position,
-        timestamps: [
-          for (final line in lines)
-            Duration(milliseconds: line.timestampMs.toInt()),
-        ],
-        onIndexChanged: onIndexChanged,
-      ),
+    return ListenableBuilder(
+      listenable: model.playbackTick,
+      builder: (context, _) {
+        final playback = model.state.playback;
+        return LivePlayback(
+          positionMs: playback.positionMs,
+          durationMs: playback.durationMs,
+          playing: playback.state == 'playing',
+          builder: (context, position, duration) => _IndexReporter(
+            position: position,
+            timestamps: [
+              for (final line in lines)
+                Duration(milliseconds: line.timestampMs.toInt()),
+            ],
+            onIndexChanged: onIndexChanged,
+          ),
+        );
+      },
     );
   }
 }
