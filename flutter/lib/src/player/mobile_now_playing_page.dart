@@ -1,12 +1,16 @@
-/// Phase 7 手机全屏播放页：封面 / 歌词 / 队列三态分层 + 手势切换。
+/// Phase 7 手机全屏播放页：封面 / 歌词两层 + 队列底部 sheet + 手势切换。
 ///
-/// 分层语义（计划 §9 触屏交互）：
+/// 分层语义（计划 §9 触屏交互 / §5.7）：
 /// - 封面层：点击或上滑进歌词层；下滑退出整页（pull-down dismiss，
-///   [onClose] 由壳恢复列表界面）；
+///   [onClose] 由壳恢复列表界面）；封面横滑切歌（P2-06，只绑封面区，
+///   避开 LiveSeekRow 横向拖动与屏幕左右缘系统返回手势）；
 /// - 歌词层：复用 [LyricsPanel]（compact），经顶栏歌词按钮进出；
-/// - 队列层：复用 [QueuePanel]，经顶栏队列按钮进出；拖拽排序/队内跳播
-///   如实呈现禁用并说明（后端无对应命令，queue_panel.dart 头注现状，
-///   计划 §11.10 禁止伪造拖拽）。
+/// - 队列：底部 sheet（§5.7:452「底部 sheet 或二级页面」，P2-09）复用
+///   [QueuePanel]，经顶栏队列按钮开关；DraggableScrollableSheet 与
+///   QueuePanel 的 Column+Expanded(ListView) 定高依赖不兼容，故用定高
+///   容器 + DragHandle 下滑/点遮罩关闭；拖拽排序/队内跳播如实呈现禁用
+///   并说明（后端无对应命令，queue_panel.dart 头注现状，计划 §11.10
+///   禁止伪造拖拽）。
 ///
 /// 复用件（自 now_playing_page.dart 提取，桌面并置布局共用同一实现）：
 /// [NowPlayingBackdrop]（取色低饱和暗化背景）、[NowPlayingAutoPalette]
@@ -18,6 +22,8 @@
 /// 不接滚动容器，垂直拖动稳定命中分层手势；极矮视口（横屏）退化为
 /// 滚动布局，此时手势让位给滚动（按钮仍可用）。
 library;
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -32,8 +38,8 @@ import 'now_playing_page.dart';
 import 'progress_control.dart';
 import 'queue_panel.dart';
 
-/// 手机全屏播放页的分层。
-enum MobileNowPlayingLayer { cover, lyrics, queue }
+/// 手机全屏播放页的分层（队列不占层：走底部 sheet，见 [_openQueueSheet]）。
+enum MobileNowPlayingLayer { cover, lyrics }
 
 /// 手机全屏播放页。
 class MobileNowPlayingPage extends StatefulWidget {
@@ -62,12 +68,73 @@ class _MobileNowPlayingPageState extends State<MobileNowPlayingPage> {
   /// 封面主色（低饱和背景用）；null = 尚未取到 / 取色失败回退主题色。
   Color? _coverColor;
 
+  /// 队列 sheet 是否打开（顶栏队列按钮激活态依据；sheet 无独立 layer）。
+  bool _queueSheetOpen = false;
+
   /// 分层切换的速度阈值（px/s）：过滤轻触抖动。
   static const double _flingVelocity = 120;
 
   void _setLayer(MobileNowPlayingLayer layer) {
     if (_layer == layer) return;
     setState(() => _layer = layer);
+  }
+
+  /// 队列底部 sheet（§5.7:452）：复用 QueuePanel，DragHandle 下滑或点
+  /// 遮罩关闭；打开期间顶栏按钮保持激活态（[_queueSheetOpen]）。
+  Future<void> _openQueueSheet() async {
+    setState(() => _queueSheetOpen = true);
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        // 关闭默认整 sheet 拖拽（与列表滚动争手势、行为不定）：收起入口
+        // 收敛为 DragHandle 下滑 + 点遮罩，语义可测。
+        enableDrag: false,
+        builder: (sheetContext) {
+          final scheme = Theme.of(sheetContext).colorScheme;
+          return SizedBox(
+            height: MediaQuery.of(sheetContext).size.height * 0.75,
+            child: Column(
+              children: [
+                // DragHandle：唯一主动下滑关闭入口（列表滚动不收起），
+                // 下滑速度达标即关闭；点遮罩关闭为兜底。
+                GestureDetector(
+                  key: const ValueKey('queue_sheet_drag_handle'),
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity > _flingVelocity) {
+                      Navigator.of(sheetContext).pop();
+                    }
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 24,
+                    child: Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(child: QueuePanel(model: widget.model)),
+              ],
+            ),
+          );
+        },
+      );
+    } finally {
+      // 无论下拉关闭、点遮罩还是路由其它方式退出，都复位激活态。
+      if (mounted) {
+        setState(() => _queueSheetOpen = false);
+      }
+    }
   }
 
   @override
@@ -102,17 +169,14 @@ class _MobileNowPlayingPageState extends State<MobileNowPlayingPage> {
                   children: [
                     _TopBar(
                       layer: _layer,
+                      queueOpen: _queueSheetOpen,
                       onClose: widget.onClose,
                       onToggleLyrics: () => _setLayer(
                         _layer == MobileNowPlayingLayer.lyrics
                             ? MobileNowPlayingLayer.cover
                             : MobileNowPlayingLayer.lyrics,
                       ),
-                      onToggleQueue: () => _setLayer(
-                        _layer == MobileNowPlayingLayer.queue
-                            ? MobileNowPlayingLayer.cover
-                            : MobileNowPlayingLayer.queue,
-                      ),
+                      onToggleQueue: _openQueueSheet,
                     ),
                     Expanded(
                       child: AnimatedSwitcher(
@@ -139,8 +203,6 @@ class _MobileNowPlayingPageState extends State<MobileNowPlayingPage> {
     switch (_layer) {
       case MobileNowPlayingLayer.lyrics:
         return LyricsPanel(model: widget.model, compact: true);
-      case MobileNowPlayingLayer.queue:
-        return QueuePanel(model: widget.model);
       case MobileNowPlayingLayer.cover:
         if (song == null) {
           return Center(
@@ -177,12 +239,16 @@ class _MobileNowPlayingPageState extends State<MobileNowPlayingPage> {
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.layer,
+    required this.queueOpen,
     required this.onClose,
     required this.onToggleLyrics,
     required this.onToggleQueue,
   });
 
   final MobileNowPlayingLayer layer;
+
+  /// 队列 sheet 打开态（队列按钮激活依据；队列不再是页内 layer）。
+  final bool queueOpen;
   final VoidCallback onClose;
   final VoidCallback onToggleLyrics;
   final VoidCallback onToggleQueue;
@@ -235,8 +301,8 @@ class _TopBar extends StatelessWidget {
             ),
             toggle(
               Icons.queue_music_outlined,
-              '队列层',
-              layer == MobileNowPlayingLayer.queue,
+              '播放队列',
+              queueOpen,
               onToggleQueue,
             ),
           ],
@@ -269,12 +335,17 @@ class _CoverLayer extends StatelessWidget {
         // 内容固定区（歌名/元信息/操作行/进度/控制）约 330；可用高度充足
         // 时封面自适应缩小让位，整层不滚动 → 垂直拖动稳定触发分层手势。
         final scrollFallback = height < 560;
+        // 封面 280-340dp 自适应（§5.7:446-447）：高度充足时在 340 上限内
+        // 让位歌名/控制行；宽度守卫保留（外层 maxWidth-40 封顶）——极窄
+        // 视口下下界取 min(160, 可用宽)，封面绝不宽于可用宽度，防
+        // RenderFlex 水平溢出。body 水平 padding 两侧共 40。
+        final widthCap = constraints.maxWidth - 40;
         final coverSize = scrollFallback
             ? 240.0
-            : ((height - 330).clamp(
-                160.0,
-                320.0,
-              )).clamp(0.0, constraints.maxWidth - 40);
+            : math.max(
+                math.min(math.min(height - 330, widthCap), 340.0),
+                math.min(160.0, widthCap),
+              );
         final body = _coverBody(context, coverSize);
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
@@ -304,7 +375,7 @@ class _CoverLayer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CrossfadeCover(song: song, size: coverSize),
+          _SwipeableCover(model: model, song: song, size: coverSize),
           const SizedBox(height: 18),
           // 歌名（§5.1 缩到手机档 24px），长标题两行截断。
           Text(
@@ -365,5 +436,133 @@ class _CoverLayer extends StatelessWidget {
     final start = cycle.indexOf(mode == 'random' ? 'list-loop' : mode);
     final next = cycle[((start < 0 ? 0 : start) + 1) % cycle.length];
     model.updateConfig((config) => config.copyWith(playMode: next));
+  }
+}
+
+// ── 封面横滑切歌（P2-06） ─────────────────────────────────────────────────
+
+/// 封面横滑切歌容器：手势只绑封面区（§5.7:459 冲突规避——避开 LiveSeekRow
+/// 横向拖动与屏幕左右缘系统返回手势，不绑整层）；拖动中显示半透明方向
+/// 提示层（Start/Update 切方向、Cancel/End 隐藏），松手速度达标才切歌：
+/// 左滑（负速度）→ 下一首，右滑（正速度）→ 上一首，全部走 AppModel
+/// 真实命令（§8.3）。
+class _SwipeableCover extends StatefulWidget {
+  const _SwipeableCover({
+    required this.model,
+    required this.song,
+    required this.size,
+  });
+
+  final AppModel model;
+  final bridge.SongDto song;
+  final double size;
+
+  @override
+  State<_SwipeableCover> createState() => _SwipeableCoverState();
+}
+
+class _SwipeableCoverState extends State<_SwipeableCover> {
+  /// 切歌速度阈值（px/s）：过滤轻扫误触。
+  static const double _swipeVelocity = 500;
+
+  bool _dragging = false;
+
+  /// 拖动方向：-1 = 左滑（下一首）、1 = 右滑（上一首）、0 = 未定。
+  int _direction = 0;
+
+  void _onDragStart(DragStartDetails details) {
+    setState(() {
+      _dragging = true;
+      _direction = 0;
+    });
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (details.delta.dx == 0) return;
+    setState(() => _direction = details.delta.dx < 0 ? -1 : 1);
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    final dx = details.velocity.pixelsPerSecond.dx;
+    setState(() {
+      _dragging = false;
+      _direction = 0;
+    });
+    if (dx < -_swipeVelocity) {
+      widget.model.next();
+    } else if (dx > _swipeVelocity) {
+      widget.model.previous();
+    }
+  }
+
+  void _onDragCancel() {
+    setState(() {
+      _dragging = false;
+      _direction = 0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final hintVisible = _dragging && _direction != 0;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: _onDragStart,
+      onHorizontalDragUpdate: _onDragUpdate,
+      onHorizontalDragEnd: _onDragEnd,
+      onHorizontalDragCancel: _onDragCancel,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CrossfadeCover(song: widget.song, size: widget.size),
+          // 方向提示层：拖动中出现、Cancel/End 消失（子树随隐藏整体移除，
+          // 不残留 hit-test 区域）。
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: hintVisible ? 1.0 : 0.0,
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 120),
+              child: hintVisible
+                  ? DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: scheme.scrim.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(VxRadius.md),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _direction < 0
+                                  ? Icons.fast_forward
+                                  : Icons.fast_rewind,
+                              size: 20,
+                              color: scheme.onSurface,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _direction < 0 ? '下一首' : '上一首',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

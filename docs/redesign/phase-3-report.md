@@ -119,3 +119,7 @@
 
 - **Phase 4（播放器和移动端系统媒体体验）可进入。**
 - 跨阶段遗留不阻塞：P0-01 定位（长时间会话验收前必须）、P1-05 同域跟进、P1-06 环境补齐、浅色主题走查归 Phase 7。
+
+## 勘误（2026-11-12 Phase 2 QA 修复轮补充，历史正文不动）
+
+本报告「截图路径」与「修改文件」均未提及的 `docs/redesign/screenshots/phase-1-mobile/fluttertest-library-430x932-dark-default.png` 随本阶段提交 610d6d8 被无声替换为「页面级 pump LibraryPage + 未注入 CJK 字体」版本（18496B，mtime 11-11 07:29：全部文字空心方框、无底栏与「我的音乐」高亮，规格 golden 要素不可核对）；04 矩阵对本文件的既有目检结论对该版本不成立。已按 06:34 批次口径复截（真实 MobileShell 进树 + 底栏第四入口切库页 + MiSans/JetBrainsMono/MaterialIcons 注入 + 深色主题 + debug banner 关闭），现文件 61983B（mtime 11-12 01:53），逐项目检通过；同轮 fluttertest-home-390x844-dark-emptyhero.png（06:04 批次）亦随当前代码复截为竖排全宽单行 CTA 形态（100843B）。事实链详见 04 矩阵 P1-12/P1-13/P2-10 与 phase-2-report.md 勘误节。

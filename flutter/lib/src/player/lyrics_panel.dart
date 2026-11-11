@@ -5,7 +5,9 @@
 ///   不随 4Hz 进度事件整页刷新（§6.5）；
 /// - 当前行 26-32px w600，相邻/更远行 18-20px 逐级降透明；翻译行 15-17px
 ///   （后端 LyricsDto.translation 为整段/当前行译文而非逐行，仅在当前行下展示）；
-/// - 点击任意行 → AppModel.seekMs 真实跳转（FfiCommand.seekMs 存在）；
+/// - 点击歌词行 → AppModel.seekMs 真实跳转（FfiCommand.seekMs 存在）；
+///   仅当歌词含非零时间戳才启用（§5.7:461 点击门槛），无时间戳行不挂
+///   手势并如实说明「不支持点击跳转」；
 /// - 手动滚动暂停跟随，停止滚动 2 秒后恢复跟随当前行；
 /// - 尊重 MediaQuery.disableAnimations：关闭动画时直接定位、样式瞬时切换；
 /// - 歌词数据只有 isEmpty 标志，无加载中状态、后端也无「重新获取歌词」命令，
@@ -139,6 +141,7 @@ class _LyricsPanelState extends State<LyricsPanel> {
         final model = widget.model;
         final song = model.state.playback.song;
         final lyrics = model.state.lyrics;
+        final scheme = Theme.of(context).colorScheme;
         if (song == null) {
           return _Status(
             icon: Icons.lyrics_outlined,
@@ -155,6 +158,11 @@ class _LyricsPanelState extends State<LyricsPanel> {
                 '本版本暂无手动重新获取入口。',
           );
         }
+        // 点击跳转门槛（§5.7:461）：歌词全部行无有效时间戳时，点击不
+        // 挂 seek 手势（onTap 置 null），并如实说明——不伪造可跳转语义。
+        final seekable = lyrics.lines.any(
+          (line) => line.timestampMs > BigInt.zero,
+        );
         // 行列表只在歌词/歌曲对象更换时重建（进度刷新不重挂整列）。
         if (!identical(lyrics, _lastLyrics) || !identical(song, _lastSong)) {
           _lastLyrics = lyrics;
@@ -194,6 +202,16 @@ class _LyricsPanelState extends State<LyricsPanel> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (!seekable)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                '本曲歌词无时间戳，不支持点击跳转',
+                                style: VxTypography.caption.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
                           for (var i = 0; i < lyrics.lines.length; i++)
                             _LyricLine(
                               key: _lineKeys[i],
@@ -208,7 +226,9 @@ class _LyricsPanelState extends State<LyricsPanel> {
                               lineFontSize: _lineFontSize,
                               translationFontSize: _translationFontSize,
                               compact: widget.compact,
-                              onTap: () => _seekTo(lyrics.lines[i].timestampMs),
+                              onTap: seekable
+                                  ? () => _seekTo(lyrics.lines[i].timestampMs)
+                                  : null,
                             ),
                         ],
                       ),
@@ -372,7 +392,8 @@ class _Status extends StatelessWidget {
   }
 }
 
-/// 单行歌词：点击 seek；当前行放大加粗，按距离降透明。
+/// 单行歌词：有时间戳时点击 seek（null = 无时间戳门槛，不挂手势）；
+/// 当前行放大加粗，按距离降透明。
 class _LyricLine extends StatelessWidget {
   const _LyricLine({
     super.key,
@@ -393,7 +414,7 @@ class _LyricLine extends StatelessWidget {
   final double lineFontSize;
   final double translationFontSize;
   final bool compact;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

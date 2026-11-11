@@ -10,10 +10,14 @@
 /// - 全屏播放页打开时 MiniPlayer/NavigationBar 整体不进树（§5.1 防双重
 ///   控制，mobile_shell_test 已锁一次；此处按三视口重复锁定）——因此
 ///   「遮挡关系」只在壳层成立：全屏页独占整屏，不存在同屏重叠状态。
+/// - 全屏封面 280-340dp 自适应带（§5.7:446-447，Phase 4）：三视口带内，
+///   极矮视口收缩让位控制行且不溢出（宽度守卫）。
 ///
 /// 真机 edge-to-edge/手势导航/刘海验证受 P1-06 环境阻断维持未验证；
 /// 本文件只锁定 widget 层可测的分层语义。
 library;
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +29,7 @@ import 'package:voicefox_flutter/src/myune/services/notification_service.dart';
 import 'package:voicefox_flutter/src/nav_bus.dart';
 import 'package:voicefox_flutter/src/player/mini_player_bar.dart';
 import 'package:voicefox_flutter/src/player/mobile_now_playing_page.dart';
+import 'package:voicefox_flutter/src/player/now_playing_page.dart';
 import 'package:voicefox_flutter/src/shell/mobile_shell.dart';
 
 Widget _harness(AppModel model, EdgeInsets insets) {
@@ -192,5 +197,100 @@ void main() {
         );
       });
     }
+  });
+
+  group('全屏封面 280-340dp 自适应带（§5.7:446-447，Phase 4）', () {
+    void seedSong(AppModel model) {
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+        positionMs: 42000,
+        durationMs: 244000,
+      );
+    }
+
+    Future<void> openFullscreen(WidgetTester tester) async {
+      nowPlayingRequest.value = true;
+      await tester.pumpAndSettle();
+      expect(find.byType(MobileNowPlayingPage), findsOneWidget);
+    }
+
+    testWidgets('三视口封面落在目标带 [280, 340]（360 宽受限取上限-40）', (tester) async {
+      for (final screen in const [
+        Size(360, 800),
+        Size(390, 844),
+        Size(430, 932),
+      ]) {
+        _setSize(tester, screen);
+        final model = AppModel();
+        seedSong(model);
+        await _pumpShell(tester, model, insets);
+        await openFullscreen(tester);
+
+        final size = tester.getSize(find.byType(CrossfadeCover));
+        final widthCap = screen.width - 40;
+        // 带断言：宽度充足时命中 [280, 340]；360 宽视口受宽度守卫封顶 320。
+        final expected = math.min(340.0, widthCap);
+        expect(
+          size.height,
+          expected,
+          reason: '$screen：封面高度 = min(340, maxWidth-40)（高度充足）',
+        );
+        expect(
+          size.height,
+          greaterThanOrEqualTo(280.0),
+          reason: '$screen：目标带下限',
+        );
+        expect(size.height, lessThanOrEqualTo(340.0), reason: '$screen：目标带上限');
+        expect(size.width, size.height, reason: '封面为正方形');
+        expect(tester.takeException(), isNull, reason: '$screen：不得溢出');
+      }
+    });
+
+    testWidgets('极矮视口（430×560）回退分支封面 240，控制行在树不溢出', (tester) async {
+      const screen = Size(430, 560);
+      _setSize(tester, screen);
+      final model = AppModel();
+      seedSong(model);
+      await _pumpShell(tester, model, insets);
+      await openFullscreen(tester);
+
+      // 可用高 560-24=536 < 560 → 滚动回退分支固定封面 240。
+      final size = tester.getSize(find.byType(CrossfadeCover));
+      expect(size.height, 240.0, reason: '回退分支固定封面 240');
+      // 控制行仍在树，且无 RenderFlex 溢出。
+      expect(find.byIcon(Icons.skip_next), findsWidgets);
+      expect(tester.takeException(), isNull, reason: '不得溢出');
+    });
+
+    testWidgets('矮视口（430×680）收缩分支：封面 = min(可用高-330, 340, 宽-40)', (
+      tester,
+    ) async {
+      const screen = Size(430, 680);
+      _setSize(tester, screen);
+      final model = AppModel();
+      seedSong(model);
+      await _pumpShell(tester, model, insets);
+      await openFullscreen(tester);
+
+      // 全屏页独占整屏：SafeArea 吃掉上下 inset，顶栏再占 52 →
+      // _CoverLayer 可用高 = 屏高 − top − bottom − 52 = 588 ≥ 560（非回退）。
+      final size = tester.getSize(find.byType(CrossfadeCover));
+      final maxHeight = screen.height - insets.top - insets.bottom - 52;
+      final expected = math.min(
+        math.min(maxHeight - 330, 340.0),
+        screen.width - 40,
+      );
+      expect(
+        size.height,
+        expected,
+        reason: '收缩分支：封面 = min(可用高-330, 340, 可用宽-40)，让位控制行',
+      );
+      expect(find.byIcon(Icons.skip_next), findsWidgets);
+      expect(tester.takeException(), isNull, reason: '不得溢出');
+    });
   });
 }
