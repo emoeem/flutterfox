@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:io' show stderr;
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bridge/api.dart' as bridge;
 import 'bridge/frb_generated.dart' show RustLib;
@@ -86,6 +87,11 @@ class AppModel extends ChangeNotifier {
   bool _pumping = false;
   bridge.VoicefoxState _state = _emptyState();
   final Map<PlaylistKey, BrowseResult> _browse = {};
+
+  /// 下拉刷新完成判据的等待者（按槽键）：命令 fire-and-forget，完成信号
+  /// 只能来自 browse 事件。page=1 非追加响应或 BrowseFailed（page=0）到达
+  /// 即完成；过期 append 不完成（刷新仍在途）。等待者一次性消费。
+  final Map<PlaylistKey, List<Completer<void>>> _browseWaiters = {};
   final _PlaybackTickNotifier _playbackTick = _PlaybackTickNotifier();
 
   /// 纯进度通知源：position/duration 节流更新只通知这里，不打满全模型。
@@ -382,6 +388,26 @@ class AppModel extends ChangeNotifier {
   BrowseResult? browse(String kind, String source, String id) =>
       _browse[PlaylistKey(kind, source, id)];
 
+  /// 等待 [kind/source/id] 槽的下一个 page=1 响应或错误落槽（下拉刷新的
+  /// 完成 Future）。必须先注册等待者再派发命令，否则事件可能在
+  /// dispatch 解析与注册之间到达而漏掉。调用方应加超时兜底（控制器失联
+  /// 时事件可能永不到达），不允许 spinner 永久悬挂（§9）。
+  Future<void> awaitBrowseResponse(String kind, String source, String id) {
+    final waiter = Completer<void>();
+    _browseWaiters
+        .putIfAbsent(PlaylistKey(kind, source, id), () => [])
+        .add(waiter);
+    return waiter.future;
+  }
+
+  void _completeBrowseWaiters(PlaylistKey key) {
+    final waiters = _browseWaiters.remove(key);
+    if (waiters == null) return;
+    for (final waiter in waiters) {
+      if (!waiter.isCompleted) waiter.complete();
+    }
+  }
+
   /// 详情页 initState 的同步预清槽：清空旧曲目 + 置 loading，但**不通知**
   /// （§8.1「页面切换先显示对应 loading，不闪现旧歌单歌曲」的首帧实现；
   /// 通知会让导航 build 中的 ListenableBuilder 在 build 期被标脏）。真正的
@@ -485,8 +511,11 @@ class AppModel extends ChangeNotifier {
           ? _logAndSanitize(event.message!)
           : '加载失败';
       notifyListeners();
+      // 失败落槽也是刷新的完成信号（spinner 收起，错误态由槽渲染）。
+      _completeBrowseWaiters(key);
       return;
     }
+    final isNewPage1 = !event.append;
     if (!event.append) {
       result
         ..loading = false
@@ -522,6 +551,7 @@ class AppModel extends ChangeNotifier {
       ..boards.addAll(event.boards)
       ..categories.addAll(event.categories);
     notifyListeners();
+    if (isNewPage1) _completeBrowseWaiters(key);
   }
 
   /// 同步事件分四种（FFI `status` 字段）：preview / progress /
@@ -607,14 +637,18 @@ class AppModel extends ChangeNotifier {
     );
   }
 
-  Future<void> loadPlaylistDetail(bridge.PlaylistDto playlist, {int page = 1}) {
+  /// 返回命令立即失败的错误文本（成功 null；browse 响应经事件异步到达）。
+  Future<String?> loadPlaylistDetail(
+    bridge.PlaylistDto playlist, {
+    int page = 1,
+  }) {
     _beginBrowse(
       'playlist_detail',
       playlist.source,
       playlist.id,
       append: page > 1,
     );
-    return dispatch(
+    return dispatchWithError(
       bridge.FfiCommand.playlistDetail(
         source: playlist.source,
         playlistId: playlist.id,
@@ -643,9 +677,12 @@ class AppModel extends ChangeNotifier {
     );
   }
 
-  Future<void> loadArtistSongs(bridge.ArtistDto artist, {int page = 1}) {
+  /// 返回命令立即失败的错误文本（成功 null；browse 响应经事件异步到达）。
+  Future<String?> loadArtistSongs(bridge.ArtistDto artist, {int page = 1}) {
     _beginBrowse('artist_songs', artist.source, artist.id, append: page > 1);
-    return dispatch(bridge.FfiCommand.artistSongs(artist: artist, page: page));
+    return dispatchWithError(
+      bridge.FfiCommand.artistSongs(artist: artist, page: page),
+    );
   }
 
   Future<void> loadArtistAlbums(bridge.ArtistDto artist, {int page = 1}) {
@@ -653,9 +690,12 @@ class AppModel extends ChangeNotifier {
     return dispatch(bridge.FfiCommand.artistAlbums(artist: artist, page: page));
   }
 
-  Future<void> loadAlbumSongs(bridge.AlbumDto album, {int page = 1}) {
+  /// 返回命令立即失败的错误文本（成功 null；browse 响应经事件异步到达）。
+  Future<String?> loadAlbumSongs(bridge.AlbumDto album, {int page = 1}) {
     _beginBrowse('album_songs', album.source, album.id, append: page > 1);
-    return dispatch(bridge.FfiCommand.albumSongs(album: album, page: page));
+    return dispatchWithError(
+      bridge.FfiCommand.albumSongs(album: album, page: page),
+    );
   }
 
   // ── 自建歌单（本地存储，复用 browse 分槽）──
@@ -760,13 +800,14 @@ class AppModel extends ChangeNotifier {
     return dispatch(bridge.FfiCommand.accountFavorites(source: source));
   }
 
-  Future<void> loadAccountPlaylistDetail(
+  /// 返回命令立即失败的错误文本（成功 null；browse 响应经事件异步到达）。
+  Future<String?> loadAccountPlaylistDetail(
     String source,
     String id, {
     bool silent = false,
   }) {
     if (!silent) _beginBrowse(accountPlaylistDetailKind, source, id);
-    return dispatch(
+    return dispatchWithError(
       bridge.FfiCommand.accountPlaylistDetail(source: source, playlistId: id),
     );
   }
@@ -951,6 +992,7 @@ class AppModel extends ChangeNotifier {
     bridge.SearchDto? search,
     List<bridge.DownloadTaskDto>? downloads,
     List<bridge.SongDto>? favoritesOverride,
+    List<bridge.PlaylistDto>? favoritePlaylists,
   }) {
     _state = bridge.VoicefoxState(
       playback: _state.playback,
@@ -960,7 +1002,7 @@ class AppModel extends ChangeNotifier {
       lyrics: lyrics ?? _state.lyrics,
       playlists: _state.playlists,
       favorites: favoritesOverride ?? _state.favorites,
-      favoritePlaylists: _state.favoritePlaylists,
+      favoritePlaylists: favoritePlaylists ?? _state.favoritePlaylists,
       history: history ?? _state.history,
       customPlaylists: customPlaylists ?? _state.customPlaylists,
       downloads: downloads ?? _state.downloads,
@@ -1048,6 +1090,12 @@ class AppModel extends ChangeNotifier {
   @visibleForTesting
   void debugSetFavorites(List<bridge.SongDto> favorites) =>
       _replaceState(favoritesOverride: favorites);
+
+  /// 测试钩子：替换收藏歌单镜像（不起 Rust 控制器；模拟 'library' 事件
+  /// _refreshState 后的 favoritePlaylists 快照）。
+  @visibleForTesting
+  void debugSetFavoritePlaylists(List<bridge.PlaylistDto> playlists) =>
+      _replaceState(favoritePlaylists: playlists);
 
   /// 测试钩子：替换搜索快照（不起 Rust 控制器）。
   @visibleForTesting
@@ -1168,6 +1216,16 @@ class AppModel extends ChangeNotifier {
     await _sendCommand(command);
   }
 
+  /// 下发命令并返回错误文本（成功为 null）。
+  ///
+  /// `dispatch` 丢弃返回值（fire-and-forget，错误经 lastError /
+  /// lastNotification → Shell toast 呈现）；需要按失败结果做状态回滚的
+  /// 调用方（如收藏 pending、下拉刷新完成判据）用本变体拿真实结果。
+  /// 错误呈现只留全局 toast 一处（§9）：失败分支已写 lastError/
+  /// lastNotification 并通知，调用方不得再渲染第二份错误文案。
+  Future<String?> dispatchWithError(bridge.FfiCommand command) =>
+      _sendCommand(command);
+
   /// 下发命令并返回错误文本（成功为 null）；`dispatch` 的静默版本。
   Future<String?> _sendCommand(bridge.FfiCommand command) async {
     final controller = _controller;
@@ -1188,6 +1246,70 @@ class AppModel extends ChangeNotifier {
     if (lastError == null) return;
     lastError = null;
     notifyListeners();
+  }
+
+  // ── 搜索历史（本地持久化，§5.4）──
+
+  /// 最近搜索关键词（最新在前、去重、上限 [_searchHistoryMax]）。
+  /// 纯本地 shared_preferences 持久化：不写远端账号，不跨端同步；读写
+  /// 任何失败（如测试环境无插件通道）都容错降级为空历史，不抛出。
+  static const _searchHistoryKey = 'voicefox.search_history';
+  static const _searchHistoryMax = 10;
+  List<String> _searchHistory = [];
+
+  List<String> get searchHistory => List.unmodifiable(_searchHistory);
+
+  Future<void> loadSearchHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getStringList(_searchHistoryKey) ?? const [];
+      _searchHistory = [
+        for (final item in stored)
+          if (item.trim().isNotEmpty) item.trim(),
+      ];
+      notifyListeners();
+    } on Object catch (error) {
+      // 容错降级：失败 = 空历史（原始异常落日志，不进 UI）。
+      _searchHistory = [];
+      stderr.writeln('voicefox search history load failed: $error');
+    }
+  }
+
+  /// 记录一次已提交的搜索（回车提交 / 点击历史项 / Shell 种子）；防抖的
+  /// 中间态不记录。最新置顶、去重、截断到上限。
+  Future<void> rememberSearch(String keyword) async {
+    final key = keyword.trim();
+    if (key.isEmpty) return;
+    _searchHistory
+      ..remove(key)
+      ..insert(0, key);
+    if (_searchHistory.length > _searchHistoryMax) {
+      _searchHistory.removeRange(_searchHistoryMax, _searchHistory.length);
+    }
+    notifyListeners();
+    await _persistSearchHistory();
+  }
+
+  Future<void> removeSearchHistory(String keyword) async {
+    if (!_searchHistory.remove(keyword.trim())) return;
+    notifyListeners();
+    await _persistSearchHistory();
+  }
+
+  Future<void> clearSearchHistory() async {
+    if (_searchHistory.isEmpty) return;
+    _searchHistory = [];
+    notifyListeners();
+    await _persistSearchHistory();
+  }
+
+  Future<void> _persistSearchHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_searchHistoryKey, _searchHistory);
+    } on Object catch (error) {
+      stderr.writeln('voicefox search history persist failed: $error');
+    }
   }
 
   /// 面向用户的错误/通知文案净化（指南 §9：错误消息对用户可读，原始异常

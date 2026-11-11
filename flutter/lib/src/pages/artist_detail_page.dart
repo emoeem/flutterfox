@@ -72,6 +72,21 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
     _model.loadArtistSongs(_artist);
   }
 
+  /// 下拉刷新（§5.6）：只刷新热门歌曲（与既有「刷新」按钮同语义）。
+  /// 完成 Future = 本代次 page=1 响应或错误落槽；preset（本地歌手）无
+  /// 后端命令，不接下拉（build 分支传 null）。
+  Future<void> _refresh() async {
+    if (_preset) return;
+    final wait = _model.awaitBrowseResponse(
+      _songsKind,
+      _artist.source,
+      _artist.id,
+    );
+    final error = await _model.loadArtistSongs(_artist);
+    if (error != null) return;
+    await wait.timeout(const Duration(seconds: 15), onTimeout: () {});
+  }
+
   /// 随机播放：从热门歌曲随机一首开始（顺序继续）。
   void _playShuffled(List<bridge.SongDto> songs) {
     if (songs.length <= 1) {
@@ -91,36 +106,42 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
         final hotSongs = _preset
             ? widget.presetSongs!
             : (songsResult?.songs ?? const <bridge.SongDto>[]);
+        final body = ListView(
+          // preset（本地歌手）无刷新命令，保持默认物理；在线歌手放开
+          // AlwaysScrollable 让内容不满一屏也可下拉。
+          physics: _preset ? null : const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+            VxSpacing.xl,
+            0,
+            VxSpacing.xl,
+            VxSpacing.xl,
+          ),
+          children: [
+            VxArtistBanner(
+              name: _artist.name,
+              photoUrl: _artist.coverUrl,
+              sourceLabel: songSourceLabel(_model, _artist.source),
+              subtitle: hotSongs.isEmpty ? null : '热门歌曲 ${hotSongs.length} 首',
+            ),
+            const SizedBox(height: VxSpacing.lg),
+            _actionRow(context, hotSongs),
+            const SizedBox(height: VxSpacing.sectionGap),
+            _hotSongs(context, songsResult, hotSongs),
+            const SizedBox(height: VxSpacing.sectionGap),
+            if (!_preset) _albumsSection(context),
+          ],
+        );
         return Scaffold(
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _backBar(context),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    VxSpacing.xl,
-                    0,
-                    VxSpacing.xl,
-                    VxSpacing.xl,
-                  ),
-                  children: [
-                    VxArtistBanner(
-                      name: _artist.name,
-                      photoUrl: _artist.coverUrl,
-                      sourceLabel: songSourceLabel(_model, _artist.source),
-                      subtitle: hotSongs.isEmpty
-                          ? null
-                          : '热门歌曲 ${hotSongs.length} 首',
-                    ),
-                    const SizedBox(height: VxSpacing.lg),
-                    _actionRow(context, hotSongs),
-                    const SizedBox(height: VxSpacing.sectionGap),
-                    _hotSongs(context, songsResult, hotSongs),
-                    const SizedBox(height: VxSpacing.sectionGap),
-                    if (!_preset) _albumsSection(context),
-                  ],
-                ),
+                // preset（本地歌手）无刷新命令不接下拉：否则 spinner 永不
+                // 完成（§9 不允许永久悬挂）。
+                child: _preset
+                    ? body
+                    : RefreshIndicator(onRefresh: _refresh, child: body),
               ),
             ],
           ),

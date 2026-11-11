@@ -70,6 +70,16 @@ class _AlbumSongsPageState extends State<AlbumSongsPage> {
     _model.loadAlbumSongs(_album, page: result.page + 1);
   }
 
+  /// 下拉刷新（§5.6）：完成 Future = 本代次 page=1 响应或错误落槽；
+  /// preset（本地专辑）无后端命令，不接下拉——否则 spinner 永不完成。
+  Future<void> _refresh() async {
+    if (_preset) return;
+    final wait = _model.awaitBrowseResponse(_kind, _album.source, _album.id);
+    final error = await _model.loadAlbumSongs(_album);
+    if (error != null) return;
+    await wait.timeout(const Duration(seconds: 15), onTimeout: () {});
+  }
+
   List<bridge.SongDto> _sorted(List<bridge.SongDto> songs) {
     final list = [...songs];
     switch (_sort) {
@@ -169,6 +179,7 @@ class _AlbumSongsPageState extends State<AlbumSongsPage> {
                   onRetry: _reload,
                   hasMore: result?.hasMore ?? false,
                   onLoadMore: _loadMore,
+                  onRefresh: _preset ? null : _refresh,
                 ),
               ),
             ],

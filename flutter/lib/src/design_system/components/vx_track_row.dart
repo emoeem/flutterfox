@@ -148,127 +148,140 @@ class VxTrackRow extends StatelessWidget {
         height: density.height,
         color: hovering ? scheme.surfaceContainerHighest : normalBg,
         padding: const EdgeInsets.symmetric(horizontal: VxSpacing.md),
-        child: Row(
-          children: [
-            if (showIndex)
-              SizedBox(
-                width: 28,
-                child: Text(
-                  index?.toString() ?? '',
-                  textAlign: TextAlign.center,
-                  style: vxMonoStyle(scheme.onSurfaceVariant),
-                ),
-              ),
-            const SizedBox(width: VxSpacing.sm),
-            SizedBox(
-              width: density.coverSize,
-              height: density.coverSize,
-              child: cover ?? VxCoverFallback(title: title),
-            ),
-            const SizedBox(width: VxSpacing.md),
-            if (isPlaying) ...[
-              _StaticEqualizerBars(color: scheme.primary),
-              const SizedBox(width: VxSpacing.sm),
-            ],
-            Expanded(
-              flex: 3,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: VxTypography.titleSm.copyWith(color: titleColor),
+        // 窄视口判定按行自身宽度（LayoutBuilder）：桌面分栏里的行可能
+        // 小于窗口宽。
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final narrow = constraints.maxWidth < 480;
+            return Row(
+              children: [
+                if (showIndex)
+                  SizedBox(
+                    width: 28,
+                    child: Text(
+                      index?.toString() ?? '',
+                      textAlign: TextAlign.center,
+                      style: vxMonoStyle(scheme.onSurfaceVariant),
+                    ),
                   ),
-                  if (artist != null)
-                    Text(
-                      artist!,
+                const SizedBox(width: VxSpacing.sm),
+                SizedBox(
+                  width: density.coverSize,
+                  height: density.coverSize,
+                  child: cover ?? VxCoverFallback(title: title),
+                ),
+                const SizedBox(width: VxSpacing.md),
+                if (isPlaying) ...[
+                  _StaticEqualizerBars(color: scheme.primary),
+                  const SizedBox(width: VxSpacing.sm),
+                ],
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: VxTypography.titleSm.copyWith(color: titleColor),
+                      ),
+                      if (artist != null)
+                        Text(
+                          artist!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: VxTypography.caption.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (showAlbum && album != null) ...[
+                  const SizedBox(width: VxSpacing.lg),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      album!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VxTypography.caption.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
+                  ),
                 ],
-              ),
-            ),
-            if (showAlbum && album != null) ...[
-              const SizedBox(width: VxSpacing.lg),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  album!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: VxTypography.caption.copyWith(
-                    color: scheme.onSurfaceVariant,
+                if (source != null) ...[
+                  const SizedBox(width: VxSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      source!,
+                      style: VxTypography.caption.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: VxSpacing.lg),
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    vxFormatDuration(duration),
+                    textAlign: TextAlign.right,
+                    style: vxMonoStyle(scheme.onSurfaceVariant),
                   ),
                 ),
-              ),
-            ],
-            if (source != null) ...[
-              const SizedBox(width: VxSpacing.sm),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  source!,
-                  style: VxTypography.caption.copyWith(
-                    color: scheme.onSurfaceVariant,
+                if (hasActions)
+                  AnimatedOpacity(
+                    opacity: hovering ? 1 : 0,
+                    duration: VxMotion.hoverFade,
+                    child: SizedBox(
+                      // 固定宽度，hover 显隐不挤压时长列。
+                      // M3 IconButton 实际最小宽 40（tooltip + constraints 下
+                      // compact 密度也不低于 40），Phase 1 按 30 预留导致行尾
+                      // 操作 hover 时溢出被视口裁剪（Phase 5 实测修复）。
+                      // 窄视口（<480，手机档 360-430）不预留：触屏无 hover，
+                      // 长按菜单是真实替代（§9），固定预留 4×40 必溢出行尾
+                      // （Phase 3 曲库窄视口实测）。
+                      width: narrow ? 0.0 : callbacks * 40.0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (onPlay != null)
+                            _rowIcon(context, Icons.play_arrow, '播放', onPlay),
+                          if (onAddToQueue != null)
+                            _rowIcon(
+                              context,
+                              Icons.queue_music,
+                              '加入队列',
+                              onAddToQueue,
+                            ),
+                          if (onLike != null)
+                            _rowIcon(
+                              context,
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              '收藏',
+                              onLike,
+                            ),
+                          if (onMore != null)
+                            _rowIcon(context, Icons.more_vert, '更多', onMore),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-            const SizedBox(width: VxSpacing.lg),
-            SizedBox(
-              width: 52,
-              child: Text(
-                vxFormatDuration(duration),
-                textAlign: TextAlign.right,
-                style: vxMonoStyle(scheme.onSurfaceVariant),
-              ),
-            ),
-            if (hasActions)
-              AnimatedOpacity(
-                opacity: hovering ? 1 : 0,
-                duration: VxMotion.hoverFade,
-                child: SizedBox(
-                  // 固定宽度，hover 显隐不挤压时长列。
-                  // M3 IconButton 实际最小宽 40（tooltip + constraints 下
-                  // compact 密度也不低于 40），Phase 1 按 30 预留导致行尾
-                  // 操作 hover 时溢出被视口裁剪（Phase 5 实测修复）。
-                  width: callbacks * 40.0,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (onPlay != null)
-                        _rowIcon(context, Icons.play_arrow, '播放', onPlay),
-                      if (onAddToQueue != null)
-                        _rowIcon(
-                          context,
-                          Icons.queue_music,
-                          '加入队列',
-                          onAddToQueue,
-                        ),
-                      if (onLike != null)
-                        _rowIcon(
-                          context,
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          '收藏',
-                          onLike,
-                        ),
-                      if (onMore != null)
-                        _rowIcon(context, Icons.more_vert, '更多', onMore),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

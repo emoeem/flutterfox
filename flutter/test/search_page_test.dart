@@ -347,10 +347,8 @@ void main() {
     await _pumpSearch(tester, model, seedKeyword: 'kw');
     model.commands.clear();
 
-    // 单选网易云。
-    await tester.tap(find.text('来源：全部音源'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('网易云').last);
+    // 单选网易云（Phase 3：音源筛选改 chips 行，§5.4 横向滚动）。
+    await tester.tap(find.text('网易云'));
     await tester.pumpAndSettle();
 
     var searches = model.commands
@@ -359,9 +357,7 @@ void main() {
     expect(searches.last.source, 'wy');
 
     // 再选 QQ音乐 → 两个音源 = 聚合搜索（null）+ 本地过滤。
-    await tester.tap(find.text('来源：网易云'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('QQ音乐').last);
+    await tester.tap(find.text('QQ音乐'));
     await tester.pumpAndSettle();
 
     searches = model.commands.whereType<bridge.FfiCommand_Search>().toList();

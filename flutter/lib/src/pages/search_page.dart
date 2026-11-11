@@ -1,12 +1,16 @@
-/// 全局搜索页（计划书 §4.3：搜索输入是主角）。
+/// 全局搜索页（指南 §5.4）。
 ///
 /// 布局：固定顶部搜索框（带清除钮）→ 类型 Segmented（全部/歌曲/专辑/歌手/
-/// 歌单）→ 音源多选下拉筛选（可多选/全部）→ 结果计数行 → 结果区。
+/// 歌单）→ 音源筛选 chips 行（横向滚动，提供「全部」，可多选）→ 结果计数行
+/// → 结果区。
 /// - 歌曲结果统一 VxTrackRow 行表（与曲库同一歌曲行）；hover 操作：
 ///   播放 / 加入队列 / 收藏 / 更多；
 /// - 双击播放、单击选中、Ctrl 切换、Shift 范围多选、Enter 播放选中项；
 /// - 输入 300ms 防抖；分页加载带 in-flight 锁与「加载中 / 没有更多 /
 ///   失败重试」三态，不会出现永久 spinner 或重复分页；
+/// - 空关键词态展示本地搜索历史（shared_preferences，最新在前去重，单项
+///   删除 + 清空确认；仅存本机不跨端同步，如实标注）；回车提交/点击历史项
+///   / Shell 种子才记史，防抖中间态不入库；
 /// - 专辑 / 歌手 Tab 由歌曲结果真实聚合（同专辑/同歌手去重），卡片带来源标识；
 ///   聚合搜索不返回歌单数据，歌单 Tab 如实解释。
 library;
@@ -76,17 +80,24 @@ class _SearchPageState extends State<SearchPage> {
   BigInt _seenRequestId = BigInt.zero;
   String _seenSignature = '';
 
+  /// 搜索历史签名：历史增删不改变 search 快照签名，但空关键词态的面板
+  /// 必须随之重绘（单项删除/清空/置顶），所以通知守卫把历史一并纳入。
+  String _seenHistorySignature = '';
+
   @override
   void initState() {
     super.initState();
     _seenRequestId = widget.model.state.search.requestId;
     _seenSignature = _searchSignature(widget.model.state.search);
+    _seenHistorySignature = widget.model.searchHistory.join('\u0000');
     widget.model.addListener(_onModelChanged);
+    // 历史读取容错降级（无插件通道 = 空历史），不阻塞首帧。
+    unawaited(widget.model.loadSearchHistory());
     final seed = widget.seedKeyword.trim();
     if (seed.isNotEmpty) {
       _controller.text = seed;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _runSearch();
+        if (mounted) _runSearch(record: true);
       });
     }
   }
@@ -122,7 +133,12 @@ class _SearchPageState extends State<SearchPage> {
       _moreInFlight = false;
     }
     final signature = _searchSignature(search);
-    if (!responseArrived && signature == _seenSignature) return;
+    final historySignature = widget.model.searchHistory.join('\u0000');
+    final historyChanged = historySignature != _seenHistorySignature;
+    _seenHistorySignature = historySignature;
+    if (!responseArrived && signature == _seenSignature && !historyChanged) {
+      return;
+    }
     _seenRequestId = search.requestId;
     _seenSignature = signature;
     setState(() {});
@@ -135,10 +151,14 @@ class _SearchPageState extends State<SearchPage> {
   String? get _dispatchSource =>
       _selectedSources.length == 1 ? _selectedSources.first : null;
 
-  void _runSearch() {
+  /// [record] = 用户显式提交（回车 / 点击历史项 / Shell 种子）时记史；
+  /// 防抖自动搜索与换筛选重搜不记，避免「周杰伦」「周杰伦音」等停顿
+  /// 中间态污染历史。
+  void _runSearch({bool record = false}) {
     _debounce?.cancel();
     final keyword = _controller.text.trim();
     if (keyword.isEmpty) return;
+    if (record) unawaited(widget.model.rememberSearch(keyword));
     setState(() {
       _selectedRows.clear();
       _anchorRow = -1;
@@ -288,11 +308,12 @@ class _SearchPageState extends State<SearchPage> {
             VxSpacing.lg,
             0,
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: _typeSegment(context)),
-              const SizedBox(width: VxSpacing.md),
-              _sourceFilter(context),
+              _typeSegment(context),
+              const SizedBox(height: VxSpacing.sm),
+              _sourceChips(context),
             ],
           ),
         ),
@@ -320,7 +341,7 @@ class _SearchPageState extends State<SearchPage> {
       focusNode: _fieldFocus,
       autofocus: widget.seedKeyword.isEmpty,
       textInputAction: TextInputAction.search,
-      onSubmitted: (_) => _runSearch(),
+      onSubmitted: (_) => _runSearch(record: true),
       onChanged: _onSearchTextChanged,
       decoration: InputDecoration(
         hintText: '输入歌曲、歌手、专辑或歌单名称……',
@@ -363,81 +384,88 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  /// 音源多选下拉筛选（§4.3：可多选/全部，不横排占满一行）。
-  Widget _sourceFilter(BuildContext context) {
+  /// 音源筛选 chips 行（指南 §5.4「音源筛选 chips 横向滚动，提供『全部』」；
+  /// 此前实现的下拉引用 §4.3 属误引——§4.3 是状态与导航规则，与筛选形态
+  /// 无关，Phase 3 实施时按指南裁决改回 chips）。多选语义保留：恰选 1 个
+  /// 走后端过滤，多选聚合搜索 + 本地过滤展示。
+  Widget _sourceChips(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = switch (_selectedSources.length) {
-      0 => '来源：全部音源',
-      1 => '来源：${_sourceName(_selectedSources.first)}',
-      _ => '来源：已选 ${_selectedSources.length} 个',
-    };
-    return PopupMenuButton<String>(
-      tooltip: '按音源筛选结果',
-      onSelected: (id) {
-        setState(() {
-          if (id.isEmpty) {
-            _selectedSources.clear();
-          } else if (!_selectedSources.add(id)) {
-            _selectedSources.remove(id);
-          }
-        });
-        // 换源重搜，保证数据与新筛选一致。
-        _runSearch();
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          value: '',
-          child: Row(
-            children: [
-              Icon(
-                _selectedSources.isEmpty
-                    ? Icons.check_box_outlined
-                    : Icons.check_box_outline_blank,
-                size: 16,
+    final sources = widget.model.state.sources;
+    if (sources.isEmpty) return const SizedBox.shrink();
+    Widget chip(
+      String label, {
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.only(right: VxSpacing.sm),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: VxSpacing.md,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.14)
+                  : scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? scheme.primary.withValues(alpha: 0.4)
+                    : scheme.outlineVariant.withValues(alpha: 0.4),
               ),
-              const SizedBox(width: VxSpacing.sm),
-              const Text('全部音源'),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        for (final source in widget.model.state.sources)
-          PopupMenuItem<String>(
-            value: source.id,
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  _selectedSources.contains(source.id)
-                      ? Icons.check_box_outlined
-                      : Icons.check_box_outline_blank,
-                  size: 16,
+                if (selected) ...[
+                  Icon(Icons.check, size: 14, color: scheme.primary),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  label,
+                  style: VxTypography.caption.copyWith(
+                    color: selected ? scheme.primary : scheme.onSurface,
+                  ),
                 ),
-                const SizedBox(width: VxSpacing.sm),
-                Text(source.name),
               ],
             ),
           ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: VxSpacing.md,
-          vertical: VxSpacing.sm,
         ),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(VxRadius.md),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: VxTypography.caption.copyWith(color: scheme.onSurface),
+      );
+    }
+
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          chip(
+            '全部音源',
+            selected: _selectedSources.isEmpty,
+            onTap: () {
+              setState(_selectedSources.clear);
+              // 换筛选重搜，保证数据与新筛选一致（不记史）。
+              _runSearch();
+            },
+          ),
+          for (final source in sources)
+            chip(
+              source.name,
+              selected: _selectedSources.contains(source.id),
+              onTap: () {
+                setState(() {
+                  if (!_selectedSources.add(source.id)) {
+                    _selectedSources.remove(source.id);
+                  }
+                });
+                _runSearch();
+              },
             ),
-            const SizedBox(width: VxSpacing.xs),
-            const Icon(Icons.arrow_drop_down, size: 18),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -482,13 +510,7 @@ class _SearchPageState extends State<SearchPage> {
         onRetry: _runSearch,
       );
     }
-    if (keyword.isEmpty) {
-      return VxEmptyState(
-        icon: Icons.search,
-        title: '搜索你想听的音乐',
-        message: '支持歌曲、歌手、专辑名；聚合搜索会同时查询已启用的音源。',
-      );
-    }
+    if (keyword.isEmpty) return _historyArea(context);
     if (state.items.isEmpty) {
       return VxEmptyState(
         icon: Icons.search_off,
@@ -507,6 +529,91 @@ class _SearchPageState extends State<SearchPage> {
         message: _playlistsExplain(),
       ),
     };
+  }
+
+  // ── 搜索历史（空关键词态，§5.4）──
+
+  /// 空关键词态：展示本地搜索历史（点击回填即搜、单项删除、清空确认）；
+  /// 无历史退回引导空态。历史仅存本机 shared_preferences，如实标注不跨端。
+  Widget _historyArea(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final history = widget.model.searchHistory;
+    if (history.isEmpty) {
+      return VxEmptyState(
+        icon: Icons.search,
+        title: '搜索你想听的音乐',
+        message: '支持歌曲、歌手、专辑名；聚合搜索会同时查询已启用的音源。',
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        VxSpacing.lg,
+        VxSpacing.sm,
+        VxSpacing.lg,
+        VxSpacing.xl,
+      ),
+      children: [
+        Row(
+          children: [
+            Text('搜索历史', style: VxTypography.sectionTitle),
+            const Spacer(),
+            IconButton(
+              tooltip: '清空搜索历史',
+              icon: const Icon(Icons.delete_sweep_outlined, size: 20),
+              onPressed: () => _confirmClearHistory(context),
+            ),
+          ],
+        ),
+        for (final keyword in history)
+          ListTile(
+            dense: true,
+            leading: Icon(
+              Icons.history,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
+            title: Text(keyword, maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: IconButton(
+              tooltip: '删除该条历史',
+              icon: const Icon(Icons.close, size: 16),
+              onPressed: () =>
+                  unawaited(widget.model.removeSearchHistory(keyword)),
+            ),
+            onTap: () {
+              _controller.text = keyword;
+              // 点击历史项 = 显式提交：回填即搜并置顶该条。
+              _runSearch(record: true);
+            },
+          ),
+        const SizedBox(height: VxSpacing.md),
+        Text(
+          '历史仅保存在本机（shared_preferences），不会上传账号或跨设备同步。',
+          style: VxTypography.caption.copyWith(color: scheme.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+
+  /// 清空属破坏性操作（§9）：必须确认。
+  Future<void> _confirmClearHistory(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('清空搜索历史'),
+        content: const Text('将删除全部搜索历史，无法恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('清空'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) unawaited(widget.model.clearSearchHistory());
   }
 
   String _playlistsExplain() {

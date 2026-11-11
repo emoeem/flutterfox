@@ -259,4 +259,35 @@ void main() {
     expect(find.text('飙升榜'), findsOneWidget);
     expect(find.text('查看榜单'), findsOneWidget);
   });
+
+  testWidgets('切换音源后重新派发 PlaylistList（切源必须重载当前分类数据）', (tester) async {
+    final model = _RecordingModel();
+    model.debugSetSources([
+      _source('wy', '网易云', playlists: true),
+      _source('tx', 'QQ音乐', playlists: true),
+    ]);
+    await _pumpDiscover(tester, model);
+
+    // 全部音源：两个源都触发过加载。
+    final initial = model.commands
+        .whereType<bridge.FfiCommand_PlaylistList>()
+        .map((c) => c.source)
+        .toList();
+    expect(initial, containsAll(['wy', 'tx']));
+
+    model.commands.clear();
+    await tester.tap(find.text('音源：全部'));
+    await tester.pumpAndSettle();
+    // 多源分组标题也是「QQ音乐」（18px 粗体），弹层菜单项在 overlay 里
+    // 树序靠后：用 .last 点菜单项。
+    await tester.tap(find.text('QQ音乐').last);
+    await tester.pumpAndSettle();
+
+    // 切源后 _requestedPlaylistKeys 清空 → 当前分类重新请求新源数据。
+    final reloaded = model.commands
+        .whereType<bridge.FfiCommand_PlaylistList>()
+        .toList();
+    expect(reloaded, isNotEmpty, reason: '切音源必须重新加载数据（§5.3）');
+    expect(reloaded.last.source, 'tx');
+  });
 }

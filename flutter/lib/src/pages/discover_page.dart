@@ -530,6 +530,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
         height: 252,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
+          // 末尾补 right padding（P2-03）：无内边距时最后一张卡贴住窗口
+          // 右缘被裁切；与左缘（与区块标题对齐）保持非对称是设计原样。
+          padding: const EdgeInsets.only(right: VxSpacing.lg),
           itemCount: playlists.length.clamp(0, 12),
           separatorBuilder: (_, _) => const SizedBox(width: VxSpacing.md),
           itemBuilder: (context, index) =>

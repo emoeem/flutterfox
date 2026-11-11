@@ -42,6 +42,13 @@ class PlaylistDetailPage extends StatefulWidget {
 }
 
 class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
+  /// 收藏 pending：在途时忽略再次点击（toggle 语义下第二击会在乐观翻转
+  /// 后的判定下派发反向命令，确认后状态与用户意图相反）；乐观翻转只改
+  /// 本地图标，成功确认以 'library' 事件 → _refreshState 刷新的真实
+  /// favoritePlaylists 快照为准（失败回滚；不做超时假成功）。
+  bool _favPending = false;
+  bool? _favOverride;
+
   @override
   void initState() {
     super.initState();
@@ -49,9 +56,28 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     // （不通知——通知会让导航 build 中的祖先 ListenableBuilder 在 build 期
     // 被标脏），首帧即加载态；真正的请求派发 defer 到帧后。
     _model.prepareBrowseLoad(_kind, _playlist.source, _playlist.id);
+    _model.addListener(_onModelChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _reload();
     });
+  }
+
+  @override
+  void dispose() {
+    _model.removeListener(_onModelChanged);
+    super.dispose();
+  }
+
+  void _onModelChanged() {
+    if (!mounted || !_favPending || _favOverride == null) return;
+    // 'library' 事件（FavoritePlaylistAdd/Remove → publish_library）触发
+    // _refreshState；快照与乐观值一致即服务端已确认本代操作，清 pending。
+    if (_isFavoritePlaylist == _favOverride) {
+      setState(() {
+        _favPending = false;
+        _favOverride = null;
+      });
+    }
   }
 
   AppModel get _model => widget.model;
@@ -84,12 +110,48 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     (item) => item.id == _playlist.id && item.source == _playlist.source,
   );
 
-  void _toggleFavoritePlaylist() {
-    _model.dispatch(
-      _isFavoritePlaylist
-          ? bridge.FfiCommand.favoritePlaylistRemove(playlist: _playlist)
-          : bridge.FfiCommand.favoritePlaylistAdd(playlist: _playlist),
+  /// 图标显示值：pending 在途时用乐观翻转值，否则以真实快照为准。
+  bool get _favDisplayed => _favOverride ?? _isFavoritePlaylist;
+
+  Future<void> _toggleFavoritePlaylist() async {
+    if (_favPending) return; // §9 加载中防重复提交（双击竞态）
+    final target = !_isFavoritePlaylist;
+    setState(() {
+      _favPending = true;
+      _favOverride = target;
+    });
+    final command = target
+        ? bridge.FfiCommand.favoritePlaylistAdd(playlist: _playlist)
+        : bridge.FfiCommand.favoritePlaylistRemove(playlist: _playlist);
+    final error = await _model.dispatchWithError(command);
+    if (!mounted) return;
+    if (error != null) {
+      // 失败回滚乐观 UI（§9）。错误文案由命令层 lastError/
+      // lastNotification → 全局 toast 呈现，页面不再渲染第二份。
+      setState(() {
+        _favPending = false;
+        _favOverride = null;
+      });
+      return;
+    }
+    // 成功路径不在此等待：确认由 _onModelChanged 以真实快照驱动。
+  }
+
+  /// 下拉刷新（§5.6）：复用 load* 的 _beginBrowse 清槽 + 撤分页 arm；
+  /// 完成 Future = 本代次 page=1 响应或错误落槽。命令立即失败（未达
+  /// Rust）时 toast 已提示、spinner 收起；控制器失联事件可能永不到达，
+  /// 加超时兜底不允许 spinner 永挂（§9）。
+  Future<void> _refresh() async {
+    final wait = _model.awaitBrowseResponse(
+      _kind,
+      _playlist.source,
+      _playlist.id,
     );
+    final error = _account
+        ? await _model.loadAccountPlaylistDetail(_playlist.source, _playlist.id)
+        : await _model.loadPlaylistDetail(_playlist);
+    if (error != null) return;
+    await wait.timeout(const Duration(seconds: 15), onTimeout: () {});
   }
 
   /// 随机播放：从已载入曲目随机选一首开始（顺序继续）。
@@ -147,6 +209,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                   onRetry: _reload,
                   hasMore: result?.hasMore ?? false,
                   onLoadMore: _loadMore,
+                  onRefresh: _refresh,
                 ),
               ),
             ],
@@ -228,8 +291,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
           onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
         ),
         VxDetailAction(
-          icon: _isFavoritePlaylist ? Icons.favorite : Icons.favorite_border,
-          label: _isFavoritePlaylist ? '取消收藏' : '收藏',
+          icon: _favDisplayed ? Icons.favorite : Icons.favorite_border,
+          label: _favPending
+              ? '收藏处理中…'
+              : _favDisplayed
+              ? '取消收藏'
+              : '收藏',
           // §8.5：收藏歌单写入本地收藏镜像（favoritePlaylists），不写远端账号。
           tooltip: '收藏到本地歌单收藏夹（不写入远端账号）',
           onPressed: _toggleFavoritePlaylist,

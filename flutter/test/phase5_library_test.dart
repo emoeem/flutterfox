@@ -214,8 +214,9 @@ void main() {
     navigator.pop();
     await tester.pumpAndSettle();
 
-    // 本地音乐入口 → 目录管理页。
-    await tester.tap(find.text('本地音乐'));
+    // 本地音乐入口 → 目录管理页（Phase 3 来源 chips 亦有「本地音乐」
+    // 标注，入口卡树序在前用 .first）。
+    await tester.tap(find.text('本地音乐').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(LocalMusicPage), findsOneWidget);

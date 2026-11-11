@@ -17,6 +17,20 @@ import 'package:voicefox_flutter/src/app_model.dart';
 import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
 import 'package:voicefox_flutter/src/pages/playlist_detail_page.dart';
 
+/// 记录派发命令的测试模型（不起 Rust 控制器）。Phase 3 起页面收藏与
+/// 下拉刷新走 dispatchWithError（公开的错误返回变体），故覆写它而非
+/// dispatch；[errorToReturn] 模拟命令级失败。
+class _RecordingModel extends AppModel {
+  final List<bridge.FfiCommand> commands = [];
+  String? errorToReturn;
+
+  @override
+  Future<String?> dispatchWithError(bridge.FfiCommand command) async {
+    commands.add(command);
+    return errorToReturn;
+  }
+}
+
 bridge.PlaylistDto _playlist(String id, String source) => bridge.PlaylistDto(
   id: id,
   name: '歌单$source$id',
@@ -34,6 +48,23 @@ bridge.SongDto _song(String id, String name, String source) => bridge.SongDto(
   durationMs: BigInt.from(180000),
   coverUrl: null,
 );
+
+/// 分步下拉手势：`tester.drag` 单步大位移不会生成足够的手势事件序列，
+/// RefreshIndicator 不会 arm（实测诊断）；分步 move + up 稳定触发。
+/// 总拖距 600px：arm 阈值 = 0.25 × 列表视口高（~1200px 测试视口）。
+/// up 后再泵 ≥400ms：onRefresh 在 snap 动画（~150ms）结束后才被调用。
+Future<void> _pullToRefresh(WidgetTester tester, Finder target) async {
+  final center = tester.getCenter(target);
+  final gesture = await tester.startGesture(center);
+  await gesture.moveBy(const Offset(0, 150));
+  await tester.pump();
+  await gesture.moveBy(const Offset(0, 450));
+  await tester.pump();
+  await gesture.up();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 400));
+}
 
 Future<void> _pumpDetail(
   WidgetTester tester,
@@ -389,5 +420,155 @@ void main() {
     // initState 已同步 _reload → 清槽 + loading；首帧不得渲染旧曲目。
     expect(find.text('上次访问的曲目'), findsNothing);
     expect(find.text('加载中…'), findsOneWidget);
+  });
+
+  testWidgets('下拉刷新：清槽重置 page1、迟到旧页 2 被弃、page1 落槽后 spinner 收起', (tester) async {
+    final model = _RecordingModel();
+    await _pumpDetail(tester, model, _playlist('p1', 'kw'));
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      songs: [_song('s1', '第一页', 'kw')],
+    );
+    await tester.pump();
+    expect(find.text('第一页'), findsOneWidget);
+
+    // 下拉手势触发 RefreshIndicator.onRefresh：load* 内部 _beginBrowse
+    // 清槽 + 撤 arm（与 debugBeginBrowse 序列同语义）。
+    await _pullToRefresh(tester, find.text('第一页'));
+    final slot = model.browse('playlist_detail', 'kw', 'p1')!;
+    expect(slot.songs, isEmpty, reason: '下拉刷新先清空旧曲目');
+    expect(slot.appendArmed, isFalse, reason: '新代次未收到 page1 前不 arm');
+    expect(
+      model.commands.whereType<bridge.FfiCommand_PlaylistDetail>().last.page,
+      1,
+      reason: '下拉刷新重置为 page1',
+    );
+
+    // 迟到的旧页 2：必须被丢弃（§8.1 过期响应不得混入）。
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      songs: [_song('s2', '旧页2迟到曲', 'kw')],
+      page: 2,
+      hasMore: true,
+    );
+    expect(slot.songs.where((s) => s.name == '旧页2迟到曲'), isEmpty);
+    expect(slot.loading, isTrue, reason: '刷新仍在途');
+
+    // 本代次 page1 响应落槽 → 完成等待者送达 → spinner 收起（§9 不允许
+    // 假刷新或永久 spinner）、新数据渲染。
+    model.debugBrowseLoaded(
+      kind: 'playlist_detail',
+      source: 'kw',
+      id: 'p1',
+      songs: [_song('s3', '刷新后第一页', 'kw')],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('刷新后第一页'), findsOneWidget);
+    expect(slot.page, 1);
+    expect(
+      find.byType(CircularProgressIndicator),
+      findsNothing,
+      reason: '刷新完成 Future 送达后 RefreshIndicator 指示器收起',
+    );
+  });
+
+  testWidgets('收藏 pending：双击在途忽略第二次；成功确认走真实 favoritePlaylists 快照', (
+    tester,
+  ) async {
+    // 成功确认链（核对后修正）：FavoritePlaylistAdd → Rust publish_library
+    // → FFI kind="library" → _refreshState 刷新 favoritePlaylists；页面以
+    // 真实快照与乐观值一致为确认判据，不监听不存在的 'playlist' 事件。
+    final model = _RecordingModel();
+    await _pumpDetail(tester, model, _playlist('p1', 'kw'));
+    final favButton = find.byTooltip('收藏到本地歌单收藏夹（不写入远端账号）');
+    expect(find.text('收藏'), findsOneWidget);
+
+    // 第一次点击：pending + 乐观翻转（图标变实心）。
+    await tester.tap(favButton);
+    await tester.pump();
+    expect(find.text('收藏处理中…'), findsOneWidget);
+    expect(
+      model.commands.whereType<bridge.FfiCommand_FavoritePlaylistAdd>(),
+      hasLength(1),
+    );
+    expect(find.byIcon(Icons.favorite), findsOneWidget, reason: '乐观翻转图标');
+
+    // pending 在途：第二次点击忽略——不派发反向 remove（双击竞态，
+    // 否则 add 在途紧跟 remove，确认后状态与用户意图相反）。
+    await tester.tap(favButton);
+    await tester.pump();
+    expect(
+      model.commands.whereType<bridge.FfiCommand_FavoritePlaylistRemove>(),
+      isEmpty,
+      reason: 'pending 在途忽略再次点击',
+    );
+
+    // 模拟 'library' 事件后的快照刷新：与乐观值一致 → pending 清除、
+    // 图标保持实心、标签「取消收藏」。无超时假成功。不用 pumpAndSettle：
+    // 页面首屏 loading 态的 spinner 永转（本测试无 browse 响应）。
+    model.debugSetFavoritePlaylists([_playlist('p1', 'kw')]);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('收藏处理中…'), findsNothing);
+    expect(find.text('取消收藏'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+  });
+
+  testWidgets('收藏失败回滚：乐观图标还原、pending 清除、可再次点击', (tester) async {
+    final model = _RecordingModel();
+    model.errorToReturn = '收藏失败';
+    await _pumpDetail(tester, model, _playlist('p1', 'kw'));
+    final favButton = find.byTooltip('收藏到本地歌单收藏夹（不写入远端账号）');
+
+    await tester.tap(favButton);
+    await tester.pump();
+    expect(
+      model.commands.whereType<bridge.FfiCommand_FavoritePlaylistAdd>(),
+      hasLength(1),
+    );
+
+    // 命令失败返回（§9 操作失败必须回滚乐观 UI）：pending 清除、图标
+    // 还原空心（错误路径在微任务即返回，pending 瞬态不可见；在途可见性
+    // 由「收藏 pending」用例的成功确认路径覆盖）。错误文案只经命令层
+    // lastError → 全局 toast 一处呈现，页面不渲染第二份（P1-07 同口径）。
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('收藏处理中…'), findsNothing);
+    expect(find.text('收藏'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+
+    // 回滚后 pending 已清：可再次发起。
+    model.errorToReturn = null;
+    await tester.tap(favButton);
+    await tester.pump();
+    expect(
+      model.commands.whereType<bridge.FfiCommand_FavoritePlaylistAdd>(),
+      hasLength(2),
+    );
+  });
+
+  testWidgets('账号歌单触底不分页（无分页语义回归）', (tester) async {
+    final model = _RecordingModel();
+    await _pumpDetail(tester, model, _playlist('900', 'wy'), account: true);
+    model.debugBrowseLoaded(
+      kind: 'account_playlist_detail',
+      source: 'wy',
+      id: '900',
+      songs: [for (var i = 1; i <= 60; i++) _song('$i', '账号曲$i', 'wy')],
+    );
+    await tester.pump();
+    expect(find.text('账号曲1'), findsOneWidget);
+
+    await tester.drag(find.text('账号曲1'), const Offset(0, -4000));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      model.commands.whereType<bridge.FfiCommand_AccountPlaylistDetail>(),
+      hasLength(1),
+      reason: '账号歌单镜像无分页：触底不派发第二次详情命令',
+    );
   });
 }

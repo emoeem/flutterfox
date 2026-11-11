@@ -3,7 +3,9 @@
 - 依据：`docs/VOICEFOX_UI_REDESIGN_EXECUTION_GUIDE.md` §5/§6/§7/§8/§12.7，以当前工作区（feat/ui-redesign @ 5725231 + Phase 1 未提交改动）为准逐条验证。
 - 更新（2026-11-11 复验轮）：P1-08/P1-09 关闭（QA 修复批次入树，代码 diff + 回归测试 + 实机目检三重核实）、P1-10 复拍全部完成（激活态实机截图补齐）；P1-11「同类残余」已于 QA 第 2 轮修复时改判已修复。本轮门禁（报告员实跑）：analyze 0 / flutter-test 246 / cargo-test 72+40 / dart-format 0 / cargo-fmt 0；Rust 零改动（git diff 为空）。
 - 更新（2026-11-11 Phase 2 缺陷复验轮）：P1-12/P1-13 登记并关闭（QA 轮发现 → 本轮修复 + 三视口回归测试 + golden 重截目检三重复核，见 P1 节）；新登记 minor 两条（P2-10 入口卡标签截断、P3-08 旧 golden 截图未更新/数据种子不一致）。本轮唯一新增代码改动为 `library_page.dart`（430 视口库页标题折行修复，桌面 ≥512 渲染零变化）；受影响视口仅 library 430×932。报告员实跑定向 7 文件 51 项全绿（`00:05 +51: All tests passed!`）+ 重截 PNG（430x932）目检通过；全量门禁由外部门禁统一执行（本轮已知事实「门禁全绿」），报告员未复跑。Rust 零改动。详见 `docs/redesign/phase-2-report.md`。
+- 更新（2026-11-11 Phase 3 实施轮）：P2-10 关闭（入口卡两行卡 + 同域两处潜在缺陷修复，见 P2 节）、P2-03 代码修复（实机复验待 QA）。Phase 3 净新增：搜索音源 chips 化（§5.4:355 裁决，search_page.dart:366 原下拉引 §4.3 属误引）+ 搜索历史（shared_preferences 本地持久化，容错降级，记录点=回车/历史项/Shell 种子）；曲库来源筛选 chips（favorites+history+localSongs 实际派生，组合规则登记于 library_page.dart 注释与 mobile_library_page_test）；三详情页下拉刷新（AppModel.awaitBrowseResponse 完成判据 = page1 响应或错误落槽，preset 页不接，15s 超时兜底）；收藏 pending 乐观态（成功确认走 `library` 事件 _refreshState 真实快照，失败经 dispatchWithError 回滚，pending 在途忽略再击；错误呈现仅全局 toast 一处）；发现页 P2-03 末 padding。定向 8 文件 71 项全绿（报告员实跑 `flutter test` 8 文件，`+71: All tests passed!`）；analyze 0；dart-format 0（6 文件规范化）；golden 重截 1 张（430x932，临时测试用后即删）；全量门禁由外部门禁统一执行，报告员未跑全量 flutter test/cargo test；Rust 零改动（FavoritePlaylistAdd/Remove 命令既有，bridge/lib.dart:328-333）。§5.3-5.6/§8.5/§9 已核验原文；§5.4 历史单项删除+清空确认、§9 破坏性操作确认均已落实。遗留：P0-01 开放、P1-06 Android 真机零覆盖维持、下拉刷新/收藏回滚/chips 交互实机走查未做（无 Android 环境）。
 - 实机环境（本轮）：**Xvfb :2（1920x1080x24，无 WM）**，release 构建（`flutter build linux --release` exit 0），XTest 注入交互；另在 :1（niri 26.04 + xwayland-satellite）做窗口行为观察。第一轮会话（niri 全屏 1656x817）的证据仅标注引用，不冒充本轮复现。
+- 更新（2026-11-11 Phase 3 收口轮）：P2-03 关闭（代码+测试层修复后经实机复验，见 P2 节）。收口证据（报告员实跑）：定向 10 文件 72 项全绿（`flutter test` 10 文件，`00:09 +72: All tests passed!` exit 0）+ playlist_detail_isolation_test 单独 13/13；`flutter build linux --release` exit 0（bundle 07:54 在位）+ Xvfb :99 实跑真实 Rust 数据源（~/.config/voicefox/config.toml，kw/酷狗/酷我真实联网非 mock），4 视口截图（library/search/playlist 390x844 + discover 360x800，`import -window`+magick 精确视口）逐张 QA 通过：无白屏/overflow/遮挡/封面错图；跨页一致（discover 古风戏腔 104首·酷我 ↔ playlist 详情同封面同来源，返回条全标题完整）；数据抽查 3 处一致（playlist_detail_page.dart:234-258 标题/计数/总时长绑定、library_page.dart:250-264 计数按源过滤、search_page.dart:485,495-519 计数与四态）；library 空态 Icons.music_off_outlined 正常渲染且文案逐字一致（song_table_view.dart:181 / library_page.dart:569）；search「网易云」chip 右缘裁切 = 横向滚动 ListView 设计行为（search_page.dart:443-444）；main.dart:163 minimumSize 临时放宽已精确还原（git diff 空）。阶段报告：`docs/redesign/phase-3-report.md`。遗留：P0-01 开放、P1-06 Android 真机零覆盖维持、交互式运行时手操/浅色主题（归 Phase 7）/golden 基线比对未做（如实登记）。Rust 零改动。
 - 评级口径（§12.7）：P0 数据错乱/播放不可用/崩溃；P1 核心操作无法完成/封面普遍缺失/关键页面不可用；P2 视觉与次要功能缺口；P3 可选增强/文档债。
 - 基线事实与门禁数据：`docs/redesign/00-baseline.md`（§3 门禁、§9 播放链、§10 封面链）。
 
@@ -113,14 +115,14 @@
 |---|---|---|---|
 | P2-01 | 【已关闭，随 P1-09 关闭（2026-11-11 复验轮）】VxColors/VxDarkSurface 硬编码深色常量被 shell 组件无条件引用；已收口为 VxChrome 亮度双源 token（design_tokens.dart:148-157，浅色侧 VxLightColors，深色像素零变化） | chrome_theme_test 5 项 + 代码 diff | §3.2 |
 | P2-02 | 双 ThemeData 产源：运行时真源 = myune ThemeProvider；`design_system/voicefox_theme.dart` buildDark/LightTheme 仅 Gallery 页与测试使用（当前只有一套运行时真源，风险受控） | grep buildDarkTheme 调用点 | §1.2-4 |
-| P2-03 | 发现页/首页横向书架最右卡被窗口右缘裁切（实机 1440 视口复现：「伤悲：眼泪的心!」「DJ歌曲抖音…」右缘截断） | linux-discover-1440x900-default.png | §12.5 |
+| P2-03 | 【已关闭（2026-11-11 Phase 3 收口轮）】发现页/首页横向书架最右卡被窗口右缘裁切：`discover_page.dart` `_playlistGroup` 水平 ListView 补末尾 `padding: EdgeInsets.only(right: VxSpacing.lg)`（:530-535），滚动到末尾不再贴边裁切 | discover_page.dart:530-535 代码 diff + 实机截图 linux-discover-360x800-default.png（真实后端运行，默认滚动位右缘可见卡完整渲染无溢出，报告员目检）+ 收口轮 QA 逐张复核；横滑到末尾的末态未单独手势演练，由 ListView 末尾 padding 语义结构性保证（如实登记） | §12.5 |
 | P2-04 | 窗口尺寸契约在 niri 下不可靠：请求 1440x900 实得 tile 1212x1274（surface 948x1010，<960 触发降级布局）；Xvfb 下请求即所得。验收截图须在受控显示器采集 | 第一轮 + 本轮 :1 观察；本轮 Xvfb 对照 | §12.4 |
 | P2-05 | 桌面系统集成（MPRIS/托盘/系统通知）GUI 未接；Rust 侧 app/src/mpris.rs 存在 | 代码 | §12.6-8 |
 | P2-06 | 移动全屏播放页只有竖向手势（下滑关闭），无 §5.7 横向滑动切歌；未实机验证（无设备） | mobile_now_playing_page.dart 代码 | §5.7 |
 | P2-07 | 【已修复】设置页左侧分类导航 9 组（播放与音效/音源/下载/歌词/外观/网络/账号与集成/快捷键/关于） | linux-settings-1440x900-default.png | §7.3 |
 | P2-08 | xwayland-satellite 转发的 X 客户端 resize 触发 `Timed out waiting for OpenGL frame`，随后进程静默消失（关联 P1-05 观察）；niri IPC 与 Xvfb 路径未见 | app-run1.log + pgrep/coredump 取证 | §11 |
 | P2-09 | 队列拖动排序 / 队列内跳播：后端无对应 FfiCommand，UI 禁用并说明（不伪造）；§7.4「拖拽排序」目标待后端命令落地 | queue_panel.dart:8-10 | §7.4 |
-| P2-10 | 【Phase 2 复验轮登记，遗留 minor】曲库页快捷入口卡标签省略号截断（430 视口下「最近…/本地…/喜欢…」三列等分标签宽度不足；计数与图标不受影响） | fluttertest-library-430x932-dark-default.png（报告员目检） | §5.5 |
+| P2-10 | 【Phase 3 已关闭（2026-11-11）】曲库页快捷入口卡标签省略号截断（430 视口三列等分标签宽度不足）：`library_page.dart` `_entryCards` 加 LayoutBuilder（<512 与 `_header` compact 同阈值），窄视口改两行卡（标签独占一行 + 图标/计数次行），桌面 ≥512 单行布局零变化；修复同时暴露并修复同域潜在缺陷两处：`vx_track_row.dart`（<480 窄视口 hover 操作列不再预留 4×40px 固定宽，触屏无 hover、长按菜单为真实替代，360-430 手机档行尾溢出实测 11/23px）与 `vx_empty_state.dart`（矮槽位改「居中+可滚动」结构，chips 行挤压歌单档空态不再 RenderFlex overflow） | mobile_library_page_test.dart 2 项（360/390/430 无溢出 + TextPainter 宽度断言标签不截断）+ golden 重截 fluttertest-library-430x932-dark-default.png（临时测试用后即删零残留，目检：入口卡两行形态、标签完整、行表/chips 无溢出条纹） | §5.5 |
 
 ## P3（可选增强 / 文档债）
 
@@ -173,3 +175,14 @@
 - **P1-06 维持**：本轮全部新增手机壳/首页测试为 widget 层；§5/§10 真机项（edge-to-edge、手势导航、刘海、系统导航条）依旧未验证，不因测试全绿而改判。
 - **本轮回归**：定向 9 文件（mobile_shell / mobile_home_page / mini_player_interaction / mobile_now_playing_layout / tablet_shell / home_page / android_insets_layout / shell / chrome_theme）65 项全绿（2026-11-11 报告员实跑，含 tablet_shell 断点边界 839/840 改判与 home_page 桌面既有 6 项回归）；dart analyze 0、dart format 12 文件对齐。全量 flutter test / cargo test 由外部门禁统一执行，本轮未跑。
 - **缺陷复验轮回归（2026-11-11，Phase 2 收口轮）**：定向 7 文件（mobile_shell / mobile_home_page / mini_player_interaction / mobile_now_playing_layout / viewport_matrix / phase5_library / local_music_page）**51 项全绿**（`00:05 +51: All tests passed!`，报告员实跑），含 P1-12/P1-13 两条新增回归；`flutter build linux --release` exit 0（RUSTUP_TOOLCHAIN=1.99.0）；golden 重截 fluttertest-library-430x932-dark-default.png（临时测试用后即删，仓库零残留）。QA 复查：两条 P1 均关闭，当前无 P0/P1，遗留 minor 仅 P2-10/P3-08 两条。详见 `docs/redesign/phase-2-report.md`。
+
+## 用户实测缺陷登记（2026-11-11，用户运行当前构建实拍）
+
+证据截图：`docs/redesign/screenshots/user-feedback/2026-11-11-desktop-playerbar-fullscreen-gap.png`（红箭头指向播放栏右缘空置区；同图可见发现页 B 站歌单加载失败态四态呈现正常、千千音乐封面行真实渲染）。
+
+| 编号 | 严重程度 | 位置 | 问题 | 归属 | 建议 |
+| --- | --- | --- | --- | --- | --- |
+| P1-14 | P1 | flutter/lib/src/player/player_bar.dart（桌面全局播放栏） | 播放栏未随窗口/全屏宽度自适应：窗口拉宽或全屏时，进度条右端到右簇控件（音量/设备/歌词/队列）之间大片空置，右簇不贴右缘；用户实拍宽窗口复现 | Phase 6（§7.5 Global Player Bar） | 右簇对齐策略（Spacer/flexible）核对，全屏与窗口两种宽度各截对照图 |
+| P2-11 | P2 | 桌面 Shell 播放栏挂载层 | 播放栏常驻性：用户预期「任何时候常驻」（含无歌曲态）；§7.5 规定「无歌曲时显示合理空播放器状态，不保留不可点击的假控件」，当前实现疑似无歌曲时整条隐藏 | Phase 6（§7.5） | 落地为常驻空态（与用户预期一致）；裁决点：若产品上决定保留隐藏行为，须回指南改 §7.5 并征得用户同意 |
+
+用户原话（登记依据）：「底部的那个播放状态栏，不应该是什么时候都常驻的吗」；「全屏的时候，底部状态栏明显没有自动适应，右边空了一大截」。

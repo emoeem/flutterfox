@@ -1,0 +1,121 @@
+# Phase 3 Report（手机 Library、搜索、发现和详情）：已完成（2026-11-11 收口轮）
+
+> 分支：`feat/ui-redesign`　模板：指南 §14
+> 覆盖批次：①**实施轮**（前轮已登记 §17/04 矩阵）：搜索音源 chips 化 + 搜索历史、曲库来源筛选、三详情页下拉刷新、收藏 pending 乐观回滚、P2-10 关闭、P2-03 代码修复；②**收口轮（本报告重点）**：定向 10 文件 72 项测试全绿（报告员复跑）+ release 构建 Xvfb 实跑真实后端 4 视口截图 + 逐张 QA + P2-03 关闭。
+> 状态口径：§13 Phase 3 退出条件在 widget 测试 + 桌面真实运行截图层全部满足；**Android 真机项本批不适用（P1-06 环境阻断维持）、浅色主题、交互式运行时手操项维持「未验证」**，如实披露。
+
+## 范围
+
+§13 Phase 3 工作项 → 本批实现映射：
+
+1. **重建 Library**：曲库窄视口收口（P2-10：入口卡两行卡 + 同域两处）；来源筛选 chips 从 favorites+history+localSongs 实际派生（组合规则登记于 `library_page.dart` 注释与 `mobile_library_page_test`）。
+2. **搜索筛选、分页和状态**：音源筛选 chips 行（§5.4:355 裁决，横向 ListView）、搜索历史本地持久化（容错降级）、防抖 + requestId in-flight 锁、载/错/空/成功四态。
+3. **发现页音源与分类**：切源重载当前分类、按音源分组真实歌单卡、P2-03 末尾 right padding。
+4. **歌单/专辑/歌手详情**：三详情页下拉刷新（完成判据 = page1 响应或错误落槽，15s 超时兜底，preset 页不接）；歌单标题/计数绑定 `_playlist` 真值。
+5. **收藏、排序、更多菜单**：收藏 pending 双击在途忽略 + 失败回滚（`playlist_detail_isolation_test.dart:480/:522`）；排序与更多菜单为既有实现随页面收口（`library_page.dart:464-468` 排序弹单、`playlist_detail_page.dart:315` 更多操作），本批无专项改动。
+
+## 修改文件
+
+工作区实测（`git status --short` + `git diff --stat`，累计实施轮 + 收口轮，未提交）：
+
+- **lib 11 文件**：`app_model.dart`（+140：awaitBrowseResponse/收藏 pending/历史）、`design_system/components/vx_empty_state.dart`、`vx_track_row.dart`（P2-10 同域）、`pages/album_songs_page.dart`（+11）、`artist_detail_page.dart`（+69）、`custom_playlists_page.dart`（+25）、`discover_page.dart`（+3：P2-03 padding，:530-535）、`library_page.dart`（+280：来源筛选 chips/入口卡两行）、`playlist_detail_page.dart`（+81：下拉刷新/标题绑定）、`search_page.dart`（+271：chips/历史/四态）、`widgets/song_table_view.dart`（+17：四态）。
+- **test 6 改 1 新**：`discover_page_test.dart`（+31 切源重载）、`phase5_library_test.dart`、`playlist_detail_isolation_test.dart`（+181：下拉刷新/收藏 pending/回滚/账号歌单不分页）、`search_page_test.dart`、`search_pagination_test.dart`（+176：requestId 锁/音源 chips/历史/四态/窄视口不溢出）、`mobile_library_page_test.dart`（**新**，2 项：360/390/430 无溢出 + 来源筛选四档过滤）。
+- **docs/截图**：指南 §17、`04-defect-matrix.md`（P2-10/P2-03 关闭）、本报告、`docs/redesign/screenshots/phase-2-library/` 新增 4 张（目录名沿用 Phase 2 批次命名）。
+- **Rust 侧零改动**（FavoritePlaylistAdd/Remove 为既有命令，bridge/lib.dart:328-333）。
+
+## 关键设计决策
+
+1. **音源筛选走 chips 行而非下拉**（§5.4:355 裁决；实施轮已判定原下拉引 §4.3 属误引）：`search_page.dart:443-444` 横向 ListView，多音源横向滚动收容，右缘裁切属横滑设计行为（本轮 QA 甄别确认，测试「chips 行窄视口（430/360）不溢出」锁定）。
+2. **来源筛选组合规则从实际数据派生**：favorites+history+localSongs 出现过的源才出 chip，杜绝假数据；规则登记于代码注释与 `mobile_library_page_test.dart:160`。
+3. **下拉刷新完成判据**：`AppModel.awaitBrowseResponse` = page1 响应或错误落槽；迟到旧页经 PlaylistKey appendArmed 丢弃（与 §8.1 隔离同链路）。
+4. **收藏 pending 三态**：乐观翻转 → 成功确认走 `library` 事件真实快照（不伪造成功）、失败 `dispatchWithError` 回滚、pending 在途忽略再击；错误呈现仅全局 toast 一处（§9）。
+5. **桌面验收钩子复用**：`main.dart:134-197` VOICEFOX_START_SIZE/PAGE/TAB/DETAIL/SOURCE 注入起始页/详情/来源；本轮为允许 390 宽窗口**临时**把 `main.dart:163` `minimumSize` 560,480 改 300,400，截图后精确还原（报告员 `git diff flutter/lib/main.dart` 实测为空）。
+
+## 数据流/交互变化
+
+- 搜索：结果区四态互斥（骨架/净化错误+重试/历史空态/无结果/成功），计数 = `_items().length`（search_page.dart:485）；历史读写 shared_preferences 容错降级，记录点 = 回车/点历史项/Shell 种子。
+- 曲库：分类 chips 计数按来源过滤（library_page.dart:250-264）；歌曲 0 与「喜欢的歌曲 0」自洽，最近播放 19 为独立统计。
+- 详情页：下拉清槽重置 page1 → spinner 至 page1 落槽；收藏即时乐观态 + 真实快照确认/回滚。
+- 发现页：切音源清 `_requestedPlaylistKeys` 重发 PlaylistList（discover_page_test 新增用例锁定）；书架末尾 padding 消除末卡贴边。
+
+## 执行命令与退出码
+
+| 命令 | 退出码 | 结果 | 执行者 |
+|---|---|---|---|
+| `flutter test test/mobile_library_page_test.dart test/phase5_library_test.dart test/discover_page_test.dart test/search_page_test.dart test/search_pagination_test.dart test/playlist_detail_isolation_test.dart test/playlist_detail_page_test.dart test/artist_album_page_test.dart test/custom_playlist_page_test.dart test/push_and_favorites_test.dart`（flutter/，/home/emo/flutter/bin/flutter 3.47.9） | **0** | **`00:09 +72: All tests passed!`** | 报告员本轮实跑 |
+| `flutter test test/playlist_detail_isolation_test.dart` | **0** | **`00:03 +13: All tests passed!`** | 报告员本轮实跑 |
+| `flutter build linux --release` | 0 | bundle `build/linux/x64/release/bundle/`（07:54，voicefox_flutter + data/lib 在位，报告员 `ls` 佐证；截图 07:55-07:58 时间线衔接） | 收口轮 ask 记录 + 报告员佐证 |
+| Xvfb :99 实跑 `build/linux/x64/release/bundle/voicefox_flutter`（`env -u WAYLAND_DISPLAY LIBGL_ALWAYS_SOFTWARE=1` + VOICEFOX_START_* 钩子）→ `import -window <winid>` + magick 裁剪 | 0 | 4 张精确视口 PNG（07:55-07:58） | 收口轮 ask 记录 |
+| `git diff flutter/lib/main.dart` | 空 | minimumSize 临时改动已精确还原 | 报告员本轮实跑 |
+| dart analyze / dart format | 0 / 0 | 实施轮记录（analyze 0、6 文件规范化） | 实施轮记录（ask 提供） |
+| 全量 flutter test / cargo test / clippy | n/a | **未跑**（外部门禁统一执行，本轮已知事实「门禁全绿」；报告员未复跑全量） | 未执行 |
+
+## 测试结果（通过/失败/跳过）
+
+| 套件 | 通过 | 失败 | 跳过 | 说明 |
+|---|---|---|---|---|
+| 定向 10 文件 | **72** | 0 | 0 | 报告员本轮实跑（上表第 1 条命令），与门禁已知事实一致 |
+| 其中 playlist_detail_isolation | **13** | 0 | 0 | 单独复跑 +13 全过；含 A/B 槽隔离、同 ID 异源隔离、迟到页丢弃、错误归属、下拉刷新清槽、收藏 pending 双击忽略（:480）、失败回滚（:522），测试名逐一核对 |
+| 覆盖点（按测试名核对） | n/a | n/a | n/a | 快捷卡/分类 chips/来源筛选（mobile_library_page_test 2 项）；防抖 + 分页 in-flight 锁（requestId）+ 音源 chips + 历史 + 四态 + chips 窄视口不溢出（search_pagination_test）；切源重载（discover_page_test）；P2-10 视口回归（mobile_library_page_test:114） |
+
+## 构建结果
+
+| 目标 | 结果 |
+|---|---|
+| Linux release（`flutter build linux --release`） | exit 0（收口轮 ask 记录）；报告员佐证 bundle 07:54 在位（`build/linux/x64/release/bundle/`：voicefox_flutter 可执行 + data/flutter_assets + lib/） |
+| Android APK | **未构建**：本环境无 JDK/模拟器，ask 明确禁止 APK/Gradle 构建与 AVD 创建（P1-06 环境阻断维持）；本批 Android 项不适用（linux 截图批次） |
+
+## 设备和视口
+
+- **Xvfb :99 无 WM 受控采集**：390×844（library / search / playlist）+ 360×800（discover），`import -window` + magick 裁剪得精确视口。
+- **后端为真实 Rust 数据源**（`~/.config/voicefox/config.toml`，kw/酷狗/酷我真实联网数据，非 mock）：搜索 217 结果、酷我歌单《古风戏腔》104 首、发现页按源分组真实歌单与封面均为真实链路数据。
+- Android 真机/模拟器（§12.6 真机 13 项）：**未验证**（P1-06 维持）。
+
+## 截图路径
+
+`docs/redesign/screenshots/phase-2-library/`（目录名沿用 Phase 2 批次命名，实测仅此 4 文件，全部深色主题）：
+
+- `linux-library-390x844-songs.png`：我的音乐（快捷卡 19/0/0、分类 chips、本地/网易云/QQ 分段、来源筛选 chips、真实空态）。
+- `linux-search-390x844-results.png`：搜索「周杰伦」217 结果（类型/音源 chips、行来源徽标与时长）。
+- `linux-playlist-390x844-detail.png`：酷我歌单《古风戏腔》详情（104 首·总时长 400 分钟、曲目列表）。
+- `linux-discover-360x800-default.png`：发现页按源分组（酷我/酷狗真实歌单卡与封面）。
+
+## 视觉 QA 结果
+
+**QA 结论（收口轮 ask 记录）+ 报告员本轮 Read 目检 4 张 PNG 复核一致：**
+
+1. **4 张均正常渲染**：无白屏 / overflow / 遮挡 / 封面错图（逐张 + 局部放大复核）。
+2. **跨页一致**：discover「古风戏腔 104 首歌曲·酷我」↔ playlist 详情同封面同来源；返回条完整显示全标题「古风戏腔丨一曲舞霓裳清影醉红颜」（报告员目检确认，Hero 大标题截断为设计内 maxLines）。
+3. **search「网易云」chip 右缘裁切**：经 `search_page.dart:443-444` 确认为横向滚动 ListView 属设计行为（library 来源 chips 同理）。
+4. **library 空态**：图标放大复核为 `Icons.music_off_outlined` 正常渲染（`song_table_view.dart:181`），文案「在搜索页点击心形把歌曲收进来」与 `library_page.dart:569` 逐字一致。
+5. **数据抽查 3 处全部一致**（代码行报告员实读核实）：① 歌单详情标题绑定 `_playlist.name` +「104 首·总时长 400 分钟」只计已载入曲目（playlist_detail_page.dart:234-241,253-258）；② 曲库 tab 计数按来源过滤（library_page.dart:250-264）；③「找到 217 个结果」= `_items().length`（search_page.dart:485），四态齐全（search_page.dart:495-519 骨架/净化错误+重试/空态/成功；歌单详情经 song_table_view.dart:155-185）。
+6. 报告员目检备注：search 390 行封面为占位形态（5sing 行），属无封面 URL 时的 fallback，非错图，不影响 QA 结论。
+
+## 新增/关闭缺陷
+
+- **关闭（本批累计）**：P2-10（实施轮：入口卡两行卡 + vx_track_row/vx_empty_state 同域两处）、**P2-03（收口轮：代码 diff discover_page.dart:530-535 + 实机 linux-discover-360x800-default.png 复验 + QA 逐张复核；横滑到末尾的末态未单独手势演练，由末尾 padding 语义结构性保证，04 矩阵如实标注）**。
+- **仍开放**：P0-01（概率性未复现未定位）、P1-05、P1-06（Android 环境阻断）、P2-02/04/05/06/08/09/11、P1-14（Phase 6 归属）、P3-02/04/05/06/07/08。
+- **无新增缺陷登记**；Rust 侧零改动。
+
+## 未解决问题和原因
+
+1. **Android 真机/模拟器**：未验证（无 JDK，按 ask 禁止 APK/Gradle 构建与 AVD 创建；P1-06 维持）。以 72 项针对性 widget 测试 + 桌面窗口移动视口为证据。
+2. **交互式运行时手操未逐一演练**（桌面实跑仅验证静态画面状态）：搜索防抖 250-350ms 实际毫秒计时、触底分页/下拉刷新手势、音源切换即时重载、收藏 pending 回滚的桌面手动操作；由针对性测试覆盖（playlist_detail_isolation_test / search_pagination_test / discover_page_test 用例名核对）。
+3. **浅色主题**：本批 4 张全部深色，浅色对比度无本批素材（归 Phase 7）。
+4. **「总时长 400 分钟」**：真实酷我数据，仅验证计算路径（playlist_detail_page.dart:253-258）未逐曲重算。
+5. **golden 基线比对未执行**：本批未跑 golden 变更，仅确认现有断言通过。
+6. **全量门禁未由报告员复跑**：外部门禁统一执行（已知事实「门禁全绿」）。
+7. **操作事件披露**：调试 niri IPC 时误触发一次系统截图交互选区 UI（`{"Action":"Screenshot"}`），如残留在用户屏幕请按 Esc 关闭。
+
+## 下一阶段进入条件
+
+§13 Phase 3 退出条件逐条核对：
+
+| 条件 | 状态 |
+|---|---|
+| 每个详情对应正确数据 | ✅ 数据抽查 3 处（标题/计数/时长绑定真实 `_playlist` 值）+ 实机 4 视口真实后端截图 |
+| 不同歌单切换测试全通过 | ✅ `playlist_detail_isolation_test.dart` **13/13**（报告员本轮实跑 `00:03 +13: All tests passed!`） |
+| 空/错/载/成功四态齐全 | ✅ search_page.dart:495-519 + song_table_view.dart:155-185 + search_pagination_test 四态用例 |
+
+- **Phase 4（播放器和移动端系统媒体体验）可进入。**
+- 跨阶段遗留不阻塞：P0-01 定位（长时间会话验收前必须）、P1-05 同域跟进、P1-06 环境补齐、浅色主题走查归 Phase 7。
