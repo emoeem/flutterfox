@@ -3,13 +3,15 @@
 /// - 音源筛选器（全部/单源）切换后 Tab 可用集合变化；
 /// - 「全部音源」聚合：多音源分组展示，卡片带来源标识；
 /// - 不支持的数据类型显示解释文案（不伪造数据）；
-/// - 排行榜 Tab 渲染真实榜单行。
+/// - 排行榜 Tab 渲染真实榜单行；
+/// - 精选歌单载入骨架与错误态+重试（四态契约之载/错态）。
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicefox_flutter/src/app_model.dart';
 import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
+import 'package:voicefox_flutter/src/design_system/components/vx_loading_skeleton.dart';
 import 'package:voicefox_flutter/src/pages/discover_page.dart';
 
 /// 记录派发命令的测试模型（不起 Rust 控制器）。
@@ -289,5 +291,57 @@ void main() {
         .toList();
     expect(reloaded, isNotEmpty, reason: '切音源必须重新加载数据（§5.3）');
     expect(reloaded.last.source, 'tx');
+  });
+
+  testWidgets('精选歌单加载中：postFrame 派发加载后展示骨架屏（四态之载入态）', (tester) async {
+    final model = _RecordingModel();
+    model.debugSetSources([_source('wy', '网易云', playlists: true)]);
+    await _pumpDiscover(tester, model);
+
+    // 加载确已派发且槽在途（无控制器、事件不回，骨架保持）。
+    expect(
+      model.commands.whereType<bridge.FfiCommand_PlaylistList>().map(
+        (c) => c.source,
+      ),
+      ['wy'],
+    );
+    // discover_page.dart:496-504：槽未落数据 → VxLoadingSkeleton.tracks(2)。
+    expect(find.byType(VxLoadingSkeleton), findsWidgets);
+  });
+
+  testWidgets('精选歌单加载失败：展示错误态与重试，重试重新派发加载（四态之错误态）', (tester) async {
+    final model = _RecordingModel();
+    model.debugSetSources([_source('wy', '网易云', playlists: true)]);
+    await _pumpDiscover(tester, model);
+
+    model.debugBrowseLoaded(
+      kind: 'playlists',
+      source: 'wy',
+      id: '',
+      message: '网络不可用',
+      failed: true,
+    );
+    await tester.pump();
+
+    // discover_page.dart:505-518：VxErrorState 标题/原因/detail + 重试。
+    expect(find.text('歌单加载失败'), findsOneWidget);
+    expect(find.text('无法读取「网易云」的推荐歌单。'), findsOneWidget);
+    expect(find.text('网络不可用'), findsOneWidget);
+    expect(find.text('重试'), findsOneWidget);
+
+    // 重试：清请求键重发 PlaylistList，回到骨架加载态。
+    model.commands.clear();
+    await tester.tap(find.text('重试'));
+    await tester.pump();
+
+    expect(
+      model.commands.whereType<bridge.FfiCommand_PlaylistList>().map(
+        (c) => c.source,
+      ),
+      ['wy'],
+      reason: '重试必须重新派发歌单加载（§7.1 可恢复操作）',
+    );
+    expect(find.text('歌单加载失败'), findsNothing);
+    expect(find.byType(VxLoadingSkeleton), findsWidgets);
   });
 }

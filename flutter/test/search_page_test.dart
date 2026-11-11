@@ -1,5 +1,6 @@
 /// Phase 4 搜索页测试：
-/// - 300ms 防抖（输入后立即无派发、300ms 后一次派发）；
+/// - 300ms 防抖（输入后立即无派发、300ms 后一次派发；fake-time 窗口紧界
+///   250/350）；
 /// - seedKeyword 构造即搜索（Shell Ctrl+K 通道）；
 /// - 行交互：单击选中、Ctrl 切换多选、Shift 范围多选、Enter 播放选中项、
 ///   双击播放；
@@ -103,6 +104,36 @@ void main() {
     expect(searches, hasLength(1));
     expect(searches.single.keyword, '夜航');
     expect(searches.single.source, isNull, reason: '默认聚合搜索');
+  });
+
+  testWidgets('防抖窗口紧界：250ms 未派发、300ms 恰好一次、350ms 无二次派发', (tester) async {
+    // 硬编码 300 与 search_page.dart `_SearchPageState.debounceMs`（库内私有
+    // static const，测试无法引用）为锁定耦合：调整常量须同步本用例与上方
+    // 防抖用例两处硬编码。fake-time 虚拟时钟只锁常量值，不构成实机毫秒计时。
+    final model = _RecordingModel();
+    await _pumpSearch(tester, model);
+
+    await tester.enterText(find.byType(TextField), '夜航');
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(
+      model.commands.whereType<bridge.FfiCommand_Search>(),
+      isEmpty,
+      reason: '250ms（窗口下界）不应派发搜索',
+    );
+
+    await tester.pump(const Duration(milliseconds: 50));
+    final atDebounce = model.commands
+        .whereType<bridge.FfiCommand_Search>()
+        .toList();
+    expect(atDebounce, hasLength(1), reason: '300ms（= debounceMs）恰好一次');
+    expect(atDebounce.single.keyword, '夜航');
+
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(
+      model.commands.whereType<bridge.FfiCommand_Search>(),
+      hasLength(1),
+      reason: '350ms（窗口上界）无二次派发',
+    );
   });
 
   testWidgets('seedKeyword：构造即触发一次搜索（Ctrl+K 通道）', (tester) async {

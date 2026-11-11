@@ -4,7 +4,8 @@
 ///   mobile_shell_test 覆盖，两口径覆盖面不同）；
 /// - 入口卡 + 来源 chips 渲染、chips 计数随数据派生、无横向溢出；
 /// - 来源筛选在歌曲/专辑/歌手/歌单四档生效且计数同步（§5.5）；
-/// - P2-10 回归：430 视口快捷入口卡标签完整渲染，不触发省略号截断。
+/// - P2-10 回归：430 视口快捷入口卡标签完整渲染，不触发省略号截断；
+/// - 本地收藏 Empty 态：无收藏展示「还没有收藏」引导（四态契约之空态）。
 library;
 
 import 'package:flutter/material.dart';
@@ -198,5 +199,18 @@ void main() {
     await tester.pump();
     expect(find.text('收藏歌单（2）'), findsOneWidget);
     expect(find.text('自建一'), findsOneWidget);
+  });
+
+  testWidgets('本地收藏 Empty 态：无收藏展示「还没有收藏」引导文案', (tester) async {
+    final model = _seededModel();
+    model.debugSetFavorites([]);
+    await _pumpLibrary(tester, model, const Size(390, 844));
+
+    // 空态标题/副标题与 library_page.dart:568-569 逐字一致
+    //（经 song_table_view.dart:180-184 EmptyState 渲染）。
+    expect(find.text('还没有收藏'), findsOneWidget);
+    expect(find.text('在搜索页点击心形把歌曲收进来'), findsOneWidget);
+    // 空态不渲染任何歌曲行。
+    expect(find.text('酷狗歌A'), findsNothing);
   });
 }

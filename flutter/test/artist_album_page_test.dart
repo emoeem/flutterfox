@@ -130,4 +130,31 @@ void main() {
     expect(find.text('专辑暂无曲目'), findsOneWidget);
     expect(find.text('暂无可播放曲目'), findsOneWidget);
   });
+
+  testWidgets('专辑页加载失败展示错误态与重试', (tester) async {
+    final model = AppModel();
+    await tester.pumpWidget(MaterialApp(home: AlbumSongsPage(model, _album)));
+    await tester.pump();
+    expect(find.text('加载中…'), findsOneWidget);
+
+    model.debugBrowseLoaded(
+      kind: 'album_songs',
+      source: 'kw',
+      id: '专辑',
+      message: '网络不可用',
+      failed: true,
+    );
+    await tester.pump();
+
+    // song_table_view.dart:165-177：错误 EmptyState + 重试按钮。
+    expect(find.text('加载失败'), findsOneWidget);
+    expect(find.text('网络不可用'), findsOneWidget);
+    expect(find.text('重试'), findsOneWidget);
+
+    // 重试 → _reload → loadAlbumSongs → 槽 loading：回到「加载中…」。
+    await tester.tap(find.text('重试'));
+    await tester.pump();
+    expect(find.text('加载中…'), findsOneWidget);
+    expect(find.text('加载失败'), findsNothing);
+  });
 }

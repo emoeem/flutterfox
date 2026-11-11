@@ -78,4 +78,49 @@ void main() {
 
     expect(find.text('镜像红心曲目'), findsOneWidget);
   });
+
+  testWidgets('红心镜像加载中：切镜像平台先展示进度指示（四态之载入态）', (tester) async {
+    final model = AppModel();
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LibraryPage(model))),
+    );
+    await tester.pumpAndSettle();
+
+    // 切镜像视图：loadAccountFavorites 同步 beginBrowse（槽 loading=true），
+    // 无控制器事件不回 → library_page.dart:572-574 渲染进度指示。
+    await tester.tap(find.text('网易云'));
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('红心镜像读取失败：展示错误态与重试，重试回到加载态（四态之错误态）', (tester) async {
+    final model = AppModel();
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LibraryPage(model))),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('网易云'));
+    await tester.pump();
+    model.debugBrowseLoaded(
+      kind: AppModel.accountFavoritesKind,
+      source: 'wy',
+      id: 'favorites',
+      message: '网络不可用',
+      failed: true,
+    );
+    await tester.pump();
+
+    // library_page.dart:576-584：VxEmptyState 错误态（原因 + 重试动作）。
+    expect(find.text('红心镜像读取失败'), findsOneWidget);
+    expect(find.text('网络不可用'), findsOneWidget);
+    expect(find.text('重试'), findsOneWidget);
+
+    // 重试 → loadAccountFavorites → 槽 loading：错误态收起、spinner 回归。
+    await tester.tap(find.text('重试'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('红心镜像读取失败'), findsNothing);
+  });
 }
