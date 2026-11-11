@@ -170,6 +170,37 @@ void main() {
       expect(find.byType(MiniPlayerBar), findsOneWidget);
     });
 
+    testWidgets('系统返回（PopScope）：全屏打开时返回先退全屏而非退壳', (tester) async {
+      _setSize(tester, const Size(390, 844));
+      final model = AppModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+        positionMs: 42000,
+        durationMs: 244000,
+      );
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+
+      nowPlayingRequest.value = true;
+      await tester.pumpAndSettle();
+      expect(find.byType(MobileNowPlayingPage), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      // 系统返回路径（顶栏 arrow_back 之外的另一半契约）：PopScope
+      // canPop=!nowPlayingOpen，全屏时返回先退全屏。
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(MobileNowPlayingPage), findsNothing);
+      // 区分「退全屏」与「整路由被弹」：壳目的地导航与迷你播放栏仍在树。
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(MiniPlayerBar), findsOneWidget);
+      expect(find.text('夜航'), findsWidgets);
+    });
+
     testWidgets('窄视口曲库布局：标题单行不折行、各档工具条无横向溢出（Phase 2 QA P1 回归）', (tester) async {
       for (final size in const [
         Size(430, 932), // 缺陷证据视口（fluttertest-library-430x932）。

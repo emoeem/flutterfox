@@ -23,6 +23,7 @@ import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
 import 'package:voicefox_flutter/src/player/lyrics_panel.dart';
 import 'package:voicefox_flutter/src/player/mobile_now_playing_page.dart';
 import 'package:voicefox_flutter/src/player/now_playing_page.dart';
+import 'package:voicefox_flutter/src/player/progress_control.dart';
 import 'package:voicefox_flutter/src/player/queue_panel.dart';
 
 class _RecordingModel extends AppModel {
@@ -415,6 +416,89 @@ void main() {
       );
       // 有时间戳时不出现门槛说明。
       expect(find.text('本曲歌词无时间戳，不支持点击跳转'), findsNothing);
+    });
+  });
+
+  group('LiveSeekRow 拖动 seek 契约（§5.1 点按/拖动真实 seek）', () {
+    testWidgets('有 duration：横拖到中点派发真实 seekMs 目标值', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+        positionMs: 0,
+        durationMs: 244000,
+      );
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+
+      final bar = find
+          .descendant(
+            of: find.byType(LiveSeekRow),
+            matching: find.byType(GestureDetector),
+          )
+          .last;
+      final rect = tester.getRect(bar);
+      // fraction 分母是 LiveSeekRow 的行宽（外层 LayoutBuilder，含两侧
+      // 时间标签），非拖拽条宽：拖行宽一半即 0.5 相位 → 122000ms。
+      final rowWidth = tester
+          .getSize(
+            find
+                .descendant(
+                  of: find.byType(LiveSeekRow),
+                  matching: find.byType(LayoutBuilder),
+                )
+                .first,
+          )
+          .width;
+      await tester.dragFrom(
+        Offset(rect.left, rect.center.dy),
+        Offset(rowWidth / 2, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        model.commands.where(
+          (c) => c == bridge.FfiCommand.seekMs(BigInt.from(122000)),
+        ),
+        hasLength(1),
+        reason: '拖动到中点必须派发 244000×0.5=122000ms 的真实 seekMs',
+      );
+    });
+
+    testWidgets('无 duration：手势禁用不派发 seekMs，右标签如实显 --:--', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+        positionMs: 0,
+        durationMs: 0,
+      );
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+
+      // 时长读不到（durationMs=0）显 --:--（P0-F1），不伪造 00:00。
+      expect(find.text('--:--'), findsOneWidget);
+
+      final bar = find
+          .descendant(
+            of: find.byType(LiveSeekRow),
+            matching: find.byType(GestureDetector),
+          )
+          .last;
+      await tester.drag(bar, const Offset(120, 0));
+      await tester.pumpAndSettle();
+
+      expect(
+        model.commands.where((c) => c == bridge.FfiCommand.seekMs(BigInt.zero)),
+        isEmpty,
+        reason: '无 duration 手势回调全 null，不得派发 seekMs',
+      );
     });
   });
 }
