@@ -649,6 +649,23 @@ pub struct PushReportDto {
     pub failed: Vec<String>,
 }
 
+/// 本地扫描统计（§5.10 流程 5：新增/复用/失败/跳过/移除）。
+#[derive(Debug, Clone)]
+pub struct ScanStatsDto {
+    /// 本次发现的全部音频/CUE 文件数。
+    pub discovered: u32,
+    /// 指纹命中直接复用的歌曲数（未重新解析标签）。
+    pub reused: u32,
+    /// 本次实际解析入库的歌曲数（新增）。
+    pub parsed: u32,
+    /// 解析失败的文件数（重扫即重试，失败不回滚其余结果）。
+    pub failed: u32,
+    /// 已消失文件的记录数。
+    pub removed: u32,
+    /// 扩展名不属于音频/CUE 而被跳过的文件数（「无音频文件」）。
+    pub skipped: u32,
+}
+
 #[derive(Debug, Clone)]
 pub struct VoicefoxEvent {
     pub kind: String,
@@ -670,6 +687,10 @@ pub struct VoicefoxEvent {
     pub status: Option<String>,
     pub user_name: Option<String>,
     pub warnings: Vec<String>,
+    /// 本地扫描统计（kind == "local_music" 且未取消时携带）。
+    pub scan_stats: Option<ScanStatsDto>,
+    /// 本地扫描是否被用户取消（取消的扫描不提交，stats 为空）。
+    pub scan_cancelled: bool,
     pub config: Option<ConfigDto>,
     // ── 浏览数据面（kind == "browse"）──
     pub browse_kind: Option<String>,
@@ -730,6 +751,8 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             status: None,
             user_name: None,
             warnings: vec![],
+            scan_stats: None,
+            scan_cancelled: false,
             config: None,
             browse_kind: None,
             source: None,
@@ -828,9 +851,22 @@ impl From<ApplicationEvent> for VoicefoxEvent {
                 event.keyword = Some(source.as_str().to_string());
                 event
             }
-            ApplicationEvent::LocalScanCompleted { warnings } => {
+            ApplicationEvent::LocalScanCompleted {
+                warnings,
+                stats,
+                cancelled,
+            } => {
                 let mut event = empty();
                 event.warnings = warnings;
+                event.scan_cancelled = cancelled;
+                event.scan_stats = stats.map(|stats| ScanStatsDto {
+                    discovered: stats.discovered as u32,
+                    reused: stats.reused as u32,
+                    parsed: stats.parsed as u32,
+                    failed: stats.failed as u32,
+                    removed: stats.removed as u32,
+                    skipped: stats.skipped as u32,
+                });
                 event
             }
             ApplicationEvent::ConfigChanged { config } => {
@@ -1394,6 +1430,15 @@ pub enum FfiCommand {
     DownloadCancel {
         id: u64,
     },
+    DownloadPause {
+        id: u64,
+    },
+    DownloadResume {
+        id: u64,
+    },
+    DownloadDeleteFile {
+        id: u64,
+    },
     DownloadClearFinished,
     // ── 扫码登录 ──
     QrLoginStart {
@@ -1406,6 +1451,7 @@ pub enum FfiCommand {
         paths: Vec<String>,
         max_depth: u32,
     },
+    LocalScanCancel,
     // ── 账号歌单镜像 / 同步 ──
     AccountPlaylists {
         source: String,
@@ -1582,6 +1628,9 @@ impl FfiCommand {
                 song: song.into_song()?,
             },
             FfiCommand::DownloadCancel { id } => ApplicationCommand::DownloadCancel { id },
+            FfiCommand::DownloadPause { id } => ApplicationCommand::DownloadPause { id },
+            FfiCommand::DownloadResume { id } => ApplicationCommand::DownloadResume { id },
+            FfiCommand::DownloadDeleteFile { id } => ApplicationCommand::DownloadDeleteFile { id },
             FfiCommand::DownloadClearFinished => ApplicationCommand::DownloadClearFinished,
             FfiCommand::QrLoginStart { source, kind } => ApplicationCommand::QrLoginStart {
                 source: parse_source(&source)?,
@@ -1594,6 +1643,7 @@ impl FfiCommand {
             FfiCommand::LocalScan { paths, max_depth } => {
                 ApplicationCommand::LocalScan { paths, max_depth }
             }
+            FfiCommand::LocalScanCancel => ApplicationCommand::LocalScanCancel,
             FfiCommand::AccountPlaylists { source } => ApplicationCommand::AccountPlaylists {
                 source: parse_source(&source)?,
             },

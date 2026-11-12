@@ -199,7 +199,7 @@ impl ApplicationRuntime {
         player.set_volume(config.player.volume);
         player.set_playback_speed(config.player.playback_speed);
         player.set_audio_output_device(&config.player.audio_device);
-        let sources = Arc::new(SourceManager::new(
+        let sources = Arc::new(SourceManager::with_persistent_local(
             config.source.default,
             &config.source.enabled,
         ));
@@ -354,6 +354,17 @@ impl voicefox_application::DownloadsEngine for RuntimeDownloads {
     fn cancel(&self, id: u64) {
         self.manager.cancel(id)
     }
+    fn pause(&self, id: u64) {
+        self.manager.pause(id)
+    }
+    fn resume(&self, id: u64, sources: &Arc<lx_source::manager::SourceManager>) -> bool {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        tokio::spawn(async move { while rx.recv().await.is_some() {} });
+        self.manager.resume(id, Arc::clone(sources), tx)
+    }
+    fn delete_file(&self, id: u64) -> bool {
+        self.manager.delete_file(id)
+    }
     fn clear_finished(&self) {
         self.manager.clear_finished()
     }
@@ -369,7 +380,10 @@ impl voicefox_application::DownloadsEngine for RuntimeDownloads {
                 quality: task.quality,
                 dest: task.dest.display().to_string(),
                 song: task.song,
-                state: task.state.label().to_string(),
+                // 机读状态键（queued/downloading/done/…）：GUI 分组与文案
+                // 都按这个键匹配；人类可读中文由 Dart 侧映射，TUI 继续用
+                // label()。历史上这里发中文 label，Dart 匹配英文键全部落空。
+                state: task.state.code().to_string(),
                 active: task.state.is_active(),
                 downloaded: task.progress.downloaded,
                 total: if task.progress.total > 0 {

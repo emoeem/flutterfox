@@ -60,13 +60,20 @@ pub async fn spawn_test_server(
                     let _ = stream.shutdown().await;
                     return;
                 }
+                // Range 解析支持开放末端 `bytes=N-`（断点续传请求形态）：
+                // end 缺省按「到文件尾」处理。
                 let range = request
                     .lines()
                     .find(|line| line.to_ascii_lowercase().starts_with("range:"))
                     .and_then(|line| line.split_once('='))
                     .and_then(|(_, value)| value.trim().split_once('-'))
                     .and_then(|(start, end)| {
-                        Some((start.parse::<usize>().ok()?, end.parse::<usize>().ok()?))
+                        let start = start.trim().parse::<usize>().ok()?;
+                        let end = match end.trim() {
+                            "" => body.len().checked_sub(1)?,
+                            value => value.parse::<usize>().ok()?,
+                        };
+                        Some((start, end))
                     });
                 let response = match range {
                     // 严格分片模式：只放行不超过上限的有界 Range。

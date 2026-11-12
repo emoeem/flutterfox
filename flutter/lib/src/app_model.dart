@@ -118,6 +118,12 @@ class AppModel extends ChangeNotifier {
   String? qrUser;
   List<String> scanWarnings = [];
   bool scanningLocal = false;
+
+  /// 最近一次扫描统计（§5.10 流程 5）；取消的扫描为 null（不提交旧值）。
+  bridge.ScanStatsDto? scanStats;
+
+  /// 最近一次扫描是否被用户取消（统计条切换「已取消」文案用）。
+  bool scanCancelled = false;
   bridge.ConfigDto? _cachedConfig;
 
   /// 新建自建歌单的应答等待者：key = 歌单名（存储层保证唯一）。
@@ -307,6 +313,10 @@ class AppModel extends ChangeNotifier {
       case 'local_music':
         scanWarnings = event.warnings;
         scanningLocal = false;
+        // 取消的扫描未提交：Rust 侧 scan_stats 还是上一次的旧值，
+        // 事件 stats 为 null——清空统计条而不是展示旧数据。
+        scanCancelled = event.scanCancelled;
+        scanStats = event.scanCancelled ? null : event.scanStats;
         unawaited(_refreshState());
       case 'browse':
         _applyBrowseEvent(event);
@@ -438,6 +448,8 @@ class AppModel extends ChangeNotifier {
     if (targetPaths.isEmpty) return Future.value();
     scanningLocal = true;
     scanWarnings = const [];
+    scanStats = null;
+    scanCancelled = false;
     notifyListeners();
     return dispatch(
       bridge.FfiCommand.localScan(
@@ -446,6 +458,22 @@ class AppModel extends ChangeNotifier {
       ),
     );
   }
+
+  /// 取消进行中的本地扫描：本次结果不提交，已入库歌曲保持不变。
+  Future<void> cancelScan() =>
+      dispatch(const bridge.FfiCommand.localScanCancel());
+
+  /// 暂停下载任务（引擎在下一个检查点停下，保留已写入的部分）。
+  Future<void> downloadPause(BigInt id) =>
+      dispatch(bridge.FfiCommand.downloadPause(id: id));
+
+  /// 继续暂停的下载任务（同源做 Range 续传，不同源整体重下）。
+  Future<void> downloadResume(BigInt id) =>
+      dispatch(bridge.FfiCommand.downloadResume(id: id));
+
+  /// 删除已完成任务的本地文件并清除下载记录（UI 层先二次确认）。
+  Future<void> downloadDeleteFile(BigInt id) =>
+      dispatch(bridge.FfiCommand.downloadDeleteFile(id: id));
 
   /// 能力位查询；快照尚未加载时按“不支持”处理，避免入口闪现已失败的页面。
   bridge.SourceCapabilitiesDto? capability(String source) {
@@ -1113,15 +1141,21 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 测试钩子：模拟扫描结束（含警告）。
+  /// 测试钩子：模拟扫描结束（含警告与统计；cancelled 模拟取消事件）。
+  /// 取消事件不改快照——与生产一致：取消的扫描不提交，localSongs 不变。
   @visibleForTesting
   void debugCompleteLocalScan({
     List<bridge.SongDto> songs = const [],
     List<String> warnings = const [],
+    bridge.ScanStatsDto? stats,
+    bool cancelled = false,
   }) {
     scanningLocal = false;
     scanWarnings = warnings;
-    _replaceState(localSongs: songs);
+    scanCancelled = cancelled;
+    scanStats = cancelled ? null : stats;
+    if (!cancelled) _replaceState(localSongs: songs);
+    notifyListeners();
   }
 
   /// 测试钩子：直接走一次事件处理（构造 VoicefoxEvent 需要 20+ 字段，
@@ -1135,6 +1169,7 @@ class AppModel extends ChangeNotifier {
         page: 0,
         append: false,
         hasMore: false,
+        scanCancelled: false,
         message: message,
         items: const [],
         queue: const [],
@@ -1167,6 +1202,15 @@ class AppModel extends ChangeNotifier {
     _beginBrowse(kind, source, id, append: append);
   }
 
+  /// 测试钩子：拦截下发的命令（不起 Rust 控制器）；null 恢复生产链路。
+  Future<void> Function(bridge.FfiCommand command)? _commandInterceptor;
+
+  /// 测试钩子：注入命令拦截器；传 null 复位。
+  @visibleForTesting
+  void debugSetDispatcherForTest(
+    Future<void> Function(bridge.FfiCommand command)? interceptor,
+  ) => _commandInterceptor = interceptor;
+
   /// 测试钩子：直接注入一次浏览结果，避免起 Rust 控制器。
   @visibleForTesting
   void debugBrowseLoaded({
@@ -1191,6 +1235,7 @@ class AppModel extends ChangeNotifier {
         append: page > 1,
         hasMore: hasMore,
         message: message,
+        scanCancelled: false,
         items: songs,
         queue: const [],
         queueIndex: 0,
@@ -1228,6 +1273,12 @@ class AppModel extends ChangeNotifier {
 
   /// 下发命令并返回错误文本（成功为 null）；`dispatch` 的静默版本。
   Future<String?> _sendCommand(bridge.FfiCommand command) async {
+    // 测试钩子：不起 Rust 控制器，只记录下发的命令（页面级命令链路验证）。
+    final interceptor = _commandInterceptor;
+    if (interceptor != null) {
+      await interceptor(command);
+      return null;
+    }
     final controller = _controller;
     if (controller == null) return '控制器尚未连接';
     try {

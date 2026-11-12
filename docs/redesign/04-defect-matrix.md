@@ -11,6 +11,7 @@
 - 更新（2026-11-12 Phase3-QA1 修复轮）：**P0 四态证据缺口补齐**（QA 视觉轮按本轮证据规则「测试缺失或未实跑 = P0」登记：曲库本地收藏空态「还没有收藏」test/ 全目录 grep 0 命中、红心镜像载入/错误+重试（library_page.dart:573-584）零断言、发现页骨架与「歌单加载失败」（discover_page.dart:496-518）零断言、专辑页错误态零断言）：补 6 条 widget 断言，曲库空态（mobile_library_page_test +1）、红心镜像载入态/错误态+重试（push_and_favorites_test +2，重试断言回到载入态）、发现页载入骨架/歌单错误+重试（discover_page_test +2，重试断言重新派发 PlaylistList）、专辑页错误+重试（artist_album_page_test +1）；定向 10 文件复跑 **79 项全绿**（`00:12 +79: All tests passed!` exit 0）+ dart format 4 文件（1 changed）+ dart analyze 0（`No issues found!`）；§13 Phase 3 退出条件「空/错/载/成功四态齐全」证据面由 search 四态用例扩展至曲库/发现/专辑（对照成立部分维持：search_pagination_test.dart:364、playlist_detail_page_test.dart:53/:81、playlist_detail_isolation_test.dart:409、custom_playlist_page_test.dart:108）。**同轮登记 4 张 Phase 3 证据截图重截**（QA 视觉轮发现复验轮重截未登记）：linux-{library-390x844-songs,search-390x844-results,playlist-390x844-detail,discover-360x800-default}.png mtime `stat` 实测 2026-11-12 03:23:45-03:25:31（+0800），归属复验轮批次，同管道同状态仅真实数据漂移（搜索 love/256 结果、快捷卡 22/0/0）；对照本矩阵 04:107 先例（无声替换判 P0）本案非证据质量劣化，判 P1 登记即关闭；phase-3-report.md 逐张 Read 目检复核（无白屏/overflow/遮挡，104 首·酷我跨页一致仍成立）并同步四处口径（勘误节 + 设备视口节 + 截图路径节 + 视觉 QA 第 5 条）。Rust 零改动。
 - 更新（2026-11-12 Phase3-QA 复查轮，修复验证与重截）：QA1 轮两条登记均经本轮复查确认关闭。**P0（四态证据缺口）关闭**：6 条 widget 断言全部在位（报告员 `git diff` 逐名核对：曲库本地收藏空态「还没有收藏」、红心镜像载入态/错误态+重试回载入态、发现页载入骨架/歌单错误+重试重新派发 PlaylistList、专辑页错误+重试回「加载中…」），定向 10 文件 79 项全绿双实跑（QA 独立 `00:10 +79: All tests passed!` exit 0，ask 记录；报告员复跑 `00:14 +79` exit 0；4 改动文件 24 项双实跑：实施者 `00:02 +24`、报告员 `00:05 +24`），§13「四态齐全」证据面扩展至曲库/发现/专辑；**P1（4 张证据截图重截未登记）关闭**：phase-3-report.md 勘误节登记（mtime/归属/非劣化判定）+ 四处口径同步（love/256、快捷卡 22/0/0）+ 本矩阵与指南 §17 同步。同轮：release 重建 exit 0（`✓ Built bundle/voicefox_flutter`，03:52:19 在位；lib/ 零改动内容等价重建，`git diff HEAD -- flutter/lib` 实测空）+ Xvfb :99 受影响视口（曲库/发现/专辑，对应四个被改测试文件的页面）重截 3 张（library 03:52:44/discover 03:53:09/album 03:56:16 新增；数据全真实：专辑 20/歌手 17/最近播放 22 首、酷我/酷狗真实分类与封面；search/playlist 03:24 版本未动）逐张 Read 目检通过：专辑详情为真实错误态+重试实拍（九点九/Aling贝多/千千音乐真实封面，操作钮明确禁用，§9 符合）。**登记未验证**：专辑详情成功态（曲目列表渲染）实机未取得，种子路径 5 次尝试均未成功（登记在案返回：kw 源真实「加载失败 not found」×2、wy 落汽水音乐「该音源不支持专辑」×1），疑真实音源数据缺口或种子源映射问题，保留真实错误态+重试为证（即新增断言对象）；VOICEFOX_START_SOURCE 专辑种子疑似未生效（SOURCE=kw→千千音乐徽标、SOURCE=wy→汽水音乐徽标），仅登记观察未判缺陷未修。残留 minor 4 条：第 5 张专辑截图上轮未登记（报告本轮补登记）且「仅此 4 文件」口径失实（已同步）、QA1 勘误 mtime 对 library/discover 2 张过期（本轮重截所致）、专辑错误态直出原始「not found」串可读性、bottom inset 未断言。进程清理复核（报告员 pgrep）：无 :99/voicefox 残留（仅存并行会话 Xvfb :3 非本轮产物）。Rust 零改动。
 - 更新（2026-11-12 Phase 4 收口轮）：**P1-15 登记并关闭**（网易系封面 CDN 封杀 Dart 默认 UA，全屏播放页大封面 403 灰占位；修复 + 根因双向实锤 + 回归 + 实机重截四重核实，见 P1 节）。报告员实跑（本轮）：定向 5 文件 **56 项全绿**（`flutter test test/cover_image_headers_test.dart test/voicefox_audio_handler_test.dart test/mobile_now_playing_test.dart test/mobile_shell_test.dart test/now_playing_test.dart --reporter compact`，`00:08 +56: All tests passed!` exit 0；逐文件 12+8+14+9+13 与 grep 声明数吻合）+ 2 文件修复验证 **26 项全绿**（`00:04 +26` exit 0）；根因独立复跑：同一封面 URL（/tmp/p4/verify_run3.log:76 实取 `p2.music.126.net/…/109951173908998514.jpg`）Dart UA 403 text/html 146B、voicefox UA 200 image/jpg 602586B（magick identify JPEG 3000x3000），与 Phase4-QA1 实锤一致；debug 重建 exit 0（bundle 06:22 在位，早于 06:24-06:25 重截）；Xvfb :101 600x900（:99 被并行 actor 1200x1600 占用，pgrep 复测在位）真实 kw/wy 在线播放重截受影响视口 3 张逐张 Read 目检通过（大封面真实 CNBLUE《BLUE LOVE》，queue-open 保留原截图 05:18 未重拍：队列要素完好但大封面区为灰占位（修复前形态），与「其封面为酷我源本就正常」表述有出入，如实登记记 minor，大封面证据不由该图承担）。修复代码与新增测试为未提交工作区改动，随收口提交入树。**未验证如实登记**：403 修复未抓包核对实际请求头（正确性由 cover_image_headers_test 12 项单测锁定，其中 UA/Referer 头逻辑断言 10 项）；release bundle 未随修复轮重建（上轮 03:52:19 不含本修复）；锁屏媒体控制/audio_service 全链真机侧维持 P1-06；移动视口 560 钳制（main.dart:163 minimumSize）与移动端全屏页运行时（isTouchPlatform 隔离）维持 widget 层证据。Rust 零改动（本轮 Rust 源未动，cover_referer 镜像引用既有 source.rs:166-174）。详见 `docs/redesign/phase-4-report.md`。
+- 更新（2026-11-13 Phase 5 收口轮）：**P1-16/P1-17/P2-13/P2-14/P3-09 登记，全部开放**（Phase 5 运行时验证发现 D1-D5，运行环境 Xvfb :105 真实后端 + xdotool 驱动真实 UI；widget 测试全绿但运行时不符，如实登记，见各节）。本阶段**无既有矩阵缺陷项被修复关闭**（无对应修复证据，如实登记；Phase 1 退出条件表「本地音乐真实导入并播放」行更新为 Phase 5 桌面已验证，非缺陷关闭项）；偏差 E1-E6 登记「Phase 5 偏差登记」节。报告员实跑（本轮）：定向 3 文件 **31 项全绿**（`flutter test test/local_music_import_test.dart test/phase5_downloads_test.dart test/phase5_local_music_test.dart --reporter compact`，`00:04 +31: All tests passed!` exit 0；local_music_import 7 + phase5_downloads 18 + phase5_local_music 6，grep 计数与总数吻合）；debug bundle mtime 2026-11-13 00:37:47 + `lib/libvoicefox_ffi.so` 287203584B 在位（ls/stat 佐证，运行验证基于含修复产物）；4 张 final/ 截图逐张 Read 目检通过（真实数据渲染：/tmp/p5music-real+10k 目录与 12 首真实条目、三态分组计数、已完成真实封面 3.3/2.3/5.3MB、失败态「失败 · 音频…」截断 + **D5 的 1.4MB/475.7KB 异常显示在图内直接可见**）；config.toml 已还原 phase1 单路径（cat 核实）、/tmp/p5music-*（10000/20000 文件）在位。运行时验证与真实数据（在线搜索 kw/酷我/酷狗/汽水/咪咕 200+ 结果、真实下载 5.5MB m4a/2.6MB mp3+lrc 落盘 ~/voicefox/ ffprobe 342s、导入/持久化跨 3 次重启 10012→14900→30012/性能 10k≈2.5s·30k 滚动流畅·启动≈30-40s）为实施/QA 会话 ask 已知事实，报告员未复跑，如实转述。独立 QA：**P0=0、P1=0、minor=3**，§13 四条退出条件全部有实跑测试支撑，无阻塞可收口；D1/D2 为运行时验证发现的 P1，开放待后续修复批次（不影响 Phase 6 进入）。环境注记：10k/20k 目录因 D1 崩溃无法经 UI 加入，改关 app 后外部编辑 config.toml 加路径（测试后已还原 phase1 单路径）；扫描入库 30012 首留本地曲库 DB。全量 flutter test / cargo test 外部门禁统一执行，报告员未复跑。详见 `docs/redesign/phase-5-report.md`。
 - 基线事实与门禁数据：`docs/redesign/00-baseline.md`（§3 门禁、§9 播放链、§10 封面链）。
 - 评级口径（§12.7）：P0 数据错乱/播放不可用/崩溃；P1 核心操作无法完成/封面普遍缺失/关键页面不可用；P2 视觉与次要功能缺口；P3 可选增强/文档债。
 
@@ -129,6 +130,17 @@
 
 
 
+### P1-16 导入方式选择 bottom sheet 流程运行时触发 debug 断言红屏（Phase 5 收口轮发现）【开放】
+
+- **现象**：经 UI 走导入方式选择流程（添加目录后的「选择文件夹/选择文件」双选项 bottom sheet，local_music_page.dart:573-594）触发 Flutter debug 断言 `_dependents.isEmpty`（framework.dart:6281），红屏且 UI 死亡；**3 个会话复现**。widget 测试全绿（local_music_import_test 7 项覆盖该流程），但运行时主导入入口坏。
+- **影响**：§5.10 流程 1-2 主导入入口运行时不可用；10k/20k 大目录验证因此无法经 UI 加入（改走关 app 后外部编辑 config.toml 加路径，测试后已还原 phase1 单路径）。
+- **诚实标注**：断言点在框架层（framework.dart:6281），具体 widget 树依赖根因未定位，未修复；release 构建下行为未验证（debug 断言为 debug 构建固有，但 UI 死亡现象在运行会话中实测）。
+
+### P1-17 扫描取消后部分结果入库（违反「取消→结果未提交」契约）【开放】
+
+- **现象**：扫描中点击取消，扫描停在 4888/20000，但 **14900 首被提交入库**且统计条显示部分值；违反代码内契约「取消→结果未提交+已取消横幅」（scanner.rs:150-165 协作式取消标志逐文件检查、:286-307「遍历到取消点即停」；local_music_import_test「取消扫描：统计条不展示旧值，显示已取消横幅」锁定）。跨 3 次重启持久化序列 10012→14900→30012 中的 14900 即该部分入库结果，现象自洽。
+- **诚实标注**：widget 测试通过但运行时不符；**不能排除「点击取消」与「扫描自然结束提交」的竞态**（点击时刻扫描可能已进入提交段），根因未定位，未修复。
+
 ## P2（登记）
 
 | ID | 问题 | 证据 | 指南条款 |
@@ -144,6 +156,8 @@
 | P2-09 | 队列拖动排序 / 队列内跳播：后端无对应 FfiCommand，UI 禁用并说明（不伪造）；§7.4「拖拽排序」目标待后端命令落地。2026-11-12 补记：全屏播放页队列挂载形态已落 §5.7:452 底部 sheet（DragHandle 下滑/点遮罩关闭，enableDrag=false 与列表滚动解耦），拖拽排序仍如实禁用 | queue_panel.dart:8-10；queue_interaction_test.dart 8 用例（sheet 开关/清空确认/移出/随机/空态/拖拽禁用说明） | §7.4 |
 | P2-10 | 【Phase 3 已关闭（2026-11-11）】曲库页快捷入口卡标签省略号截断（430 视口三列等分标签宽度不足）：`library_page.dart` `_entryCards` 加 LayoutBuilder（<512 与 `_header` compact 同阈值），窄视口改两行卡（标签独占一行 + 图标/计数次行），桌面 ≥512 单行布局零变化；修复同时暴露并修复同域潜在缺陷两处：`vx_track_row.dart`（<480 窄视口 hover 操作列不再预留 4×40px 固定宽，触屏无 hover、长按菜单为真实替代，360-430 手机档行尾溢出实测 11/23px）与 `vx_empty_state.dart`（矮槽位改「居中+可滚动」结构，chips 行挤压歌单档空态不再 RenderFlex overflow） | mobile_library_page_test.dart 2 项（360/390/430 无溢出 + TextPainter 宽度断言标签不截断）+ golden 重截 fluttertest-library-430x932-dark-default.png（临时测试用后即删零残留，目检：入口卡两行形态、标签完整、行表/chips 无溢出条纹）；该 golden 的 610d6d8 中间版本（18496B，07:29）为页面级 tofu 渲染、本目检对其不成立，已按 2026-11-12 复截版（61983B，01:53）复核，目检结论在有效证据上重新成立，详见 P1-12「证据勘误与复截」 | §5.5 |
 | P2-12 | 【已关闭（2026-11-12 登记并关闭，Phase 2 追加批次）】全屏播放页封面恒 320 封顶、未落 §5.7:446-447 280-340dp 自适应带（原 `(height-330).clamp(160,320)`：390/430 视口未达带上限 340，且无带语义测试）：改 `max(min(min(height-330, width-40), 340), min(160, widthCap))`（mobile_now_playing_page.dart:337-348），<560 极矮视口回退 240 + 滚动、歌曲信息与播放控制不被挤出可视区（§5.7:447） | mobile_now_playing_layout_test.dart group「全屏封面 280-340dp 自适应带（§5.7:446-447，Phase 4）」3 用例（三视口 [280,340]／极矮 430×560 回退 240／矮 430×680 收缩分支）+ golden fluttertest-nowplaying-{360x800,390x844,430x932}-dark-playing.png：报告员 magick 像素实测封面 320/340/340 逐视口与公式一致（360 宽度封顶分支、390 带内、430 带上限），逐张目检无溢出/tofu/debug banner、全屏独占符合 §5.1 | §5.7:446-447 |
+| P2-13 | 【开放（2026-11-13 Phase 5 收口轮登记，运行时验证发现 D3）】失败重试后损坏文件计「复用」而非重新解析失败（无法读取 1→0）：与偏差 E3「失败文件没有指纹记录、重扫必然重新解析」的登记语义相悖，指纹缓存对解析失败文件的复用口径存在缺口 | 运行时实跑观察（Xvfb :105 重试后统计条真实值）；与本矩阵「Phase 5 偏差登记」E3 条目对照 | §5.10 流程 6 |
+| P2-14 | 【开放（2026-11-13 Phase 5 收口轮登记，运行时验证发现 D4）】暂停在解析（resolving）阶段点击打成「失败」而非「已暂停」：暂停按钮实点 3 次均变失败；下载阶段 <1.5s 无暂停窗口，「已暂停」态与继续按钮运行时未验证 | 运行时实跑观察 ×3 + docs/redesign/screenshots/final/desktop-downloads-560x844-active.png（解析阶段「解析地址」行暂停/取消钮在位） | §5.11 |
 
 ## P3（可选增强 / 文档债）
 
@@ -157,6 +171,7 @@
 | P3-06 | CONTRIBUTING.md 基线数字过时（「53 tests」实为 229）；KEYBINDINGS.md 为 TUI 文档，GUI 键位无独立文档 | 文档对照 |
 | P3-07 | 全屏播放页歌词仅空态文案（「本版本暂无手动重新获取入口」自认）；5sing 等源未取到歌词时无手动重取 | linux-nowplaying-1440x900-playing.png |
 | P3-08 | 【Phase 2 复验轮登记，遗留 minor】旧 golden 截图未更新/数据种子不一致；本轮仅覆盖重截受影响的 fluttertest-library-430x932 一张，其余沿用 | phase-2-report.md「截图路径」节 |
+| P3-09 | 【开放（2026-11-13 Phase 5 收口轮登记，运行时验证发现 D5）】进行中下载行 560 宽 debug overflow 23px + 进度「1.4MB/475.7KB」已收字节大于声明总量的显示异常（音源大小不一致；失败原因文案 UI 截断「失败 · 音频…」关联登记，完整原因未在 UI 内展开） | 运行时实跑观察 + docs/redesign/screenshots/final/desktop-downloads-560x844-failed.png（1.4MB/475.7KB 与「失败 · 音频…」在图内可见，报告员目检） | §5.11 |
 
 ## 已验证正常（本轮实机/门禁证据，避免重复修复）
 
@@ -178,7 +193,7 @@
 | 歌单隔离测试 | ✅ widget 层 9 项（新增 §8.1 序列 7：A 触底分页在途切 B 迟到页 2 只落 A 槽；实机八步未逐项走查，隔离对照三连实机通过，见 P3-03） |
 | 封面错误态 | ✅ 13 项；P1-08 搜索结果行封面已关闭（cover: VxArtwork + 回归 + 实机目检） |
 | 手机系统栏无重叠 | widget 层 ✅；真机未验证（P1-06 环境阻断维持） |
-| 本地音乐真实导入并播放 | 未达成（无媒体文件，Phase 5） |
+| 本地音乐真实导入并播放 | Phase 5 桌面已验证（合成 PCM WAV 真实导入：Rust 单测覆盖 10k 指纹增量/取消不回滚/单文件导入/缓存重启加载；Android 实机维持未验证，见 Phase 5 偏差 E1） |
 | 播放状态/进度/duration/seek/Ended（§8.3） | ✅ 实机走带三连 + 自动切歌 ×2 |
 
 **下一阶段进入条件**：P1 全部关闭（P1-03/04/07/08/09/10/11），Phase 2 可进入；P0-01 继续以「概率性未复现」状态跟进，长时间会话验收前必须定位（ButtonPress 间歇失效同域观察在案）；浅色主题实机整页走查归 Phase 2/7。
@@ -207,3 +222,13 @@
 | P2-11 | P2 | 桌面 Shell 播放栏挂载层 | 播放栏常驻性：用户预期「任何时候常驻」（含无歌曲态）；§7.5 规定「无歌曲时显示合理空播放器状态，不保留不可点击的假控件」，当前实现疑似无歌曲时整条隐藏 | Phase 6（§7.5） | 落地为常驻空态（与用户预期一致）；裁决点：若产品上决定保留隐藏行为，须回指南改 §7.5 并征得用户同意 |
 
 用户原话（登记依据）：「底部的那个播放状态栏，不应该是什么时候都常驻的吗」；「全屏的时候，底部状态栏明显没有自动适应，右边空了一大截」。
+
+## Phase 5 偏差登记（2026-11-13，统计/取消/持久化/下载暂停续删除收口批次）
+
+- **E1 Android SAF `content://` 导入翻译未实装**：导入入口双选项（选择文件夹/选择文件）在位，`localFilePicker`/`localImportResolver`（local_music_page.dart）均为可注入 seam；生产缺省 resolver 对 `content://` 抛 `UnsupportedError`，UI 显示「暂不支持该文件来源（content://）」错误文案，不伪造导入成功。本环境无 JDK/模拟器（P1-06 同口径），SAF 持久授权翻译与实机行为登记为未验证。裁决点：Android 构建环境就绪后实装 resolver 并实机验证。
+- **E2 暂停态 `.part` 孤儿文件策略（最小语义）**：暂停保留 staged 前缀、取消暂停任务/删除任务会清理本任务的 `.part`（manager.rs `cancel`/`delete_file`）；但应用重启后内存任务消失，历史 `.part` 不做启动清扫，同曲重新入队走全新 `unique_dest` 时旧 `.part` 可能残留。裁决点：入队前按 stem 清扫孤儿 `.part`，或重启后以 staged 前缀重建续传（需持久化 last_url）。
+- **E3 §5.10 流程 6「失败项可重试」以重扫语义实现**：统计条失败项>0 时提供「重试」按钮（重扫即重试：失败文件没有指纹记录，重扫必然重新解析；部分失败不回滚已提交结果——扫描快照整体替换语义天然保证）。逐文件选择重试队列未做。
+- **E4 下载任务跨会话恢复不做**（计划明确不做）：进行中/失败任务重启后消失；已完成记录持久化于 downloads.json（records.rs:109）。`.part` 孤儿见 E2。
+- **E5 wire 状态词汇表统一（根因修复，有行为变更）**：`DownloadTaskDto.state` 由 `DownloadState::label()` 中文串改为 `code()` 英文机读键（queued/resolving/downloading/tagging/done/skipped/cancelled/paused/failed）——历史上 Dart 侧匹配英文键在生产全为死代码（runtime/src/lib.rs 发中文），本轮修复根因而非在错误词汇表上加 'paused'；中文文案由 Dart `downloadStateLabel` 映射，TUI 继续用 `label()`。FFI 为进程内接口，无外部契约受影响。
+- **E6 §5.2 D3「最近添加」列表本体不做**（计划明确不做）；数据地基已备：`first_seen`（来源文件 → Unix 秒）随曲库缓存持久化（source/src/local/cache.rs），后续列表功能直接消费。
+- **本轮验证记录（报告员实跑）**：定向 flutter 4 文件 39 项全绿（local_music_import 7 + phase5_local_music 8 + phase5_downloads 12 + mobile_home_page 12）；cargo 定向 download 70 / lx-source local:: 28（含 10k 复用契约）/ application 72 / runtime 40 / ffi 6 / app 333 全部通过；clippy 六 crate 新增告警 0（lx-core 基线 30 条维持）；codegen（flutter_rust_bridge_codegen generate 2.13.0）+ build_runner（freezed）已跑，生成文件随本轮提交。全量 flutter test / cargo test 未跑（外部门禁统一执行）。

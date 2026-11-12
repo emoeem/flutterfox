@@ -130,5 +130,53 @@ void main() {
       expect(find.text('扫描失败'), findsOneWidget);
       expect(find.textContaining('目录不存在: /missing'), findsOneWidget);
     });
+
+    testWidgets('扫描中横幅提供取消；取消后统计条不展示旧值（§5.10 流程 4）', (tester) async {
+      final model = AppModel();
+      model.debugSetConfig(_config(paths: const ['/music']));
+      final dispatched = <bridge.FfiCommand>[];
+      model.debugSetDispatcherForTest((command) async {
+        dispatched.add(command);
+      });
+      await tester.pumpWidget(MaterialApp(home: LocalMusicPage(model)));
+      await tester.pump();
+      model.debugCompleteLocalScan(
+        songs: [_song('s1', '本地一')],
+        stats: bridge.ScanStatsDto(
+          discovered: 1,
+          reused: 0,
+          parsed: 1,
+          failed: 0,
+          removed: 0,
+          skipped: 0,
+        ),
+      );
+      await tester.pump();
+
+      // 再次扫描：横幅出现「取消」，点击下发 LocalScanCancel。
+      model.scanLocal();
+      await tester.pump();
+      expect(find.text('正在扫描本地歌曲…'), findsOneWidget);
+      final cancel = tester.widget<TextButton>(
+        find
+            .ancestor(of: find.text('取消'), matching: find.byType(TextButton))
+            .first,
+      );
+      expect(cancel.onPressed, isNotNull);
+      await tester.tap(find.text('取消'));
+      await tester.pump();
+      expect(
+        dispatched.whereType<bridge.FfiCommand_LocalScanCancel>().length,
+        1,
+      );
+
+      // 取消事件：scanning=false、stats 清空（旧值不上屏）、列表不变。
+      model.debugCompleteLocalScan(cancelled: true);
+      await tester.pump();
+      expect(model.scanningLocal, isFalse);
+      expect(model.scanStats, isNull);
+      expect(model.state.localSongs.length, 1, reason: '已提交结果保持不变');
+      expect(find.textContaining('扫描已取消'), findsOneWidget);
+    });
   });
 }

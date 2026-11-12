@@ -111,6 +111,8 @@ pub struct ScanReport {
     pub fingerprints: HashMap<PathBuf, FileFingerprint>,
     pub reused: usize,
     pub parsed: usize,
+    /// 扩展名不属于音频/CUE 而被跳过的文件数（§5.10「无音频文件」统计）。
+    pub skipped: usize,
 }
 
 /// 快速获取目录内音频文件的指纹快照。
@@ -118,7 +120,7 @@ pub struct ScanReport {
 /// 该函数不读取标签，供后台监听器判断目录是否发生变化。
 pub fn snapshot_directory(path: &Path, max_depth: u32) -> HashMap<PathBuf, FileFingerprint> {
     let mut snapshot = HashMap::new();
-    for entry in audio_entries(path, max_depth) {
+    for entry in audio_entries(path, max_depth, None).entries {
         let Ok(fingerprint) = FileFingerprint::from_path(&entry) else {
             continue;
         };
@@ -135,7 +137,7 @@ pub fn scan_directory(path: &Path, max_depth: u32) -> Vec<LocalSong> {
 
 /// 扫描并返回失败文件及指纹信息。
 pub fn scan_directory_report(path: &Path, max_depth: u32) -> ScanReport {
-    scan_directory_incremental(path, max_depth, &HashMap::new(), &HashMap::new())
+    scan_directory_incremental(path, max_depth, &HashMap::new(), &HashMap::new(), None)
 }
 
 /// 增量扫描目录。
@@ -144,15 +146,25 @@ pub fn scan_directory_report(path: &Path, max_depth: u32) -> ScanReport {
 /// key：普通歌曲是其音频文件，CUE 分轨是其 CUE 文件（一个 key 对应多条轨，
 /// 避免 CUE 轨与整轨歌曲因共用音频路径而互相顶替）。指纹未变化的文件会
 /// 直接复用旧的 `LocalSong`，因此不会重复解析标签或提取封面。
+///
+/// `cancel` 是协作式取消标志：目录遍历与解析循环在每个文件前检查，
+/// 置位后立即返回已处理的部分（调用方丢弃本次报告，不提交）。
 pub fn scan_directory_incremental(
     path: &Path,
     max_depth: u32,
     previous: &HashMap<PathBuf, Vec<LocalSong>>,
     previous_fingerprints: &HashMap<PathBuf, FileFingerprint>,
+    cancel: Option<&std::sync::atomic::AtomicBool>,
 ) -> ScanReport {
+    let cancelled = || cancel.is_some_and(|flag| flag.load(std::sync::atomic::Ordering::SeqCst));
     let mut report = ScanReport::default();
 
-    for entry_path in audio_entries(path, max_depth) {
+    let entries = audio_entries(path, max_depth, cancel);
+    report.skipped = entries.skipped;
+    for entry_path in entries.entries {
+        if cancelled() {
+            return report;
+        }
         let absolute = canonical_path(&entry_path);
         let fingerprint = match FileFingerprint::from_path(&entry_path) {
             Ok(value) => value,
@@ -174,53 +186,7 @@ pub fn scan_directory_incremental(
             continue;
         }
 
-        if entry_path
-            .extension()
-            .and_then(|value| value.to_str())
-            .is_some_and(|value| value.eq_ignore_ascii_case(CUE_EXTENSION))
-        {
-            match read_cue_tracks(&entry_path) {
-                Ok(tracks) => {
-                    // 复用 key 用 CUE 文件自身的路径：CUE 轨与其引用的整轨
-                    // 音频共用音频路径，按音频路径做 key 会互相顶替。播放
-                    // 用的 song.file_path 仍指向音频文件。
-                    report.songs.extend(tracks.into_iter().map(|mut track| {
-                        track.file_path = absolute.clone();
-                        track
-                    }));
-                    report.parsed += 1;
-                }
-                Err(error) => report.failures.push(ScanFailure {
-                    path: absolute,
-                    error,
-                }),
-            }
-            continue;
-        }
-
-        match metadata::read_metadata(&entry_path) {
-            Ok(mut song) => {
-                song.file_path = Some(absolute.clone());
-                song.extra.insert(
-                    EXTRA_FILE_MODIFIED_UNIX_NANOS.to_string(),
-                    fingerprint.modified_unix_nanos.to_string(),
-                );
-                song.extra
-                    .insert("file_size".to_string(), fingerprint.size.to_string());
-                report.songs.push(LocalSong {
-                    song,
-                    file_path: absolute,
-                });
-                report.parsed += 1;
-            }
-            Err(error) => {
-                tracing::debug!("跳过文件 {}: {}", entry_path.display(), error);
-                report.failures.push(ScanFailure {
-                    path: absolute,
-                    error,
-                });
-            }
-        }
+        scan_media_file(&entry_path, &absolute, &fingerprint, &mut report);
     }
 
     report.songs.sort_by(|a, b| a.file_path.cmp(&b.file_path));
@@ -228,7 +194,101 @@ pub fn scan_directory_incremental(
     report
 }
 
-fn audio_entries(path: &Path, max_depth: u32) -> Vec<PathBuf> {
+/// 解析单个媒体文件（音频或 CUE）并写入报告；目录扫描与单文件导入共用。
+pub fn scan_media_file(
+    entry_path: &Path,
+    absolute: &Path,
+    fingerprint: &FileFingerprint,
+    report: &mut ScanReport,
+) {
+    if entry_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case(CUE_EXTENSION))
+    {
+        match read_cue_tracks(entry_path) {
+            Ok(tracks) => {
+                // 复用 key 用 CUE 文件自身的路径：CUE 轨与其引用的整轨
+                // 音频共用音频路径，按音频路径做 key 会互相顶替。播放
+                // 用的 song.file_path 仍指向音频文件。
+                report.songs.extend(tracks.into_iter().map(|mut track| {
+                    track.file_path = absolute.to_path_buf();
+                    track
+                }));
+                report.parsed += 1;
+            }
+            Err(error) => report.failures.push(ScanFailure {
+                path: absolute.to_path_buf(),
+                error,
+            }),
+        }
+        return;
+    }
+
+    match metadata::read_metadata(entry_path) {
+        Ok(mut song) => {
+            song.file_path = Some(absolute.to_path_buf());
+            song.extra.insert(
+                EXTRA_FILE_MODIFIED_UNIX_NANOS.to_string(),
+                fingerprint.modified_unix_nanos.to_string(),
+            );
+            song.extra
+                .insert("file_size".to_string(), fingerprint.size.to_string());
+            report.songs.push(LocalSong {
+                song,
+                file_path: absolute.to_path_buf(),
+            });
+            report.parsed += 1;
+        }
+        Err(error) => {
+            tracing::debug!("跳过文件 {}: {}", entry_path.display(), error);
+            report.failures.push(ScanFailure {
+                path: absolute.to_path_buf(),
+                error,
+            });
+        }
+    }
+}
+
+/// 扫描单个文件（§5.10 导入流程「选择文件」）：不遍历目录，直接解析。
+/// 返回与目录扫描同构的 `ScanReport`，复用统计由调用方按指纹对比补记。
+pub fn scan_single_file(path: &Path) -> ScanReport {
+    let mut report = ScanReport::default();
+    let absolute = canonical_path(path);
+    let Ok(fingerprint) = FileFingerprint::from_path(&absolute) else {
+        report.failures.push(ScanFailure {
+            path: absolute,
+            error: "读取文件元数据失败".to_string(),
+        });
+        return report;
+    };
+    if !is_supported_media_extension(&absolute) {
+        report.failures.push(ScanFailure {
+            path: absolute,
+            error: "不支持的文件格式".to_string(),
+        });
+        return report;
+    }
+    report.fingerprints.insert(absolute.clone(), fingerprint);
+    scan_media_file(&absolute, &absolute, &fingerprint, &mut report);
+    report
+}
+
+/// 目录遍历结果：音频/CUE 文件列表 + 被扩展名过滤掉的文件数。
+struct AudioEntries {
+    entries: Vec<PathBuf>,
+    skipped: usize,
+}
+
+/// 遍历目录收集音频/CUE 文件。
+///
+/// 走流式过滤而不是先 `collect()` 整棵树：超大目录树（§8.4「不扫描无关
+/// 大目录避免卡死」）的遍历阶段也要能被取消标志打断，遍历到取消点即停。
+fn audio_entries(
+    path: &Path,
+    max_depth: u32,
+    cancel: Option<&std::sync::atomic::AtomicBool>,
+) -> AudioEntries {
     let walker = walkdir::WalkDir::new(path)
         .follow_links(false)
         .max_depth(if max_depth == 0 {
@@ -237,19 +297,27 @@ fn audio_entries(path: &Path, max_depth: u32) -> Vec<PathBuf> {
             max_depth as usize
         });
 
-    walker
-        .into_iter()
-        .filter_entry(|entry| {
-            entry.depth() == 0
-                || !entry.file_type().is_dir()
-                || !EXCLUDED_DIRS.contains(&entry.file_name().to_str().unwrap_or_default())
-        })
-        .filter_map(Result::ok)
-        .filter(|entry| !entry.path().is_dir())
-        .filter_map(|entry| {
-            is_supported_media_extension(entry.path()).then(|| entry.path().to_path_buf())
-        })
-        .collect()
+    let mut entries = Vec::new();
+    let mut skipped = 0usize;
+    for entry in walker.into_iter().filter_entry(|entry| {
+        entry.depth() == 0
+            || !entry.file_type().is_dir()
+            || !EXCLUDED_DIRS.contains(&entry.file_name().to_str().unwrap_or_default())
+    }) {
+        if cancel.is_some_and(|flag| flag.load(std::sync::atomic::Ordering::SeqCst)) {
+            break;
+        }
+        let Ok(entry) = entry else { continue };
+        if entry.path().is_dir() {
+            continue;
+        }
+        if is_supported_media_extension(entry.path()) {
+            entries.push(entry.path().to_path_buf());
+        } else {
+            skipped += 1;
+        }
+    }
+    AudioEntries { entries, skipped }
 }
 
 #[derive(Default)]
@@ -598,6 +666,11 @@ fn parse_cue_time(value: &str) -> Option<Duration> {
 
 fn canonical_path(path: &Path) -> PathBuf {
     path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// `canonical_path` 的公开包装：单文件导入用它取与目录扫描一致的指纹键。
+pub fn canonicalize_public(path: &Path) -> PathBuf {
+    canonical_path(path)
 }
 
 #[cfg(test)]

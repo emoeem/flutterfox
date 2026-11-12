@@ -56,7 +56,7 @@ extension FfiCommandPatterns on FfiCommand {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FfiCommand_Pause value)?  pause,TResult Function( FfiCommand_Resume value)?  resume,TResult Function( FfiCommand_Toggle value)?  toggle,TResult Function( FfiCommand_Stop value)?  stop,TResult Function( FfiCommand_SeekMs value)?  seekMs,TResult Function( FfiCommand_SetVolume value)?  setVolume,TResult Function( FfiCommand_PlaySong value)?  playSong,TResult Function( FfiCommand_QueueAdd value)?  queueAdd,TResult Function( FfiCommand_QueueRemove value)?  queueRemove,TResult Function( FfiCommand_QueueClear value)?  queueClear,TResult Function( FfiCommand_Next value)?  next,TResult Function( FfiCommand_Previous value)?  previous,TResult Function( FfiCommand_Search value)?  search,TResult Function( FfiCommand_SearchMore value)?  searchMore,TResult Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult Function( FfiCommand_HistoryClear value)?  historyClear,TResult Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult Function( FfiCommand_ConfigGet value)?  configGet,TResult Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult Function( FfiCommand_LocalScan value)?  localScan,TResult Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult Function( FfiCommand_SyncPreview value)?  syncPreview,TResult Function( FfiCommand_SyncRun value)?  syncRun,TResult Function( FfiCommand_SyncCancel value)?  syncCancel,TResult Function( FfiCommand_PushTargets value)?  pushTargets,TResult Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult Function( FfiCommand_PushPlan value)?  pushPlan,TResult Function( FfiCommand_PushRun value)?  pushRun,TResult Function( FfiCommand_PushCancel value)?  pushCancel,TResult Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult Function( FfiCommand_PlaylistList value)?  playlistList,TResult Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult Function( FfiCommand_PlaySongs value)?  playSongs,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FfiCommand_Pause value)?  pause,TResult Function( FfiCommand_Resume value)?  resume,TResult Function( FfiCommand_Toggle value)?  toggle,TResult Function( FfiCommand_Stop value)?  stop,TResult Function( FfiCommand_SeekMs value)?  seekMs,TResult Function( FfiCommand_SetVolume value)?  setVolume,TResult Function( FfiCommand_PlaySong value)?  playSong,TResult Function( FfiCommand_QueueAdd value)?  queueAdd,TResult Function( FfiCommand_QueueRemove value)?  queueRemove,TResult Function( FfiCommand_QueueClear value)?  queueClear,TResult Function( FfiCommand_Next value)?  next,TResult Function( FfiCommand_Previous value)?  previous,TResult Function( FfiCommand_Search value)?  search,TResult Function( FfiCommand_SearchMore value)?  searchMore,TResult Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult Function( FfiCommand_HistoryClear value)?  historyClear,TResult Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult Function( FfiCommand_ConfigGet value)?  configGet,TResult Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult Function( FfiCommand_DownloadPause value)?  downloadPause,TResult Function( FfiCommand_DownloadResume value)?  downloadResume,TResult Function( FfiCommand_DownloadDeleteFile value)?  downloadDeleteFile,TResult Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult Function( FfiCommand_LocalScan value)?  localScan,TResult Function( FfiCommand_LocalScanCancel value)?  localScanCancel,TResult Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult Function( FfiCommand_SyncPreview value)?  syncPreview,TResult Function( FfiCommand_SyncRun value)?  syncRun,TResult Function( FfiCommand_SyncCancel value)?  syncCancel,TResult Function( FfiCommand_PushTargets value)?  pushTargets,TResult Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult Function( FfiCommand_PushPlan value)?  pushPlan,TResult Function( FfiCommand_PushRun value)?  pushRun,TResult Function( FfiCommand_PushCancel value)?  pushCancel,TResult Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult Function( FfiCommand_PlaylistList value)?  playlistList,TResult Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult Function( FfiCommand_PlaySongs value)?  playSongs,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
@@ -90,11 +90,15 @@ return customPlaylistDetail(_that);case FfiCommand_ConfigGet() when configGet !=
 return configGet(_that);case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel(_that);case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -132,7 +136,7 @@ return playSongs(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FfiCommand_Pause value)  pause,required TResult Function( FfiCommand_Resume value)  resume,required TResult Function( FfiCommand_Toggle value)  toggle,required TResult Function( FfiCommand_Stop value)  stop,required TResult Function( FfiCommand_SeekMs value)  seekMs,required TResult Function( FfiCommand_SetVolume value)  setVolume,required TResult Function( FfiCommand_PlaySong value)  playSong,required TResult Function( FfiCommand_QueueAdd value)  queueAdd,required TResult Function( FfiCommand_QueueRemove value)  queueRemove,required TResult Function( FfiCommand_QueueClear value)  queueClear,required TResult Function( FfiCommand_Next value)  next,required TResult Function( FfiCommand_Previous value)  previous,required TResult Function( FfiCommand_Search value)  search,required TResult Function( FfiCommand_SearchMore value)  searchMore,required TResult Function( FfiCommand_LibraryRefresh value)  libraryRefresh,required TResult Function( FfiCommand_FavoritesAdd value)  favoritesAdd,required TResult Function( FfiCommand_FavoritesRemove value)  favoritesRemove,required TResult Function( FfiCommand_FavoritePlaylistAdd value)  favoritePlaylistAdd,required TResult Function( FfiCommand_FavoritePlaylistRemove value)  favoritePlaylistRemove,required TResult Function( FfiCommand_HistoryRemove value)  historyRemove,required TResult Function( FfiCommand_HistoryClear value)  historyClear,required TResult Function( FfiCommand_CustomPlaylistCreate value)  customPlaylistCreate,required TResult Function( FfiCommand_CustomPlaylistRename value)  customPlaylistRename,required TResult Function( FfiCommand_CustomPlaylistDelete value)  customPlaylistDelete,required TResult Function( FfiCommand_CustomPlaylistAddSongs value)  customPlaylistAddSongs,required TResult Function( FfiCommand_CustomPlaylistRemoveSong value)  customPlaylistRemoveSong,required TResult Function( FfiCommand_CustomPlaylistDetail value)  customPlaylistDetail,required TResult Function( FfiCommand_ConfigGet value)  configGet,required TResult Function( FfiCommand_ConfigUpdate value)  configUpdate,required TResult Function( FfiCommand_DownloadEnqueue value)  downloadEnqueue,required TResult Function( FfiCommand_DownloadCancel value)  downloadCancel,required TResult Function( FfiCommand_DownloadClearFinished value)  downloadClearFinished,required TResult Function( FfiCommand_QrLoginStart value)  qrLoginStart,required TResult Function( FfiCommand_QrLoginCancel value)  qrLoginCancel,required TResult Function( FfiCommand_LocalScan value)  localScan,required TResult Function( FfiCommand_AccountPlaylists value)  accountPlaylists,required TResult Function( FfiCommand_AccountFavorites value)  accountFavorites,required TResult Function( FfiCommand_AccountPlaylistDetail value)  accountPlaylistDetail,required TResult Function( FfiCommand_SyncPreview value)  syncPreview,required TResult Function( FfiCommand_SyncRun value)  syncRun,required TResult Function( FfiCommand_SyncCancel value)  syncCancel,required TResult Function( FfiCommand_PushTargets value)  pushTargets,required TResult Function( FfiCommand_PushCreateTarget value)  pushCreateTarget,required TResult Function( FfiCommand_PushPlan value)  pushPlan,required TResult Function( FfiCommand_PushRun value)  pushRun,required TResult Function( FfiCommand_PushCancel value)  pushCancel,required TResult Function( FfiCommand_PlaylistCategories value)  playlistCategories,required TResult Function( FfiCommand_PlaylistList value)  playlistList,required TResult Function( FfiCommand_PlaylistDetail value)  playlistDetail,required TResult Function( FfiCommand_LeaderboardBoards value)  leaderboardBoards,required TResult Function( FfiCommand_LeaderboardSongs value)  leaderboardSongs,required TResult Function( FfiCommand_ArtistSongs value)  artistSongs,required TResult Function( FfiCommand_ArtistAlbums value)  artistAlbums,required TResult Function( FfiCommand_AlbumSongs value)  albumSongs,required TResult Function( FfiCommand_PlaySongs value)  playSongs,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FfiCommand_Pause value)  pause,required TResult Function( FfiCommand_Resume value)  resume,required TResult Function( FfiCommand_Toggle value)  toggle,required TResult Function( FfiCommand_Stop value)  stop,required TResult Function( FfiCommand_SeekMs value)  seekMs,required TResult Function( FfiCommand_SetVolume value)  setVolume,required TResult Function( FfiCommand_PlaySong value)  playSong,required TResult Function( FfiCommand_QueueAdd value)  queueAdd,required TResult Function( FfiCommand_QueueRemove value)  queueRemove,required TResult Function( FfiCommand_QueueClear value)  queueClear,required TResult Function( FfiCommand_Next value)  next,required TResult Function( FfiCommand_Previous value)  previous,required TResult Function( FfiCommand_Search value)  search,required TResult Function( FfiCommand_SearchMore value)  searchMore,required TResult Function( FfiCommand_LibraryRefresh value)  libraryRefresh,required TResult Function( FfiCommand_FavoritesAdd value)  favoritesAdd,required TResult Function( FfiCommand_FavoritesRemove value)  favoritesRemove,required TResult Function( FfiCommand_FavoritePlaylistAdd value)  favoritePlaylistAdd,required TResult Function( FfiCommand_FavoritePlaylistRemove value)  favoritePlaylistRemove,required TResult Function( FfiCommand_HistoryRemove value)  historyRemove,required TResult Function( FfiCommand_HistoryClear value)  historyClear,required TResult Function( FfiCommand_CustomPlaylistCreate value)  customPlaylistCreate,required TResult Function( FfiCommand_CustomPlaylistRename value)  customPlaylistRename,required TResult Function( FfiCommand_CustomPlaylistDelete value)  customPlaylistDelete,required TResult Function( FfiCommand_CustomPlaylistAddSongs value)  customPlaylistAddSongs,required TResult Function( FfiCommand_CustomPlaylistRemoveSong value)  customPlaylistRemoveSong,required TResult Function( FfiCommand_CustomPlaylistDetail value)  customPlaylistDetail,required TResult Function( FfiCommand_ConfigGet value)  configGet,required TResult Function( FfiCommand_ConfigUpdate value)  configUpdate,required TResult Function( FfiCommand_DownloadEnqueue value)  downloadEnqueue,required TResult Function( FfiCommand_DownloadCancel value)  downloadCancel,required TResult Function( FfiCommand_DownloadPause value)  downloadPause,required TResult Function( FfiCommand_DownloadResume value)  downloadResume,required TResult Function( FfiCommand_DownloadDeleteFile value)  downloadDeleteFile,required TResult Function( FfiCommand_DownloadClearFinished value)  downloadClearFinished,required TResult Function( FfiCommand_QrLoginStart value)  qrLoginStart,required TResult Function( FfiCommand_QrLoginCancel value)  qrLoginCancel,required TResult Function( FfiCommand_LocalScan value)  localScan,required TResult Function( FfiCommand_LocalScanCancel value)  localScanCancel,required TResult Function( FfiCommand_AccountPlaylists value)  accountPlaylists,required TResult Function( FfiCommand_AccountFavorites value)  accountFavorites,required TResult Function( FfiCommand_AccountPlaylistDetail value)  accountPlaylistDetail,required TResult Function( FfiCommand_SyncPreview value)  syncPreview,required TResult Function( FfiCommand_SyncRun value)  syncRun,required TResult Function( FfiCommand_SyncCancel value)  syncCancel,required TResult Function( FfiCommand_PushTargets value)  pushTargets,required TResult Function( FfiCommand_PushCreateTarget value)  pushCreateTarget,required TResult Function( FfiCommand_PushPlan value)  pushPlan,required TResult Function( FfiCommand_PushRun value)  pushRun,required TResult Function( FfiCommand_PushCancel value)  pushCancel,required TResult Function( FfiCommand_PlaylistCategories value)  playlistCategories,required TResult Function( FfiCommand_PlaylistList value)  playlistList,required TResult Function( FfiCommand_PlaylistDetail value)  playlistDetail,required TResult Function( FfiCommand_LeaderboardBoards value)  leaderboardBoards,required TResult Function( FfiCommand_LeaderboardSongs value)  leaderboardSongs,required TResult Function( FfiCommand_ArtistSongs value)  artistSongs,required TResult Function( FfiCommand_ArtistAlbums value)  artistAlbums,required TResult Function( FfiCommand_AlbumSongs value)  albumSongs,required TResult Function( FfiCommand_PlaySongs value)  playSongs,}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause():
@@ -166,11 +170,15 @@ return customPlaylistDetail(_that);case FfiCommand_ConfigGet():
 return configGet(_that);case FfiCommand_ConfigUpdate():
 return configUpdate(_that);case FfiCommand_DownloadEnqueue():
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel():
-return downloadCancel(_that);case FfiCommand_DownloadClearFinished():
+return downloadCancel(_that);case FfiCommand_DownloadPause():
+return downloadPause(_that);case FfiCommand_DownloadResume():
+return downloadResume(_that);case FfiCommand_DownloadDeleteFile():
+return downloadDeleteFile(_that);case FfiCommand_DownloadClearFinished():
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart():
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel():
 return qrLoginCancel(_that);case FfiCommand_LocalScan():
-return localScan(_that);case FfiCommand_AccountPlaylists():
+return localScan(_that);case FfiCommand_LocalScanCancel():
+return localScanCancel(_that);case FfiCommand_AccountPlaylists():
 return accountPlaylists(_that);case FfiCommand_AccountFavorites():
 return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail():
 return accountPlaylistDetail(_that);case FfiCommand_SyncPreview():
@@ -204,7 +212,7 @@ return playSongs(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FfiCommand_Pause value)?  pause,TResult? Function( FfiCommand_Resume value)?  resume,TResult? Function( FfiCommand_Toggle value)?  toggle,TResult? Function( FfiCommand_Stop value)?  stop,TResult? Function( FfiCommand_SeekMs value)?  seekMs,TResult? Function( FfiCommand_SetVolume value)?  setVolume,TResult? Function( FfiCommand_PlaySong value)?  playSong,TResult? Function( FfiCommand_QueueAdd value)?  queueAdd,TResult? Function( FfiCommand_QueueRemove value)?  queueRemove,TResult? Function( FfiCommand_QueueClear value)?  queueClear,TResult? Function( FfiCommand_Next value)?  next,TResult? Function( FfiCommand_Previous value)?  previous,TResult? Function( FfiCommand_Search value)?  search,TResult? Function( FfiCommand_SearchMore value)?  searchMore,TResult? Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult? Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult? Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult? Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult? Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult? Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult? Function( FfiCommand_HistoryClear value)?  historyClear,TResult? Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult? Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult? Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult? Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult? Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult? Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult? Function( FfiCommand_ConfigGet value)?  configGet,TResult? Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult? Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult? Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult? Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult? Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult? Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult? Function( FfiCommand_LocalScan value)?  localScan,TResult? Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult? Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult? Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult? Function( FfiCommand_SyncPreview value)?  syncPreview,TResult? Function( FfiCommand_SyncRun value)?  syncRun,TResult? Function( FfiCommand_SyncCancel value)?  syncCancel,TResult? Function( FfiCommand_PushTargets value)?  pushTargets,TResult? Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult? Function( FfiCommand_PushPlan value)?  pushPlan,TResult? Function( FfiCommand_PushRun value)?  pushRun,TResult? Function( FfiCommand_PushCancel value)?  pushCancel,TResult? Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult? Function( FfiCommand_PlaylistList value)?  playlistList,TResult? Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult? Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult? Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult? Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult? Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult? Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult? Function( FfiCommand_PlaySongs value)?  playSongs,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FfiCommand_Pause value)?  pause,TResult? Function( FfiCommand_Resume value)?  resume,TResult? Function( FfiCommand_Toggle value)?  toggle,TResult? Function( FfiCommand_Stop value)?  stop,TResult? Function( FfiCommand_SeekMs value)?  seekMs,TResult? Function( FfiCommand_SetVolume value)?  setVolume,TResult? Function( FfiCommand_PlaySong value)?  playSong,TResult? Function( FfiCommand_QueueAdd value)?  queueAdd,TResult? Function( FfiCommand_QueueRemove value)?  queueRemove,TResult? Function( FfiCommand_QueueClear value)?  queueClear,TResult? Function( FfiCommand_Next value)?  next,TResult? Function( FfiCommand_Previous value)?  previous,TResult? Function( FfiCommand_Search value)?  search,TResult? Function( FfiCommand_SearchMore value)?  searchMore,TResult? Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult? Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult? Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult? Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult? Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult? Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult? Function( FfiCommand_HistoryClear value)?  historyClear,TResult? Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult? Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult? Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult? Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult? Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult? Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult? Function( FfiCommand_ConfigGet value)?  configGet,TResult? Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult? Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult? Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult? Function( FfiCommand_DownloadPause value)?  downloadPause,TResult? Function( FfiCommand_DownloadResume value)?  downloadResume,TResult? Function( FfiCommand_DownloadDeleteFile value)?  downloadDeleteFile,TResult? Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult? Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult? Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult? Function( FfiCommand_LocalScan value)?  localScan,TResult? Function( FfiCommand_LocalScanCancel value)?  localScanCancel,TResult? Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult? Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult? Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult? Function( FfiCommand_SyncPreview value)?  syncPreview,TResult? Function( FfiCommand_SyncRun value)?  syncRun,TResult? Function( FfiCommand_SyncCancel value)?  syncCancel,TResult? Function( FfiCommand_PushTargets value)?  pushTargets,TResult? Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult? Function( FfiCommand_PushPlan value)?  pushPlan,TResult? Function( FfiCommand_PushRun value)?  pushRun,TResult? Function( FfiCommand_PushCancel value)?  pushCancel,TResult? Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult? Function( FfiCommand_PlaylistList value)?  playlistList,TResult? Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult? Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult? Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult? Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult? Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult? Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult? Function( FfiCommand_PlaySongs value)?  playSongs,}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
@@ -238,11 +246,15 @@ return customPlaylistDetail(_that);case FfiCommand_ConfigGet() when configGet !=
 return configGet(_that);case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel(_that);case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -279,7 +291,7 @@ return playSongs(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  toggle,TResult Function()?  stop,TResult Function( BigInt field0)?  seekMs,TResult Function( int volume)?  setVolume,TResult Function( SongDto song)?  playSong,TResult Function( SongDto song,  bool next)?  queueAdd,TResult Function( int index)?  queueRemove,TResult Function()?  queueClear,TResult Function()?  next,TResult Function()?  previous,TResult Function( String keyword,  String? source)?  search,TResult Function( String keyword,  int page,  String? source)?  searchMore,TResult Function()?  libraryRefresh,TResult Function( SongDto song)?  favoritesAdd,TResult Function( SongDto song)?  favoritesRemove,TResult Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult Function( SongDto song)?  historyRemove,TResult Function()?  historyClear,TResult Function( String name)?  customPlaylistCreate,TResult Function( String id,  String name)?  customPlaylistRename,TResult Function( String id)?  customPlaylistDelete,TResult Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult Function( String id)?  customPlaylistDetail,TResult Function()?  configGet,TResult Function( ConfigDto config)?  configUpdate,TResult Function( SongDto song)?  downloadEnqueue,TResult Function( BigInt id)?  downloadCancel,TResult Function()?  downloadClearFinished,TResult Function( String source,  String kind)?  qrLoginStart,TResult Function()?  qrLoginCancel,TResult Function( List<String> paths,  int maxDepth)?  localScan,TResult Function( String source)?  accountPlaylists,TResult Function( String source)?  accountFavorites,TResult Function( String source,  String playlistId)?  accountPlaylistDetail,TResult Function( String source)?  syncPreview,TResult Function( String source)?  syncRun,TResult Function()?  syncCancel,TResult Function( String source)?  pushTargets,TResult Function( String source,  String name)?  pushCreateTarget,TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult Function( String source)?  pushRun,TResult Function()?  pushCancel,TResult Function( String source)?  playlistCategories,TResult Function( String source,  String category,  int page)?  playlistList,TResult Function( String source,  String playlistId,  int page)?  playlistDetail,TResult Function( String source)?  leaderboardBoards,TResult Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult Function( ArtistDto artist,  int page)?  artistSongs,TResult Function( ArtistDto artist,  int page)?  artistAlbums,TResult Function( AlbumDto album,  int page)?  albumSongs,TResult Function( List<SongDto> songs,  int index)?  playSongs,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  toggle,TResult Function()?  stop,TResult Function( BigInt field0)?  seekMs,TResult Function( int volume)?  setVolume,TResult Function( SongDto song)?  playSong,TResult Function( SongDto song,  bool next)?  queueAdd,TResult Function( int index)?  queueRemove,TResult Function()?  queueClear,TResult Function()?  next,TResult Function()?  previous,TResult Function( String keyword,  String? source)?  search,TResult Function( String keyword,  int page,  String? source)?  searchMore,TResult Function()?  libraryRefresh,TResult Function( SongDto song)?  favoritesAdd,TResult Function( SongDto song)?  favoritesRemove,TResult Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult Function( SongDto song)?  historyRemove,TResult Function()?  historyClear,TResult Function( String name)?  customPlaylistCreate,TResult Function( String id,  String name)?  customPlaylistRename,TResult Function( String id)?  customPlaylistDelete,TResult Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult Function( String id)?  customPlaylistDetail,TResult Function()?  configGet,TResult Function( ConfigDto config)?  configUpdate,TResult Function( SongDto song)?  downloadEnqueue,TResult Function( BigInt id)?  downloadCancel,TResult Function( BigInt id)?  downloadPause,TResult Function( BigInt id)?  downloadResume,TResult Function( BigInt id)?  downloadDeleteFile,TResult Function()?  downloadClearFinished,TResult Function( String source,  String kind)?  qrLoginStart,TResult Function()?  qrLoginCancel,TResult Function( List<String> paths,  int maxDepth)?  localScan,TResult Function()?  localScanCancel,TResult Function( String source)?  accountPlaylists,TResult Function( String source)?  accountFavorites,TResult Function( String source,  String playlistId)?  accountPlaylistDetail,TResult Function( String source)?  syncPreview,TResult Function( String source)?  syncRun,TResult Function()?  syncCancel,TResult Function( String source)?  pushTargets,TResult Function( String source,  String name)?  pushCreateTarget,TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult Function( String source)?  pushRun,TResult Function()?  pushCancel,TResult Function( String source)?  playlistCategories,TResult Function( String source,  String category,  int page)?  playlistList,TResult Function( String source,  String playlistId,  int page)?  playlistDetail,TResult Function( String source)?  leaderboardBoards,TResult Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult Function( ArtistDto artist,  int page)?  artistSongs,TResult Function( ArtistDto artist,  int page)?  artistAlbums,TResult Function( AlbumDto album,  int page)?  albumSongs,TResult Function( List<SongDto> songs,  int index)?  playSongs,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
 return pause();case FfiCommand_Resume() when resume != null:
@@ -312,11 +324,15 @@ return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet() when configGet
 return configGet();case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that.id);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that.id);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that.id);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished();case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel();case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel();case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that.source);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -354,7 +370,7 @@ return playSongs(_that.songs,_that.index);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  toggle,required TResult Function()  stop,required TResult Function( BigInt field0)  seekMs,required TResult Function( int volume)  setVolume,required TResult Function( SongDto song)  playSong,required TResult Function( SongDto song,  bool next)  queueAdd,required TResult Function( int index)  queueRemove,required TResult Function()  queueClear,required TResult Function()  next,required TResult Function()  previous,required TResult Function( String keyword,  String? source)  search,required TResult Function( String keyword,  int page,  String? source)  searchMore,required TResult Function()  libraryRefresh,required TResult Function( SongDto song)  favoritesAdd,required TResult Function( SongDto song)  favoritesRemove,required TResult Function( PlaylistDto playlist)  favoritePlaylistAdd,required TResult Function( PlaylistDto playlist)  favoritePlaylistRemove,required TResult Function( SongDto song)  historyRemove,required TResult Function()  historyClear,required TResult Function( String name)  customPlaylistCreate,required TResult Function( String id,  String name)  customPlaylistRename,required TResult Function( String id)  customPlaylistDelete,required TResult Function( String id,  List<SongDto> songs)  customPlaylistAddSongs,required TResult Function( String id,  SongDto song)  customPlaylistRemoveSong,required TResult Function( String id)  customPlaylistDetail,required TResult Function()  configGet,required TResult Function( ConfigDto config)  configUpdate,required TResult Function( SongDto song)  downloadEnqueue,required TResult Function( BigInt id)  downloadCancel,required TResult Function()  downloadClearFinished,required TResult Function( String source,  String kind)  qrLoginStart,required TResult Function()  qrLoginCancel,required TResult Function( List<String> paths,  int maxDepth)  localScan,required TResult Function( String source)  accountPlaylists,required TResult Function( String source)  accountFavorites,required TResult Function( String source,  String playlistId)  accountPlaylistDetail,required TResult Function( String source)  syncPreview,required TResult Function( String source)  syncRun,required TResult Function()  syncCancel,required TResult Function( String source)  pushTargets,required TResult Function( String source,  String name)  pushCreateTarget,required TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)  pushPlan,required TResult Function( String source)  pushRun,required TResult Function()  pushCancel,required TResult Function( String source)  playlistCategories,required TResult Function( String source,  String category,  int page)  playlistList,required TResult Function( String source,  String playlistId,  int page)  playlistDetail,required TResult Function( String source)  leaderboardBoards,required TResult Function( String source,  String boardId,  int page)  leaderboardSongs,required TResult Function( ArtistDto artist,  int page)  artistSongs,required TResult Function( ArtistDto artist,  int page)  artistAlbums,required TResult Function( AlbumDto album,  int page)  albumSongs,required TResult Function( List<SongDto> songs,  int index)  playSongs,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  toggle,required TResult Function()  stop,required TResult Function( BigInt field0)  seekMs,required TResult Function( int volume)  setVolume,required TResult Function( SongDto song)  playSong,required TResult Function( SongDto song,  bool next)  queueAdd,required TResult Function( int index)  queueRemove,required TResult Function()  queueClear,required TResult Function()  next,required TResult Function()  previous,required TResult Function( String keyword,  String? source)  search,required TResult Function( String keyword,  int page,  String? source)  searchMore,required TResult Function()  libraryRefresh,required TResult Function( SongDto song)  favoritesAdd,required TResult Function( SongDto song)  favoritesRemove,required TResult Function( PlaylistDto playlist)  favoritePlaylistAdd,required TResult Function( PlaylistDto playlist)  favoritePlaylistRemove,required TResult Function( SongDto song)  historyRemove,required TResult Function()  historyClear,required TResult Function( String name)  customPlaylistCreate,required TResult Function( String id,  String name)  customPlaylistRename,required TResult Function( String id)  customPlaylistDelete,required TResult Function( String id,  List<SongDto> songs)  customPlaylistAddSongs,required TResult Function( String id,  SongDto song)  customPlaylistRemoveSong,required TResult Function( String id)  customPlaylistDetail,required TResult Function()  configGet,required TResult Function( ConfigDto config)  configUpdate,required TResult Function( SongDto song)  downloadEnqueue,required TResult Function( BigInt id)  downloadCancel,required TResult Function( BigInt id)  downloadPause,required TResult Function( BigInt id)  downloadResume,required TResult Function( BigInt id)  downloadDeleteFile,required TResult Function()  downloadClearFinished,required TResult Function( String source,  String kind)  qrLoginStart,required TResult Function()  qrLoginCancel,required TResult Function( List<String> paths,  int maxDepth)  localScan,required TResult Function()  localScanCancel,required TResult Function( String source)  accountPlaylists,required TResult Function( String source)  accountFavorites,required TResult Function( String source,  String playlistId)  accountPlaylistDetail,required TResult Function( String source)  syncPreview,required TResult Function( String source)  syncRun,required TResult Function()  syncCancel,required TResult Function( String source)  pushTargets,required TResult Function( String source,  String name)  pushCreateTarget,required TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)  pushPlan,required TResult Function( String source)  pushRun,required TResult Function()  pushCancel,required TResult Function( String source)  playlistCategories,required TResult Function( String source,  String category,  int page)  playlistList,required TResult Function( String source,  String playlistId,  int page)  playlistDetail,required TResult Function( String source)  leaderboardBoards,required TResult Function( String source,  String boardId,  int page)  leaderboardSongs,required TResult Function( ArtistDto artist,  int page)  artistSongs,required TResult Function( ArtistDto artist,  int page)  artistAlbums,required TResult Function( AlbumDto album,  int page)  albumSongs,required TResult Function( List<SongDto> songs,  int index)  playSongs,}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause():
 return pause();case FfiCommand_Resume():
@@ -387,11 +403,15 @@ return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet():
 return configGet();case FfiCommand_ConfigUpdate():
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue():
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel():
-return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished():
+return downloadCancel(_that.id);case FfiCommand_DownloadPause():
+return downloadPause(_that.id);case FfiCommand_DownloadResume():
+return downloadResume(_that.id);case FfiCommand_DownloadDeleteFile():
+return downloadDeleteFile(_that.id);case FfiCommand_DownloadClearFinished():
 return downloadClearFinished();case FfiCommand_QrLoginStart():
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel():
 return qrLoginCancel();case FfiCommand_LocalScan():
-return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists():
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_LocalScanCancel():
+return localScanCancel();case FfiCommand_AccountPlaylists():
 return accountPlaylists(_that.source);case FfiCommand_AccountFavorites():
 return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail():
 return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview():
@@ -425,7 +445,7 @@ return playSongs(_that.songs,_that.index);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  toggle,TResult? Function()?  stop,TResult? Function( BigInt field0)?  seekMs,TResult? Function( int volume)?  setVolume,TResult? Function( SongDto song)?  playSong,TResult? Function( SongDto song,  bool next)?  queueAdd,TResult? Function( int index)?  queueRemove,TResult? Function()?  queueClear,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function( String keyword,  String? source)?  search,TResult? Function( String keyword,  int page,  String? source)?  searchMore,TResult? Function()?  libraryRefresh,TResult? Function( SongDto song)?  favoritesAdd,TResult? Function( SongDto song)?  favoritesRemove,TResult? Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult? Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult? Function( SongDto song)?  historyRemove,TResult? Function()?  historyClear,TResult? Function( String name)?  customPlaylistCreate,TResult? Function( String id,  String name)?  customPlaylistRename,TResult? Function( String id)?  customPlaylistDelete,TResult? Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult? Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult? Function( String id)?  customPlaylistDetail,TResult? Function()?  configGet,TResult? Function( ConfigDto config)?  configUpdate,TResult? Function( SongDto song)?  downloadEnqueue,TResult? Function( BigInt id)?  downloadCancel,TResult? Function()?  downloadClearFinished,TResult? Function( String source,  String kind)?  qrLoginStart,TResult? Function()?  qrLoginCancel,TResult? Function( List<String> paths,  int maxDepth)?  localScan,TResult? Function( String source)?  accountPlaylists,TResult? Function( String source)?  accountFavorites,TResult? Function( String source,  String playlistId)?  accountPlaylistDetail,TResult? Function( String source)?  syncPreview,TResult? Function( String source)?  syncRun,TResult? Function()?  syncCancel,TResult? Function( String source)?  pushTargets,TResult? Function( String source,  String name)?  pushCreateTarget,TResult? Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult? Function( String source)?  pushRun,TResult? Function()?  pushCancel,TResult? Function( String source)?  playlistCategories,TResult? Function( String source,  String category,  int page)?  playlistList,TResult? Function( String source,  String playlistId,  int page)?  playlistDetail,TResult? Function( String source)?  leaderboardBoards,TResult? Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult? Function( ArtistDto artist,  int page)?  artistSongs,TResult? Function( ArtistDto artist,  int page)?  artistAlbums,TResult? Function( AlbumDto album,  int page)?  albumSongs,TResult? Function( List<SongDto> songs,  int index)?  playSongs,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  toggle,TResult? Function()?  stop,TResult? Function( BigInt field0)?  seekMs,TResult? Function( int volume)?  setVolume,TResult? Function( SongDto song)?  playSong,TResult? Function( SongDto song,  bool next)?  queueAdd,TResult? Function( int index)?  queueRemove,TResult? Function()?  queueClear,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function( String keyword,  String? source)?  search,TResult? Function( String keyword,  int page,  String? source)?  searchMore,TResult? Function()?  libraryRefresh,TResult? Function( SongDto song)?  favoritesAdd,TResult? Function( SongDto song)?  favoritesRemove,TResult? Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult? Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult? Function( SongDto song)?  historyRemove,TResult? Function()?  historyClear,TResult? Function( String name)?  customPlaylistCreate,TResult? Function( String id,  String name)?  customPlaylistRename,TResult? Function( String id)?  customPlaylistDelete,TResult? Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult? Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult? Function( String id)?  customPlaylistDetail,TResult? Function()?  configGet,TResult? Function( ConfigDto config)?  configUpdate,TResult? Function( SongDto song)?  downloadEnqueue,TResult? Function( BigInt id)?  downloadCancel,TResult? Function( BigInt id)?  downloadPause,TResult? Function( BigInt id)?  downloadResume,TResult? Function( BigInt id)?  downloadDeleteFile,TResult? Function()?  downloadClearFinished,TResult? Function( String source,  String kind)?  qrLoginStart,TResult? Function()?  qrLoginCancel,TResult? Function( List<String> paths,  int maxDepth)?  localScan,TResult? Function()?  localScanCancel,TResult? Function( String source)?  accountPlaylists,TResult? Function( String source)?  accountFavorites,TResult? Function( String source,  String playlistId)?  accountPlaylistDetail,TResult? Function( String source)?  syncPreview,TResult? Function( String source)?  syncRun,TResult? Function()?  syncCancel,TResult? Function( String source)?  pushTargets,TResult? Function( String source,  String name)?  pushCreateTarget,TResult? Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult? Function( String source)?  pushRun,TResult? Function()?  pushCancel,TResult? Function( String source)?  playlistCategories,TResult? Function( String source,  String category,  int page)?  playlistList,TResult? Function( String source,  String playlistId,  int page)?  playlistDetail,TResult? Function( String source)?  leaderboardBoards,TResult? Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult? Function( ArtistDto artist,  int page)?  artistSongs,TResult? Function( ArtistDto artist,  int page)?  artistAlbums,TResult? Function( AlbumDto album,  int page)?  albumSongs,TResult? Function( List<SongDto> songs,  int index)?  playSongs,}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
 return pause();case FfiCommand_Resume() when resume != null:
@@ -458,11 +478,15 @@ return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet() when configGet
 return configGet();case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that.id);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that.id);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that.id);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished();case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel();case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel();case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that.source);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -2264,6 +2288,210 @@ as BigInt,
 /// @nodoc
 
 
+class FfiCommand_DownloadPause extends FfiCommand {
+  const FfiCommand_DownloadPause({required this.id}): super._();
+  
+
+ final  BigInt id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_DownloadPauseCopyWith<FfiCommand_DownloadPause> get copyWith => _$FfiCommand_DownloadPauseCopyWithImpl<FfiCommand_DownloadPause>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadPause&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.downloadPause(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_DownloadPauseCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_DownloadPauseCopyWith(FfiCommand_DownloadPause value, $Res Function(FfiCommand_DownloadPause) _then) = _$FfiCommand_DownloadPauseCopyWithImpl;
+@useResult
+$Res call({
+ BigInt id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_DownloadPauseCopyWithImpl<$Res>
+    implements $FfiCommand_DownloadPauseCopyWith<$Res> {
+  _$FfiCommand_DownloadPauseCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_DownloadPause _self;
+  final $Res Function(FfiCommand_DownloadPause) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_DownloadPause(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_DownloadResume extends FfiCommand {
+  const FfiCommand_DownloadResume({required this.id}): super._();
+  
+
+ final  BigInt id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_DownloadResumeCopyWith<FfiCommand_DownloadResume> get copyWith => _$FfiCommand_DownloadResumeCopyWithImpl<FfiCommand_DownloadResume>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadResume&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.downloadResume(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_DownloadResumeCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_DownloadResumeCopyWith(FfiCommand_DownloadResume value, $Res Function(FfiCommand_DownloadResume) _then) = _$FfiCommand_DownloadResumeCopyWithImpl;
+@useResult
+$Res call({
+ BigInt id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_DownloadResumeCopyWithImpl<$Res>
+    implements $FfiCommand_DownloadResumeCopyWith<$Res> {
+  _$FfiCommand_DownloadResumeCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_DownloadResume _self;
+  final $Res Function(FfiCommand_DownloadResume) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_DownloadResume(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_DownloadDeleteFile extends FfiCommand {
+  const FfiCommand_DownloadDeleteFile({required this.id}): super._();
+  
+
+ final  BigInt id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_DownloadDeleteFileCopyWith<FfiCommand_DownloadDeleteFile> get copyWith => _$FfiCommand_DownloadDeleteFileCopyWithImpl<FfiCommand_DownloadDeleteFile>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadDeleteFile&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.downloadDeleteFile(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_DownloadDeleteFileCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_DownloadDeleteFileCopyWith(FfiCommand_DownloadDeleteFile value, $Res Function(FfiCommand_DownloadDeleteFile) _then) = _$FfiCommand_DownloadDeleteFileCopyWithImpl;
+@useResult
+$Res call({
+ BigInt id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_DownloadDeleteFileCopyWithImpl<$Res>
+    implements $FfiCommand_DownloadDeleteFileCopyWith<$Res> {
+  _$FfiCommand_DownloadDeleteFileCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_DownloadDeleteFile _self;
+  final $Res Function(FfiCommand_DownloadDeleteFile) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_DownloadDeleteFile(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class FfiCommand_DownloadClearFinished extends FfiCommand {
   const FfiCommand_DownloadClearFinished(): super._();
   
@@ -2470,6 +2698,38 @@ as int,
 
 
 }
+
+/// @nodoc
+
+
+class FfiCommand_LocalScanCancel extends FfiCommand {
+  const FfiCommand_LocalScanCancel(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LocalScanCancel);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'FfiCommand.localScanCancel()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 

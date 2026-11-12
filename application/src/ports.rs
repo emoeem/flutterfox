@@ -72,6 +72,20 @@ pub trait DownloadsEngine: Send + Sync {
     /// 入队一首歌；重复任务返回 false。
     fn enqueue(&self, song: SongInfo) -> bool;
     fn cancel(&self, id: u64);
+    /// 暂停任务；非进行中任务是空操作。
+    fn pause(&self, id: u64) {
+        let _ = id;
+    }
+    /// 继续暂停的任务：需要音源管理器重新解析播放地址（同源才续传）。
+    fn resume(&self, id: u64, sources: &std::sync::Arc<lx_source::manager::SourceManager>) -> bool {
+        let _ = (id, sources);
+        false
+    }
+    /// 删除已完成任务的本地文件并回收下载记录；不可删除返回 false。
+    fn delete_file(&self, id: u64) -> bool {
+        let _ = id;
+        false
+    }
     fn clear_finished(&self);
     fn snapshot(&self) -> Vec<DownloadTaskInfo>;
     fn active_count(&self) -> usize;

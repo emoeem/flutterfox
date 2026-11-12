@@ -79,6 +79,9 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     // 每用例恢复生产选择器（个别用例注入替身记录调用）。
     localDirectoryPicker = FilePicker.getDirectoryPath;
+    localFilePicker = ({dialogTitle}) async =>
+        (await FilePicker.pickFile(dialogTitle: dialogTitle))?.path;
+    localImportResolver = defaultImportResolver;
   });
 
   group('§5.2 区块顺序与空态', () {
@@ -150,7 +153,7 @@ void main() {
       expect(bar.selectedIndex, 2, reason: '搜索是底部五主入口第 3 项');
     });
 
-    testWidgets('「导入本地音乐」直接触发真实文件/目录选择流程，不做跳转介绍页', (tester) async {
+    testWidgets('「导入本地音乐」先弹选择文件/文件夹双选项，再触发目录选择流程', (tester) async {
       _setSize(tester, const Size(390, 844));
       final model = AppModel();
       var pickerCalls = 0;
@@ -161,10 +164,16 @@ void main() {
       await _pumpShell(tester, model);
 
       await tester.tap(find.text('导入本地音乐'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // §5.10：CTA 触发的是选择器流程本身（回调触发层锁定；导入→扫描→
-      // 播放链路依赖真实文件系统与 Rust 控制器，按矩阵归 Phase 5，不伪验）。
+      // §5.10：入口先弹「选择文件夹/选择文件」双选项（Phase 5 补全流程 1-2）。
+      expect(find.text('选择文件夹'), findsOneWidget);
+      expect(find.text('选择文件'), findsOneWidget);
+
+      // 选「选择文件夹」→ 触发系统目录选择器（回调触发层锁定；导入→扫描→
+      // 播放链路依赖真实文件系统与 Rust 控制器，不伪验）。
+      await tester.tap(find.text('选择文件夹'));
+      await tester.pump(const Duration(milliseconds: 400));
       expect(pickerCalls, 1);
       // 不是跳转介绍页：不发生 navRequest 导航，仍在首页。
       expect(navRequest.value, isNull);

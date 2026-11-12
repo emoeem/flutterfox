@@ -664,6 +664,32 @@ impl ApplicationService {
                 }
                 Ok(())
             }
+            ApplicationCommand::DownloadPause { id } => {
+                if let Some(engine) = self.downloads.as_ref() {
+                    engine.pause(id);
+                    self.publish_downloads(engine.snapshot());
+                }
+                Ok(())
+            }
+            ApplicationCommand::DownloadResume { id } => {
+                if let Some(engine) = self.downloads.as_ref() {
+                    let sources = Arc::clone(&self.sources);
+                    engine.resume(id, &sources);
+                    self.publish_downloads(engine.snapshot());
+                }
+                Ok(())
+            }
+            ApplicationCommand::DownloadDeleteFile { id } => {
+                if let Some(engine) = self.downloads.as_ref() {
+                    if !engine.delete_file(id) {
+                        self.emit(ApplicationEvent::Notification {
+                            message: "该任务没有可删除的本地文件".to_string(),
+                        });
+                    }
+                    self.publish_downloads(engine.snapshot());
+                }
+                Ok(())
+            }
             ApplicationCommand::DownloadClearFinished => {
                 if let Some(engine) = self.downloads.as_ref() {
                     engine.clear_finished();
@@ -684,11 +710,33 @@ impl ApplicationService {
                 let events = self.events.clone();
                 spawn_reported(events.clone(), "本地扫描", async move {
                     let local = sources.local_source();
-                    let result = tokio::task::spawn_blocking(move || local.scan(&paths, max_depth))
-                        .await
-                        .unwrap_or_default();
-                    let _ = events.send(ApplicationEvent::LocalScanCompleted { warnings: result });
+                    let scan_local = Arc::clone(&local);
+                    let result =
+                        tokio::task::spawn_blocking(move || scan_local.scan(&paths, max_depth))
+                            .await
+                            .unwrap_or_default();
+                    // 取消的扫描不提交：stats 若照抄 scan_stats 会拿到上一次
+                    // 扫描的旧值，所以取消事件带 cancelled=true、stats=None。
+                    let cancelled = local.last_scan_was_cancelled();
+                    let raw = local.scan_stats();
+                    let stats = (!cancelled).then_some(crate::event::LocalScanStatsInfo {
+                        discovered: raw.discovered,
+                        reused: raw.reused,
+                        parsed: raw.parsed,
+                        failed: raw.failed,
+                        removed: raw.removed,
+                        skipped: raw.skipped,
+                    });
+                    let _ = events.send(ApplicationEvent::LocalScanCompleted {
+                        warnings: result,
+                        stats,
+                        cancelled,
+                    });
                 });
+                Ok(())
+            }
+            ApplicationCommand::LocalScanCancel => {
+                self.sources.local_source().cancel_scan();
                 Ok(())
             }
             ApplicationCommand::AccountPlaylists { source } => {
