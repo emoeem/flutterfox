@@ -27,6 +27,7 @@ import 'package:voicefox_flutter/src/app_model.dart';
 import 'package:voicefox_flutter/src/myune/page/setting/settings_provider.dart';
 import 'package:voicefox_flutter/src/myune/services/notification_service.dart';
 import 'package:voicefox_flutter/src/nav_bus.dart';
+import 'package:voicefox_flutter/src/design_system/components/vx_player_controls.dart';
 import 'package:voicefox_flutter/src/player/mini_player_bar.dart';
 import 'package:voicefox_flutter/src/player/mobile_now_playing_page.dart';
 import 'package:voicefox_flutter/src/player/now_playing_page.dart';
@@ -292,5 +293,49 @@ void main() {
       expect(find.byIcon(Icons.skip_next), findsWidgets);
       expect(tester.takeException(), isNull, reason: '不得溢出');
     });
+  });
+
+  group('VxPlayerControls 触点分档（§11.2 Phase 6）', () {
+    Widget controlsHarness({bool? touchTargets}) => MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: VxPlayerControls(
+            touchTargets: touchTargets,
+            onPlayPause: () {},
+          ),
+        ),
+      ),
+    );
+
+    double ctrlExtent(WidgetTester tester, String tooltip) =>
+        tester.getSize(find.byTooltip(tooltip)).shortestSide;
+
+    testWidgets('桌面缺省（宿主 isTouchPlatform=false）：渲染零变化（34 圆钮 / 26 图标钮）', (
+      tester,
+    ) async {
+      await tester.pumpWidget(controlsHarness());
+      // golden 锁不存在（全仓 0 matchesGoldenFile），以尺寸断言锁桌面
+      // 渲染不变：播放圆钮 34；图标 IconButton 34 约束被既有
+      // visualDensity.compact 收 8dp → 实际 26（Phase 6 前后一致，
+      // 非本阶段引入）。触屏档见下一用例（还原 standard 密度保 48）。
+      expect(ctrlExtent(tester, '播放'), 34.0);
+      expect(ctrlExtent(tester, '随机播放'), 26.0);
+    });
+
+    testWidgets('touchTargets: true 注入：48dp 触点（§11.2 手机目标）', (tester) async {
+      await tester.pumpWidget(controlsHarness(touchTargets: true));
+      expect(ctrlExtent(tester, '播放'), 48.0);
+      expect(ctrlExtent(tester, '随机播放'), 48.0);
+    });
+
+    testWidgets(
+      'touchTargets 缺省跟随 isTouchPlatform：宿主恒 false（Android 真值 P1-06 未验证）',
+      (tester) async {
+        // null → isTouchPlatform（宿主 false）→ 34；真机 Android 48dp 分支
+        // 受 P1-06 环境阻断维持未验证，不因本测试全绿而改判。
+        await tester.pumpWidget(controlsHarness(touchTargets: null));
+        expect(ctrlExtent(tester, '播放'), 34.0);
+      },
+    );
   });
 }

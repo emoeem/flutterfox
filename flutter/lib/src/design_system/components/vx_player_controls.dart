@@ -3,10 +3,15 @@
 /// 顺序固定：随机 - 上一首 - 播放/暂停 - 下一首 - 循环；
 /// 播放/暂停为 34px 主色圆钮（概念稿：底为主文本色、图标为深色），
 /// 随机 / 循环开启时强调色。本组件为静态视觉，真实命令在 Phase 3 接入。
+///
+/// 触点分档（§11.2 Phase 6）：触屏平台触点 48dp，桌面保持 34dp 渲染
+/// 零变化。默认跟随 [isTouchPlatform]（dart:io 判定，宿主测试恒 false），
+/// 测试可经 [touchTargets] 显式注入。
 library;
 
 import 'package:flutter/material.dart';
 
+import '../../shell/responsive_shell.dart';
 import '../design_tokens.dart';
 
 /// 传输控制行。
@@ -19,6 +24,7 @@ class VxPlayerControls extends StatelessWidget {
     this.repeatSingle = false,
     this.enabled = true,
     this.gap = 18,
+    this.touchTargets,
     this.onShuffle,
     this.onPrevious,
     this.onPlayPause,
@@ -46,6 +52,10 @@ class VxPlayerControls extends StatelessWidget {
   /// 按钮间距（概念稿 19px，默认 18）。
   final double gap;
 
+  /// 触点 48dp 分档（§11.2）：null 跟随 [isTouchPlatform]；显式注入
+  /// 仅测试用（先例 TouchShell.touchPlatformOverride）。
+  final bool? touchTargets;
+
   /// 随机播放回调。
   final VoidCallback? onShuffle;
 
@@ -66,6 +76,8 @@ class VxPlayerControls extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final playIconColor = dark ? VxColors.onPlayIcon : VxLightColors.onPlayIcon;
+    // 触点分档（§11.2）：触屏 48dp；桌面保持 34 渲染零变化。
+    final target = (touchTargets ?? isTouchPlatform) ? 48.0 : 34.0;
 
     Widget ctrl(
       IconData icon,
@@ -76,8 +88,11 @@ class VxPlayerControls extends StatelessWidget {
       return IconButton(
         onPressed: enabled ? onPressed : null,
         tooltip: tooltip,
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+        // compact 密度会把约束收缩 8dp（48→40），触屏 48dp 档还原标准密度。
+        visualDensity: target > 34
+            ? VisualDensity.standard
+            : VisualDensity.compact,
+        constraints: BoxConstraints(minWidth: target, minHeight: target),
         icon: Icon(
           icon,
           size: 20,
@@ -103,8 +118,8 @@ class VxPlayerControls extends StatelessWidget {
             onTap: enabled ? onPlayPause : null,
             customBorder: const CircleBorder(),
             child: Container(
-              width: 34,
-              height: 34,
+              width: target,
+              height: target,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: enabled ? scheme.onSurface : scheme.surfaceContainerHigh,

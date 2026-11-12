@@ -72,6 +72,7 @@ class _ContextPanelState extends State<ContextPanel> {
             Align(
               alignment: Alignment.centerLeft,
               child: _ResizeHandle(
+                key: const ValueKey('context-resize-handle'),
                 width: widget.width,
                 onWidthChanged: widget.onWidthChanged!,
               ),
@@ -138,9 +139,13 @@ class _ContextPanelState extends State<ContextPanel> {
   }
 }
 
-/// 左缘拖动把手：280–420px。
+/// 左缘拖动把手：300–420px（§7.4，Phase 6 由 280–420 对齐）。
 class _ResizeHandle extends StatelessWidget {
-  const _ResizeHandle({required this.width, required this.onWidthChanged});
+  const _ResizeHandle({
+    super.key,
+    required this.width,
+    required this.onWidthChanged,
+  });
 
   final double width;
   final ValueChanged<double> onWidthChanged;

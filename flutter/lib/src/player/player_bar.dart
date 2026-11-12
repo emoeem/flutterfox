@@ -1,10 +1,13 @@
 /// Phase 2 全局 PlayerBar（计划书 §3.5，应用唯一常驻播放栏）。
 ///
 /// 规格：
-/// - 高度 92px，顶部 2px 进度线；
+/// - 高度 §7.5 带 76–84：取 ShellBreakpoints.playerBarHeight（84，Phase 6
+///   由 92 收敛），顶部 2px 进度线；
 /// - 左区 280–340：封面 56 + 歌名/歌手 + 收藏；点封面进入全屏播放页
 ///   （Phase 3 NowPlayingPage，Shell 统一打开并隐藏本栏防双重控制）；
 /// - 中区弹性：随机/上一首/播放暂停/下一首/循环 + 时间与可拖动进度；
+///   无歌曲时中区留白（P2-11/§7.5：不保留不可点击的假控件），左区
+///   空态提示仍在；
 /// - 右区 250–320：音量 / 输出 / 歌词 / 队列 / 更多；窄窗口逐级收缩，
 ///   保证任何宽度不横向溢出（Phase 0 F2/F3 的布局修复点）。
 ///
@@ -21,6 +24,7 @@ import '../design_system/components/vx_player_controls.dart';
 import '../design_system/design_tokens.dart';
 import '../widgets/cover_image.dart';
 import '../widgets/live_progress.dart';
+import '../shell/responsive_shell.dart';
 import 'progress_control.dart';
 
 /// 全局播放栏。
@@ -71,7 +75,7 @@ class _PlayerBarState extends State<PlayerBar> {
             final midRight = barWidth >= 880;
             final compactLeft = barWidth < 760;
             return Container(
-              height: 92,
+              height: ShellBreakpoints.playerBarHeight,
               // P1-09：Chrome 底色/分隔线随主题亮暗取 token。
               decoration: BoxDecoration(
                 color: VxChrome.surface1(Theme.of(context).brightness),
@@ -121,17 +125,23 @@ class _PlayerBarState extends State<PlayerBar> {
                     child: Row(
                       children: [
                         // ── 左区：封面 + 曲目信息 + 收藏 ──
-                        Flexible(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: compactLeft ? 260 : 340,
-                            ),
-                            child: _TrackInfo(
-                              model: model,
-                              song: song,
-                              showFavorite: !compactLeft,
-                              onOpenNowPlaying: widget.onOpenNowPlaying,
-                            ),
+                        // P1-14 根因修复（2026-11-13 实测定位）：这里原来是
+                        // Flexible(flex=1, loose)——与中区 Expanded(flex=1)
+                        // 平分剩余空间，左区实际内容仅 ~280px，flex 分配却把
+                        // 一半空间（826px）划给中区，行尾留下 ~547px 空档
+                        // （右簇不贴右缘的来源）。左区改为非 flex 子项，
+                        // 由 ConstrainedBox 钳宽（内层 _TrackInfo 已是
+                        // mainAxisSize.min + 文本 Flexible，窄窗不溢出），
+                        // 中区 Expanded 独占全部剩余空间 → 右簇贴右缘。
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compactLeft ? 260 : 340,
+                          ),
+                          child: _TrackInfo(
+                            model: model,
+                            song: song,
+                            showFavorite: !compactLeft,
+                            onOpenNowPlaying: widget.onOpenNowPlaying,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -312,11 +322,14 @@ class _CenterTransport extends StatelessWidget {
     final mode = model.config?.playMode ?? 'list-loop';
     final hasSong = playback.song != null;
     final configReady = model.config != null;
+    // P2-11 / §7.5：空态不保留不可点击的假控件——无歌曲时传输控制与
+    // 进度行不进树（左区空态提示仍在，右区音量/面板开关真实可用）。
+    if (!hasSong) return const SizedBox.shrink();
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (compact)
-          _CompactTransport(model: model, playing: playing, enabled: hasSong)
+          _CompactTransport(model: model, playing: playing)
         else
           VxPlayerControls(
             isPlaying: playing,
@@ -324,7 +337,6 @@ class _CenterTransport extends StatelessWidget {
             repeatOn: mode == 'list-loop' || mode == 'single-loop',
             // §8.3：单曲循环档独立视觉态（repeat_one 图标 + tooltip）。
             repeatSingle: mode == 'single-loop',
-            enabled: hasSong,
             onShuffle: configReady
                 ? () => _setPlayMode(mode == 'random' ? 'list-loop' : 'random')
                 : null,
@@ -360,16 +372,12 @@ class _CenterTransport extends StatelessWidget {
 
 /// 窄窗紧凑传输控制：上一首 / 播放暂停 / 下一首，视觉与 VxPlayerControls
 /// 一致（34px 主文本圆钮 + 图标按钮），只是收起次级的随机/循环。
+/// 仅由 PlayerBar 中区挂载（桌面壳专用；空态整段不进树，P2-11）。
 class _CompactTransport extends StatelessWidget {
-  const _CompactTransport({
-    required this.model,
-    required this.playing,
-    required this.enabled,
-  });
+  const _CompactTransport({required this.model, required this.playing});
 
   final AppModel model;
   final bool playing;
-  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -378,17 +386,11 @@ class _CompactTransport extends StatelessWidget {
     final playIconColor = dark ? VxColors.onPlayIcon : VxLightColors.onPlayIcon;
     Widget ctrl(IconData icon, String tooltip, VoidCallback? onPressed) {
       return IconButton(
-        onPressed: enabled ? onPressed : null,
+        onPressed: onPressed,
         tooltip: tooltip,
         visualDensity: VisualDensity.compact,
         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-        icon: Icon(
-          icon,
-          size: 20,
-          color: enabled
-              ? scheme.onSurfaceVariant
-              : scheme.onSurface.withValues(alpha: 0.38),
-        ),
+        icon: Icon(icon, size: 20, color: scheme.onSurfaceVariant),
       );
     }
 
@@ -400,21 +402,19 @@ class _CompactTransport extends StatelessWidget {
         Tooltip(
           message: playing ? '暂停' : '播放',
           child: InkWell(
-            onTap: enabled ? model.toggle : null,
+            onTap: model.toggle,
             customBorder: const CircleBorder(),
             child: Container(
               width: 34,
               height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: enabled ? scheme.onSurface : scheme.surfaceContainerHigh,
+                color: scheme.onSurface,
               ),
               child: Icon(
                 playing ? Icons.pause : Icons.play_arrow,
                 size: 18,
-                color: enabled
-                    ? playIconColor
-                    : scheme.onSurface.withValues(alpha: 0.38),
+                color: playIconColor,
               ),
             ),
           ),

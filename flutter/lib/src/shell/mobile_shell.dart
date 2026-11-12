@@ -634,7 +634,7 @@ class _TabletShellState extends State<TabletShell> {
   bool _contextOpen = false;
   ContextTab _contextTab = ContextTab.nowPlaying;
 
-  /// 平板右栏固定宽度（280-420 拖宽是桌面语义，平板先固定缺省值）。
+  /// 平板右栏固定宽度（300–420 拖宽是桌面语义，平板先固定缺省值 340）。
   static const double _contextWidth = ShellBreakpoints.contextDefaultWidth;
 
   @override
@@ -769,7 +769,8 @@ class _TabletShellState extends State<TabletShell> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 600-899 图标 rail；900+ 展开带标签（双栏「Rail+内容」）。
+            // 600–839 图标 rail；840–1199 展开带标签（双栏「Rail+内容」；
+            // 断点在 resolveTabletLayout：840/1200，注释数值已对齐）。
             NavigationRail(
               selectedIndex: _s.primaryIndex,
               onDestinationSelected: (index) =>
@@ -812,8 +813,11 @@ class _TabletShellState extends State<TabletShell> {
                 ),
               ),
             ),
-            // ≥1200 三栏：右栏内嵌。
-            if (layout == TabletLayout.triple && _contextOpen)
+            // ≥840（dual/triple）：右栏 end panel 内嵌在行内（Phase 6，
+            // §6.2:546「overlay 或 end panel」取 end panel——中央内容仍可
+            // 操作，§6.3:554；≥1200 triple 同形态）。600–839 rail 档维持
+            // 覆盖式浮层（§6.1:539 Modal/Overlay 语义）。
+            if (layout != TabletLayout.rail && _contextOpen)
               ContextPanel(
                 key: const ValueKey('tablet-context-inline'),
                 model: widget.model,
@@ -824,8 +828,8 @@ class _TabletShellState extends State<TabletShell> {
               ),
           ],
         ),
-        // <1200：右栏覆盖式浮层（与桌面同语义）。
-        if (layout != TabletLayout.triple && _contextOpen) ...[
+        // 600–839 rail 档：右栏覆盖式浮层（§6.1 Modal/Overlay 语义）。
+        if (layout == TabletLayout.rail && _contextOpen) ...[
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,

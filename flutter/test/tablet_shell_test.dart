@@ -5,9 +5,11 @@
 ///   宽度不改变桌面行为；触屏平台按宽度分 手机/平板；
 /// - resolveTabletLayout：600/840/1200 三档（NavigationRail / 双栏 / 三栏，
 ///   §4.1 断点：600–839 窄 rail / 840–1199 展开 rail）；
-/// - 触屏平台三档宽度的壳形态断言：rail 档图标 rail、dual 档展开 rail、
-///   triple 档右栏内嵌（无 Positioned 祖先），rail/dual 档右栏浮层
-///   （有 Positioned 祖先）。
+/// - 触屏平台三档宽度的壳形态断言：rail 档图标 rail + 右栏浮层（有
+///   Positioned 祖先）；dual 档展开 rail + 右栏 end panel 内嵌（Phase 6
+///   §6.2:546「overlay 或 end panel」取 end panel，中央内容仍可操作
+///   §6.3:554，无 Positioned 祖先）；triple 档右栏内嵌（无 Positioned
+///   祖先）。1199/1200 边界形态对照（D1 裁决证据）。
 ///
 /// 平台口径：测试直接 pump TabletShell（对齐 shell_test.dart 既有模式），
 /// 不依赖 defaultTargetPlatform（FLUTTER_TEST 强制 android，会整体翻掉
@@ -126,7 +128,9 @@ void main() {
       );
     });
 
-    testWidgets('840（dual 档边界）：展开（带标签）Rail + 内容双栏，右栏浮层', (tester) async {
+    testWidgets('840（dual 档边界）：展开（带标签）Rail + 内容双栏，右栏 end panel 内嵌', (
+      tester,
+    ) async {
       _setSize(tester, const Size(840, 900));
       final model = AppModel();
       await tester.pumpWidget(_harness(model));
@@ -138,12 +142,56 @@ void main() {
       await tester.tap(find.byTooltip('队列面板'));
       await tester.pumpAndSettle();
       expect(find.byType(ContextPanel), findsOneWidget);
+      // Phase 6 §6.2：dual 档右栏为 end panel 内嵌（无 Positioned 祖先），
+      // 中央内容仍可操作（§6.3:554）；原先 overlay+scrim 挡中央内容，偏差修复。
       expect(
         find.ancestor(
           of: find.byType(ContextPanel),
           matching: find.byType(Positioned),
         ),
-        findsWidgets,
+        findsNothing,
+      );
+    });
+
+    testWidgets('1199/1200 边界（D1 裁决证据）：1199 dual 内嵌 end panel，1200 triple 内嵌', (
+      tester,
+    ) async {
+      final model = AppModel();
+      // 1199：dual 档，右栏 end panel 内嵌（与 1200 triple 同形态，
+      // 差异仅在 rail extended 语义与断点归属；维持 ≥1200 triple 现状，
+      // D1 裁决点留 owner）。
+      _setSize(tester, const Size(1199, 900));
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<NavigationRail>(find.byType(NavigationRail)).extended,
+        isTrue,
+      );
+      await tester.tap(find.byTooltip('歌词面板'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ContextPanel), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(ContextPanel),
+          matching: find.byType(Positioned),
+        ),
+        findsNothing,
+      );
+
+      // 1200：triple 档，同为内嵌。
+      _setSize(tester, const Size(1200, 900));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<NavigationRail>(find.byType(NavigationRail)).extended,
+        isTrue,
+      );
+      expect(find.byType(ContextPanel), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(ContextPanel),
+          matching: find.byType(Positioned),
+        ),
+        findsNothing,
       );
     });
 
