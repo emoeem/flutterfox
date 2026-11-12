@@ -105,7 +105,16 @@ Future<void> main() async {
   // 保留窗口初始化（窗控/拖动区可用）。
   if (kUiOnly) {
     if (_isDesktopWindowPlatform) await windowManager.ensureInitialized();
-    runApp(VoicefoxApp(model: AppModel(), uiOnly: true));
+    runApp(
+      VoicefoxApp(
+        model: AppModel(),
+        uiOnly: true,
+        initialDestination: _startDestinationFromEnv(),
+        searchSeed: _startSearchSeedFromEnv(),
+        libraryTab: _startLibraryTabFromEnv(),
+        settingsSection: _startSettingsSectionFromEnv(),
+      ),
+    );
     return;
   }
   // Phase 8 批次二：触屏平台真实引导链（无音频）。数据目录覆盖 →
