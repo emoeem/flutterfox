@@ -8,7 +8,7 @@ dependencies:
   # --- myune_music UI 基底所需（vendored lib/src/myune/，Apache-2.0） ---
   colorgram: ^2.0.0
   crypto: ^3.0.6
-  file_picker: ^13.3.2
+  file_picker: ^13.3.3
   hotkey_manager: ^0.2.3
   http: ^1.4.0
   markdown_widget: ^2.3.2+8
