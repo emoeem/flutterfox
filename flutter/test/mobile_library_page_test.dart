@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicefox_flutter/src/app_model.dart';
 import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
@@ -156,6 +157,34 @@ void main() {
         reason: '${size.width} 视口「最近播放」标签不被省略号截断（P2-10）',
       );
     }
+  });
+
+  testWidgets('P2-15 回归：360 最窄档 5 字标签「喜欢的歌曲」scaleDown 渲染不截断', (tester) async {
+    final model = _seededModel();
+    await _pumpLibrary(tester, model, const Size(360, 800));
+
+    expect(find.text('喜欢的歌曲'), findsOneWidget);
+    // 截断防线：标签经 FittedBox(BoxFit.scaleDown) 渲染——省略号路径在
+    // 结构上不可能触发（scaleDown 只缩放不裁切，find.text 对 ellipsized
+    // Text 仍命中的旧盲区由此关闭）。
+    final fitted = find.ancestor(
+      of: find.text('喜欢的歌曲'),
+      matching: find.byType(FittedBox),
+    );
+    expect(fitted, findsOneWidget, reason: '5 字标签走 scaleDown 缩放渲染');
+
+    // 防截断的结构性断言：标签 RenderParagraph 必须按「无约束理想宽度」
+    // 布局（FittedBox 子树不受约束、超宽时整体缩放呈现）。旧形态
+    // （plain Text + maxLines:1 + ellipsis）在 360 档布局宽度被卡宽压到
+    // 理想宽度以下，本断言即失败（find.text 对 ellipsized Text 仍命中的
+    // 旧盲区由此关闭）。
+    final paragraph = tester.renderObject<RenderParagraph>(find.text('喜欢的歌曲'));
+    final intrinsic = paragraph.getMinIntrinsicWidth(double.infinity);
+    expect(
+      paragraph.size.width,
+      closeTo(intrinsic, 0.5),
+      reason: '5 字标签按理想宽度布局（无 ellipsis 约束裁切）',
+    );
   });
 
   testWidgets('来源筛选生效：歌曲/专辑/歌手/歌单四档过滤、歌单计数同步', (tester) async {

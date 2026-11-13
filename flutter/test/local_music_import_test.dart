@@ -10,6 +10,8 @@
 library;
 
 import 'package:file_picker/file_picker.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +87,7 @@ void main() {
     localFilePicker = ({dialogTitle}) async =>
         (await FilePicker.pickFile(dialogTitle: dialogTitle))?.path;
     localImportResolver = defaultImportResolver;
+    debugResetImportFlowGate();
   });
 
   group('扫描统计条（§5.10 流程 5）', () {
@@ -223,6 +226,51 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('添加本地音乐目录'), findsOneWidget, reason: '手输是回退手段，不是唯一导入方法');
       expect(find.text('目录绝对路径'), findsOneWidget);
+    });
+
+    testWidgets('导入流重入门禁（P1-16）：进行中再触发不叠开第二条 modal 流', (tester) async {
+      final model = AppModel();
+      model.debugSetConfig(_config(paths: const []));
+      // 选择器挂起不返回（复现 P1-16 运行时间隙：sheet 已 pop、后续
+      // 对话框未出现，用户再次点击的窗口）。
+      final pickerHang = Completer<String?>();
+      localDirectoryPicker = ({dialogTitle}) => pickerHang.future;
+      await _pump(tester, model);
+      final pageContext = tester.element(find.byType(LocalMusicPage));
+
+      final first = importLocalMusicDirectory(pageContext, model);
+      await tester.pumpAndSettle();
+      expect(find.text('选择文件夹'), findsOneWidget, reason: '第一条流的 sheet 在位');
+
+      // 点击选择文件夹：sheet pop、系统选择器挂起不返回（运行时间隙）。
+      await tester.tap(find.text('选择文件夹'));
+      await tester.pumpAndSettle();
+      expect(find.text('选择文件夹'), findsNothing, reason: 'sheet 已 pop，选择器挂起中');
+
+      // 间隙内的第二次触发：立即返回，不叠开第二条 sheet/dialog。
+      final second = importLocalMusicDirectory(pageContext, model);
+      await tester.pumpAndSettle();
+      expect(find.text('添加本地音乐目录'), findsNothing, reason: '门禁期内不叠开第二条流');
+      expect(second, completes);
+
+      // 走完第一条流（选择器返回 null → 手输框），门禁释放。
+      pickerHang.complete(null);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('添加本地音乐目录'), findsOneWidget);
+      await tester.tap(find.text('取消'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await first;
+
+      // 门禁已释放：再次触发能正常开 sheet，且整条流可走完（不残留门禁）。
+      localDirectoryPicker = ({dialogTitle}) async => null;
+      final third = importLocalMusicDirectory(pageContext, model);
+      await tester.pumpAndSettle();
+      expect(find.text('选择文件夹'), findsOneWidget, reason: '门禁释放后导入流可用');
+      await tester.tap(find.text('选择文件夹'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('取消'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await third;
     });
   });
 }

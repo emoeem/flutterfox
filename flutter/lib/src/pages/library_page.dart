@@ -213,7 +213,14 @@ class _LibraryPageState extends State<LibraryPage> {
                   children: [
                     // 标签独占一行（不与图标同排）：360 最窄档三列内宽
                     // ~77px，四字标签 ~56px 仅在独占整行时放得下。
-                    labelText,
+                    // P2-15：5 字标签（喜欢的歌曲 ~74px）在 360 档越界触发
+                    // ellipsis 截断——FittedBox scaleDown 按需整行缩小渲染，
+                    // 省略号路径在结构上不可能再触发（只缩放不裁切）。
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: labelText,
+                    ),
                     const SizedBox(height: 2),
                     Row(
                       children: [

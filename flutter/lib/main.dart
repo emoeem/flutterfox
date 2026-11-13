@@ -10,7 +10,9 @@
 library;
 
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io' show File, FileMode, Platform;
+
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
@@ -97,14 +99,103 @@ ShellDetailSeed? _startDetailSeedFromEnv() {
 String _startSearchSeedFromEnv() =>
     Platform.environment['VOICEFOX_START_SEARCH']?.trim() ?? '';
 
+/// 初始窗口尺寸：VOICEFOX_START_SIZE=1440x900（WxH）。缺省或格式非法
+/// 返回 null，由调用方决定各自缺省尺寸（真实桌面分支 1150x720；uiOnly
+/// 分支不改窗口大小）。
+Size? _startSizeFromEnv() {
+  final raw = Platform.environment['VOICEFOX_START_SIZE']?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  final match = RegExp(r'^(\d+)x(\d+)$').firstMatch(raw);
+  if (match == null) return null;
+  return Size(double.parse(match.group(1)!), double.parse(match.group(2)!));
+}
+
+/// 可选起始位置：VOICEFOX_START_POS=x,y（X11 后端 + 验收截图用；Wayland
+/// 合成器可能忽略，运行时行为不受影响）。缺省或格式非法返回 null。
+Offset? _startPosFromEnv() {
+  final raw = Platform.environment['VOICEFOX_START_POS']?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  final match = RegExp(r'^(-?\d+),(-?\d+)$').firstMatch(raw);
+  if (match == null) return null;
+  return Offset(double.parse(match.group(1)!), double.parse(match.group(2)!));
+}
+
+/// 崩溃取证落盘路径（P1-05/P2-08）：`VOICEFOX_CRASH_LOG` 覆盖，缺省
+/// `<config>/crash.log`（与 Rust 侧 panic hook、TUI voicefox.log 同目录）。
+/// 非 dart:io 平台（web 测试环境）返回 null。
+String? crashLogFilePath() {
+  final override = Platform.environment['VOICEFOX_CRASH_LOG']?.trim();
+  if (override != null && override.isNotEmpty) return override;
+  final home = Platform.environment['HOME'];
+  if (home == null || home.isEmpty) return null;
+  final xdgConfig = Platform.environment['XDG_CONFIG_HOME']?.trim();
+  final configDir = (xdgConfig != null && xdgConfig.isNotEmpty)
+      ? xdgConfig
+      : '$home/.config';
+  return '$configDir/voicefox/crash.log';
+}
+
+/// 追加一条崩溃取证记录（unix 秒时间戳，与 ffi crash_log 同格式）。写盘
+/// 失败静默降级——取证不应反噬正常运行。
+void appendCrashLogEntry(String path, String kind, String body) {
+  try {
+    final file = File(path);
+    final parent = file.parent;
+    if (!parent.existsSync()) parent.createSync(recursive: true);
+    final stamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    file.writeAsStringSync('[$stamp] $kind: $body\n', mode: FileMode.append);
+  } catch (_) {
+    // 取证失败不上抛。
+  }
+}
+
+/// 安装 Flutter/未处理异常崩溃取证（P1-05：静默退出无崩溃日志）。main()
+/// 启动时调用；测试可传临时路径验证。
+void installCrashLogHandlers({String? path}) {
+  final target = path ?? crashLogFilePath();
+  if (target == null) return;
+  FlutterError.onError = (details) {
+    appendCrashLogEntry(target, 'flutter-error', details.exceptionAsString());
+    // 保留既有 stderr/红屏行为。
+    FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    appendCrashLogEntry(target, 'unhandled', '$error\n$stack');
+    return true;
+  };
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // P1-05/P2-08：panic（Rust 侧 ffi/crash_log.rs）与 Flutter/未处理异常
+  // （本函数）统一落盘 crash.log，消除静默退出的取证盲区。
+  installCrashLogHandlers();
   // Phase 7 无 Rust UI-only 分支：渲染壳 + 各页空/错误态，见 [kUiOnly]。
   // window_manager 0.5.2 仅声明 linux/macos/windows 平台实现，触屏平台
   // 必须跳过（Android 引导屏不再抛 MissingPluginException）；桌面预览
   // 保留窗口初始化（窗控/拖动区可用）。
   if (kUiOnly) {
-    if (_isDesktopWindowPlatform) await windowManager.ensureInitialized();
+    if (_isDesktopWindowPlatform) {
+      await windowManager.ensureInitialized();
+      // P3-10：uiOnly 验收分支同样应用 VOICEFOX_START_SIZE/POS，final
+      // 截图矩阵视口标注与实际渲染一致（P1-19 根因收口）。minimumSize
+      // 有意不设：uiOnly 现无 560 钳制，360-560 宽可达，对截图管线有利
+      // （04 矩阵 P3-10 裁决点）；标题栏形态不变。两个 env 均缺省时不走
+      // waitUntilReadyToShow，既有启动路径零变化。
+      final startSize = _startSizeFromEnv();
+      final startPos = _startPosFromEnv();
+      if (startSize != null || startPos != null) {
+        unawaited(
+          windowManager.waitUntilReadyToShow(
+            WindowOptions(size: startSize),
+            () async {
+              if (startPos != null) await windowManager.setPosition(startPos);
+              await windowManager.show();
+            },
+          ),
+        );
+      }
+    }
     runApp(
       VoicefoxApp(
         model: AppModel(),
@@ -141,31 +232,10 @@ Future<void> main() async {
   // 插件实现，跳过整段；VOICEFOX_START_* 桌面验收钩子语义不变）。
   if (_isDesktopWindowPlatform) {
     // 初始窗口尺寸：默认 1150x720；VOICEFOX_START_SIZE=1440x900 可覆盖
-    // （用于断点验收截图，运行时行为与默认完全一致）。
-    Size startSize = const Size(1150, 720);
-    final envSize = Platform.environment['VOICEFOX_START_SIZE'];
-    if (envSize != null) {
-      final match = RegExp(r'^(\d+)x(\d+)$').firstMatch(envSize.trim());
-      if (match != null) {
-        startSize = Size(
-          double.parse(match.group(1)!),
-          double.parse(match.group(2)!),
-        );
-      }
-    }
-    // 可选起始位置：VOICEFOX_START_POS=x,y（X11 后端 + 验收截图用；
-    // Wayland 合成器可能忽略，运行时行为不受影响）。
-    Offset? startPos;
-    final envPos = Platform.environment['VOICEFOX_START_POS'];
-    if (envPos != null) {
-      final posMatch = RegExp(r'^(-?\d+),(-?\d+)$').firstMatch(envPos.trim());
-      if (posMatch != null) {
-        startPos = Offset(
-          double.parse(posMatch.group(1)!),
-          double.parse(posMatch.group(2)!),
-        );
-      }
-    }
+    // （用于断点验收截图，运行时行为与默认完全一致；解析见
+    // _startSizeFromEnv/_startPosFromEnv，uiOnly 分支复用同一钩子）。
+    final startSize = _startSizeFromEnv() ?? const Size(1150, 720);
+    final startPos = _startPosFromEnv();
     final windowOptions = WindowOptions(
       title: 'voicefox',
       size: startSize,

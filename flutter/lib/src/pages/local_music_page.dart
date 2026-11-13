@@ -601,6 +601,21 @@ Future<_ImportChoice?> _importChoiceDialog(BuildContext context) {
   );
 }
 
+/// 导入流重入门禁（P1-16）：同一时刻只允许一条导入流。
+///
+/// 运行时实证（2026-11-13 Xvfb 真实后端复走）：无 portal 环境下系统选择器
+/// 挂起不返回，sheet 已 pop 而后续对话框未出现——处于该间隙的用户再次点击
+/// 「添加目录」会在内嵌 Navigator 上叠开第二条 modal 流，两条流交叉
+/// push/pop 撕裂路由 teardown，正是 `_dependents.isEmpty` 断言
+/// （framework.dart:6281 InheritedElement.debugDeactivated，Phase 5 三个
+/// 会话红屏）的已知触发族（flutter/flutter#39131、SO 60528729 同类）。
+/// 门禁使进行中的第二次触发直接返回，消除交织。
+bool _importFlowActive = false;
+
+/// 测试复位重入门禁（与选择器/resolver seam 的 setUp 复位同口径：
+/// 门禁是模块级状态，用例未走完导入流时会残留到下一用例）。
+void debugResetImportFlowGate() => _importFlowActive = false;
+
 /// 直接触发本地音乐导入流程（§5.10：导入入口必须直接触发文件/目录
 /// 选择，不得只跳转介绍页）。
 ///
@@ -612,6 +627,16 @@ Future<void> importLocalMusicDirectory(
   BuildContext context,
   AppModel model,
 ) async {
+  if (_importFlowActive) return;
+  _importFlowActive = true;
+  try {
+    await _importFlow(context, model);
+  } finally {
+    _importFlowActive = false;
+  }
+}
+
+Future<void> _importFlow(BuildContext context, AppModel model) async {
   final choice = await _importChoiceDialog(context);
   if (choice == null || !context.mounted) return;
   if (choice == _ImportChoice.file) {

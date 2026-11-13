@@ -1543,6 +1543,97 @@ mod tests {
         assert!(tasks.iter().any(|task| task.id == 9999));
     }
 
+    fn pause_fixture_task(id: u64, state: DownloadState) -> DownloadTask {
+        DownloadTask {
+            id,
+            name: format!("song {id}"),
+            singer: String::new(),
+            source: SourceId::Kw,
+            quality: Quality::Flac,
+            dest: PathBuf::from(format!("/tmp/{id}.flac")),
+            song: SongInfo::new(
+                format!("id-{id}"),
+                SourceId::Kw,
+                format!("song {id}"),
+                String::new(),
+            ),
+            state,
+            error: None,
+            progress: DownloadProgress::new(),
+            started_at: Instant::now(),
+            finished_at: None,
+            bytes: 0,
+            expected_size: None,
+            duration_secs: 0,
+            trigger: DownloadTrigger::Manual,
+            last_url: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn pause_during_resolving_keeps_paused_against_late_results() {
+        // P2-14：解析（resolving）阶段点击暂停 → 任务立即 Paused，且解析
+        // 失败/下载错误的迟到结果（finish/update_state）不得把 Paused 改写
+        // 成失败。运行时 D4 观察到「失败」即沿改写路径发生；这里锁定短路
+        // 防线（无网络、确定性，不驱动真实解析协程）。
+        let manager = DownloadManager::new(&test_config(), tokio::runtime::Handle::current());
+        manager
+            .tasks
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .push(pause_fixture_task(7, DownloadState::Resolving));
+
+        manager.pause(7);
+        let view = manager
+            .snapshot()
+            .into_iter()
+            .find(|task| task.id == 7)
+            .expect("任务应在快照中");
+        assert_eq!(view.state, DownloadState::Paused, "暂停点击立即生效");
+
+        // 迟到的失败/下载态/完成结果一律短路：Paused 是用户决策。
+        manager.finish(
+            7,
+            DownloadState::Failed,
+            Some("获取播放地址失败".to_string()),
+            0,
+            None,
+        );
+        manager.update_state(7, DownloadState::Downloading, None);
+        manager.finish(7, DownloadState::Done, None, 1024, None);
+        let view = manager
+            .snapshot()
+            .into_iter()
+            .find(|task| task.id == 7)
+            .expect("任务应在快照中");
+        assert_eq!(view.state, DownloadState::Paused, "迟到结果不得改写已暂停");
+
+        // §5.11 各活跃态均可暂停（排队/解析/下载/写标签）。
+        for (index, state) in [
+            DownloadState::Queued,
+            DownloadState::Resolving,
+            DownloadState::Downloading,
+            DownloadState::Tagging,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let id = 100 + index as u64;
+            manager
+                .tasks
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .push(pause_fixture_task(id, state));
+            manager.pause(id);
+            let view = manager
+                .snapshot()
+                .into_iter()
+                .find(|task| task.id == id)
+                .expect("任务应在快照中");
+            assert_eq!(view.state, DownloadState::Paused, "{state:?} 也可暂停");
+        }
+    }
+
     #[test]
     fn download_options_are_clamped_from_config() {
         let mut config = test_config();

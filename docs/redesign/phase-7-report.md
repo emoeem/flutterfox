@@ -169,3 +169,80 @@ Phase 7 为最终收敛阶段，无下一阶段。**收口判定（如实）**�
 - **最高风险项已隔离**：参考项目 **harmonoid = PolyForm Strict 1.0.0**（02 §0，两次独立证实：研究记录 LICENSE 全文 104 行实读 + 汇总轮首行复核），**禁止任何代码/资产复制**（禁衍生/禁再分发；旧快照 GPL-3.0 时代同样禁止，不存在 MIT 时代）。feishin（GPL-3.0）与 nuclear（AGPL-3.0-only）同样零复制、仅交互参考。全部 UI 为本仓自有实现或合规 vendored。
 - **已履行的移植义务**：myune_music vendored（Apache-2.0）110/110 文件头保留 `Vendored from … @5188867b` + seam 标记恰 2 处（lyrics_handler.dart:70-80、playlist_content_notifier.dart:735-798）+ lyricGeter（MIT）全文注册于 license_service.dart:9-45；本轮 Phase 0-7 全部 UI 实现未新增第三方代码拷贝（Rust 零改动、Flutter 改动均为自有页面/壳层）。
 - **合规待办（非阻塞，02:233-234 登记）**：①建议新建仓库内 NOTICE 文件替代 vendored 文件头中已失效的外部路径引用（`/home/emo/code/myune_music-reference/LICENSE` 不存在，02:195-197 实测），满足 Apache-2.0 §4 分发义务；②`app_model_audio_backend.dart:14-15` 过时的 setVolume no-op 注释待更正。将来解除 hotkey_manager/system_fonts 本地 stub 或引入 finamp MPL-2.0 文件时须按 02 §2.2/§2.3 履行对应义务。
+
+---
+
+## 清尾 L1（2026-11-14，Phase 7 后开放缺陷清理批次，报告员验证轮）
+
+> 本小节为 Phase 7 报告的追加批次记录：Phase 7 收口后遗留的开放缺陷（P1-16/P1-17/P2-13/P2-14/P2-15/P3-10 + P2-02 护栏化）在本轮实施与验证，缺陷状态以 `docs/redesign/04-defect-matrix.md` 为准。
+
+### 范围
+
+Phase 7 收口后开放缺陷清理（清尾 L1）：**七项关闭**（P1-16 导入流重入红屏、P1-17 扫描取消部分入库、P2-02 双 ThemeData 产源护栏化、P2-13 重试后损坏文件计复用、P2-14 解析阶段暂停契约锁定、P2-15 360 视口标签截断、P3-10 uiOnly START_SIZE）+ **P1-05/P2-08 崩溃取证面补齐**（crash.log panic/Flutter 异常面，两项维持开放）。性能 profiling、无障碍专项、Android 全链、浅色主题运行时走查、golden harness 维持 Phase 7 口径未执行（本轮不新增）。
+
+### 修改文件（实施轮改动，报告员逐文件 diff 核读）
+
+| 文件 | 改动 | 归属 |
+|---|---|---|
+| `flutter/lib/src/pages/local_music_page.dart` | +25：模块级导入流重入门禁 `_importFlowActive`（:613，try/finally 保证释放，:630-637）+ `debugResetImportFlowGate`（:617） | P1-16 |
+| `source/src/local/mod.rs` | +89：提交段前最终取消检查点（:458-468，取消即丢弃本轮报告、快照保持原样）+ scan() 失败清单非空强制重扫（:253-262）+ 2 条 Rust 测试 | P1-17 / P2-13 |
+| `download/src/manager.rs` | +91：确定性回归测试 `pause_during_resolving_keeps_paused_against_late_results`（生产代码零改动；生产行为经 git show 实核自 Phase 5 收口提交 57db10b 在树） | P2-14 |
+| `flutter/lib/src/pages/library_page.dart` | +9/-1：compact 两行卡标签改 `FittedBox(fit: BoxFit.scaleDown)`（:219-224，省略号路径结构性不可能触发） | P2-15 |
+| `flutter/lib/main.dart` | +124/-33：`_startSizeFromEnv`/`_startPosFromEnv` 提取共享 helper（:105-124）+ uiOnly 分支应用 START_SIZE/POS（:180-199，minimumSize 有意不设，注释登记裁决）+ `installCrashLogHandlers`（定义 :154、main() 调用 :172，FlutterError/未处理异常落盘 crash.log） | P3-10 / P1-05·P2-08 |
+| `ffi/src/crash_log.rs`（新建） | +105：`crash_log_path`/`append_crash_entry`/`install_gui_panic_hook` + 2 测试；诚实边界注释：引擎级 SIGABRT/GL abort 无 unwind 不经 hook | P1-05·P2-08 |
+| `ffi/src/lib.rs` | +7：`new_desktop` 接线 `install_gui_panic_hook`（:1158） | P1-05·P2-08 |
+| `flutter/lib/src/theme/voicefox_theme.dart`、`flutter/lib/src/design_system/voicefox_theme.dart` | 头注改「非运行时真源」收口（预览语义限定：设置页逐卡预览 / Gallery 预览页） | P2-02 |
+| `flutter/test/crash_log_test.dart`（新建） | P1-05/P2-08 Dart 侧回归 1 项 | 同上 |
+| `flutter/test/theme_source_guard_test.dart`（新建） | P2-02 护栏 2 项（运行时 5 文件零引用 + settings_page 预览例外在位） | P2-02 |
+| `flutter/test/local_music_import_test.dart` | +1：P1-16 门禁用例（选择器挂起复现运行时间隙 → 二次触发不叠开 → 门禁释放后可用） | P1-16 |
+| `flutter/test/mobile_library_page_test.dart` | +1：P2-15 结构性断言（FittedBox 在树 + RenderParagraph 按理想宽度布局，旧 ellipsis 形态该断言即失败） | P2-15 |
+| `docs/redesign/screenshots/final/phone-library-360x800-uionly-recheck.png` | 新增（报告员运行时证据：360×800 曲库「喜欢的歌曲」标签完整） | P2-15 / P3-10 |
+| `docs/redesign/04-defect-matrix.md`、`docs/VOICEFOX_UI_REDESIGN_EXECUTION_GUIDE.md` §17 | 七项关闭 + 两项取证注记 + 追踪表行 | 报告员 |
+
+### 执行命令与退出码（报告员本轮实跑，全部在 `/home/emo/code/voicefox-gui`）
+
+| # | 命令 | 退出码 | 结果 |
+|---|---|---|---|
+| 1 | `/home/emo/flutter/bin/dart analyze --fatal-infos` | **0** | `No issues found!` |
+| 2 | `/home/emo/flutter/bin/dart format --output=none --set-exit-if-changed lib test` | **0** | `Formatted 253 files (0 changed)` |
+| 3 | `/home/emo/flutter/bin/flutter test`（全量） | **0** | `00:42 +380: All tests passed!`（基线 375 + 本轮新增 5） |
+| 4 | `cargo test -p voicefox-ffi crash_log` | **0** | 2 passed / 0 failed |
+| 5 | `cargo test -p lx-source --lib local::` | **0** | 30 passed / 0 failed / 1 ignored（含 P1-17 `cancelled_before_commit_segment_does_not_commit`、P2-13 `manual_rescan_reparses_failed_files_instead_of_counting_reuse` 均 ok） |
+| 6 | `cargo test -p voicefox-download pause_during_resolving` | **0** | 1 passed（P2-14 契约锁定用例） |
+| 7 | `cargo fmt --all -- --check` | **0** | 零格式偏差 |
+| 8 | `RUSTUP_TOOLCHAIN=1.99.0 flutter build linux --debug --dart-define=VOICEFOX_UI_ONLY=true` | **0** | `✓ Built build/linux/x64/debug/bundle/voicefox_flutter`（bundle/kernel_blob/so 2026-11-14 00:35:21-28；libvoicefox_ffi.so 286350280B，含本轮 ffi crash_log 重建） |
+
+clippy 原样门禁（§12.1）本轮未复跑（Phase 7 基线 exit 101 = libmpv2 MPV_SOURCE 环境缺失在案，本轮 Rust 改动不触及该依赖链，如实登记未复跑）；全量 cargo test 未复跑（定向 3 crate 全绿；Phase 7 基线 826 全绿在案）。
+
+### 运行时验证（Xvfb :117 1600x1200x24，无 WM，报告员实跑）
+
+- **P3-10 几何实核**：uiOnly bundle + `VOICEFOX_START_SIZE=360x800` 启动 → `xdotool getwindowgeometry` = **360×800 精确生效**（Position 0,0；无 uiOnly 旧 1280×720 默认、无 560 钳制），P1-19 根因链在 uiOnly 分支闭合。
+- **P2-15 运行时目检**：同实例 `VOICEFOX_START_PAGE=library` 360×800 曲库页截图逐项目检：「喜欢的歌曲」标签**完整渲染无省略号**（同排「最近播放/本地音乐」完整），两行卡形态、分类 chips、来源分段、空态、PlayerBar 空态均正常；截图 `docs/redesign/screenshots/final/phone-library-360x800-uionly-recheck.png`（360×800 50884B，`magick identify` 核验）。
+- **P1-16 运行时复走未达成（如实登记）**：uiOnly <960 降级壳内曲库入口卡 tap 未推入 LocalMusicPage（VM service widget 树 dump 确认树中无 LocalMusicPage；同页来源分段 tap 响应正常，排除隐形 modal 屏障；widget 层推入链路由 phase5_library_test.dart:219-222 锁定且在全量 380 项内绿；本轮 library_page.dart 仅改标签渲染，不归因本轮 diff，登记为 uiOnly <960 降级壳运行时观察，未定缺陷等级）。另实测首页空库 Hero「导入本地」当前接线为 home_page.dart:118 `navRequest.value = 5`（导航曲库）而非导入流，Phase 2 偏差 D6「与本地音乐页同一实现」口径已过期（既有接线、非本轮改动）。P1-16 关闭依据 = 门禁机制结构性消除复现窗 + 确定性 widget 复现 + 实施轮运行时实证（代码注释在案）；原红屏现象本身报告员未复现复核。
+- **排查注记（环境）**：运行时排查初期旧 app 实例未退出造成多窗口堆叠干扰点击定位（`pkill -x` 对 >15 字符进程名无效、`pkill -f` 需括号技巧避免匹配承载 shell 自身）；清场后单实例重跑，上述结论均出自干净实例。会话结束进程清理复核：app 与 Xvfb :117 均 0 残留（ps 实测）。
+
+### 测试结果（通过/失败/跳过）
+
+- **Flutter 全量**：380 通过 / 0 失败 / 0 跳过（exit 0）。新增 5 项：crash_log_test 1、theme_source_guard_test 2、local_music_import_test +1（8 项）、mobile_library_page_test +1。
+- **Rust 定向**：voicefox-ffi crash_log 2、lx-source local:: 30（1 ignored）、voicefox-download pause 1，全绿 exit 0。
+- **无跳过项、无因失败删除的测试**（§15 红线合规）；本轮无 Rust 生产代码删除性改动（manager.rs 仅增测试）。
+
+### 新增/关闭缺陷（本轮净变化）
+
+- **关闭 7 项**：P1-16（导入流重入门禁）、P1-17（提交段前取消检查点）、P2-02（单一真源护栏）、P2-13（失败清单非空强制重扫）、P2-14（确定性测试锁定；生产行为 57db10b 已在树）、P2-15（FittedBox scaleDown + 运行时目检）、P3-10（uiOnly START_SIZE/POS + 运行时几何实核）。
+- **取证面补齐、维持开放 2 项**：P1-05/P2-08（crash.log 覆盖 panic/Flutter 异常面；引擎级 SIGABRT/GL abort 无 unwind 仍无取证，静默退出根因未定位）。
+- **最终开放计数（04 矩阵口径）**：**P0×1 / P1×2 / P2×4 / P3×7**（此前 P0×1 / P1×4 / P2×8 / P3×8）。
+
+### 未解决问题和原因（本轮如实）
+
+- P0-01 主 isolate 概率性卡死：未定位未复现，维持（profiler 仍缺位）。
+- P1-05/P2-08 静默退出：取证面部分补齐（panic/Flutter 异常面），引擎级路径需外部 watchdog，根因未定位。
+- P1-06 Android 全链：环境阻断 + 用户搁置维持（本轮未触碰）。
+- P1-16：原红屏运行时复现报告员未独立复核（复现窗被门禁结构性消除；实施轮运行时实证以代码注释为证）；uiOnly <960 降级壳入口卡 tap 未推入现象登记为观察，未定缺陷等级。
+- P2-14：「解析失败先于暂停落地」微竞态无法排除（若失败先到，显示失败为语义正确）；运行时重走未做。
+- P3-10：真实桌面分支运行时未重测（代码 diff 为 helper 复用重构，默认 1150x720 与 minimumSize 链路零变化）。
+- clippy 原样门禁、全量 cargo test 本轮未复跑（基线在案）。
+
+### 收口判定
+
+Linux 桌面目标维持 Phase 7 收口结论；本轮为 Phase 7 后清理批次，P1 开放项由 4 收敛至 2（均环境/根因类：P1-05 静默退出、P1-06 Android 环境阻断），后续批次建议：P0-01/P1-05 定位（profiler/watchdog）→ P2-05 MPRIS（后端批次）→ P3 尾项。

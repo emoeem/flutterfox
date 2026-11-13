@@ -6,6 +6,8 @@
 
 mod frb_generated;
 
+pub mod crash_log;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -1151,6 +1153,11 @@ impl VoicefoxController {
     #[cfg(feature = "desktop-mpv")]
     pub fn new_desktop() -> Result<Self, String> {
         let (config, path) = voicefox_runtime::load_config().map_err(|e| e.to_string())?;
+        // P1-05/P2-08：GUI 无 TUI 的 tracing 落盘，panic 面接 crash.log
+        // 取证（引擎级 SIGABRT 无 unwind 不经此 hook，边界见 crash_log 模块注释）。
+        crate::crash_log::install_gui_panic_hook(
+            path.parent().unwrap_or_else(|| std::path::Path::new(".")),
+        );
         let runtime = voicefox_runtime::ApplicationRuntime::desktop(config, path)
             .map_err(|e| e.to_string())?;
         Ok(Self::from_application(runtime.application())

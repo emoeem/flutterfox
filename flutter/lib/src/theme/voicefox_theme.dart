@@ -1,5 +1,13 @@
 /// voicefox 主题构建：注册表项 → Material 3 ThemeData。
 ///
+/// **非运行时真源**（P2-02 收口）：运行时唯一真源 =
+/// `myune/theme/theme_provider.dart`（ColorScheme.fromSeed + MiSans）。
+/// 本构建器按注册表 key 构建任意主题，现仅用于设置页主题色卡的**逐卡
+/// 预览**（settings_page.dart `_ThemeCard`：每张卡展示该主题自己的真实
+/// 配色，属设计行为而非全局主题切换）与 myune_preview.dart / 测试。
+/// 运行时入口不得引入本构建器——由 test/theme_source_guard_test.dart
+/// 锁定（P2-02）。
+///
 /// 规则见 docs/flutter_ui_spec.md §2/§5/§6 与 FlClash 源码规范：
 /// - seed 类主题（TUI 同源 16 套 + FlClash 定制）：flclash_scheme 的 HCT 中性
 ///   分层（页面底/卡面/块面三级，accent tone clamp）；

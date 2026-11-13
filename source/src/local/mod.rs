@@ -250,8 +250,17 @@ impl LocalSource {
 
     /// 扫描指定目录并加载歌曲
     pub fn scan(&self, paths: &[String], max_depth: u32) -> Vec<String> {
+        // 失败清单非空时强制重扫（P2-13）：「重试/重新扫描」必须重新解析
+        // 失败文件，否则无变化快路径把它们计成「复用」且失败清单一并蒸发
+        // （运行时实测 无法读取 1→0）。失败清空后恢复快路径（监听器触发的
+        // 重扫本就走 force，原地修改不被目录签名捕获，见 DirSignature 注释）。
+        let force = !self
+            .failures
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty();
         let generation = self.begin_scan();
-        self.scan_for_generation(paths, max_depth, generation, false)
+        self.scan_for_generation(paths, max_depth, generation, force)
     }
 
     pub fn scan_for_generation(
@@ -444,6 +453,16 @@ impl LocalSource {
         }
 
         if self.scan_generation.load(Ordering::SeqCst) != generation {
+            return errors;
+        }
+        // 提交段前最终取消检查点（P1-17）：扫描器在取消时返回「已处理的
+        // 部分」报告（scanner.rs 契约：调用方丢弃、不提交），且点击取消与
+        // 扫描自然结束之间存在竞态——若取消发生在最后一个根目录扫描途中
+        // 或提交段前，循环会正常走完并带着部分结果进入提交。这里统一按
+        // 「取消→结果未提交」收口：丢弃本轮报告，已入库快照保持原样。
+        if self.scan_cancelled() {
+            self.scan_cancel.store(false, Ordering::SeqCst);
+            self.last_scan_cancelled.store(true, Ordering::SeqCst);
             return errors;
         }
         // 补全本次没有重扫的根目录（未纳入 paths 的旧目录、命中快路径的目录、
@@ -1352,6 +1371,74 @@ mod tests {
         source.scan(&[dir.display().to_string()], 0);
         assert!(!source.last_scan_was_cancelled());
         assert_eq!(source.all_songs().len(), 1);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn cancelled_before_commit_segment_does_not_commit() {
+        // P1-17 竞态收口：取消请求晚于根目录循环内检查点（扫描自然结束、
+        // 提交段前才置位——点击取消与扫描结束的竞态，运行时 14900 首部分
+        // 入库即此形态）时，同样不得提交。paths 为空让循环跳过、直接到达
+        // 提交段前的最终检查点。
+        let dir = scratch_dir("cancel-commit");
+        write_wav(&dir.join("a.wav"));
+        let source = LocalSource::new();
+        source.scan(&[dir.display().to_string()], 0);
+        let before = source.all_songs().len();
+        let stats_before = source.scan_stats();
+
+        let generation = source.begin_scan();
+        source.cancel_scan();
+        let errors = source.scan_for_generation(&[], 0, generation, false);
+        assert!(errors.is_empty());
+        assert!(source.last_scan_was_cancelled());
+        assert_eq!(source.all_songs().len(), before, "提交段前的取消不提交");
+        assert_eq!(source.scan_stats(), stats_before, "统计条不展示本轮值");
+        assert!(!source.is_scanning());
+
+        // 取消标志已消费：下一次扫描正常提交。
+        source.scan(&[dir.display().to_string()], 0);
+        assert!(!source.last_scan_was_cancelled());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn manual_rescan_reparses_failed_files_instead_of_counting_reuse() {
+        // P2-13：失败清单非空时手动重扫（重试语义）必须强制重新解析失败
+        // 文件——无变化快路径会把损坏文件计成「复用」且失败清单蒸发
+        // （运行时实测 无法读取 1→0）。
+        let dir = scratch_dir("retry");
+        std::fs::write(dir.join("broken.wav"), b"not audio").unwrap();
+        write_wav(&dir.join("ok.wav"));
+        let paths = vec![dir.display().to_string()];
+        let source = LocalSource::new();
+
+        source.scan(&paths, 0);
+        let first = source.scan_stats();
+        assert_eq!(first.failed, 1, "首轮记录损坏文件");
+        assert_eq!(first.reused, 0);
+
+        // 无变化重扫（重试语义）：重新解析失败文件并重新报告，不得计复用。
+        source.scan(&paths, 0);
+        let second = source.scan_stats();
+        assert_eq!(second.failed, 1, "损坏文件重新解析仍失败（非复用/蒸发）");
+        assert_eq!(second.reused, 1, "有效文件按指纹复用");
+        assert_eq!(source.scan_failures().len(), 1);
+        assert_eq!(source.all_songs().len(), 1);
+
+        // 修复文件后重扫：重新解析成功，失败清单清空。
+        write_wav(&dir.join("broken.wav"));
+        source.scan(&paths, 0);
+        let third = source.scan_stats();
+        assert_eq!(third.failed, 0);
+        assert_eq!(third.parsed, 1, "原损坏文件重新解析成功");
+        assert_eq!(source.all_songs().len(), 2);
+
+        // 失败清单已空：恢复无变化快路径（§8.4 性能契约不受影响）。
+        source.scan(&paths, 0);
+        let fourth = source.scan_stats();
+        assert_eq!(fourth.parsed, 0);
+        assert_eq!(fourth.reused, 2);
         std::fs::remove_dir_all(&dir).ok();
     }
 

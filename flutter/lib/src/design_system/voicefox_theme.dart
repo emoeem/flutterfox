@@ -1,8 +1,13 @@
-/// Voicefox 运行时 ThemeData 真源（Phase 1）。
+/// Design-system 预览 ThemeData（Phase 1；P2-02 收口后**非运行时真源**）。
 ///
-/// 由 `design_tokens.dart` 生成深 / 浅两套 ThemeData，目标是收敛
-/// `theme/voicefox_theme.dart`（旧预览路径）与 `myune/theme/theme_provider.dart`
-/// 的双真源不一致（Phase 0 F4）。接入 Shell 后运行时应只走本构建器。
+/// 由 `design_tokens.dart` 生成深 / 浅两套 ThemeData。Phase 0 F4 曾计划把
+/// 本构建器接入 Shell 收敛双真源，实际收敛结果相反：运行时唯一真源 =
+/// `myune/theme/theme_provider.dart`（ColorScheme.fromSeed + MiSans，
+/// main.dart MaterialApp 消费）。本文件现仅服务 Gallery 预览页
+/// （gallery_page.dart）与 design_system 测试；`vxMonoStyle` 仍被
+/// vx 组件族引用（等宽数字样式，与 ThemeData 无关）。
+/// 运行时入口不得引入本构建器——由 test/theme_source_guard_test.dart
+/// 锁定（P2-02）。
 ///
 /// 规则：
 /// - Token 是唯一颜色来源，页面不得自行硬编码颜色；
