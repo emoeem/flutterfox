@@ -273,3 +273,16 @@
 - **G8 W6 MPRIS 核验结论**：GUI 运行中 user bus 无 org.mpris.MediaPlayer2.*（busctl 实跑，app up 后采集），P2-05 维持开放，Rust 实装不在本阶段（桌面零回归铁律）。
 - **G9 运行时未验证项（如实披露）**：真实桌面拖调把手交互（无输入合成驱动拖调实机）未验证；侧栏宽度/折叠记忆的运行时重启路径由 widget 层重启用例（desktop_three_column_layout_test）+ SharedPreferences mock 通道覆盖；侧栏折叠/展开过渡帧溢出修复（OverflowBox 自然宽布局 + Stack 裁剪，2026-11-13 widget 层实证 _NavRow <68px 中间帧溢出 21px）实机动画观感未走查。
 - **本轮验证记录（报告员实跑）**：定向 7 文件 **78 项全绿**（`flutter test test/desktop_three_column_layout_test.dart test/desktop_queue_interaction_test.dart test/shell_test.dart test/mobile_now_playing_layout_test.dart test/queue_interaction_test.dart test/tablet_shell_test.dart test/mobile_shell_test.dart --reporter compact`，`+78: All tests passed!` exit 0；desktop_three_column 19 + desktop_queue_interaction 7 + shell 10 + mobile_now_playing_layout 15 + queue_interaction 8 + tablet_shell 7 + mobile_shell 9，与 +78 计数吻合）；flutter analyze 0 issue；dart format 12 文件（6 changed）；debug bundle 重建（`flutter build linux --debug` exit 0，RUSTUP_TOOLCHAIN=1.99.0，Rust 零改动）；Xvfb 真实后端 5 视口（1024x640/1150x720/1280x800/1440x900/1920x1080）实拍逐张 Read 目检通过（30k 曲库 debug 启动约 90-120s，poll `playback pump started` 后采集；P1-14 两宽对照 + P2-11 空态在图内直接可核）；MPRIS `busctl --user list` 实跑（app 运行中）grep org.mpris.MediaPlayer2 零命中。全量 flutter test / cargo test 外部门禁统一执行，本轮未跑；不执行 git commit/push。
+
+## 用户实测缺陷登记 · 第二批（2026-11-14 02:0x，用户全屏实际使用中报告）
+
+证据：`docs/redesign/screenshots/user-feedback/2026-11-14-discover-source-dropdown.png`（音源下拉展开）、`docs/redesign/screenshots/user-feedback/2026-11-14-nowplaying-no-cover-lyrics.png`（全屏播放页 02:02 实拍）。清尾「用户实测缺陷修复」批次收口。
+
+| 编号 | 严重程度 | 位置 | 问题 | 归属 |
+| --- | --- | --- | --- | --- |
+| P1-20 | P1 | 发现页音源筛选器（discover_page.dart `_selectSource`/`_loadAggregated`） | 用户实测：音源下拉选择单音源后，再选「全部音源」无法回到聚合视图（静态读码 fetch/渲染链路看似正确，需运行时复现定位真实根因） | 清尾修复批次 |
+| P2-16 | P2 | Now Playing 封面链 | 全屏播放页 Light It Up（来源待查）封面灰占位；P1-15 的 403 修复未覆盖该曲目/音源，需定位该曲封面 URL 与所属音源后补齐 | 清尾修复批次 |
+| P2-17 | P2 | 歌词页（now_playing 歌词区） | 歌词「暂无」且文案自述「本版本暂无手动重新获取入口」；需确认该音源歌词自动获取是否工作，并提供手动重取入口 | 清尾修复批次 |
+| P2-18 | P2 | 桌面全屏播放页布局（§7.7） | 布局空旷：封面固定左中，右半区大面积空置（02:02 实拍），视觉完成度不足 | 清尾修复批次 |
+
+用户原话（登记依据）：「显示没有封面也没有歌词啊」「这个切换歌单啊，居然最开始是全部歌单，但是随便选择一个歌单之后，居然无法切回去啊」「整个界面的ui部分也不够」。
