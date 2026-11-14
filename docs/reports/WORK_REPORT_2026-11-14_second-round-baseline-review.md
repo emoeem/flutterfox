@@ -120,8 +120,18 @@
 - **per-command ack**：同属 A-1b 契约变更。
 - **运行时/真机证据**：引导窗口补投、断连看门狗、lagged 重同步均为 widget/单元层验证；Android 真机与 Linux 实机断连复验维持「需设备验证」（用户既有约束，未触碰 APK/Gradle/AVD）。
 
-## 9. Batch A-1 之后的入口
+## 9. Batch A-1b / A-2 / A-3（同日连续实施，均已推送，用户已授权全部后续内容）
 
-1. 用户审阅本批 diff（`git diff` 5 文件）→ 授权 commit/push（如有）。
-2. A-1b（#2 命令代次 + ack 契约，DTO+FRB 再生成）与 A-2（事件与快照：state_changed 分支/refresh 单飞/attach 顺序/泵死亡可见化）可并行排批。
-3. Batch B 主题统一在 A-1 系列收口后开工。
+| 批次 | commit | 内容 | 门禁 |
+| --- | --- | --- | --- |
+| A-1b | `5e6f066` | 命令契约升级：8 变体 command_id 打戳 + 歌曲域 generation（FFI-R04 过期过滤）；新 FFI hostPlayerAck + pending 表销账（FFI-R06 ack 回销）；FRB 再生成幂等校验 | Rust 838/0、Flutter 391/391、CI 同款 clippy 0 |
+| A-2 | `9304b86` | emit() 停止尾随全量 StateChanged（旧实现克隆后 Dart 整体丢弃）；_refreshState 单飞+追尾；attach 先订阅后拉快照；_eventLoop 连续 5 败置 streamDead + restartEventLoop；state() 拆出 local_songs（新 FFI localSongs + 按需拉取，页面零改动）；downloads_bridge 500ms→1s | 同上口径全绿 |
+| A-3 | `092fd92` | PlayerState::as_protocol_str() 播放状态串单源；pubspec FRB 精确锁；ci.yml 新增 codegen-check job；gate 脚本 clippy 与 CI 逐字对齐 | 同上口径全绿 |
+
+关键教训（f56e08b Lint 失败复盘）：CI clippy 门禁为 `-D warnings -A clippy::double_must_use`（30 条基线告警即 double_must_use，async_trait 宏展开固有豁免）；A-1 曾用宽松口径对账漏掉 2 条新告警，A-1b 起以 CI 同款命令对账并修复 gate 脚本分叉。
+
+遗留如实登记：一次性事件（Notification/二维码/Sync/Browse 应答）丢失即丢为既定语义；sync cancelled 字段化与结构化 FfiError 留 Sync/下载批次；AppModel 事件泵直测需真控制器留 Batch I；R02 慢 Play 分流依赖代次契约留 A-1c 评估；运行时/真机证据全部维持「需设备验证」。
+
+## 10. Batch B 进入
+
+Batch A 全部收口（审计 + A-1/A-1b/A-2/A-3）。下一批 Batch B 主题真源统一（SR-03..08：双真源收敛、44 预设投影修复、dynamicColor 单源、Typography 层级、guard 补洞）。
