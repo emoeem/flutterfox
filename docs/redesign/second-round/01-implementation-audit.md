@@ -127,7 +127,7 @@ frb_generated.rs/.dart/.freezed.dart 共 657 行变动确认为 codegen 再生�
 
 ## 九、第二轮差距登记（SR 编号，仅登记；并入 04 矩阵时按计划书 §10.4 更新原条目、新缺陷续新号）
 
-> 状态更新（2026-11-14 门禁恢复批次后）：SR-01 已处置（CI 6 处 pin 3.47.9 + analyze/test 拆独立 job + 版本输出；CI 实际运行结论待 push 后观察）；SR-02 已处置（now_playing_test 按 P2-17/P2-18 新行为重写 6 用例，18 项全绿）；SR-12 已处置（LyricsRetryButton 在途/失败/超时态 + DIAG 清除 + 过时注释更新 + Dart widget 6 用例 + Rust 侧 service.rs LoadLyrics 成功/失败两路径回归测试，mock LyricFetcher 注入）。详见 04 缺陷矩阵同日更新行。
+> 状态更新（2026-11-14 门禁恢复批次后）：SR-01 已关闭（CI 6 处 pin 3.47.9 + analyze/test 拆独立 job + 版本输出；推送后 run 43556931399 实测 8/8 job 全绿，analyze 1m11s 修复直接生效，日志确认 Flutter 3.47.9/Dart 3.13.7）；SR-02 已处置（now_playing_test 按 P2-17/P2-18 新行为重写 6 用例，18 项全绿）；SR-12 已处置（LyricsRetryButton 在途/失败/超时态 + DIAG 清除 + 过时注释更新 + Dart widget 6 用例 + Rust 侧 service.rs LoadLyrics 成功/失败两路径回归测试，mock LyricFetcher 注入）。详见 04 缺陷矩阵同日更新行。
 
 | 编号 | 级别 | 内容 | 证据 |
 |---|---|---|---|

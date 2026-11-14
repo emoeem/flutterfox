@@ -77,7 +77,7 @@
 
 - 6 处 `channel: stable` 全部补 `flutter-version: 3.47.9`（ci.yml analyze/test 两 job + release-flutter 四平台构建），YAML 解析校验通过（两文件 jobs 列表实测）。
 - analyze 与 test 已拆独立 job（`flutter-analyze` / `flutter-test`），任一失败不影响另一 job 出证据。
-- **CI 实际运行结论未验证**：本批次未 push（用户指令），下次 push 后到 PR #12 观察 `flutter --version` 日志与 analyze/test 双 job 结论，这是 CI 修复的最终闭环证据。
+- **CI 实际运行结论（已闭环，2026-11-14 12:0x）**：提交 `e58e7c2` 推送后 run `43556931399` **8/8 job 全绿**：Flutter (analyze) 1m11s（上一 run 同 job 失败，修复直接生效）、Flutter (test) 3m30s（独立 job 首次跑出测试证据）、Lint/Build Linux/Windows/macOS×2/Android 全绿；版本日志实测 `Flutter 3.47.9 • Dart 3.13.7`，与本地验证版本一致。SR-01 关闭。
 
 ### 7.3 NowPlaying 新旧行为差异与 P2-17/P2-18 冲突解决
 
