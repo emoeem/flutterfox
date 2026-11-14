@@ -13,6 +13,9 @@
 
 ## 文档清单
 
+- [SESSION-HANDOFF-2026-11-14.md](SESSION-HANDOFF-2026-11-14.md): 跨机器交接（Windows 端继续第三轮工程演进：当前状态/任务队列/环境命令/开工指令）
+- [redesign/second-round/PLAN-rust-ffi-and-ui-evolution.md](redesign/second-round/PLAN-rust-ffi-and-ui-evolution.md): 第三轮《跨平台工程演进计划书》仓内副本（Batch A-I 全量任务书）
+
 - [reports/WORK_REPORT_2026-11-14_second-round-baseline-review.md](reports/WORK_REPORT_2026-11-14_second-round-baseline-review.md): 第三轮工程演进 Phase 0 基线复核 + Batch A 只读审计报告（SR-11 裁决 + FFI-R 登记入口）
 - [architecture/ffi-contract-inventory.md](architecture/ffi-contract-inventory.md): FFI 契约与调用链清单（24 API/24 DTO/60 命令变体/双流/测试矩阵）
 - [architecture/ffi-reliability-design.md](architecture/ffi-reliability-design.md): FFI 可靠性风险判定与加固设计（R01-R12 判定+18 项最小修复候选+三批实施建议）
