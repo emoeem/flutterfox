@@ -1,4 +1,4 @@
-/// ThemeData 产源收口护栏（P2-02 立法，B1 修订）。
+/// ThemeData 产源收口护栏（P2-02 立法，B1 修订，B2 追加入口护栏）。
 ///
 /// 运行时唯一真源 = `src/theme/app_theme.dart` buildAppTheme（B1 统一主题
 /// 构建器：44 套注册表主题显式色板 + VxTypography 层级 + VxPalette 扩展），
@@ -60,7 +60,8 @@ void main() {
     expect(
       source.contains("import 'voicefox_theme.dart'"),
       isTrue,
-      reason: 'app_theme 复用 flclash 分层 / FlexThemeData / GappedSliderTrackShape',
+      reason:
+          'app_theme 复用 flclash 分层 / FlexThemeData / GappedSliderTrackShape',
     );
   });
 
@@ -72,6 +73,31 @@ void main() {
       ),
       isTrue,
       reason: '逐卡预览展示每张卡自己的配色，属设计行为而非全局主题切换',
+    );
+  });
+
+  test('main.dart 入口无内联主题产源（B2）', () {
+    final source = File('lib/main.dart').readAsStringSync();
+    expect(
+      source.contains('ColorScheme.fromSeed'),
+      isFalse,
+      reason:
+          'main.dart 不得内联 fromSeed（uiOnly/引导骨架屏统一走 '
+          'buildAppTheme，B2 入口收敛）',
+    );
+    expect(
+      source.contains('0xFF89B4FA'),
+      isFalse,
+      reason:
+          'main.dart 不得硬编码 mocha seed 色值'
+          '（色值唯一来源 src/theme/seed_colors.dart）',
+    );
+    expect(
+      source.contains('ThemeData('),
+      isFalse,
+      reason:
+          'main.dart 不得裸构 ThemeData（入口主题统一委托 '
+          'src/theme/app_theme.dart buildAppTheme，B2）',
     );
   });
 }

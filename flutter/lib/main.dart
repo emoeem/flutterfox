@@ -14,7 +14,7 @@ import 'dart:io' show File, FileMode, Platform;
 
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:path_provider/path_provider.dart';
@@ -37,6 +37,7 @@ import 'src/shell/app_shell.dart' show ShellDetailSeed, VoicefoxShell;
 import 'src/shell/app_sidebar.dart' show ShellDestination;
 import 'src/shell/mobile_shell.dart' show TouchShell;
 import 'src/shell/responsive_shell.dart' show isTouchPlatform;
+import 'src/theme/app_theme.dart';
 
 /// 桌面窗口平台（非触屏）：window_manager / 窗控 / DragToMoveArea 只在
 /// 这些平台进树。判定用 dart:io Platform（isTouchPlatform），禁止
@@ -380,8 +381,8 @@ class _VoicefoxAppState extends State<VoicefoxApp> {
     if (widget.uiOnly) {
       // 无 Rust UI-only：壳直接渲染，不等 Rust 就绪（model.ready 永假也
       // 不回退骨架屏）。Provider 集对齐 shell_test.dart 桌面 harness；
-      // 主题与引导骨架屏同源 seed（真主题链路在 Phase 8 接 Rust 配置）。
-      final brightness = MediaQuery.platformBrightnessOf(context);
+      // 主题走 buildAppTheme 统一构建器（B2）：registry 默认 key 定深色
+      // （真主题链路在 Phase 8 接 Rust 配置）。
       return MultiProvider(
         providers: [
           ChangeNotifierProvider<AppModel>.value(value: widget.model),
@@ -394,12 +395,10 @@ class _VoicefoxAppState extends State<VoicefoxApp> {
         ],
         child: MaterialApp(
           title: 'voicefox',
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF89B4FA),
-              brightness: brightness,
-            ),
+          theme: buildAppTheme(
+            'catppuccin-mocha',
+            Brightness.dark,
+            platform: defaultTargetPlatform,
           ),
           home: isTouchPlatform
               ? TouchShell(model: widget.model)
@@ -423,12 +422,11 @@ class _VoicefoxAppState extends State<VoicefoxApp> {
           final brightness = MediaQuery.platformBrightnessOf(context);
           return MaterialApp(
             title: 'voicefox',
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF89B4FA),
-                brightness: brightness,
-              ),
+            // 引导骨架屏同走统一构建器（B2）：按平台亮度取 registry 默认 key。
+            theme: buildAppTheme(
+              'catppuccin-mocha',
+              brightness,
+              platform: defaultTargetPlatform,
             ),
             home: _BootstrapScreen(model: widget.model),
           );
