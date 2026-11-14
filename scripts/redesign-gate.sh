@@ -10,9 +10,10 @@
 #   flutter-analyze  flutter analyze --fatal-infos（flutter/）
 #   flutter-test     flutter test（flutter/）
 #   cargo-fmt        cargo fmt --all -- --check
-#   cargo-clippy     cargo clippy --workspace --all-targets --all-features -- -D warnings
-#                    （基线存在既有告警，豁免规则见 docs/redesign/00-baseline.md；
-#                     不纳入 all，避免每次全量重编译）
+#   cargo-clippy     cargo clippy --workspace --all-targets -- -D warnings -A clippy::double_must_use
+#                    （与 ci.yml lint job 逐字一致：double_must_use 30 条基线为
+#                     async_trait 宏展开固有，CI 既有豁免；2026-11-14 A-3 对齐前
+#                     旧命令带 --all-features 且缺豁免，本地恒红不可用作门禁）
 #   cargo-test       cargo test --workspace
 #   all              硬门禁全套：dart-format + flutter-analyze + flutter-test + cargo-fmt + cargo-test
 #   env              打印本脚本解析出的环境（诊断用）
@@ -56,7 +57,7 @@ case "${1:-}" in
     ;;
   cargo-clippy)
     cd "$REPO_ROOT" || exit 1
-    exec cargo clippy --workspace --all-targets --all-features -- -D warnings
+    exec cargo clippy --workspace --all-targets -- -D warnings -A clippy::double_must_use
     ;;
   cargo-test)
     cd "$REPO_ROOT" || exit 1

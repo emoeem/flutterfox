@@ -1066,16 +1066,7 @@ impl From<ApplicationEvent> for VoicefoxEvent {
                 let mut event = empty();
                 event.position_ms = position.as_millis() as u64;
                 event.duration_ms = duration.as_millis() as u64;
-                event.playback_state = Some(
-                    match state {
-                        lx_core::model::source::PlayerState::Idle => "idle",
-                        lx_core::model::source::PlayerState::Loading => "loading",
-                        lx_core::model::source::PlayerState::Playing => "playing",
-                        lx_core::model::source::PlayerState::Paused => "paused",
-                        lx_core::model::source::PlayerState::Stopped => "stopped",
-                    }
-                    .to_string(),
-                );
+                event.playback_state = Some(state.as_protocol_str().to_string());
                 event
             }
             ApplicationEvent::LibraryChanged

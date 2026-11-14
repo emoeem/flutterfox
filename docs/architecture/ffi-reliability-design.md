@@ -118,7 +118,16 @@
 | #8 R09 local_songs 拆分 | VoicefoxController::state() 不再填充 local_songs（O(n) 克隆+FFI 序列化移出高频路径）；新 FFI `localSongs(controller)`；Dart `refreshLocalSongs()` 在引导与 local_music 事件时按需拉取，页面消费 `state.localSongs` 零改动 | |
 | #16 R09 downloads 节流 | downloads_bridge 轮询 500ms→1s | |
 
-待门禁确认后提交。
+待门禁确认后提交（已全绿后随 A-2 提交）。
+
+## A-3 实施记录（2026-11-14）
+
+| 修复 | 实施 | 说明 |
+|---|---|---|
+| #15 R10 播放状态串单源 | core PlayerState 新增 `as_protocol_str()`；state.rs PlaybackStateDto 与 ffi lib.rs progress 事件两处手写 match 收敛调用；Dart parse_host_state/MobilePlaybackPhase 映射对齐不变 | sync 取消语义「同步已取消」文本匹配改独立 cancelled 字段涉及 Sync 事件 schema 再变一次，如实留待 Sync 批次（Batch F 相邻） |
+| #17 R11 工程锁 | pubspec flutter_rust_bridge `^2.13.0`→`2.13.0` 精确锁（Cargo 侧本就 =2.13.0）；ci.yml 新增 `codegen-check` job（装 pinned codegen → generate → diff 非空即失败，生成文件与手写 API 漂移在 CI 层拦截） | |
+| 门禁工具对账 | scripts/redesign-gate.sh cargo-clippy 与 ci.yml lint job 逐字对齐（去掉 --all-features、加 -A double_must_use；旧命令本地恒红不可用作门禁） | |
+| #18 测试缺口 | state()/event_next 双侧测试缺口经 A-2 改造后由全量套件间接覆盖；AppModel 事件泵直测需真控制器，如实登记为 Batch I 观测性任务 | |
 
 ## A-1 实施记录（2026-11-14，工作区改动，未 commit）
 

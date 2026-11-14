@@ -37,6 +37,42 @@ jobs:
       - name: Clippy (zero warnings)
         run: cargo clippy --workspace --all-targets -- -D warnings -A clippy::double_must_use
 
+  # ── FRB codegen 一致性（Batch A #17/A-3）：再生成后必须零 diff。
+  #    生成文件（frb_generated.rs/.dart、lib.dart、lib.freezed.dart、
+  #    api.dart）禁止手工编辑；手写 API 变更必须同批重生成并提交。──
+  codegen-check:
+    name: FRB codegen consistency
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter (pinned)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - name: Pub get
+        working-directory: flutter
+        run: flutter pub get
+
+      - name: Install flutter_rust_bridge_codegen
+        run: cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+
+      - name: Regenerate bindings
+        run: flutter_rust_bridge_codegen generate
+
+      - name: Check generated files are up to date
+        run: |
+          if [ -n "$(git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge)" ]; then
+            git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge
+            echo "::error::生成文件与手写 API 不同步：本地运行 flutter_rust_bridge_codegen generate 并提交结果"
+            exit 1
+          fi
+
   # ── Linux 构建 ──
   build-linux:
     name: Build Linux x86_64
