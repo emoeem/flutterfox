@@ -29,7 +29,9 @@ import '../pages/discover_page.dart';
 import '../pages/downloads_page.dart';
 import '../pages/help_page.dart';
 import '../pages/home_page.dart';
+import '../pages/mobile_discover_page.dart';
 import '../pages/mobile_home_page.dart';
+import '../pages/mobile_search_page.dart';
 import '../pages/library_page.dart';
 import '../pages/local_music_page.dart';
 import '../pages/playlist_detail_page.dart';
@@ -792,6 +794,9 @@ enum ShellFormFactor { desktop, mobile }
 /// [searchSeed] 搜索页种子（桌面 Header 提交联动）；[libraryTab]/
 /// [settingsSection] 为 VOICEFOX_START_* 验收种子（移动壳默认 null）；
 /// [form] 选择壳形态（见 [ShellFormFactor]，缺省 desktop 桌面行为不变）。
+/// Batch C-A：home/discover/search 三槽在 mobile 形态产独立手机页
+/// （MobileHomePage / MobileDiscoverPage / MobileSearchPage），其余槽与
+/// 全部桌面/平板目的地行为不变。
 Widget buildShellPage(
   AppModel model,
   ShellDestination dest, {
@@ -803,11 +808,22 @@ Widget buildShellPage(
   return switch (dest) {
     ShellDestination.home =>
       form == ShellFormFactor.mobile ? MobileHomePage(model) : HomePage(model),
-    ShellDestination.discover => DiscoverPage(model),
-    ShellDestination.search => KeyedSubtree(
-      key: ValueKey('search-page:$searchSeed'),
-      child: SearchPage(model, seedKeyword: searchSeed),
-    ),
+    // 发现/搜索槽（Batch C-A）：手机档用独立手机页（§5.3/§5.4 手机布局），
+    // 桌面/平板档维持桌面页（平板显式沿用桌面缺省，偏差仍登记 04 矩阵）。
+    ShellDestination.discover =>
+      form == ShellFormFactor.mobile
+          ? MobileDiscoverPage(model)
+          : DiscoverPage(model),
+    ShellDestination.search =>
+      form == ShellFormFactor.mobile
+          ? KeyedSubtree(
+              key: ValueKey('mobile-search-page:$searchSeed'),
+              child: MobileSearchPage(model, seedKeyword: searchSeed),
+            )
+          : KeyedSubtree(
+              key: ValueKey('search-page:$searchSeed'),
+              child: SearchPage(model, seedKeyword: searchSeed),
+            ),
     ShellDestination.library => LibraryPage(model, initialTab: libraryTab),
     ShellDestination.downloads => DownloadsPage(model),
     ShellDestination.settings => SettingsPage(

@@ -7,6 +7,10 @@
 /// - 音源/接口不支持的类型不伪造数据：显示解释文案与可用操作。
 /// - 数据通道复用 AppModel browse 分槽（loadPlaylists / loadPlaylistCategories /
 ///   loadLeaderboardBoards），代码新写于 pages/，不引用 myune 逻辑。
+///
+/// 业务编排（选择状态、请求键去重、聚合补拉、四态重试）单一出处
+/// [DiscoverController]（discover_shared.dart，Batch C-01 提炼）：本页与
+/// 手机 MobileDiscoverPage 共用，桌面 UI 行为不变。
 library;
 
 import 'package:flutter/material.dart';
@@ -21,51 +25,20 @@ import '../design_system/components/vx_playlist_card.dart';
 import '../design_system/components/vx_section_header.dart';
 import '../design_system/design_tokens.dart';
 import '../design_system/components/vx_artwork.dart';
+import 'discover_shared.dart';
 import 'leaderboard_page.dart';
 import 'playlist_detail_page.dart';
 import 'search_page.dart';
 
-/// 发现页子 Tab。
-enum DiscoverTab { playlists, leaderboard, artists, albums, categories }
-
-/// Tab 标题（与计划书 §4.2 子导航一致）。
-String discoverTabLabel(DiscoverTab tab) => switch (tab) {
-  DiscoverTab.playlists => '精选歌单',
-  DiscoverTab.leaderboard => '排行榜',
-  DiscoverTab.artists => '歌手',
-  DiscoverTab.albums => '专辑',
-  DiscoverTab.categories => '分类',
-};
-
-/// Tab 是否可用（真实 SourceCapabilitiesDto）。
-///
-/// [source] 为 null 表示「全部音源」：按已启用音源的能力并集判定。
-/// 纯函数，便于单测禁用逻辑。
-bool discoverTabEnabled(
-  DiscoverTab tab,
-  List<bridge.SourceCapabilitiesDto> sources, {
-  String? source,
-}) {
-  final pool = source == null
-      ? sources
-      : sources.where((item) => item.id == source);
-  return switch (tab) {
-    DiscoverTab.playlists => pool.any((item) => item.playlists),
-    DiscoverTab.leaderboard => pool.any((item) => item.leaderboard),
-    DiscoverTab.artists => pool.any((item) => item.artist),
-    DiscoverTab.albums => pool.any((item) => item.album),
-    DiscoverTab.categories => pool.any((item) => item.playlistCategories),
-  };
-}
-
-/// Tab 禁用时的解释文案。
-String discoverTabDisabledReason(DiscoverTab tab) => switch (tab) {
-  DiscoverTab.playlists => '当前音源不支持浏览歌单',
-  DiscoverTab.leaderboard => '当前音源不支持排行榜',
-  DiscoverTab.artists => '当前音源不支持歌手浏览',
-  DiscoverTab.albums => '当前音源不支持专辑浏览',
-  DiscoverTab.categories => '当前音源不提供歌单分类',
-};
+/// 手机页/测试仍从本文件消费 Tab 能力 API（迁移自本文件的公开面）。
+export 'discover_shared.dart'
+    show
+        DiscoverTab,
+        discoverTabLabel,
+        discoverTabEnabled,
+        discoverTabDisabledReason,
+        DiscoverController,
+        DiscoverUnsupportedBody;
 
 class DiscoverPage extends StatefulWidget {
   final AppModel model;
@@ -80,161 +53,36 @@ class DiscoverPage extends StatefulWidget {
 }
 
 class _DiscoverPageState extends State<DiscoverPage> {
-  static const _categoriesKind = 'playlist_categories';
-  static const _playlistsKind = 'playlists';
-  static const _boardsKind = 'leaderboard_boards';
-
-  /// 「全部音源」的菜单哨兵值。PopupMenuButton 把 pop 出的 null 当作
-  /// 「未选择、菜单被取消」（SDK popup_menu.dart showButtonMenu 的 then
-  /// 回调里 `newValue == null` 走 onCanceled），value 为 null 的菜单项
-  /// 永远不会触发 onSelected——P1-20「选回全部音源不回退」即由此起。
-  /// 真实音源 id 不可能为空串，用 '' 作哨兵安全。
-  static const _allSourcesSentinel = '';
-
-  /// null = 全部音源（内容按音源分组）。
-  String? _source;
-  DiscoverTab _tab = DiscoverTab.playlists;
-  String _category = '';
-  final Set<String> _requestedBoards = {};
-  final Set<String> _requestedPlaylistKeys = {};
-  String? _categoriesRequested;
+  late DiscoverController _ctrl;
 
   AppModel get _model => widget.model;
 
   @override
   void initState() {
     super.initState();
-    // 选源与加载挂在模型监听里；调度 defer 到帧后执行——模型通知可能
-    // 发生在 build 期，直接触发会让祖先在 build 中被标脏。
-    _model.addListener(_maybeLoad);
-    _maybeLoad();
+    _ctrl = DiscoverController(widget.model);
+    _ctrl.attach();
   }
 
   @override
   void didUpdateWidget(covariant DiscoverPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.model != widget.model) {
-      oldWidget.model.removeListener(_maybeLoad);
-      widget.model.addListener(_maybeLoad);
-      _maybeLoad();
+      _ctrl
+        ..detach()
+        ..dispose();
+      _ctrl = DiscoverController(widget.model);
+      _ctrl.attach();
     }
   }
 
   @override
   void dispose() {
-    _model.removeListener(_maybeLoad);
+    _ctrl
+      ..detach()
+      ..dispose();
     super.dispose();
   }
-
-  bool _loadScheduled = false;
-
-  void _maybeLoad() {
-    if (_loadScheduled) return;
-    _loadScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadScheduled = false;
-      if (!mounted) return;
-      _loadNow();
-    });
-  }
-
-  void _loadNow() {
-    if (_source == null) {
-      _loadAggregated();
-      return;
-    }
-    _loadForSource(_source!);
-  }
-
-  /// 「全部音源」：给每个支持当前 Tab 数据类型的音源补拉数据。
-  void _loadAggregated() {
-    final sources = _model.state.sources;
-    switch (_tab) {
-      case DiscoverTab.playlists:
-        for (final source in sources.where((s) => s.playlists)) {
-          _ensurePlaylists(source.id, _category);
-        }
-      case DiscoverTab.leaderboard:
-        for (final source in sources.where((s) => s.leaderboard)) {
-          if (_requestedBoards.add(source.id)) {
-            _model.loadLeaderboardBoards(source.id);
-          }
-        }
-      case DiscoverTab.categories:
-        for (final source in sources.where((s) => s.playlistCategories)) {
-          _categoriesRequested ??= '';
-          if (!_requestedBoards.contains('cat|${source.id}')) {
-            _requestedBoards.add('cat|${source.id}');
-            _model.loadPlaylistCategories(source.id);
-          }
-        }
-      case DiscoverTab.artists:
-      case DiscoverTab.albums:
-        break;
-    }
-  }
-
-  void _loadForSource(String source) {
-    switch (_tab) {
-      case DiscoverTab.playlists:
-        _ensurePlaylists(source, _category);
-      case DiscoverTab.leaderboard:
-        if (_requestedBoards.add(source)) {
-          _model.loadLeaderboardBoards(source);
-        }
-      case DiscoverTab.categories:
-        if (_categoriesRequested != source) {
-          _categoriesRequested = source;
-          _model.loadPlaylistCategories(source);
-        }
-      case DiscoverTab.artists:
-      case DiscoverTab.albums:
-        break;
-    }
-  }
-
-  void _ensurePlaylists(String source, String category) {
-    final key = '$source|$category';
-    if (_requestedPlaylistKeys.add(key)) {
-      _model.loadPlaylists(source: source, category: category);
-    }
-  }
-
-  // ── 交互 ──
-
-  void _selectSource(String? id) {
-    if (_source == id) return;
-    setState(() {
-      _source = id;
-      _category = '';
-      _requestedBoards.clear();
-      _requestedPlaylistKeys.clear();
-      _categoriesRequested = null;
-      // 切源后当前 Tab 可能不再支持：回落到首个支持的 Tab。
-      if (!discoverTabEnabled(_tab, _model.state.sources, source: id)) {
-        _tab = _firstEnabledTab(id);
-      }
-    });
-    _maybeLoad();
-  }
-
-  void _selectTab(DiscoverTab tab) {
-    if (tab == _tab) return;
-    setState(() => _tab = tab);
-    _maybeLoad();
-  }
-
-  DiscoverTab _firstEnabledTab(String? source) {
-    for (final tab in DiscoverTab.values) {
-      if (discoverTabEnabled(tab, _model.state.sources, source: source)) {
-        return tab;
-      }
-    }
-    return DiscoverTab.playlists;
-  }
-
-  String _sourceName(String source) =>
-      _model.capability(source)?.name ?? source;
 
   List<bridge.SourceCapabilitiesDto> get _playlistSources =>
       _model.state.sources.where((s) => s.playlists).toList();
@@ -244,7 +92,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _model,
+      listenable: Listenable.merge([widget.model, _ctrl]),
       builder: (context, _) {
         final sources = _model.state.sources;
         if (sources.isEmpty) {
@@ -270,7 +118,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
   Widget _pageHead(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final selected = _source != null ? _model.capability(_source!) : null;
+    final selected = _ctrl.source != null
+        ? _model.capability(_ctrl.source!)
+        : null;
     return Padding(
       padding: const EdgeInsets.only(top: VxSpacing.sm),
       child: Row(
@@ -297,12 +147,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           const SizedBox(width: VxSpacing.sm),
           IconButton(
             tooltip: '刷新',
-            onPressed: () {
-              _requestedBoards.clear();
-              _requestedPlaylistKeys.clear();
-              _categoriesRequested = null;
-              _maybeLoad();
-            },
+            onPressed: _ctrl.refresh,
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -314,12 +159,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
   Widget _sourceDropdown(BuildContext context) {
     return PopupMenuButton<String?>(
       tooltip: '选择音源范围',
-      // 「全部音源」用哨兵值参与高亮；null 仍表示聚合（P1-20，见 _allSourcesSentinel）。
-      initialValue: _source ?? _allSourcesSentinel,
-      onSelected: (id) => _selectSource(id == _allSourcesSentinel ? null : id),
+      // 「全部音源」用哨兵值参与高亮；null 仍表示聚合（P1-20，见
+      // DiscoverController.allSourcesSentinel）。
+      initialValue: _ctrl.source ?? DiscoverController.allSourcesSentinel,
+      onSelected: (id) => _ctrl.selectSource(
+        id == DiscoverController.allSourcesSentinel ? null : id,
+      ),
       itemBuilder: (context) => [
         const PopupMenuItem<String?>(
-          value: _allSourcesSentinel,
+          value: DiscoverController.allSourcesSentinel,
           child: Text('全部音源'),
         ),
         const PopupMenuDivider(),
@@ -345,9 +193,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
             ),
             const SizedBox(width: VxSpacing.sm),
             Text(
-              _source == null
+              _ctrl.source == null
                   ? '音源：全部'
-                  : '音源：${_model.capability(_source!)?.name ?? _source}',
+                  : '音源：${discoverSourceName(_model, _ctrl.source!)}',
               style: VxTypography.caption.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -385,12 +233,12 @@ class _DiscoverPageState extends State<DiscoverPage> {
     List<bridge.SourceCapabilitiesDto> sources,
     ColorScheme scheme,
   ) {
-    final enabled = discoverTabEnabled(tab, sources, source: _source);
-    final selected = tab == _tab && enabled;
+    final enabled = discoverTabEnabled(tab, sources, source: _ctrl.source);
+    final selected = tab == _ctrl.tab && enabled;
     return Tooltip(
       message: enabled ? discoverTabLabel(tab) : discoverTabDisabledReason(tab),
       child: GestureDetector(
-        onTap: enabled ? () => _selectTab(tab) : null,
+        onTap: enabled ? () => _ctrl.selectTab(tab) : null,
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: VxSpacing.lg,
@@ -435,7 +283,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
   }
 
   Widget _body(BuildContext context) {
-    switch (_tab) {
+    switch (_ctrl.tab) {
       case DiscoverTab.playlists:
         return _playlistsBody(context);
       case DiscoverTab.leaderboard:
@@ -444,24 +292,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
         return _categoriesBody(context);
       case DiscoverTab.artists:
       case DiscoverTab.albums:
-        return _unsupportedBody(context);
+        return DiscoverUnsupportedBody(tab: _ctrl.tab, onSearch: _openSearch);
     }
-  }
-
-  /// 歌手 / 专辑：后端没有「浏览全部歌手/专辑」的接口（只能从搜索结果或
-  /// 歌单详情进入），如实解释，不伪造入口。
-  Widget _unsupportedBody(BuildContext context) {
-    return VxEmptyState(
-      icon: _tab == DiscoverTab.artists
-          ? Icons.person_search_outlined
-          : Icons.album_outlined,
-      title: _tab == DiscoverTab.artists ? '暂不支持浏览全部歌手' : '暂不支持浏览全部专辑',
-      message: _tab == DiscoverTab.artists
-          ? '在线音源未提供歌手浏览接口：可以在搜索页搜索歌手名，或从歌曲行的「更多」进入歌手页。'
-          : '在线音源未提供专辑浏览接口：可以在搜索页搜索专辑名，或从歌曲行进入专辑页面。',
-      actionLabel: '去搜索',
-      onAction: () => _openSearch(),
-    );
   }
 
   void _openSearch() {
@@ -486,9 +318,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
         message: '可在设置中启用支持歌单的音源，推荐歌单会显示在这里。',
       );
     }
-    final scoped = _source == null
+    final scoped = _ctrl.source == null
         ? sources
-        : sources.where((s) => s.id == _source).toList();
+        : sources.where((s) => s.id == _ctrl.source).toList();
     return ListView(
       padding: const EdgeInsets.only(bottom: VxSpacing.xl),
       children: [for (final source in scoped) _playlistGroup(context, source)],
@@ -499,9 +331,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
     BuildContext context,
     bridge.SourceCapabilitiesDto source,
   ) {
-    final result = _model.browse(_playlistsKind, source.id, _category);
+    final result = _ctrl.playlistsResult(source.id);
     final playlists = result?.playlists ?? const <bridge.PlaylistDto>[];
-    final multiSource = _source == null;
+    final multiSource = _ctrl.source == null;
 
     Widget content;
     if (result == null || (result.loading && playlists.isEmpty)) {
@@ -521,10 +353,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           message: '无法读取「${source.name}」的推荐歌单。',
           detail: result.error,
           icon: Icons.cloud_off,
-          onRetry: () {
-            _requestedPlaylistKeys.remove('${source.id}|$_category');
-            _ensurePlaylists(source.id, _category);
-          },
+          onRetry: () => _ctrl.retryPlaylists(source.id),
         ),
       );
     } else if (playlists.isEmpty) {
@@ -533,7 +362,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
         child: VxEmptyState(
           icon: Icons.queue_music_outlined,
           title: result.notice ?? '暂无歌单数据',
-          message: _category.isEmpty ? '该音源没有返回推荐歌单。' : '该分类下没有返回歌单，可以换一个分类。',
+          message: _ctrl.category.isEmpty
+              ? '该音源没有返回推荐歌单。'
+              : '该分类下没有返回歌单，可以换一个分类。',
         ),
       );
     } else {
@@ -561,11 +392,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
           actions: [
             if (result?.hasMore ?? false)
               TextButton(
-                onPressed: () => _model.loadPlaylists(
-                  source: source.id,
-                  category: _category,
-                  page: (result?.page ?? 0) + 1,
-                ),
+                onPressed: () =>
+                    _ctrl.loadNextPlaylistsPage(source.id, result!),
                 child: const Text('加载更多'),
               ),
           ],
@@ -581,7 +409,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     return VxPlaylistCard(
       title: playlist.name,
       trackCount: playlist.songCount > 0 ? playlist.songCount : null,
-      source: _sourceName(playlist.source),
+      source: discoverSourceName(_model, playlist.source),
       width: 168,
       cover: VxArtwork(
         url: playlist.coverUrl,
@@ -613,9 +441,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
         message: '可在设置中启用支持排行榜的音源，热门榜单会显示在这里。',
       );
     }
-    final scoped = _source == null
+    final scoped = _ctrl.source == null
         ? capable
-        : capable.where((s) => s.id == _source).toList();
+        : capable.where((s) => s.id == _ctrl.source).toList();
     return ListView(
       padding: const EdgeInsets.only(bottom: VxSpacing.xl),
       children: [
@@ -628,7 +456,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     BuildContext context,
     bridge.SourceCapabilitiesDto source,
   ) {
-    final result = _model.browse(_boardsKind, source.id, '');
+    final result = _ctrl.boardsResult(source.id);
     final boards = result?.boards ?? const <bridge.LeaderboardDto>[];
 
     Widget content;
@@ -649,12 +477,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           message: '无法读取「${source.name}」的排行榜目录。',
           detail: result.error,
           icon: Icons.cloud_off,
-          onRetry: () {
-            _requestedBoards.remove(source.id);
-            if (_requestedBoards.add(source.id)) {
-              _model.loadLeaderboardBoards(source.id);
-            }
-          },
+          onRetry: () => _ctrl.retryBoards(source.id),
         ),
       );
     } else if (boards.isEmpty) {
@@ -741,9 +564,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
         message: '当前启用的音源都不提供歌单分类，可改用「精选歌单」浏览。',
       );
     }
-    final scoped = _source == null
+    final scoped = _ctrl.source == null
         ? capable
-        : capable.where((s) => s.id == _source).toList();
+        : capable.where((s) => s.id == _ctrl.source).toList();
     return ListView(
       padding: const EdgeInsets.only(bottom: VxSpacing.xl),
       children: [for (final source in scoped) _categoryGroup(context, source)],
@@ -754,7 +577,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     BuildContext context,
     bridge.SourceCapabilitiesDto source,
   ) {
-    final result = _model.browse(_categoriesKind, source.id, '');
+    final result = _ctrl.categoriesResult(source.id);
     final categories =
         result?.categories ?? const <bridge.PlaylistCategoryDto>[];
 
@@ -776,10 +599,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           message: '无法读取「${source.name}」的歌单分类。',
           detail: result.error,
           icon: Icons.cloud_off,
-          onRetry: () {
-            _categoriesRequested = null;
-            _maybeLoad();
-          },
+          onRetry: _ctrl.retryCategories,
         ),
       );
     } else if (categories.isEmpty) {
@@ -800,17 +620,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
             ActionChip(
               label: Text(category.name),
               tooltip: category.group,
-              onPressed: () {
-                // 点分类：切到单源并加载该分类的歌单。
-                setState(() {
-                  _source = source.id;
-                  _category = category.id;
-                  _tab = DiscoverTab.playlists;
-                  _requestedBoards.clear();
-                  _requestedPlaylistKeys.clear();
-                });
-                _ensurePlaylists(source.id, category.id);
-              },
+              onPressed: () => _ctrl.selectCategory(source.id, category.id),
             ),
         ],
       );
@@ -858,7 +668,7 @@ class _BoardRowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sourceName = model.capability(board.source)?.name ?? board.source;
+    final sourceName = discoverSourceName(model, board.source);
     return VxHoverBuilder(
       onTap: onOpen,
       builder: (context, hovering) => AnimatedContainer(

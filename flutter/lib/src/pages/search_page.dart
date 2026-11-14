@@ -13,6 +13,10 @@
 ///   / Shell 种子才记史，防抖中间态不入库；
 /// - 专辑 / 歌手 Tab 由歌曲结果真实聚合（同专辑/同歌手去重），卡片带来源标识；
 ///   聚合搜索不返回歌单数据，歌单 Tab 如实解释。
+///
+/// 业务编排（防抖、request_id 守卫、分页 in-flight 锁、音源筛选、聚合派生）
+/// 单一出处 [SearchPageController]（search_shared.dart，Batch C-02 提炼）：本页
+/// 与手机 MobileSearchPage 共用，桌面 UI 行为不变。
 library;
 
 import 'dart:async';
@@ -32,17 +36,17 @@ import '../design_system/design_tokens.dart';
 import '../design_system/components/vx_artwork.dart';
 import 'album_songs_page.dart';
 import 'artist_detail_page.dart';
+import 'search_shared.dart';
 
-/// 搜索结果类型 Tab。
-enum SearchType { all, songs, albums, artists, playlists }
-
-String _searchTypeLabel(SearchType type) => switch (type) {
-  SearchType.all => '全部',
-  SearchType.songs => '歌曲',
-  SearchType.albums => '专辑',
-  SearchType.artists => '歌手',
-  SearchType.playlists => '歌单',
-};
+/// 手机页/测试仍从本文件消费类型枚举与共享件（迁移自本文件的公开面）。
+export 'search_shared.dart'
+    show
+        SearchType,
+        searchTypeLabel,
+        SearchPageController,
+        SearchResultFooter,
+        confirmClearSearchHistory,
+        searchSnapshotSignature;
 
 class SearchPage extends StatefulWidget {
   final AppModel model;
@@ -57,42 +61,21 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  static const debounceMs = 300;
-
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _fieldFocus = FocusNode();
   final _tableFocus = FocusNode();
-  Timer? _debounce;
-
-  /// 音源多选筛选；空集合 = 全部音源（聚合搜索）。
-  /// 恰好选一个音源时下发给该音源过滤；多选时聚合搜索 + 本地过滤展示。
-  final Set<String> _selectedSources = {};
-
-  SearchType _type = SearchType.all;
+  late SearchPageController _ctrl;
 
   /// 行选中索引（相对过滤后的展示列表）；Shift 选区锚点。
   final Set<int> _selectedRows = {};
   int _anchorRow = -1;
 
-  /// 分页 in-flight 锁：searchMore 已下发但还没看到新响应（requestId 未变）。
-  bool _moreInFlight = false;
-  BigInt _seenRequestId = BigInt.zero;
-  String _seenSignature = '';
-
-  /// 搜索历史签名：历史增删不改变 search 快照签名，但空关键词态的面板
-  /// 必须随之重绘（单项删除/清空/置顶），所以通知守卫把历史一并纳入。
-  String _seenHistorySignature = '';
-
   @override
   void initState() {
     super.initState();
-    _seenRequestId = widget.model.state.search.requestId;
-    _seenSignature = _searchSignature(widget.model.state.search);
-    _seenHistorySignature = widget.model.searchHistory.join('\u0000');
-    widget.model.addListener(_onModelChanged);
-    // 历史读取容错降级（无插件通道 = 空历史），不阻塞首帧。
-    unawaited(widget.model.loadSearchHistory());
+    _ctrl = SearchPageController(widget.model);
+    _ctrl.attach();
     final seed = widget.seedKeyword.trim();
     if (seed.isNotEmpty) {
       _controller.text = seed;
@@ -103,9 +86,22 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   @override
+  void didUpdateWidget(covariant SearchPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.model != widget.model) {
+      _ctrl
+        ..detach()
+        ..dispose();
+      _ctrl = SearchPageController(widget.model);
+      _ctrl.attach();
+    }
+  }
+
+  @override
   void dispose() {
-    widget.model.removeListener(_onModelChanged);
-    _debounce?.cancel();
+    _ctrl
+      ..detach()
+      ..dispose();
     _controller.dispose();
     _scrollController.dispose();
     _fieldFocus.dispose();
@@ -113,90 +109,23 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  /// 搜索快照签名：响应/加载/错误任一变化都需要重绘结果区。
-  String _searchSignature(bridge.SearchDto search) =>
-      '${search.requestId}|${search.loading}|${search.error}|${search.page}|'
-      '${search.hasMore}|${search.items.length}';
-
-  /// 模型通知：新响应到达（requestId 变化）或出错时释放分页锁；
-  /// 快照有变化时重绘。
-  void _onModelChanged() {
-    if (!mounted) return;
-    final search = widget.model.state.search;
-    // §8.1「过期响应不能覆盖当前页面」：requestId 回退的快照是旧查询的
-    // 迟到响应——新查询结果已在树时直接忽略（正常链路 Rust 侧按序广播 +
-    // start_search append 守卫拦截，此处为 Dart 层兜底）。
-    if (search.requestId < _seenRequestId) return;
-    final responseArrived =
-        search.requestId != _seenRequestId || search.error != null;
-    if (responseArrived && _moreInFlight) {
-      _moreInFlight = false;
-    }
-    final signature = _searchSignature(search);
-    final historySignature = widget.model.searchHistory.join('\u0000');
-    final historyChanged = historySignature != _seenHistorySignature;
-    _seenHistorySignature = historySignature;
-    if (!responseArrived && signature == _seenSignature && !historyChanged) {
-      return;
-    }
-    _seenRequestId = search.requestId;
-    _seenSignature = signature;
-    setState(() {});
-  }
-
   // ── 数据/命令 ──
 
-  /// FFI search 只支持单音源过滤；恰好选 1 个音源时走后端过滤，
-  /// 否则聚合搜索（null），展示时再按多选过滤。
-  String? get _dispatchSource =>
-      _selectedSources.length == 1 ? _selectedSources.first : null;
-
-  /// [record] = 用户显式提交（回车 / 点击历史项 / Shell 种子）时记史；
-  /// 防抖自动搜索与换筛选重搜不记，避免「周杰伦」「周杰伦音」等停顿
-  /// 中间态污染历史。
+  /// 显式/防抖统一的搜索出口：空关键词只取消在途防抖（不派发、不清选中，
+  /// 与提炼前语义一致）；非空清行选中后派发。
   void _runSearch({bool record = false}) {
-    _debounce?.cancel();
-    final keyword = _controller.text.trim();
-    if (keyword.isEmpty) return;
-    if (record) unawaited(widget.model.rememberSearch(keyword));
+    if (_controller.text.trim().isEmpty) {
+      _ctrl.runSearch(_controller.text, record: record);
+      return;
+    }
     setState(() {
       _selectedRows.clear();
       _anchorRow = -1;
-      _moreInFlight = false;
     });
-    unawaited(
-      widget.model.dispatch(
-        bridge.FfiCommand.search(keyword: keyword, source: _dispatchSource),
-      ),
-    );
+    _ctrl.runSearch(_controller.text, record: record);
   }
 
-  void _onSearchTextChanged(String text) {
-    _debounce?.cancel();
-    if (text.trim().isEmpty) return;
-    _debounce = Timer(const Duration(milliseconds: debounceMs), _runSearch);
-  }
-
-  /// 触底加载下一页；in-flight 锁防重复分页。
-  ///
-  /// 分页请求必须携带与首页相同的音源过滤（P1-04）：否则第 2 页起回落
-  /// 聚合搜索，混入其他音源结果——违反「分页响应只能合并到同一查询上下文」。
-  void _loadMoreIfNeeded() {
-    final state = widget.model.state.search;
-    if (_moreInFlight || state.loading || !state.hasMore) return;
-    if (state.keyword.isEmpty) return;
-    _moreInFlight = true;
-    if (mounted) setState(() {});
-    unawaited(
-      widget.model.dispatch(
-        bridge.FfiCommand.searchMore(
-          keyword: state.keyword,
-          page: state.page + 1,
-          source: _dispatchSource,
-        ),
-      ),
-    );
-  }
+  void _onSearchTextChanged(String text) => _ctrl.onSearchTextChanged(text);
 
   // ── 选择 ──
 
@@ -228,14 +157,14 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _playRow(int index) {
-    final items = _items();
+    final items = _ctrl.items();
     if (index < 0 || index >= items.length) return;
     unawaited(widget.model.playSongs(items, index: index));
   }
 
   void _playSelection() {
     if (_selectedRows.isEmpty) return;
-    final items = _items();
+    final items = _ctrl.items();
     final songs = [
       for (final i in _selectedRows.toList()..sort())
         if (i >= 0 && i < items.length) items[i],
@@ -244,94 +173,61 @@ class _SearchPageState extends State<SearchPage> {
     unawaited(widget.model.playSongs(songs, index: 0));
   }
 
-  // ── 派生数据 ──
-
-  /// 按音源多选过滤后的展示列表。
-  /// 单选音源时后端已按该源过滤；多选时对聚合结果本地过滤。
-  List<bridge.SongDto> _items() {
-    final items = widget.model.state.search.items;
-    if (_selectedSources.length <= 1) return List<bridge.SongDto>.of(items);
-    return items.where((s) => _selectedSources.contains(s.source)).toList();
-  }
-
-  /// 从歌曲结果聚合专辑（同专辑+音源去重）。
-  List<bridge.SongDto> _albumRepresentatives() {
-    final seen = <String>{};
-    final result = <bridge.SongDto>[];
-    for (final song in _items()) {
-      final name = song.albumName.trim();
-      if (name.isEmpty) continue;
-      final id = song.albumId?.trim();
-      final key = '${(id != null && id.isNotEmpty) ? id : name}|${song.source}';
-      if (!seen.add(key)) continue;
-      result.add(song);
-    }
-    return result;
-  }
-
-  /// 从歌曲结果聚合歌手（同歌手+音源去重）。
-  List<bridge.SongDto> _artistRepresentatives() {
-    final seen = <String>{};
-    final result = <bridge.SongDto>[];
-    for (final song in _items()) {
-      final name = song.singer.trim();
-      if (name.isEmpty) continue;
-      final id = song.artistId?.trim();
-      final key = '${(id != null && id.isNotEmpty) ? id : name}|${song.source}';
-      if (!seen.add(key)) continue;
-      result.add(song);
-    }
-    return result;
-  }
-
   // ── UI ──
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        // 搜索框固定顶部（§4.3），页面滚动时保持可访问。
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            VxSpacing.lg,
-            VxSpacing.sm,
-            VxSpacing.lg,
-            0,
-          ),
-          child: _searchField(context),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            VxSpacing.lg,
-            VxSpacing.sm,
-            VxSpacing.lg,
-            0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _typeSegment(context),
-              const SizedBox(height: VxSpacing.sm),
-              _sourceChips(context),
-            ],
-          ),
-        ),
-        const SizedBox(height: VxSpacing.sm),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: VxSpacing.lg),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _countLine(),
-              style: VxTypography.caption.copyWith(
-                color: scheme.onSurfaceVariant,
+    return ListenableBuilder(
+      // 只挂控制器：request_id 守卫（§8.1）在控制器通知层——直接挂模型会让
+      // 过期快照（requestId 回退）未经守卫刷进树（提炼前页面语义不变）。
+      listenable: _ctrl,
+      builder: (context, _) {
+        return Column(
+          children: [
+            // 搜索框固定顶部（§4.3），页面滚动时保持可访问。
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                VxSpacing.lg,
+                VxSpacing.sm,
+                VxSpacing.lg,
+                0,
+              ),
+              child: _searchField(context),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                VxSpacing.lg,
+                VxSpacing.sm,
+                VxSpacing.lg,
+                0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _typeSegment(context),
+                  const SizedBox(height: VxSpacing.sm),
+                  _sourceChips(context),
+                ],
               ),
             ),
-          ),
-        ),
-        Expanded(child: _resultArea(context)),
-      ],
+            const SizedBox(height: VxSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: VxSpacing.lg),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _ctrl.countLine(),
+                  style: VxTypography.caption.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(child: _resultArea(context)),
+          ],
+        );
+      },
     );
   }
 
@@ -355,7 +251,7 @@ class _SearchPageState extends State<SearchPage> {
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () {
                     _controller.clear();
-                    _debounce?.cancel();
+                    _ctrl.onSearchTextChanged('');
                     setState(() {});
                   },
                 ),
@@ -372,15 +268,17 @@ class _SearchPageState extends State<SearchPage> {
     return SegmentedButton<SearchType>(
       segments: [
         for (final type in SearchType.values)
-          ButtonSegment(value: type, label: Text(_searchTypeLabel(type))),
+          ButtonSegment(value: type, label: Text(searchTypeLabel(type))),
       ],
-      selected: {_type},
+      selected: {_ctrl.type},
       showSelectedIcon: false,
-      onSelectionChanged: (selection) => setState(() {
-        _type = selection.first;
-        _selectedRows.clear();
-        _anchorRow = -1;
-      }),
+      onSelectionChanged: (selection) {
+        setState(() {
+          _selectedRows.clear();
+          _anchorRow = -1;
+        });
+        _ctrl.selectType(selection.first);
+      },
     );
   }
 
@@ -445,9 +343,9 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           chip(
             '全部音源',
-            selected: _selectedSources.isEmpty,
+            selected: _ctrl.selectedSources.isEmpty,
             onTap: () {
-              setState(_selectedSources.clear);
+              _ctrl.clearSources();
               // 换筛选重搜，保证数据与新筛选一致（不记史）。
               _runSearch();
             },
@@ -455,35 +353,15 @@ class _SearchPageState extends State<SearchPage> {
           for (final source in sources)
             chip(
               source.name,
-              selected: _selectedSources.contains(source.id),
+              selected: _ctrl.selectedSources.contains(source.id),
               onTap: () {
-                setState(() {
-                  if (!_selectedSources.add(source.id)) {
-                    _selectedSources.remove(source.id);
-                  }
-                });
+                _ctrl.toggleSource(source.id);
                 _runSearch();
               },
             ),
         ],
       ),
     );
-  }
-
-  String _countLine() {
-    final state = widget.model.state.search;
-    switch (_type) {
-      case SearchType.albums:
-        return '聚合出 ${_albumRepresentatives().length} 张专辑';
-      case SearchType.artists:
-        return '聚合出 ${_artistRepresentatives().length} 位歌手';
-      case SearchType.playlists:
-        return '聚合搜索不返回歌单，请到「发现」页浏览';
-      case SearchType.all:
-      case SearchType.songs:
-        if (state.keyword.isEmpty) return '输入关键词开始搜索';
-        return '找到 ${_items().length} 个结果';
-    }
   }
 
   // ── 结果区 ──
@@ -519,14 +397,14 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    return switch (_type) {
+    return switch (_ctrl.type) {
       SearchType.all || SearchType.songs => _trackTable(context),
       SearchType.albums => _albumGrid(context),
       SearchType.artists => _artistGrid(context),
       SearchType.playlists => VxEmptyState(
         icon: Icons.queue_music_outlined,
         title: '聚合搜索不返回歌单结果',
-        message: _playlistsExplain(),
+        message: _ctrl.playlistsExplain(),
       ),
     };
   }
@@ -560,7 +438,7 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               tooltip: '清空搜索历史',
               icon: const Icon(Icons.delete_sweep_outlined, size: 20),
-              onPressed: () => _confirmClearHistory(context),
+              onPressed: () => confirmClearSearchHistory(context, widget.model),
             ),
           ],
         ),
@@ -594,45 +472,13 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  /// 清空属破坏性操作（§9）：必须确认。
-  Future<void> _confirmClearHistory(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('清空搜索历史'),
-        content: const Text('将删除全部搜索历史，无法恢复。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('清空'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed ?? false) unawaited(widget.model.clearSearchHistory());
-  }
-
-  String _playlistsExplain() {
-    final capable = widget.model.state.sources
-        .where((s) => s.playlistSearch)
-        .map((s) => s.name)
-        .toList();
-    return capable.isEmpty
-        ? '当前音源的搜索接口只返回歌曲；可以在「发现」页浏览精选歌单。'
-        : '聚合搜索只返回歌曲；${capable.join('、')}支持歌单搜索，可到「发现」页浏览。';
-  }
-
   Widget _trackTable(BuildContext context) {
-    final items = _items();
+    final items = _ctrl.items();
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification.metrics.pixels >=
             notification.metrics.maxScrollExtent - 200) {
-          _loadMoreIfNeeded();
+          _ctrl.loadMoreIfNeeded();
         }
         return false;
       },
@@ -645,7 +491,7 @@ class _SearchPageState extends State<SearchPage> {
           padding: const EdgeInsets.only(bottom: VxSpacing.xl),
           itemCount: items.length + 1,
           itemBuilder: (context, index) {
-            if (index >= items.length) return _footer(context);
+            if (index >= items.length) return SearchResultFooter(_ctrl);
             final song = items[index];
             final selected = _selectedRows.contains(index);
             // 外层 GestureDetector 承接双击；单击仍落到行内（选中），
@@ -755,7 +601,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _albumGrid(BuildContext context) {
-    final albums = _albumRepresentatives();
+    final albums = _ctrl.albumRepresentatives();
     if (albums.isEmpty) {
       return VxEmptyState(
         icon: Icons.album_outlined,
@@ -818,7 +664,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _artistGrid(BuildContext context) {
-    final artists = _artistRepresentatives();
+    final artists = _ctrl.artistRepresentatives();
     if (artists.isEmpty) {
       return VxEmptyState(
         icon: Icons.person_search_outlined,
@@ -874,67 +720,6 @@ class _SearchPageState extends State<SearchPage> {
             name: name,
             source: song.source,
             coverUrl: null,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 分页三态尾行：加载中 / 失败重试 / 没有更多。
-  Widget _footer(BuildContext context) {
-    final state = widget.model.state.search;
-    if (_moreInFlight || state.loading) {
-      return const Padding(
-        padding: EdgeInsets.all(VxSpacing.lg),
-        child: Center(
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-    if (state.error != null) {
-      return Padding(
-        padding: const EdgeInsets.all(VxSpacing.md),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '加载更多失败',
-                style: VxTypography.caption.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              const SizedBox(width: VxSpacing.md),
-              TextButton(onPressed: _loadMoreIfNeeded, child: const Text('重试')),
-            ],
-          ),
-        ),
-      );
-    }
-    if (!state.hasMore) {
-      return Padding(
-        padding: const EdgeInsets.all(VxSpacing.lg),
-        child: Center(
-          child: Text(
-            '没有更多结果',
-            style: VxTypography.caption.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.all(VxSpacing.md),
-      child: Center(
-        child: Text(
-          '继续滚动加载更多…',
-          style: VxTypography.caption.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),

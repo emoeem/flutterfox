@@ -65,6 +65,22 @@ jobs:
       - name: Regenerate bindings
         run: flutter_rust_bridge_codegen generate
 
+      # 仓内约定：生成文件提交前经 cargo fmt（use 导入会被重排）。
+      # 不 fmt 会让本 job 把「原始 codegen 输出 vs 已 fmt 提交版」的纯
+      # 格式差异误报为不同步（2026-11-14 首轮 CI 失败根因）。
+      - name: Format generated Rust code
+        run: cargo fmt --all
+
+      - name: Check generated files are up to date
+        run: |
+          if [ -n "$(git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge)" ]; then
+            git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge
+            git diff --stat -- ffi/src/frb_generated.rs flutter/lib/src/bridge
+            git diff -- ffi/src/frb_generated.rs | head -80
+            echo "::error::生成文件与手写 API 不同步：本地运行 flutter_rust_bridge_codegen generate 并提交结果"
+            exit 1
+          fi
+
       - name: Check generated files are up to date
         run: |
           if [ -n "$(git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge)" ]; then
