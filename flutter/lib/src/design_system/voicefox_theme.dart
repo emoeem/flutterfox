@@ -18,6 +18,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart' show VxPalette;
 import '../theme/typography.dart' show kMonoFamily;
 import 'design_tokens.dart';
 
@@ -114,6 +115,9 @@ ThemeData _buildTheme(ColorScheme scheme, TextTheme textTheme) {
     useMaterial3: true,
     colorScheme: scheme,
     textTheme: textTheme,
+    // B3：vx 组件族（hero/seek/onPlayIcon）改读 VxPalette 扩展；预览构建器
+    // 注入同源常量默认值，Gallery 深/浅预览像素与改前一致。
+    extensions: [dark ? VxPalette.darkDefaults : VxPalette.lightDefaults],
     scaffoldBackgroundColor: scheme.surface,
     canvasColor: scheme.surface,
     hoverColor: scheme.onSurface.withValues(alpha: 0.04),

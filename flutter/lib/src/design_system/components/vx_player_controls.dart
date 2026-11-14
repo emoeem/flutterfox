@@ -12,7 +12,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../shell/responsive_shell.dart';
-import '../design_tokens.dart';
+import '../../theme/app_theme.dart' show VxPalette;
 
 /// 传输控制行。
 class VxPlayerControls extends StatelessWidget {
@@ -74,8 +74,8 @@ class VxPlayerControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final playIconColor = dark ? VxColors.onPlayIcon : VxLightColors.onPlayIcon;
+    // B3：播放圆钮图标色随主题（VxPalette 扩展下发，非亮暗三元）。
+    final playIconColor = VxPalette.of(context).onPlayIcon;
     // 触点分档（§11.2）：触屏 48dp；桌面保持 34 渲染零变化。
     final target = (touchTargets ?? isTouchPlatform) ? 48.0 : 34.0;
 

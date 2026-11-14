@@ -22,6 +22,7 @@ import '../bridge/lib.dart' as bridge;
 import '../config_ext.dart';
 import '../design_system/components/vx_player_controls.dart';
 import '../design_system/design_tokens.dart';
+import '../theme/app_theme.dart' show VxPalette;
 import '../widgets/cover_image.dart';
 import '../widgets/live_progress.dart';
 import '../shell/responsive_shell.dart';
@@ -76,13 +77,11 @@ class _PlayerBarState extends State<PlayerBar> {
             final compactLeft = barWidth < 760;
             return Container(
               height: ShellBreakpoints.playerBarHeight,
-              // P1-09：Chrome 底色/分隔线随主题亮暗取 token。
+              // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位。
               decoration: BoxDecoration(
-                color: VxChrome.surface1(Theme.of(context).brightness),
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 border: Border(
-                  top: BorderSide(
-                    color: VxChrome.divider(Theme.of(context).brightness),
-                  ),
+                  top: BorderSide(color: Theme.of(context).colorScheme.outline),
                 ),
               ),
               child: Stack(
@@ -188,8 +187,9 @@ class _ProgressLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final track = dark ? VxDarkSurface.seekTrack : VxLightColors.seekTrack;
+    // B3：轨底/进度色随主题（VxPalette 扩展下发，非亮暗三元）。
+    final track = VxPalette.of(context).seekTrack;
+    final progress = Theme.of(context).colorScheme.primary;
     final v = fraction?.clamp(0.0, 1.0);
     return ColoredBox(
       color: track,
@@ -198,7 +198,7 @@ class _ProgressLine extends StatelessWidget {
           : FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: v,
-              child: const ColoredBox(color: VxColors.accent),
+              child: ColoredBox(color: progress),
             ),
     );
   }
@@ -382,8 +382,8 @@ class _CompactTransport extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final playIconColor = dark ? VxColors.onPlayIcon : VxLightColors.onPlayIcon;
+    // B3：播放圆钮图标色随主题（VxPalette 扩展下发）。
+    final playIconColor = VxPalette.of(context).onPlayIcon;
     Widget ctrl(IconData icon, String tooltip, VoidCallback? onPressed) {
       return IconButton(
         onPressed: onPressed,

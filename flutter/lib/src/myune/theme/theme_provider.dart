@@ -10,29 +10,6 @@ import 'package:flutter/foundation.dart';
 import '../../theme/app_theme.dart';
 
 class ThemeProvider with ChangeNotifier {
-  static const TextStyle defaultStyle = TextStyle(fontWeight: FontWeight.w400);
-
-  /// B1 起不再被主题 getters 引用（全 w400 与设计系统层级冲突）。
-  /// 仅为 vendored 兼容保留，B5 收尾删除。
-  @Deprecated('B1 后 getters 走 buildAppTheme 的 VxTypography 层级；B5 删除')
-  static const TextTheme misansTextTheme = TextTheme(
-    displayLarge: defaultStyle,
-    displayMedium: defaultStyle,
-    displaySmall: defaultStyle,
-    headlineLarge: defaultStyle,
-    headlineMedium: defaultStyle,
-    headlineSmall: defaultStyle,
-    titleLarge: defaultStyle,
-    titleMedium: defaultStyle,
-    titleSmall: defaultStyle,
-    bodyLarge: defaultStyle,
-    bodyMedium: defaultStyle,
-    bodySmall: defaultStyle,
-    labelLarge: defaultStyle,
-    labelMedium: defaultStyle,
-    labelSmall: defaultStyle,
-  );
-
   static final int _defaultSeedColorValue = Colors.blue.toARGB32(); // 默认蓝色
   Color _currentSeedColor = Color(
     _defaultSeedColorValue,

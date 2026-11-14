@@ -68,13 +68,14 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: ShellBreakpoints.headerHeight,
-      // P1-09：Chrome 底色/分隔线随主题亮暗取 token（原硬编码 VxColors 仅深色）。
+      // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位
+      //（buildAppTheme 显式映射，浅色 = VxLightColors 等值）。
       decoration: BoxDecoration(
-        color: VxChrome.surface1(brightness),
-        border: Border(bottom: BorderSide(color: VxChrome.divider(brightness))),
+        color: scheme.surfaceContainerLow,
+        border: Border(bottom: BorderSide(color: scheme.outline)),
       ),
       child: Stack(
         children: [
@@ -123,10 +124,11 @@ class AppHeader extends StatelessWidget {
           width: 26,
           height: 26,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            // B3：品牌渐变随主题（primary/secondary = Vx accent/accentDeep）。
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [VxColors.accent, VxColors.accentDeep],
+              colors: [scheme.primary, scheme.secondary],
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -136,7 +138,7 @@ class AppHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: VxColors.onAccent,
+              color: scheme.onPrimary,
               height: 1,
             ),
           ),

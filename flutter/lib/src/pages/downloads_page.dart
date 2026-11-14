@@ -16,6 +16,7 @@ import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/design_tokens.dart';
 import '../nav_bus.dart' as nav_bus;
+import '../theme/app_theme.dart' show VxPalette;
 import '../widgets/cover_image.dart';
 import '../widgets/empty_state.dart' show EmptyState, pageTitle;
 
@@ -427,9 +428,8 @@ class _TaskRow extends StatelessWidget {
 
   Widget _status(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final success = Theme.of(context).brightness == Brightness.dark
-        ? VxColors.success
-        : VxLightColors.success;
+    // B3：成功语义色随主题（VxPalette 扩展下发，非亮暗三元）。
+    final success = VxPalette.of(context).success;
     final total = task.total?.toInt() ?? 0;
     final downloaded = task.downloaded.toInt();
     final hasProgress = total > 0;

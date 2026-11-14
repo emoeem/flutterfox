@@ -200,20 +200,21 @@ class _BrandMark extends StatelessWidget {
           width: 26,
           height: 26,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            // B3：品牌渐变随主题（primary/secondary = Vx accent/accentDeep）。
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [VxColors.accent, VxColors.accentDeep],
+              colors: [scheme.primary, scheme.secondary],
             ),
             borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.center,
-          child: const Text(
+          child: Text(
             'V',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: VxColors.onAccent,
+              color: scheme.onPrimary,
               height: 1,
             ),
           ),

@@ -85,9 +85,8 @@ class MiniPlayerBar extends StatelessWidget {
                                   : FractionallySizedBox(
                                       alignment: Alignment.centerLeft,
                                       widthFactor: fraction,
-                                      child: const ColoredBox(
-                                        color: VxColors.accent,
-                                      ),
+                                      // B3：进度色随主题（= Vx accent）。
+                                      child: ColoredBox(color: scheme.primary),
                                     ),
                             );
                           },

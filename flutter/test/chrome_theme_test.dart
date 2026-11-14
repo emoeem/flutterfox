@@ -1,14 +1,20 @@
-/// Shell Chrome 主题感知色源测试（指南 §3.2 / P1-09 回归锁定）。
+/// Shell Chrome 主题感知色源测试（指南 §3.2 / P1-09 回归锁定，B3 harness 重写）。
 ///
 /// P1-09：浅色主题下 AppHeader/Sidebar/ContextPanel/PlayerBar 底色与分隔线
 /// 曾硬编码 VxColors 深色常量 → 深底深字不可读（实机证据
 /// docs/redesign/screenshots/baseline/linux-settings-1440x900-light-theme.png）。
-/// 收口后统一经 `VxChrome` 按亮暗取 token。本文件锁定：
-/// - VxChrome 纯函数双侧取值（深色 = 原 VxColors 常量，像素不变）；
+/// P1-09 曾以 `VxChrome` 亮暗三元收口；B3 起壳层 chrome 统一走单一真源
+/// buildAppTheme 的 ColorScheme 槽位（surfaceContainerLow / outline），无
+/// M3 槽位 token 经 VxPalette 扩展下发。本文件锁定：
+/// - buildAppTheme('catppuccin-mocha') 槽位契约：深色 = 原 VxColors 常量
+///   （像素不变），浅色 = VxLightColors 等值（P1-09 意图：浅色浅 chrome）；
+/// - VxPalette 浅色字段（seekTrack/onPlayIcon/success）取浅色常量；
 /// - 真实组件接线：AppHeader / PlayerBar / ContextPanel / AppSidebar 分隔线 /
 ///   VoicefoxShell 侧栏容器在浅/深主题下渲染出的实际颜色。
 ///
-/// 不起 Rust 控制器：AppModel 空状态 + MultiProvider harness（同 shell_test）。
+/// harness 用 buildAppTheme 构建（不再是裸 ThemeData(brightness:)）——
+/// 组件读取的就是运行时同一产源。不起 Rust 控制器：AppModel 空状态 +
+/// MultiProvider harness（同 shell_test）。
 library;
 
 import 'package:flutter/material.dart';
@@ -24,8 +30,9 @@ import 'package:voicefox_flutter/src/shell/app_header.dart';
 import 'package:voicefox_flutter/src/shell/app_sidebar.dart';
 import 'package:voicefox_flutter/src/shell/app_shell.dart';
 import 'package:voicefox_flutter/src/shell/context_panel.dart';
+import 'package:voicefox_flutter/src/theme/app_theme.dart';
 
-/// 深浅两侧期望值（P1-09 收口契约）。
+/// 深浅两侧期望值（P1-09 收口契约；经 buildAppTheme 槽位表达）。
 const _lightSurface1 = VxLightColors.surface1;
 const _darkSurface1 = VxColors.surface1;
 const _lightDivider = VxLightColors.divider;
@@ -43,7 +50,7 @@ Widget _shellHarness(AppModel model, Brightness brightness) => MultiProvider(
     ),
   ],
   child: MaterialApp(
-    theme: ThemeData(brightness: brightness, useMaterial3: true),
+    theme: buildAppTheme('catppuccin-mocha', brightness),
     home: VoicefoxShell(model: model),
   ),
 );
@@ -71,18 +78,42 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  group('VxChrome 纯函数契约', () {
-    test('深色分支返回 VxColors 原值（默认主题像素不变）', () {
-      expect(VxChrome.surface1(Brightness.dark), _darkSurface1);
-      expect(VxChrome.divider(Brightness.dark), _darkDivider);
+  group('buildAppTheme chrome 槽位契约（B3 单一真源）', () {
+    test('深色槽位返回 VxColors 原值（默认主题像素不变）', () {
+      final scheme = buildAppTheme(
+        'catppuccin-mocha',
+        Brightness.dark,
+      ).colorScheme;
+      expect(scheme.surfaceContainerLow, _darkSurface1);
+      expect(scheme.outline, _darkDivider);
     });
 
-    test('浅色分支返回 VxLightColors 等值（P1-09：浅底浅 Chrome）', () {
-      expect(VxChrome.surface1(Brightness.light), _lightSurface1);
-      expect(VxChrome.divider(Brightness.light), _lightDivider);
+    test('浅色槽位返回 VxLightColors 等值（P1-09：浅底浅 Chrome）', () {
+      final scheme = buildAppTheme(
+        'catppuccin-mocha',
+        Brightness.light,
+      ).colorScheme;
+      expect(scheme.surfaceContainerLow, _lightSurface1);
+      expect(scheme.outline, _lightDivider);
       // 浅色 Chrome 底必须是浅色板表面值，而不是深色 #191820。
-      expect(_lightSurface1, isNot(_darkSurface1));
-      expect(_lightDivider, isNot(_darkDivider));
+      expect(scheme.surfaceContainerLow, isNot(_darkSurface1));
+      expect(scheme.outline, isNot(_darkDivider));
+    });
+
+    test('VxPalette 浅色字段取浅色常量（seekTrack/onPlayIcon/success）', () {
+      final lightPalette = buildAppTheme(
+        'catppuccin-mocha',
+        Brightness.light,
+      ).extension<VxPalette>()!;
+      expect(lightPalette.seekTrack, VxLightColors.seekTrack);
+      expect(lightPalette.onPlayIcon, VxLightColors.onPlayIcon);
+      expect(lightPalette.success, VxLightColors.success);
+      final darkPalette = buildAppTheme(
+        'catppuccin-mocha',
+        Brightness.dark,
+      ).extension<VxPalette>()!;
+      expect(darkPalette.seekTrack, VxDarkSurface.seekTrack);
+      expect(darkPalette.onPlayIcon, VxColors.onPlayIcon);
     });
   });
 
@@ -120,7 +151,7 @@ void main() {
       (tester) async {
         Widget panel(Brightness brightness) => MaterialApp(
           key: ValueKey('chrome-panel-${brightness.name}'),
-          theme: ThemeData(brightness: brightness, useMaterial3: true),
+          theme: buildAppTheme('catppuccin-mocha', brightness),
           home: Scaffold(
             body: ContextPanel(
               model: model,
@@ -145,7 +176,7 @@ void main() {
       (tester) async {
         Widget sidebar(Brightness brightness) => MaterialApp(
           key: ValueKey('chrome-sidebar-${brightness.name}'),
-          theme: ThemeData(brightness: brightness, useMaterial3: true),
+          theme: buildAppTheme('catppuccin-mocha', brightness),
           home: Scaffold(
             body: AppSidebar(
               model: model,

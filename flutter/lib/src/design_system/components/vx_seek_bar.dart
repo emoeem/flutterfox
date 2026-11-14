@@ -8,7 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../design_tokens.dart';
+import '../../theme/app_theme.dart' show VxPalette;
 import '../voicefox_theme.dart' show vxMonoStyle;
 import 'vx_hover.dart';
 
@@ -52,8 +52,8 @@ class VxSeekBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final trackColor = dark ? VxDarkSurface.seekTrack : VxLightColors.seekTrack;
+    // B3：轨底色随主题（VxPalette 扩展下发，非亮暗三元）。
+    final trackColor = VxPalette.of(context).seekTrack;
     final v = value?.clamp(0.0, 1.0);
 
     return VxHoverBuilder(

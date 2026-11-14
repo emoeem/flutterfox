@@ -57,9 +57,9 @@ class _ContextPanelState extends State<ContextPanel> {
     };
     return Container(
       width: widget.width,
-      // P1-09：面板底色随主题亮暗取 token（左边线保持 scheme token）。
+      // P1-09 → B3：面板底色统一走 ColorScheme 槽位（左边线保持 scheme token）。
       decoration: BoxDecoration(
-        color: VxChrome.surface1(scheme.brightness),
+        color: scheme.surfaceContainerLow,
         border: Border(
           left: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
         ),

@@ -181,10 +181,10 @@ class _ExpandedSidebar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // P1-09：分隔线随主题亮暗取 token。
+                    // P1-09 → B3：分隔线统一走 ColorScheme 槽位。
                     Divider(
                       height: 1,
-                      color: VxChrome.divider(Theme.of(context).brightness),
+                      color: Theme.of(context).colorScheme.outline,
                     ),
                     const SizedBox(height: 8),
                     _NavRow(

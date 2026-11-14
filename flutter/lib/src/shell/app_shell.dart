@@ -588,6 +588,7 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
   }
 
   Widget _buildBody(BuildContext context, ShellMetrics metrics) {
+    final scheme = Theme.of(context).colorScheme;
     return Stack(
       children: [
         Row(
@@ -605,14 +606,10 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
                 width: _effectiveCollapsed(metrics)
                     ? ShellBreakpoints.sidebarCollapsedWidth
                     : _effectiveSidebarWidth,
-                // P1-09：Chrome 底色/分隔线随主题亮暗取 token。
+                // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位。
                 decoration: BoxDecoration(
-                  color: VxChrome.surface1(Theme.of(context).brightness),
-                  border: Border(
-                    right: BorderSide(
-                      color: VxChrome.divider(Theme.of(context).brightness),
-                    ),
-                  ),
+                  color: scheme.surfaceContainerLow,
+                  border: Border(right: BorderSide(color: scheme.outline)),
                 ),
                 child: AppSidebar(
                   model: widget.model,
@@ -729,14 +726,10 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
             // 浮层是临时导航面，宽调语义归内嵌侧栏）。
             width: _effectiveSidebarWidth,
             child: DecoratedBox(
-              // P1-09：浮层侧栏同样随主题亮暗取 token。
+              // P1-09 → B3：浮层侧栏同样走 ColorScheme 槽位。
               decoration: BoxDecoration(
-                color: VxChrome.surface1(Theme.of(context).brightness),
-                border: Border(
-                  right: BorderSide(
-                    color: VxChrome.divider(Theme.of(context).brightness),
-                  ),
-                ),
+                color: scheme.surfaceContainerLow,
+                border: Border(right: BorderSide(color: scheme.outline)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.4),

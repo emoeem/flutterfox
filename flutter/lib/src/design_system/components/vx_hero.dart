@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../theme/app_theme.dart' show VxPalette;
 import '../design_tokens.dart';
 import 'vx_cover_fallback.dart';
 
@@ -58,15 +59,15 @@ class VxHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
-    final heroBorder = dark ? VxDarkHero.border : VxLightHero.border;
-    final start = dark ? VxDarkHero.gradientStart : VxLightHero.gradientStart;
-    final mid = dark ? VxDarkHero.gradientMid : VxLightHero.gradientMid;
-    final end = dark ? VxDarkHero.gradientEnd : VxLightHero.gradientEnd;
-    final glow = dark ? VxDarkHero.glow : VxLightHero.glow;
-    final accentGlow = dark ? VxDarkHero.accentGlow : VxLightHero.accentGlow;
+    final scheme = Theme.of(context).colorScheme;
+    // B3：hero 渐变六值随主题（VxPalette 扩展下发，非亮暗三元）。
+    final palette = VxPalette.of(context);
+    final heroBorder = palette.heroBorder;
+    final start = palette.heroGradientStart;
+    final mid = palette.heroGradientMid;
+    final end = palette.heroGradientEnd;
+    final glow = palette.heroGlow;
+    final accentGlow = palette.heroAccentGlow;
 
     return Container(
       constraints: BoxConstraints(minHeight: minHeight),
