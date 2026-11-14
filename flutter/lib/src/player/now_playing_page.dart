@@ -343,6 +343,11 @@ class _NowPlayingBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disable = MediaQuery.disableAnimationsOf(context);
+    final lyrics = model.state.lyrics;
+    // P2-18（§7.7「大封面与歌词双栏或封面居中」）：歌词缺位时右列只剩
+    // 「暂无歌词」空态，右半区大面积空置——回退为封面居中的单列布局；
+    // 歌词可用时才进入双栏。歌词异步回填后自动切换，布局平滑过渡。
+    final hasLyrics = !lyrics.isEmpty && lyrics.lines.isNotEmpty;
     return Stack(
       children: [
         Center(
@@ -351,6 +356,18 @@ class _NowPlayingBody extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final bodyH = constraints.maxHeight;
+                if (!hasLyrics) {
+                  // 无歌词：单列居中，封面边长按可用高度自适应（320–500）。
+                  final byHeight = (bodyH - 372).clamp(320.0, 500.0);
+                  return _LeftColumn(
+                    model: model,
+                    song: song,
+                    bodyHeight: bodyH,
+                    coverSize: byHeight,
+                    narrow: constraints.maxWidth < 1080,
+                    onToggleQueue: onToggleQueue,
+                  );
+                }
                 final leftWidth = (constraints.maxWidth - 48) * 0.46;
                 // 封面边长按可用高度自适应（320–500）；高度不足时左列滚动。
                 final byHeight = (bodyH - 372).clamp(320.0, 500.0);

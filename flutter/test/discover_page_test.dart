@@ -293,6 +293,37 @@ void main() {
     expect(reloaded.last.source, 'tx');
   });
 
+  testWidgets('P1-20 回归：单源再选「全部音源」必须回到聚合视图', (tester) async {
+    final model = _RecordingModel();
+    model.debugSetSources([
+      _source('wy', '网易云', playlists: true),
+      _source('tx', 'QQ音乐', playlists: true),
+    ]);
+    await _pumpDiscover(tester, model);
+
+    // 先切到单源 tx。
+    await tester.tap(find.text('音源：全部'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('QQ音乐').last);
+    await tester.pumpAndSettle();
+    expect(find.text('音源：QQ音乐'), findsOneWidget);
+
+    // 再选「全部音源」：此前该菜单项 value 为 null，被 SDK PopupMenuButton
+    // 当作「取消」吞掉（onSelected 不触发），页面停在单源不回退。
+    model.commands.clear();
+    await tester.tap(find.text('音源：QQ音乐'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全部音源').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('音源：全部'), findsOneWidget, reason: '选「全部音源」必须回到聚合视图');
+    final reloaded = model.commands
+        .whereType<bridge.FfiCommand_PlaylistList>()
+        .map((c) => c.source)
+        .toList();
+    expect(reloaded, containsAll(['wy', 'tx']), reason: '回到聚合后所有音源重新加载');
+  });
+
   testWidgets('精选歌单加载中：postFrame 派发加载后展示骨架屏（四态之载入态）', (tester) async {
     final model = _RecordingModel();
     model.debugSetSources([_source('wy', '网易云', playlists: true)]);

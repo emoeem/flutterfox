@@ -352,6 +352,10 @@ sealed class FfiCommand with _$FfiCommand {
   }) = FfiCommand_CustomPlaylistRemoveSong;
   const factory FfiCommand.customPlaylistDetail({required String id}) =
       FfiCommand_CustomPlaylistDetail;
+
+  /// P2-17：手动重新获取当前歌曲歌词（自动获取失败/为空时的兜底入口）。
+  const factory FfiCommand.loadLyrics({required SongDto song}) =
+      FfiCommand_LoadLyrics;
   const factory FfiCommand.configGet() = FfiCommand_ConfigGet;
   const factory FfiCommand.configUpdate({required ConfigDto config}) =
       FfiCommand_ConfigUpdate;

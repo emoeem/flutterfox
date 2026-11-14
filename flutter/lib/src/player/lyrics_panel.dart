@@ -150,12 +150,19 @@ class _LyricsPanelState extends State<LyricsPanel> {
           );
         }
         if (lyrics.isEmpty || lyrics.lines.isEmpty) {
+          // P2-17：自动获取落空时提供手动重取入口——后端 LoadLyrics
+          // 以当前歌曲重新拉词，结果经 lyrics 事件回填 state。
           return _Status(
             icon: Icons.lyrics_outlined,
             title: '暂无歌词',
             message:
                 '当前曲目没有可用的歌词数据。歌词由后端在切歌时自动获取，'
-                '本版本暂无手动重新获取入口。',
+                '也可点击下方按钮手动重新获取。',
+            action: TextButton.icon(
+              onPressed: () => model.loadLyrics(song),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('重新获取歌词'),
+            ),
           );
         }
         // 点击跳转门槛（§5.7:461）：歌词全部行无有效时间戳时，点击不
@@ -356,11 +363,15 @@ class _Status extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.message,
+    this.action,
   });
 
   final IconData icon;
   final String title;
   final String message;
+
+  /// 可选操作（P2-17：歌词空态的「重新获取歌词」入口）。
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -386,6 +397,7 @@ class _Status extends StatelessWidget {
               ),
             ),
           ),
+          if (action != null) ...[const SizedBox(height: 12), action!],
         ],
       ),
     );

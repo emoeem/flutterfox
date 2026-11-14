@@ -53,6 +53,10 @@ Future<FfiCommand> commandQueueRemove({required int index}) =>
 Future<FfiCommand> commandQueueClear() =>
     RustLib.instance.api.crateApiCommandQueueClear();
 
+/// P2-17：手动重新获取一首歌的歌词（歌词面板空态的重取入口）。
+Future<FfiCommand> commandLoadLyrics({required SongDto song}) =>
+    RustLib.instance.api.crateApiCommandLoadLyrics(song: song);
+
 /// FRB 生成代码无条件引用此函数，因此签名必须始终存在；
 /// 非 mpv 构建（移动端）运行时返回明确错误，移动端应改用 from_application 引导。
 Future<VoicefoxController> newDesktop() =>

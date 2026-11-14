@@ -1432,6 +1432,11 @@ class AppModel extends ChangeNotifier {
       dispatch(bridge.FfiCommand.queueRemove(index: index));
   Future<void> download(bridge.SongDto song) =>
       dispatch(bridge.FfiCommand.downloadEnqueue(song: song));
+
+  /// 手动重新获取指定歌曲的歌词（P2-17：自动获取失败/为空时的重取入口）。
+  /// 结果经 `lyrics` 事件落 state 快照，失败走全局 notification 提示。
+  Future<void> loadLyrics(bridge.SongDto song) =>
+      dispatch(bridge.FfiCommand.loadLyrics(song: song));
   Future<void> toggleFavorite(bridge.SongDto song) {
     final isFavorite = state.favorites.any(
       (item) => item.id == song.id && item.source == song.source,

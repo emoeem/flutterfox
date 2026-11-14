@@ -459,12 +459,14 @@ impl ApplicationService {
                 self.play_with_restore(songs, index, position, paused).await
             }
             ApplicationCommand::LoadLyrics { song } => {
-                let generation = self.state().playback.generation;
                 let lyrics = self.lyrics.clone();
                 let events = self.events.clone();
                 let state = Arc::clone(&self.state);
+                // P2-17：同 play 路径——令牌必须来自 LyricService 自身的代次，
+                // 传 playback generation 会被 load_at 过期校验丢弃。
+                let lyric_generation = lyrics.prepare();
                 spawn_reported(events.clone(), "歌词加载", async move {
-                    match lyrics.load(&song, generation).await {
+                    match lyrics.load(&song, lyric_generation).await {
                         Ok(value) => {
                             state.write().unwrap_or_else(|e| e.into_inner()).lyrics = Some(value);
                             let _ =
@@ -1713,8 +1715,13 @@ impl ApplicationService {
                 let lyrics = self.lyrics.clone();
                 let events = self.events.clone();
                 let state = Arc::clone(&self.state);
+                // P2-17：歌词过期令牌必须用 LyricService 自己的 prepare() 代次
+                // ——传入 playback generation 会与 LyricService 内部计数（生产
+                // 路径无人 bump，恒 0）永不相等，fetch 完成后被 load_at 的过期
+                // 校验整单丢弃，所有音源歌词恒「暂无」。
+                let lyric_generation = lyrics.prepare();
                 spawn_reported(events.clone(), "歌词加载", async move {
-                    match lyrics.load(&resolved_song, generation).await {
+                    match lyrics.load(&resolved_song, lyric_generation).await {
                         Ok(value) => {
                             state.write().unwrap_or_else(|e| e.into_inner()).lyrics = Some(value);
                             let _ = events.send(ApplicationEvent::LyricsChanged {
@@ -1722,6 +1729,7 @@ impl ApplicationService {
                             });
                         }
                         Err(error) => {
+                            eprintln!("[DIAG-lyric] load err {error}");
                             let _ = events.send(ApplicationEvent::Notification {
                                 message: format!("歌词加载失败: {error}"),
                             });

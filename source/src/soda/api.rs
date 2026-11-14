@@ -107,13 +107,30 @@ pub(super) fn parse_track(track: &Value) -> Option<SongInfo> {
         .to_string();
     song.duration =
         std::time::Duration::from_secs(value_u64(&track["duration"]).unwrap_or_default() / 1000);
-    song.cover_url = track["album"]["url_cover"]["urls"]
-        .as_array()
-        .and_then(|urls| urls.first())
-        .and_then(Value::as_str)
-        .or_else(|| track["album"]["url_cover"]["uri"].as_str())
-        .filter(|url| !url.is_empty())
-        .map(str::to_string);
+    // P2-16：url_cover 是组合结构（CDN 基址列表 + uri + 模板前缀），
+    // 不是现成 URL。只取 urls[0] 会得到「https://p3-luna.douyinpic.com/img/」
+    // 这样的裸基址（CDN 400），封面永远渲染失败（灰占位）。
+    // 正确形态：{基址}{uri}~{模板前缀}-image.jpeg（curl 实锤 200 image/jpeg）。
+    song.cover_url = {
+        let base = track["album"]["url_cover"]["urls"]
+            .as_array()
+            .and_then(|urls| urls.first())
+            .and_then(Value::as_str)
+            .filter(|base| !base.is_empty());
+        let uri = track["album"]["url_cover"]["uri"]
+            .as_str()
+            .filter(|uri| !uri.is_empty());
+        let template = track["album"]["url_cover"]["template_prefix"].as_str();
+        match (base, uri) {
+            (Some(base), Some(uri)) => Some(match template {
+                Some(template) if !template.is_empty() => {
+                    format!("{base}{uri}~{template}-image.jpeg")
+                }
+                _ => format!("{base}{uri}"),
+            }),
+            _ => None,
+        }
+    };
     if let Some(vid) = track["vid"].as_str().filter(|value| !value.is_empty()) {
         song.extra.insert("vid".to_string(), vid.to_string());
     }
@@ -299,5 +316,41 @@ mod tests {
     fn rejects_tracks_without_id_or_name() {
         assert!(parse_track(&serde_json::json!({ "name": "无 ID" })).is_none());
         assert!(parse_track(&serde_json::json!({ "id": "1" })).is_none());
+    }
+
+    /// P2-16 回归：url_cover 是「基址列表 + uri + 模板前缀」的组合结构，
+    /// 必须拼成完整 URL（裸 urls[0] 基址会被 CDN 400，封面永远灰占位）。
+    #[test]
+    fn assembles_cover_from_composite_url_cover() {
+        let track = serde_json::json!({
+            "id": "6761357736841054209",
+            "name": "Light It Up",
+            "album": {
+                "url_cover": {
+                    "uri": "tos-cn-v-2774c002/oUv0YQsBWiBvj8biqmixeEAPAsAMEwA4kOAouB",
+                    "urls": ["https://p3-luna.douyinpic.com/img/", "https://p6-luna.douyinpic.com/img/"],
+                    "template_prefix": "tplv-b829550vbb"
+                }
+            }
+        });
+        let song = parse_track(&track).unwrap();
+        assert_eq!(
+            song.cover_url.as_deref(),
+            Some(
+                "https://p3-luna.douyinpic.com/img/tos-cn-v-2774c002/oUv0YQsBWiBvj8biqmixeEAPAsAMEwA4kOAouB~tplv-b829550vbb-image.jpeg"
+            )
+        );
+    }
+
+    /// 缺 uri 时拼不出可用 URL，宁可不带封面也不落回裸基址。
+    #[test]
+    fn keeps_cover_empty_without_uri() {
+        let track = serde_json::json!({
+            "id": "1",
+            "name": "无 uri",
+            "album": { "url_cover": { "urls": ["https://p3-luna.douyinpic.com/img/"] } }
+        });
+        let song = parse_track(&track).unwrap();
+        assert!(song.cover_url.is_none());
     }
 }

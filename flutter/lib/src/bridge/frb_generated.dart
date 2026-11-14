@@ -65,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 1068004663;
+  int get rustContentHash => 1355024124;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -77,6 +77,8 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<FfiCommand> crateApiCommandLoadLyrics({required SongDto song});
+
   Future<FfiCommand> crateApiCommandNext();
 
   Future<FfiCommand> crateApiCommandPause();
@@ -188,6 +190,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  Future<FfiCommand> crateApiCommandLoadLyrics({required SongDto song}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_song_dto(song, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_ffi_command,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiCommandLoadLyricsConstMeta,
+        argValues: [song],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiCommandLoadLyricsConstMeta =>
+      const TaskConstMeta(debugName: "command_load_lyrics", argNames: ["song"]);
+
+  @override
   Future<FfiCommand> crateApiCommandNext() {
     return handler.executeNormal(
       NormalTask(
@@ -196,7 +226,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 1,
+            funcId: 2,
             port: port_,
           );
         },
@@ -223,7 +253,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -251,7 +281,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -278,7 +308,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 5,
             port: port_,
           );
         },
@@ -306,7 +336,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -333,7 +363,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -361,7 +391,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 8,
             port: port_,
           );
         },
@@ -390,7 +420,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 9,
             port: port_,
           );
         },
@@ -422,7 +452,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -458,7 +488,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 11,
             port: port_,
           );
         },
@@ -487,7 +517,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 12,
             port: port_,
           );
         },
@@ -514,7 +544,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -549,7 +579,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -584,7 +614,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 15,
             port: port_,
           );
         },
@@ -617,7 +647,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 16,
             port: port_,
           );
         },
@@ -656,7 +686,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 17,
             port: port_,
           );
         },
@@ -697,7 +727,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 18,
             port: port_,
           );
         },
@@ -733,7 +763,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 19,
             port: port_,
           );
         },
@@ -763,7 +793,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -791,7 +821,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -820,7 +850,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -853,7 +883,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -886,7 +916,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 24,
             port: port_,
           );
         },
@@ -1299,62 +1329,66 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 26:
         return FfiCommand_CustomPlaylistDetail(id: dco_decode_String(raw[1]));
       case 27:
-        return FfiCommand_ConfigGet();
+        return FfiCommand_LoadLyrics(
+          song: dco_decode_box_autoadd_song_dto(raw[1]),
+        );
       case 28:
+        return FfiCommand_ConfigGet();
+      case 29:
         return FfiCommand_ConfigUpdate(
           config: dco_decode_box_autoadd_config_dto(raw[1]),
         );
-      case 29:
+      case 30:
         return FfiCommand_DownloadEnqueue(
           song: dco_decode_box_autoadd_song_dto(raw[1]),
         );
-      case 30:
-        return FfiCommand_DownloadCancel(id: dco_decode_u_64(raw[1]));
       case 31:
-        return FfiCommand_DownloadPause(id: dco_decode_u_64(raw[1]));
+        return FfiCommand_DownloadCancel(id: dco_decode_u_64(raw[1]));
       case 32:
-        return FfiCommand_DownloadResume(id: dco_decode_u_64(raw[1]));
+        return FfiCommand_DownloadPause(id: dco_decode_u_64(raw[1]));
       case 33:
-        return FfiCommand_DownloadDeleteFile(id: dco_decode_u_64(raw[1]));
+        return FfiCommand_DownloadResume(id: dco_decode_u_64(raw[1]));
       case 34:
-        return FfiCommand_DownloadClearFinished();
+        return FfiCommand_DownloadDeleteFile(id: dco_decode_u_64(raw[1]));
       case 35:
+        return FfiCommand_DownloadClearFinished();
+      case 36:
         return FfiCommand_QrLoginStart(
           source: dco_decode_String(raw[1]),
           kind: dco_decode_String(raw[2]),
         );
-      case 36:
-        return FfiCommand_QrLoginCancel();
       case 37:
+        return FfiCommand_QrLoginCancel();
+      case 38:
         return FfiCommand_LocalScan(
           paths: dco_decode_list_String(raw[1]),
           maxDepth: dco_decode_u_32(raw[2]),
         );
-      case 38:
-        return FfiCommand_LocalScanCancel();
       case 39:
-        return FfiCommand_AccountPlaylists(source: dco_decode_String(raw[1]));
+        return FfiCommand_LocalScanCancel();
       case 40:
-        return FfiCommand_AccountFavorites(source: dco_decode_String(raw[1]));
+        return FfiCommand_AccountPlaylists(source: dco_decode_String(raw[1]));
       case 41:
+        return FfiCommand_AccountFavorites(source: dco_decode_String(raw[1]));
+      case 42:
         return FfiCommand_AccountPlaylistDetail(
           source: dco_decode_String(raw[1]),
           playlistId: dco_decode_String(raw[2]),
         );
-      case 42:
-        return FfiCommand_SyncPreview(source: dco_decode_String(raw[1]));
       case 43:
-        return FfiCommand_SyncRun(source: dco_decode_String(raw[1]));
+        return FfiCommand_SyncPreview(source: dco_decode_String(raw[1]));
       case 44:
-        return FfiCommand_SyncCancel();
+        return FfiCommand_SyncRun(source: dco_decode_String(raw[1]));
       case 45:
-        return FfiCommand_PushTargets(source: dco_decode_String(raw[1]));
+        return FfiCommand_SyncCancel();
       case 46:
+        return FfiCommand_PushTargets(source: dco_decode_String(raw[1]));
+      case 47:
         return FfiCommand_PushCreateTarget(
           source: dco_decode_String(raw[1]),
           name: dco_decode_String(raw[2]),
         );
-      case 47:
+      case 48:
         return FfiCommand_PushPlan(
           source: dco_decode_String(raw[1]),
           localName: dco_decode_String(raw[2]),
@@ -1365,48 +1399,48 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           targetName: dco_decode_String(raw[7]),
           targetSongCount: dco_decode_u_32(raw[8]),
         );
-      case 48:
-        return FfiCommand_PushRun(source: dco_decode_String(raw[1]));
       case 49:
-        return FfiCommand_PushCancel();
+        return FfiCommand_PushRun(source: dco_decode_String(raw[1]));
       case 50:
-        return FfiCommand_PlaylistCategories(source: dco_decode_String(raw[1]));
+        return FfiCommand_PushCancel();
       case 51:
+        return FfiCommand_PlaylistCategories(source: dco_decode_String(raw[1]));
+      case 52:
         return FfiCommand_PlaylistList(
           source: dco_decode_String(raw[1]),
           category: dco_decode_String(raw[2]),
           page: dco_decode_u_32(raw[3]),
         );
-      case 52:
+      case 53:
         return FfiCommand_PlaylistDetail(
           source: dco_decode_String(raw[1]),
           playlistId: dco_decode_String(raw[2]),
           page: dco_decode_u_32(raw[3]),
         );
-      case 53:
-        return FfiCommand_LeaderboardBoards(source: dco_decode_String(raw[1]));
       case 54:
+        return FfiCommand_LeaderboardBoards(source: dco_decode_String(raw[1]));
+      case 55:
         return FfiCommand_LeaderboardSongs(
           source: dco_decode_String(raw[1]),
           boardId: dco_decode_String(raw[2]),
           page: dco_decode_u_32(raw[3]),
         );
-      case 55:
+      case 56:
         return FfiCommand_ArtistSongs(
           artist: dco_decode_box_autoadd_artist_dto(raw[1]),
           page: dco_decode_u_32(raw[2]),
         );
-      case 56:
+      case 57:
         return FfiCommand_ArtistAlbums(
           artist: dco_decode_box_autoadd_artist_dto(raw[1]),
           page: dco_decode_u_32(raw[2]),
         );
-      case 57:
+      case 58:
         return FfiCommand_AlbumSongs(
           album: dco_decode_box_autoadd_album_dto(raw[1]),
           page: dco_decode_u_32(raw[2]),
         );
-      case 58:
+      case 59:
         return FfiCommand_PlaySongs(
           songs: dco_decode_list_song_dto(raw[1]),
           index: dco_decode_u_32(raw[2]),
@@ -2467,68 +2501,71 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_id = sse_decode_String(deserializer);
         return FfiCommand_CustomPlaylistDetail(id: var_id);
       case 27:
-        return FfiCommand_ConfigGet();
+        var var_song = sse_decode_box_autoadd_song_dto(deserializer);
+        return FfiCommand_LoadLyrics(song: var_song);
       case 28:
+        return FfiCommand_ConfigGet();
+      case 29:
         var var_config = sse_decode_box_autoadd_config_dto(deserializer);
         return FfiCommand_ConfigUpdate(config: var_config);
-      case 29:
+      case 30:
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_DownloadEnqueue(song: var_song);
-      case 30:
-        var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadCancel(id: var_id);
       case 31:
         var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadPause(id: var_id);
+        return FfiCommand_DownloadCancel(id: var_id);
       case 32:
         var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadResume(id: var_id);
+        return FfiCommand_DownloadPause(id: var_id);
       case 33:
         var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadDeleteFile(id: var_id);
+        return FfiCommand_DownloadResume(id: var_id);
       case 34:
-        return FfiCommand_DownloadClearFinished();
+        var var_id = sse_decode_u_64(deserializer);
+        return FfiCommand_DownloadDeleteFile(id: var_id);
       case 35:
+        return FfiCommand_DownloadClearFinished();
+      case 36:
         var var_source = sse_decode_String(deserializer);
         var var_kind = sse_decode_String(deserializer);
         return FfiCommand_QrLoginStart(source: var_source, kind: var_kind);
-      case 36:
-        return FfiCommand_QrLoginCancel();
       case 37:
+        return FfiCommand_QrLoginCancel();
+      case 38:
         var var_paths = sse_decode_list_String(deserializer);
         var var_maxDepth = sse_decode_u_32(deserializer);
         return FfiCommand_LocalScan(paths: var_paths, maxDepth: var_maxDepth);
-      case 38:
-        return FfiCommand_LocalScanCancel();
       case 39:
-        var var_source = sse_decode_String(deserializer);
-        return FfiCommand_AccountPlaylists(source: var_source);
+        return FfiCommand_LocalScanCancel();
       case 40:
         var var_source = sse_decode_String(deserializer);
-        return FfiCommand_AccountFavorites(source: var_source);
+        return FfiCommand_AccountPlaylists(source: var_source);
       case 41:
+        var var_source = sse_decode_String(deserializer);
+        return FfiCommand_AccountFavorites(source: var_source);
+      case 42:
         var var_source = sse_decode_String(deserializer);
         var var_playlistId = sse_decode_String(deserializer);
         return FfiCommand_AccountPlaylistDetail(
           source: var_source,
           playlistId: var_playlistId,
         );
-      case 42:
-        var var_source = sse_decode_String(deserializer);
-        return FfiCommand_SyncPreview(source: var_source);
       case 43:
         var var_source = sse_decode_String(deserializer);
-        return FfiCommand_SyncRun(source: var_source);
+        return FfiCommand_SyncPreview(source: var_source);
       case 44:
-        return FfiCommand_SyncCancel();
+        var var_source = sse_decode_String(deserializer);
+        return FfiCommand_SyncRun(source: var_source);
       case 45:
+        return FfiCommand_SyncCancel();
+      case 46:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_PushTargets(source: var_source);
-      case 46:
+      case 47:
         var var_source = sse_decode_String(deserializer);
         var var_name = sse_decode_String(deserializer);
         return FfiCommand_PushCreateTarget(source: var_source, name: var_name);
-      case 47:
+      case 48:
         var var_source = sse_decode_String(deserializer);
         var var_localName = sse_decode_String(deserializer);
         var var_localSongs = sse_decode_list_song_dto(deserializer);
@@ -2547,15 +2584,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           targetName: var_targetName,
           targetSongCount: var_targetSongCount,
         );
-      case 48:
+      case 49:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_PushRun(source: var_source);
-      case 49:
-        return FfiCommand_PushCancel();
       case 50:
+        return FfiCommand_PushCancel();
+      case 51:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_PlaylistCategories(source: var_source);
-      case 51:
+      case 52:
         var var_source = sse_decode_String(deserializer);
         var var_category = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
@@ -2564,7 +2601,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           category: var_category,
           page: var_page,
         );
-      case 52:
+      case 53:
         var var_source = sse_decode_String(deserializer);
         var var_playlistId = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
@@ -2573,10 +2610,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           playlistId: var_playlistId,
           page: var_page,
         );
-      case 53:
+      case 54:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_LeaderboardBoards(source: var_source);
-      case 54:
+      case 55:
         var var_source = sse_decode_String(deserializer);
         var var_boardId = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
@@ -2585,19 +2622,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           boardId: var_boardId,
           page: var_page,
         );
-      case 55:
-        var var_artist = sse_decode_box_autoadd_artist_dto(deserializer);
-        var var_page = sse_decode_u_32(deserializer);
-        return FfiCommand_ArtistSongs(artist: var_artist, page: var_page);
       case 56:
         var var_artist = sse_decode_box_autoadd_artist_dto(deserializer);
         var var_page = sse_decode_u_32(deserializer);
-        return FfiCommand_ArtistAlbums(artist: var_artist, page: var_page);
+        return FfiCommand_ArtistSongs(artist: var_artist, page: var_page);
       case 57:
+        var var_artist = sse_decode_box_autoadd_artist_dto(deserializer);
+        var var_page = sse_decode_u_32(deserializer);
+        return FfiCommand_ArtistAlbums(artist: var_artist, page: var_page);
+      case 58:
         var var_album = sse_decode_box_autoadd_album_dto(deserializer);
         var var_page = sse_decode_u_32(deserializer);
         return FfiCommand_AlbumSongs(album: var_album, page: var_page);
-      case 58:
+      case 59:
         var var_songs = sse_decode_list_song_dto(deserializer);
         var var_index = sse_decode_u_32(deserializer);
         return FfiCommand_PlaySongs(songs: var_songs, index: var_index);
@@ -3907,66 +3944,69 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case FfiCommand_CustomPlaylistDetail(id: final id):
         sse_encode_i_32(26, serializer);
         sse_encode_String(id, serializer);
-      case FfiCommand_ConfigGet():
+      case FfiCommand_LoadLyrics(song: final song):
         sse_encode_i_32(27, serializer);
-      case FfiCommand_ConfigUpdate(config: final config):
+        sse_encode_box_autoadd_song_dto(song, serializer);
+      case FfiCommand_ConfigGet():
         sse_encode_i_32(28, serializer);
+      case FfiCommand_ConfigUpdate(config: final config):
+        sse_encode_i_32(29, serializer);
         sse_encode_box_autoadd_config_dto(config, serializer);
       case FfiCommand_DownloadEnqueue(song: final song):
-        sse_encode_i_32(29, serializer);
+        sse_encode_i_32(30, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_DownloadCancel(id: final id):
-        sse_encode_i_32(30, serializer);
-        sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadPause(id: final id):
         sse_encode_i_32(31, serializer);
         sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadResume(id: final id):
+      case FfiCommand_DownloadPause(id: final id):
         sse_encode_i_32(32, serializer);
         sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadDeleteFile(id: final id):
+      case FfiCommand_DownloadResume(id: final id):
         sse_encode_i_32(33, serializer);
         sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadClearFinished():
+      case FfiCommand_DownloadDeleteFile(id: final id):
         sse_encode_i_32(34, serializer);
-      case FfiCommand_QrLoginStart(source: final source, kind: final kind):
+        sse_encode_u_64(id, serializer);
+      case FfiCommand_DownloadClearFinished():
         sse_encode_i_32(35, serializer);
+      case FfiCommand_QrLoginStart(source: final source, kind: final kind):
+        sse_encode_i_32(36, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(kind, serializer);
       case FfiCommand_QrLoginCancel():
-        sse_encode_i_32(36, serializer);
-      case FfiCommand_LocalScan(paths: final paths, maxDepth: final maxDepth):
         sse_encode_i_32(37, serializer);
+      case FfiCommand_LocalScan(paths: final paths, maxDepth: final maxDepth):
+        sse_encode_i_32(38, serializer);
         sse_encode_list_String(paths, serializer);
         sse_encode_u_32(maxDepth, serializer);
       case FfiCommand_LocalScanCancel():
-        sse_encode_i_32(38, serializer);
-      case FfiCommand_AccountPlaylists(source: final source):
         sse_encode_i_32(39, serializer);
+      case FfiCommand_AccountPlaylists(source: final source):
+        sse_encode_i_32(40, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_AccountFavorites(source: final source):
-        sse_encode_i_32(40, serializer);
+        sse_encode_i_32(41, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_AccountPlaylistDetail(
         source: final source,
         playlistId: final playlistId,
       ):
-        sse_encode_i_32(41, serializer);
+        sse_encode_i_32(42, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(playlistId, serializer);
       case FfiCommand_SyncPreview(source: final source):
-        sse_encode_i_32(42, serializer);
-        sse_encode_String(source, serializer);
-      case FfiCommand_SyncRun(source: final source):
         sse_encode_i_32(43, serializer);
         sse_encode_String(source, serializer);
-      case FfiCommand_SyncCancel():
+      case FfiCommand_SyncRun(source: final source):
         sse_encode_i_32(44, serializer);
-      case FfiCommand_PushTargets(source: final source):
+        sse_encode_String(source, serializer);
+      case FfiCommand_SyncCancel():
         sse_encode_i_32(45, serializer);
+      case FfiCommand_PushTargets(source: final source):
+        sse_encode_i_32(46, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_PushCreateTarget(source: final source, name: final name):
-        sse_encode_i_32(46, serializer);
+        sse_encode_i_32(47, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(name, serializer);
       case FfiCommand_PushPlan(
@@ -3979,7 +4019,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         targetName: final targetName,
         targetSongCount: final targetSongCount,
       ):
-        sse_encode_i_32(47, serializer);
+        sse_encode_i_32(48, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(localName, serializer);
         sse_encode_list_song_dto(localSongs, serializer);
@@ -3989,19 +4029,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(targetName, serializer);
         sse_encode_u_32(targetSongCount, serializer);
       case FfiCommand_PushRun(source: final source):
-        sse_encode_i_32(48, serializer);
+        sse_encode_i_32(49, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_PushCancel():
-        sse_encode_i_32(49, serializer);
-      case FfiCommand_PlaylistCategories(source: final source):
         sse_encode_i_32(50, serializer);
+      case FfiCommand_PlaylistCategories(source: final source):
+        sse_encode_i_32(51, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_PlaylistList(
         source: final source,
         category: final category,
         page: final page,
       ):
-        sse_encode_i_32(51, serializer);
+        sse_encode_i_32(52, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(category, serializer);
         sse_encode_u_32(page, serializer);
@@ -4010,36 +4050,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         playlistId: final playlistId,
         page: final page,
       ):
-        sse_encode_i_32(52, serializer);
+        sse_encode_i_32(53, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(playlistId, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_LeaderboardBoards(source: final source):
-        sse_encode_i_32(53, serializer);
+        sse_encode_i_32(54, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_LeaderboardSongs(
         source: final source,
         boardId: final boardId,
         page: final page,
       ):
-        sse_encode_i_32(54, serializer);
+        sse_encode_i_32(55, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(boardId, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_ArtistSongs(artist: final artist, page: final page):
-        sse_encode_i_32(55, serializer);
-        sse_encode_box_autoadd_artist_dto(artist, serializer);
-        sse_encode_u_32(page, serializer);
-      case FfiCommand_ArtistAlbums(artist: final artist, page: final page):
         sse_encode_i_32(56, serializer);
         sse_encode_box_autoadd_artist_dto(artist, serializer);
         sse_encode_u_32(page, serializer);
-      case FfiCommand_AlbumSongs(album: final album, page: final page):
+      case FfiCommand_ArtistAlbums(artist: final artist, page: final page):
         sse_encode_i_32(57, serializer);
+        sse_encode_box_autoadd_artist_dto(artist, serializer);
+        sse_encode_u_32(page, serializer);
+      case FfiCommand_AlbumSongs(album: final album, page: final page):
+        sse_encode_i_32(58, serializer);
         sse_encode_box_autoadd_album_dto(album, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_PlaySongs(songs: final songs, index: final index):
-        sse_encode_i_32(58, serializer);
+        sse_encode_i_32(59, serializer);
         sse_encode_list_song_dto(songs, serializer);
         sse_encode_u_32(index, serializer);
     }

@@ -1425,6 +1425,11 @@ pub enum FfiCommand {
     CustomPlaylistDetail {
         id: String,
     },
+    // ── 歌词 ──
+    /// P2-17：手动重新获取当前歌曲歌词（自动获取失败/为空时的兜底入口）。
+    LoadLyrics {
+        song: SongDto,
+    },
     // ── 配置 ──
     ConfigGet,
     ConfigUpdate {
@@ -1602,6 +1607,9 @@ impl FfiCommand {
                 song: song.into_song()?,
             },
             FfiCommand::HistoryClear => ApplicationCommand::HistoryClear,
+            FfiCommand::LoadLyrics { song } => ApplicationCommand::LoadLyrics {
+                song: song.into_song()?,
+            },
             FfiCommand::CustomPlaylistCreate { name } => {
                 ApplicationCommand::CustomPlaylistCreate { name }
             }

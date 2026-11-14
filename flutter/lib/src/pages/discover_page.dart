@@ -84,6 +84,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
   static const _playlistsKind = 'playlists';
   static const _boardsKind = 'leaderboard_boards';
 
+  /// 「全部音源」的菜单哨兵值。PopupMenuButton 把 pop 出的 null 当作
+  /// 「未选择、菜单被取消」（SDK popup_menu.dart showButtonMenu 的 then
+  /// 回调里 `newValue == null` 走 onCanceled），value 为 null 的菜单项
+  /// 永远不会触发 onSelected——P1-20「选回全部音源不回退」即由此起。
+  /// 真实音源 id 不可能为空串，用 '' 作哨兵安全。
+  static const _allSourcesSentinel = '';
+
   /// null = 全部音源（内容按音源分组）。
   String? _source;
   DiscoverTab _tab = DiscoverTab.playlists;
@@ -307,10 +314,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
   Widget _sourceDropdown(BuildContext context) {
     return PopupMenuButton<String?>(
       tooltip: '选择音源范围',
-      initialValue: _source,
-      onSelected: _selectSource,
+      // 「全部音源」用哨兵值参与高亮；null 仍表示聚合（P1-20，见 _allSourcesSentinel）。
+      initialValue: _source ?? _allSourcesSentinel,
+      onSelected: (id) => _selectSource(id == _allSourcesSentinel ? null : id),
       itemBuilder: (context) => [
-        const PopupMenuItem<String?>(value: null, child: Text('全部音源')),
+        const PopupMenuItem<String?>(
+          value: _allSourcesSentinel,
+          child: Text('全部音源'),
+        ),
         const PopupMenuDivider(),
         for (final source in _model.state.sources)
           PopupMenuItem<String?>(value: source.id, child: Text(source.name)),
