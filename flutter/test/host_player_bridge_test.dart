@@ -67,6 +67,10 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
   bool _playing = false;
   BigInt _generation = BigInt.zero;
 
+  /// 下一次 pause() 抛异常（FFI-R06：单条命令失败不得杀死泵）。
+  bool throwOnPause = false;
+  bool disposed = false;
+
   final _snapshots = StreamController<MobilePlaybackSnapshot>.broadcast();
   final _events = StreamController<MobilePlaybackEvent>.broadcast();
 
@@ -104,7 +108,13 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
   }
 
   @override
-  Future<void> pause() async => calls.add('pause');
+  Future<void> pause() async {
+    if (throwOnPause) {
+      throwOnPause = false;
+      throw StateError('注入的 pause 失败');
+    }
+    calls.add('pause');
+  }
 
   @override
   Future<void> resume() async => calls.add('resume');
@@ -131,7 +141,9 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    disposed = true;
+  }
 }
 
 class FakeHostStateSink implements HostStateSink {
@@ -365,5 +377,105 @@ void main() {
     source.emit(HostPlayerCommandDto_Resume());
     await Future<void>.delayed(Duration.zero);
     expect(player.calls, ['pause'], reason: '循环已退出，resume 不应被消费');
+  });
+
+  test('FFI-R03：lagged 后重同步，把当前快照回灌 Rust watch', () async {
+    final source = FakeCommandSource();
+    final player = FakeMobileAudioPlayer();
+    final sink = FakeHostStateSink();
+    final bridge = _bridge(source, player, sink);
+    bridge.start();
+    await Future<void>.delayed(Duration.zero);
+
+    // 宿主真实状态：playing（经快照监听已缓存为最新快照）。
+    player.emit(
+      const MobilePlaybackSnapshot(
+        phase: MobilePlaybackPhase.playing,
+        position: Duration(milliseconds: 8000),
+        duration: Duration(milliseconds: 244000),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    final reportsBefore = sink.reports.length;
+
+    // 积压丢失（流仍有效）：应触发一次重同步回灌，而非静默继续。
+    source.failWith('host player stream lagged, skipped 5 commands');
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(
+      sink.reports.length,
+      reportsBefore + 1,
+      reason: 'lagged 后应回灌当前快照对齐 Rust watch',
+    );
+    expect(sink.reports.last.state, 'playing');
+    expect(sink.reports.last.positionMs, BigInt.from(8000));
+
+    // 重同步后泵仍存活：后续指令正常消费。
+    source.emit(HostPlayerCommandDto_Pause());
+    await Future<void>.delayed(Duration.zero);
+    expect(player.calls, contains('pause'));
+  });
+
+  test('FFI-R06：单条命令执行失败不杀死泵，后续指令继续消费', () async {
+    final source = FakeCommandSource();
+    final player = FakeMobileAudioPlayer();
+    final sink = FakeHostStateSink();
+    final bridge = _bridge(source, player, sink);
+    bridge.start();
+    await Future<void>.delayed(Duration.zero);
+
+    player.throwOnPause = true;
+    source.emit(HostPlayerCommandDto_Pause());
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(player.calls, isNot(contains('pause')), reason: 'pause 已失败');
+
+    // 泵未随单条命令失败退出：后续 Play 正常执行。
+    source.emit(
+      HostPlayerCommandDto_Play(
+        url: 'https://example.com/next.mp3',
+        generation: BigInt.from(3),
+        headers: const [],
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(player.played, hasLength(1));
+    expect(player.played.single.url, 'https://example.com/next.mp3');
+  });
+
+  test('FFI-R06：dispose 可等待，停泵且不再向已释放播放器派发', () async {
+    final source = FakeCommandSource();
+    final player = FakeMobileAudioPlayer();
+    final sink = FakeHostStateSink();
+    final bridge = _bridge(source, player, sink);
+    bridge.start();
+    await Future<void>.delayed(Duration.zero);
+
+    await bridge.dispose(pumpExitTimeout: const Duration(milliseconds: 100));
+    expect(player.disposed, isTrue, reason: 'dispose 应等待播放器释放完成');
+
+    // dispose 后到达的指令不得派发到已释放的播放器。
+    source.emit(
+      HostPlayerCommandDto_Play(
+        url: 'https://example.com/late.mp3',
+        generation: BigInt.from(4),
+        headers: const [],
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(player.played, isEmpty, reason: 'dispose 后挂起指令不得再派发');
+
+    // dispose 后快照不再回流（订阅已取消）。
+    final reportsBefore = sink.reports.length;
+    player.emit(
+      const MobilePlaybackSnapshot(
+        phase: MobilePlaybackPhase.playing,
+        position: Duration(milliseconds: 100),
+        duration: Duration(milliseconds: 1000),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.reports.length, reportsBefore, reason: '订阅已取消，不再回流');
   });
 }

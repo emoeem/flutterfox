@@ -90,8 +90,9 @@ pub fn new_host() -> Result<VoicefoxController, String> {
 }
 
 /// 播放指令流（Rust→Dart 反向信号面）。与 VoicefoxEventStream 同为
-/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err，
-/// 由 Dart 侧重订阅并重拉状态。
+/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err
+/// 字符串（含 "lagged" 与跳过条数），Dart 侧识别后回灌当前快照重同步
+/// 并继续消费缓冲内剩余指令（host_player_bridge.dart `_pumpCommands`）。
 pub fn host_player_stream(controller: &VoicefoxController) -> HostPlayerStream {
     HostPlayerStream {
         inner: controller

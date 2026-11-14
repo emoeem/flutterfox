@@ -20,8 +20,8 @@
 //! 每次订阅拿新 receiver）；回流为 `watch`（取最新值，高频不丢帧），与
 //! mpv 后端同构。
 
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use tokio::sync::{broadcast, mpsc, watch};
@@ -75,6 +75,13 @@ pub struct HostPlayerBackend {
     volume: Mutex<u32>,
     speed: Mutex<f64>,
     audio_device: Mutex<String>,
+    /// 最近一条未确认送达的 Play（FFI-R01：宿主订阅前 play 的指令会被
+    /// broadcast 丢弃；此处挂起，首个订阅者接入时补投，播放意图不再
+    /// 静默丢失。stop 清除，新 Play 覆写，补投成功后清空）。
+    pending_play: Mutex<Option<HostPlayerCommand>>,
+    /// 最近一次宿主回流时刻（FFI-R07：看门狗判「消费者在线但持续无回流」
+    /// 的冻结依据；None = 从未回流）。
+    last_report: Mutex<Option<std::time::Instant>>,
 }
 
 impl Default for HostPlayerBackend {
@@ -101,12 +108,31 @@ impl HostPlayerBackend {
             volume: Mutex::new(100),
             speed: Mutex::new(1.0),
             audio_device: Mutex::new("auto".to_owned()),
+            pending_play: Mutex::new(None),
+            last_report: Mutex::new(None),
         }
     }
 
     /// 订阅转发指令流（Rust→Dart 反向信号面）。
+    ///
+    /// FFI-R01：若这是当前唯一消费者且存在挂起的 Play（宿主上线前下发），
+    /// 立即补投——广播通道无法追溯订阅前丢掉的指令，补投保证播放意图
+    /// 最终送达。补投成功后清空挂起槽，二次订阅不重复投递。
     pub fn subscribe(&self) -> broadcast::Receiver<HostPlayerCommand> {
-        self.commands.subscribe()
+        let receiver = self.commands.subscribe();
+        if self.commands.receiver_count() == 1 {
+            let pending = self
+                .pending_play
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone();
+            if let Some(command) = pending {
+                if self.commands.send(command).is_ok() {
+                    *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = None;
+                }
+            }
+        }
+        receiver
     }
 
     /// 宿主回流真实播放状态（Dart→Rust）。
@@ -115,22 +141,90 @@ impl HostPlayerBackend {
     /// 丢弃值（宿主订阅前 report 会丢），`send_replace` 无条件更新共享槽，
     /// 之后订阅的观察者立即读到最新值。
     pub fn report_state(&self, state: PlayerState) {
+        self.touch_report();
         self.state.send_replace(state);
     }
 
     /// 宿主回流真实媒体进度。
     pub fn report_position(&self, position: Duration) {
+        self.touch_report();
         self.position.send_replace(position);
     }
 
     /// 宿主回流真实总时长（时长未知报 0，UI 层按 `--:--` 规则呈现）。
     pub fn report_duration(&self, duration: Duration) {
+        self.touch_report();
         self.duration.send_replace(duration);
     }
 
-    /// 宿主回流离散事件（Ended 驱动队列推进，Error 呈现错误）。
+    /// 宿主回流离散事件（Ended/Error/Buffering），service.rs 的队列推进消费。
     pub fn report_event(&self, event: PlayerEvent) {
+        self.touch_report();
         let _ = self.events.send(event);
+    }
+
+    /// 刷新「宿主最近回流」时间戳（FFI-R07 看门狗的冻结判据）。
+    fn touch_report(&self) {
+        *self.last_report.lock().unwrap_or_else(|e| e.into_inner()) =
+            Some(std::time::Instant::now());
+    }
+
+    /// 存活检查单步（FFI-R07）。返回是否发生了强制回落。
+    ///
+    /// 判据（仅 Loading/Playing 态需要看护）：
+    /// - 宿主消失：无消费者且无挂起 Play → 强制回落 Stopped（有挂起 Play
+    ///   时不回落：播放意图仍待补投送达，回落会造成「可恢复却误报停止」）；
+    /// - 宿主冻结：消费者在线但超过 `max_silence` 无任何回流 → 强制回落
+    ///   Stopped（回流断流意味着 just_audio 侧已失联，保留 Playing 是假象）。
+    ///
+    /// 强制回落经 watch `send_replace` 生效，service.rs 观察者泵会把它
+    /// 广播成正常状态迁移，UI 与队列推进路径零特殊处理。
+    pub fn liveness_tick(&self, max_silence: Duration) -> bool {
+        if !matches!(
+            *self.state.borrow(),
+            PlayerState::Loading | PlayerState::Playing
+        ) {
+            return false;
+        }
+        let host_gone = self.commands.receiver_count() == 0
+            && self
+                .pending_play
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .is_none();
+        let reported_recently = self
+            .last_report
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .map_or(false, |t| t.elapsed() <= max_silence);
+        if host_gone || (self.commands.receiver_count() > 0 && !reported_recently) {
+            self.state.send_replace(PlayerState::Stopped);
+            return true;
+        }
+        false
+    }
+
+    /// 启动常驻存活看门狗（FFI-R07）。
+    ///
+    /// `std` 线程而非 tokio 任务：new_host 引导路径无 tokio 上下文（FFI 同步
+    /// 入口），且看门狗只需 sleep+check，不需要异步 IO。线程持 `Arc<Self>`，
+    /// 生命周期与后端一致（进程级，与 R12 登记的「无优雅关停」现状一致）。
+    /// `interval`/`max_silence` 可注入，测试用小值驱动。
+    pub fn start_liveness_watchdog(self: &Arc<Self>, interval: Duration, max_silence: Duration) {
+        let backend = Arc::clone(self);
+        let spawned = std::thread::Builder::new()
+            .name("voicefox-host-watchdog".to_owned())
+            .spawn(move || {
+                loop {
+                    std::thread::sleep(interval);
+                    backend.liveness_tick(max_silence);
+                }
+            });
+        if let Err(error) = spawned {
+            eprintln!(
+                "voicefox: 存活看门狗线程启动失败（{error}）；宿主断连将无法自动回落 Stopped"
+            );
+        }
     }
 }
 
@@ -144,9 +238,10 @@ impl PlayerBackend for HostPlayerBackend {
     }
 
     fn play_with_headers(&self, url: &str, generation: u64, headers: &[(String, String)]) -> bool {
-        // 无订阅者（宿主尚未上线）时指令丢弃但不阻塞服务层；宿主上线后
-        // 以 generation 判代执行。
-        let _ = self.commands.send(HostPlayerCommand::Play {
+        // 无订阅者（宿主尚未上线）时指令会被 broadcast 丢弃但不阻塞服务层；
+        // 同时挂起整条指令，首个订阅者接入时由 subscribe() 补投（FFI-R01），
+        // 播放意图不再静默丢失。宿主上线后以 generation 判代执行。
+        let command = HostPlayerCommand::Play {
             url: url.to_owned(),
             generation,
             headers: headers
@@ -156,7 +251,9 @@ impl PlayerBackend for HostPlayerBackend {
                     value: value.clone(),
                 })
                 .collect(),
-        });
+        };
+        *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = Some(command.clone());
+        let _ = self.commands.send(command);
         self.state.send_replace(PlayerState::Loading);
         true
     }
@@ -170,6 +267,9 @@ impl PlayerBackend for HostPlayerBackend {
     }
 
     fn stop(&self) {
+        // stop 表达「放弃播放意图」：清除挂起 Play，避免 subscribe() 补投
+        // 一条用户已取消的播放（FFI-R01 配套）。
+        *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = None;
         let _ = self.commands.send(HostPlayerCommand::Stop);
         self.state.send_replace(PlayerState::Stopped);
         self.position.send_replace(Duration::ZERO);
@@ -353,13 +453,88 @@ mod tests {
         assert!(matches!(rx.try_recv().unwrap(), HostPlayerCommand::Stop));
     }
 
-    /// 无订阅者时 play 不阻塞也不报错（宿主上线前指令丢弃）。
+    /// FFI-R01：无订阅者时 play 不阻塞也不报错，且指令挂起；首个订阅者
+    /// 接入即补投，播放意图不再静默丢失（旧语义「丢弃但接受」废弃）。
     #[test]
-    fn play_without_subscriber_still_accepts() {
+    fn pending_play_replayed_on_first_subscribe() {
         let backend = HostPlayerBackend::new();
         let generation = backend.prepare();
         assert!(backend.play("https://example.com/c.mp3", generation));
         assert_eq!(*backend.state_watcher().borrow(), PlayerState::Loading);
+
+        // 订阅前无消费者：broadcast 丢弃指令，但挂起槽已保留。
+        let mut rx = backend.subscribe();
+        let command = rx.try_recv().unwrap();
+        assert!(
+            matches!(
+                &command,
+                HostPlayerCommand::Play { url, generation: g, .. }
+                if url == "https://example.com/c.mp3" && *g == generation
+            ),
+            "首个订阅者应收到补投的挂起 Play，实际 {command:?}"
+        );
+        // 补投成功后挂起槽清空：二次订阅不重复投递。
+        let mut rx2 = backend.subscribe();
+        assert!(
+            rx2.try_recv().is_err(),
+            "补投后的挂起槽应已清空，二次订阅不得重复收到 Play"
+        );
+        let _ = rx2;
+    }
+
+    /// FFI-R01 配套：stop 表达放弃播放意图，挂起 Play 必须清除，
+    /// 不得在订阅时补投一条用户已取消的播放。
+    #[test]
+    fn stop_clears_pending_play() {
+        let backend = HostPlayerBackend::new();
+        backend.play("https://example.com/d.mp3", backend.prepare());
+        backend.stop();
+
+        let mut rx = backend.subscribe();
+        assert!(
+            rx.try_recv().is_err(),
+            "挂起 Play 已被 stop 清除，订阅时不应补投"
+        );
+    }
+
+    /// FFI-R07：存活检查仅在「宿主消失（曾在线后全部掉线）/宿主冻结」时
+    /// 强制回落 Stopped；有挂起 Play（补投语义）或回流新鲜时不干预。
+    #[test]
+    fn liveness_tick_forces_stopped_only_when_host_gone() {
+        let backend = HostPlayerBackend::new();
+
+        // 场景 1：宿主曾在线（补投已清挂起槽）后全部掉线 → 强制 Stopped。
+        backend.play("https://example.com/e.mp3", backend.prepare());
+        assert_eq!(*backend.state_watcher().borrow(), PlayerState::Loading);
+        {
+            let mut rx = backend.subscribe();
+            let _ = rx.try_recv(); // 消费补投，挂起槽清空
+        } // rx 掉线：receiver_count 归 0，播放中宿主消失
+        assert!(
+            backend.liveness_tick(Duration::from_secs(20)),
+            "无消费者且无挂起意图的 Loading 态应回落"
+        );
+        assert_eq!(*backend.state_watcher().borrow(), PlayerState::Stopped);
+
+        // 场景 2：有挂起 Play（宿主从未上线，补投语义在途）→ 不回落。
+        backend.play("https://example.com/f.mp3", backend.prepare());
+        assert_eq!(*backend.state_watcher().borrow(), PlayerState::Loading);
+        assert!(!backend.liveness_tick(Duration::from_secs(20)));
+        assert_eq!(*backend.state_watcher().borrow(), PlayerState::Loading);
+
+        // 场景 3：消费者在线且回流新鲜 → 不回落。
+        let mut rx = backend.subscribe();
+        let _ = rx.try_recv(); // 消费 subscribe() 补投的挂起 Play
+        backend.report_state(PlayerState::Playing);
+        assert!(!backend.liveness_tick(Duration::from_secs(20)));
+        assert_eq!(*backend.state_watcher().borrow(), PlayerState::Playing);
+
+        // 场景 4：消费者在线但远超静默阈值无回流 → 判冻结回落。
+        assert!(
+            backend.liveness_tick(Duration::ZERO),
+            "回流断流的 Playing 态应回落（保留 Playing 是假象）"
+        );
+        assert_eq!(*backend.state_watcher().borrow(), PlayerState::Stopped);
     }
 
     /// 宿主回流 Ended/Error 事件经事件出口交付（单次 take 后由消费方持有）。

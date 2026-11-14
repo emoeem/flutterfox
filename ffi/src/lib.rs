@@ -1183,6 +1183,14 @@ impl VoicefoxController {
     pub fn new_host() -> Result<Self, String> {
         let (config, path) = voicefox_runtime::load_config().map_err(|e| e.to_string())?;
         let backend = Arc::new(HostPlayerBackend::new());
+        // FFI-R07：常驻存活看门狗（std 线程）。宿主断连/回流断流时把
+        // Loading/Playing 强制回落 Stopped，避免 UI 永久冻结在最后快照。
+        // 5s 检查间隔 / 20s 回流静默阈值：远小于用户可感知的故障时长，
+        // 远大于正常回流节奏（500ms 节流）。
+        backend.start_liveness_watchdog(
+            std::time::Duration::from_secs(5),
+            std::time::Duration::from_secs(20),
+        );
         let runtime = voicefox_runtime::ApplicationRuntime::from_parts(
             config,
             path,

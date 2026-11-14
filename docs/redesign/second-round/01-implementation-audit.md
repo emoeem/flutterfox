@@ -62,7 +62,7 @@ CI 日志样例：`info • 'package:flutter/material.dart' is deprecated and sh
 | 队列 queue_panel | 已完成并验证 | desktop_queue_interaction_test+queue_interaction_test 8 用例；P2-09 拖拽如实禁用 | Loading 缺（本地快照，可接受） |
 | playlist_browse | 死代码候选 | 仍被 account_playlist_page_test 测试，但新壳不路由（仅退役 myune_shell 引用） | 评估退役或重接 |
 
-桌面全局差距（新增登记 SR 清单）：全部一级页 1920 无限拉伸（除 now_playing 1320）；右键上下文菜单整体缺失（VxSongTable/VxTrackRow 无 onSecondaryTap，song_table_view.dart:214 仅双击）；键盘焦点漫游无规划（仅搜索表 639-643 与壳快捷键有显式 Focus）；ContextPanel 注释漂移（320/280-420 vs 实际 340/300-420）。
+桌面全局差距（新增登记 SR 清单）：全部一级页 1920 无限拉伸（除 now_playing 1320）；右键菜单（2026-11-14 Phase 0 复核裁决：本行原「整体缺失」口径有误，song_tile.dart:76 showSongMenu 真实存在且 song_tile 未退役，playlist_detail/album_songs/artist_detail/library/browse/custom_playlists/queue_drawer 均经 SongTile 渲染并接线 onSecondaryTapUp + 触屏长按共 4 处触发面（song_tile.dart:217,242,263,393），myune playlist_content_widget 另有 onSecondaryTap 接线；残余缺口收窄为「网格卡面（专辑/歌手/歌单卡）与个别视图的右键覆盖」，待 Batch D 精查）；键盘焦点漫游无规划（仅搜索表 639-643 与壳快捷键有显式 Focus）；ContextPanel 注释漂移（320/280-420 vs 实际 340/300-420）。
 
 ## 五、手机盘点
 
@@ -141,7 +141,7 @@ frb_generated.rs/.dart/.freezed.dart 共 657 行变动确认为 codegen 再生�
 | SR-08 | P2 | 运行时字级层级违规（misansTextTheme 全 w400）+ CJK/JetBrainsMono fallback 未进运行时 | theme_provider.dart:11-29、typography.dart:46-49 |
 | SR-09 | P2 | 平板全部槽位复用桌面页面（home 偏差已在旧矩阵登记待裁决） | mobile_shell.dart:796-811 |
 | SR-10 | P2 | 桌面全部一级页 1920 宽无限拉伸（无中心限宽容器） | 各页 pagePadding，仅 now_playing:355 有 1320 |
-| SR-11 | P2 | 桌面右键上下文菜单整体缺失（hover/键盘焦点同缺） | song_table_view.dart:214 |
+| SR-11 | P2 | 桌面右键菜单（口径修正 2026-11-14：SongTile 主行面 showSongMenu 已存在并接线 4 触发面，原「整体缺失」有误；残余缺口=网格卡面与个别视图） | song_tile.dart:76,217,242,263,393；playlist_content_widget.dart:255 |
 | SR-12 | P2 | 歌词重取按钮无 loading/防重复态+DIAG eprintln 残留+过时注释+歌词链零测试 | lyrics_panel.dart:162,13、service.rs:1732 |
 | SR-13 | P2 | 键盘焦点漫游无规划（FocusTraversalGroup 缺失） | 仅 search_page.dart:639-643 |
 | SR-14 | P3 | Header 搜索与搜索页单向同步 | app_shell.dart:392-401 |
