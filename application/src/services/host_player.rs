@@ -20,6 +20,7 @@
 //! 每次订阅拿新 receiver）；回流为 `watch`（取最新值，高频不丢帧），与
 //! mpv 后端同构。
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -37,6 +38,12 @@ pub struct HostHeaderPair {
 }
 
 /// 转发给宿主（Dart 侧 just_audio）的播放指令。
+///
+/// FFI-R04/R06 契约（A-1b）：每条指令携带 `command_id`（后端发送时单调
+/// 打戳，供宿主 ack 回销与重同步判重）；歌曲域指令（Pause/Resume/Stop/
+/// Toggle/Seek）另携带发送时刻的 `generation`（Play 自带解析时代次），
+/// 宿主据此丢弃过期指令——lag 后缓冲中的旧命令不得直打当前曲目。
+/// SetVolume/SetSpeed 是全局连续参数，不携带代次、永远执行。
 #[derive(Debug, Clone, PartialEq)]
 pub enum HostPlayerCommand {
     /// 播放指定 URL；`headers` 为音源解析出的自定义请求头。
@@ -44,21 +51,74 @@ pub enum HostPlayerCommand {
         url: String,
         generation: u64,
         headers: Vec<HostHeaderPair>,
+        command_id: u64,
     },
-    Pause,
-    Resume,
-    Stop,
-    Toggle,
+    Pause {
+        command_id: u64,
+        generation: u64,
+    },
+    Resume {
+        command_id: u64,
+        generation: u64,
+    },
+    Stop {
+        command_id: u64,
+        generation: u64,
+    },
+    Toggle {
+        command_id: u64,
+        generation: u64,
+    },
     /// 定位到绝对位置（毫秒）。
     Seek {
         position_ms: u64,
+        command_id: u64,
+        generation: u64,
     },
     SetVolume {
         volume: u32,
+        command_id: u64,
     },
     SetSpeed {
         speed: f64,
+        command_id: u64,
     },
+}
+
+impl HostPlayerCommand {
+    /// 发送前打戳：command_id 全变体必填；generation 仅歌曲域指令
+    /// （Play 保留解析时代次，不覆写）。
+    fn stamp(&mut self, command_id: u64, generation: u64) {
+        match self {
+            Self::Play { command_id: id, .. }
+            | Self::SetVolume { command_id: id, .. }
+            | Self::SetSpeed { command_id: id, .. } => *id = command_id,
+            Self::Pause {
+                command_id: id,
+                generation: g,
+            }
+            | Self::Resume {
+                command_id: id,
+                generation: g,
+            }
+            | Self::Stop {
+                command_id: id,
+                generation: g,
+            }
+            | Self::Toggle {
+                command_id: id,
+                generation: g,
+            }
+            | Self::Seek {
+                command_id: id,
+                generation: g,
+                ..
+            } => {
+                *id = command_id;
+                *g = generation;
+            }
+        }
+    }
 }
 
 /// 转发型播放后端。
@@ -78,10 +138,23 @@ pub struct HostPlayerBackend {
     /// 最近一条未确认送达的 Play（FFI-R01：宿主订阅前 play 的指令会被
     /// broadcast 丢弃；此处挂起，首个订阅者接入时补投，播放意图不再
     /// 静默丢失。stop 清除，新 Play 覆写，补投成功后清空）。
-    pending_play: Mutex<Option<HostPlayerCommand>>,
+    pending_play: Mutex<Option<PendingPlay>>,
     /// 最近一次宿主回流时刻（FFI-R07：看门狗判「消费者在线但持续无回流」
     /// 的冻结依据；None = 从未回流）。
     last_report: Mutex<Option<std::time::Instant>>,
+    /// 指令序号（command_id 单调源，FFI-R04/R06 ack 契约）。
+    command_seq: AtomicU64,
+    /// 已入队待宿主 ack 的指令（id → 入队时刻；ack 销账，观测命令级
+    /// 送达/执行差）。仅 broadcast send 成功（有消费者缓冲）才登记。
+    pending: Mutex<HashMap<u64, std::time::Instant>>,
+}
+
+/// 挂起 Play 的原始意图（补投时重新打戳发送，不沿用旧 command_id）。
+#[derive(Clone)]
+struct PendingPlay {
+    url: String,
+    generation: u64,
+    headers: Vec<HostHeaderPair>,
 }
 
 impl Default for HostPlayerBackend {
@@ -110,6 +183,8 @@ impl HostPlayerBackend {
             audio_device: Mutex::new("auto".to_owned()),
             pending_play: Mutex::new(None),
             last_report: Mutex::new(None),
+            command_seq: AtomicU64::new(0),
+            pending: Mutex::new(HashMap::new()),
         }
     }
 
@@ -126,13 +201,60 @@ impl HostPlayerBackend {
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .clone();
-            if let Some(command) = pending {
-                if self.commands.send(command).is_ok() {
-                    *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = None;
-                }
+            if let Some(play) = pending {
+                self.send_command(HostPlayerCommand::Play {
+                    url: play.url,
+                    generation: play.generation,
+                    headers: play.headers,
+                    command_id: 0,
+                });
+                *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = None;
             }
         }
         receiver
+    }
+
+    /// 统一发送入口（FFI-R04/R06 ack 契约）：打 command_id 戳 + 为歌曲域
+    /// 指令补当前播放代次，broadcast 送达成功（进入消费者缓冲）时登记
+    /// pending 等宿主 ack 销账。
+    fn send_command(&self, mut command: HostPlayerCommand) {
+        let command_id = self.command_seq.fetch_add(1, Ordering::SeqCst) + 1;
+        let generation = self.generation.load(Ordering::SeqCst);
+        command.stamp(command_id, generation);
+        if self.commands.send(command.clone()).is_ok() {
+            self.pending
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(command_id, std::time::Instant::now());
+        }
+    }
+
+    /// 宿主 ack 一条指令（FFI-R06：区分「已入队」与「宿主已执行」）。
+    /// ok=false 仅诊断记录（真实播放器错误已经 reportEvent('error') 走
+    /// 既有错误链路，此处不重复上报业务错误）。
+    pub fn ack(&self, command_id: u64, ok: bool, message: Option<String>) {
+        self.touch_report();
+        let removed = self
+            .pending
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&command_id);
+        if !ok {
+            eprintln!(
+                "voicefox/host-player: 指令 {command_id} 执行失败（{}）{}",
+                message.unwrap_or_default(),
+                if removed.is_some() {
+                    ""
+                } else {
+                    "；未在 pending 表中（可能已被判定从未送达或已重同步）"
+                }
+            );
+        }
+    }
+
+    /// pending 表长度（ack 对账观测用）。
+    pub fn pending_len(&self) -> usize {
+        self.pending.lock().unwrap_or_else(|e| e.into_inner()).len()
     }
 
     /// 宿主回流真实播放状态（Dart→Rust）。
@@ -196,7 +318,7 @@ impl HostPlayerBackend {
             .last_report
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .map_or(false, |t| t.elapsed() <= max_silence);
+            .is_some_and(|t| t.elapsed() <= max_silence);
         if host_gone || (self.commands.receiver_count() > 0 && !reported_recently) {
             self.state.send_replace(PlayerState::Stopped);
             return true;
@@ -239,49 +361,68 @@ impl PlayerBackend for HostPlayerBackend {
 
     fn play_with_headers(&self, url: &str, generation: u64, headers: &[(String, String)]) -> bool {
         // 无订阅者（宿主尚未上线）时指令会被 broadcast 丢弃但不阻塞服务层；
-        // 同时挂起整条指令，首个订阅者接入时由 subscribe() 补投（FFI-R01），
-        // 播放意图不再静默丢失。宿主上线后以 generation 判代执行。
-        let command = HostPlayerCommand::Play {
+        // 同时挂起原始意图，首个订阅者接入时由 subscribe() 重新打戳补投
+        // （FFI-R01），播放意图不再静默丢失。宿主上线后以 generation 判代执行。
+        let headers: Vec<HostHeaderPair> = headers
+            .iter()
+            .map(|(name, value)| HostHeaderPair {
+                name: name.clone(),
+                value: value.clone(),
+            })
+            .collect();
+        *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = Some(PendingPlay {
             url: url.to_owned(),
             generation,
-            headers: headers
-                .iter()
-                .map(|(name, value)| HostHeaderPair {
-                    name: name.clone(),
-                    value: value.clone(),
-                })
-                .collect(),
-        };
-        *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = Some(command.clone());
-        let _ = self.commands.send(command);
+            headers: headers.clone(),
+        });
+        self.send_command(HostPlayerCommand::Play {
+            url: url.to_owned(),
+            generation,
+            headers,
+            command_id: 0,
+        });
         self.state.send_replace(PlayerState::Loading);
         true
     }
 
     fn pause(&self) {
-        let _ = self.commands.send(HostPlayerCommand::Pause);
+        self.send_command(HostPlayerCommand::Pause {
+            command_id: 0,
+            generation: 0,
+        });
     }
 
     fn resume(&self) {
-        let _ = self.commands.send(HostPlayerCommand::Resume);
+        self.send_command(HostPlayerCommand::Resume {
+            command_id: 0,
+            generation: 0,
+        });
     }
 
     fn stop(&self) {
         // stop 表达「放弃播放意图」：清除挂起 Play，避免 subscribe() 补投
         // 一条用户已取消的播放（FFI-R01 配套）。
         *self.pending_play.lock().unwrap_or_else(|e| e.into_inner()) = None;
-        let _ = self.commands.send(HostPlayerCommand::Stop);
+        self.send_command(HostPlayerCommand::Stop {
+            command_id: 0,
+            generation: 0,
+        });
         self.state.send_replace(PlayerState::Stopped);
         self.position.send_replace(Duration::ZERO);
     }
 
     fn toggle(&self) {
-        let _ = self.commands.send(HostPlayerCommand::Toggle);
+        self.send_command(HostPlayerCommand::Toggle {
+            command_id: 0,
+            generation: 0,
+        });
     }
 
     fn seek(&self, position: Duration) {
-        let _ = self.commands.send(HostPlayerCommand::Seek {
+        self.send_command(HostPlayerCommand::Seek {
             position_ms: position.as_millis() as u64,
+            command_id: 0,
+            generation: 0,
         });
         // 回流跟随宿主报告；本地乐观写避免 UI 等待往返抖动。
         self.position.send_replace(position);
@@ -315,9 +456,10 @@ impl PlayerBackend for HostPlayerBackend {
     fn set_volume(&self, vol: u32) {
         let clamped = vol.clamp(0, 100);
         *self.volume.lock().unwrap_or_else(|e| e.into_inner()) = clamped;
-        let _ = self
-            .commands
-            .send(HostPlayerCommand::SetVolume { volume: clamped });
+        self.send_command(HostPlayerCommand::SetVolume {
+            volume: clamped,
+            command_id: 0,
+        });
     }
 
     fn volume_up(&self, delta: u32) {
@@ -336,7 +478,10 @@ impl PlayerBackend for HostPlayerBackend {
 
     fn set_playback_speed(&self, speed: f64) {
         *self.speed.lock().unwrap_or_else(|e| e.into_inner()) = speed;
-        let _ = self.commands.send(HostPlayerCommand::SetSpeed { speed });
+        self.send_command(HostPlayerCommand::SetSpeed {
+            speed,
+            command_id: 0,
+        });
     }
 
     fn audio_output_device(&self) -> String {
@@ -380,16 +525,18 @@ mod tests {
         assert!(accepted);
 
         let command = rx.try_recv().unwrap();
-        assert_eq!(
-            command,
-            HostPlayerCommand::Play {
-                url: "https://example.com/a.mp3".to_owned(),
-                generation: 2,
-                headers: vec![HostHeaderPair {
-                    name: "Referer".to_owned(),
-                    value: "https://example.com".to_owned(),
-                }],
-            }
+        assert!(
+            matches!(
+                &command,
+                HostPlayerCommand::Play { url, generation, headers, command_id }
+                if url == "https://example.com/a.mp3"
+                    && *generation == 2
+                    && headers.len() == 1
+                    && headers[0].name == "Referer"
+                    && headers[0].value == "https://example.com"
+                    && *command_id >= 1
+            ),
+            "Play 应原样转发 url/generation/headers 并打 command_id，实际 {command:?}"
         );
     }
 
@@ -405,22 +552,47 @@ mod tests {
         backend.set_volume(37);
         backend.set_playback_speed(1.25);
 
-        assert_eq!(rx.try_recv().unwrap(), HostPlayerCommand::Pause);
-        assert_eq!(rx.try_recv().unwrap(), HostPlayerCommand::Resume);
-        assert_eq!(
-            rx.try_recv().unwrap(),
-            HostPlayerCommand::Seek {
-                position_ms: 42_000
+        let pause = rx.try_recv().unwrap();
+        let resume = rx.try_recv().unwrap();
+        let seek = rx.try_recv().unwrap();
+        let set_volume = rx.try_recv().unwrap();
+        let set_speed = rx.try_recv().unwrap();
+        assert!(matches!(
+            pause,
+            HostPlayerCommand::Pause {
+                command_id: 1,
+                generation: 0
             }
-        );
-        assert_eq!(
-            rx.try_recv().unwrap(),
-            HostPlayerCommand::SetVolume { volume: 37 }
-        );
-        assert_eq!(
-            rx.try_recv().unwrap(),
-            HostPlayerCommand::SetSpeed { speed: 1.25 }
-        );
+        ));
+        assert!(matches!(
+            resume,
+            HostPlayerCommand::Resume {
+                command_id: 2,
+                generation: 0
+            }
+        ));
+        assert!(matches!(
+            seek,
+            HostPlayerCommand::Seek {
+                position_ms: 42_000,
+                command_id: 3,
+                generation: 0
+            }
+        ));
+        assert!(matches!(
+            set_volume,
+            HostPlayerCommand::SetVolume {
+                volume: 37,
+                command_id: 4
+            }
+        ));
+        assert!(matches!(
+            set_speed,
+            HostPlayerCommand::SetSpeed {
+                speed: 1.25,
+                command_id: 5
+            }
+        ));
         assert_eq!(backend.volume(), 37);
         assert_eq!(backend.playback_speed(), 1.25);
 
@@ -450,7 +622,10 @@ mod tests {
         backend.stop();
         assert_eq!(*backend.state_watcher().borrow(), PlayerState::Stopped);
         assert!(backend.position_watcher().borrow().is_zero());
-        assert!(matches!(rx.try_recv().unwrap(), HostPlayerCommand::Stop));
+        assert!(matches!(
+            rx.try_recv().unwrap(),
+            HostPlayerCommand::Stop { .. }
+        ));
     }
 
     /// FFI-R01：无订阅者时 play 不阻塞也不报错，且指令挂起；首个订阅者
@@ -562,5 +737,64 @@ mod tests {
             rx.try_recv().unwrap(),
             PlayerEvent::Error { generation: 3, .. }
         ));
+    }
+
+    /// FFI-R04/R06（A-1b）：command_id 单调打戳、歌曲域指令补当前代次、
+    /// ack 销账 pending、无消费者发送不登记 pending。
+    #[test]
+    fn commands_stamped_and_acked() {
+        let backend = HostPlayerBackend::new();
+        let mut rx = backend.subscribe();
+
+        backend.play("https://example.com/g.mp3", 7);
+        backend.pause();
+        backend.seek(Duration::from_millis(1_000));
+
+        let play = rx.try_recv().unwrap();
+        let pause = rx.try_recv().unwrap();
+        let seek = rx.try_recv().unwrap();
+
+        let play_id = match &play {
+            HostPlayerCommand::Play {
+                generation,
+                command_id,
+                ..
+            } => {
+                assert_eq!(*generation, 7, "Play 保留解析时代次不被覆写");
+                *command_id
+            }
+            other => panic!("应为 Play，实际 {other:?}"),
+        };
+        let pause_id = match &pause {
+            HostPlayerCommand::Pause {
+                command_id,
+                generation,
+            } => {
+                assert_eq!(*generation, 0, "无 prepare 时歌曲域指令补当前代次 0");
+                *command_id
+            }
+            other => panic!("应为 Pause，实际 {other:?}"),
+        };
+        let seek_id = match &seek {
+            HostPlayerCommand::Seek { command_id, .. } => *command_id,
+            other => panic!("应为 Seek，实际 {other:?}"),
+        };
+        assert!(
+            play_id < pause_id && pause_id < seek_id,
+            "command_id 应单调递增：{play_id} < {pause_id} < {seek_id}"
+        );
+
+        // 三条均送达消费者缓冲 → pending 登记；ack 逐条销账。
+        assert_eq!(backend.pending_len(), 3);
+        backend.ack(play_id, true, None);
+        backend.ack(pause_id, true, None);
+        assert_eq!(backend.pending_len(), 1);
+        backend.ack(seek_id, false, Some("注入失败".to_owned()));
+        assert_eq!(backend.pending_len(), 0, "失败 ack 同样销账");
+
+        // 无消费者发送：指令无处缓冲，不进 pending（无人会 ack 它）。
+        drop(rx);
+        backend.pause();
+        assert_eq!(backend.pending_len(), 0);
     }
 }

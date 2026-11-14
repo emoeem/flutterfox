@@ -40,7 +40,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1355024124;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 355897619;
 
 // Section: executor
 
@@ -590,6 +590,68 @@ fn wire__crate__api__event_next_impl(
                     })()
                     .await,
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__host_player_ack_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "host_player_ack",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_controller = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<VoicefoxController>,
+            >>::sse_decode(&mut deserializer);
+            let api_command_id = <u64>::sse_decode(&mut deserializer);
+            let api_ok = <bool>::sse_decode(&mut deserializer);
+            let api_message = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_controller_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_controller,
+                                0,
+                                false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => {
+                                api_controller_guard =
+                                    Some(api_controller.lockable_decode_sync_ref())
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_controller_guard = api_controller_guard.unwrap();
+                    let output_ok = crate::api::host_player_ack(
+                        &*api_controller_guard,
+                        api_command_id,
+                        api_ok,
+                        api_message,
+                    )?;
+                    std::result::Result::Ok(output_ok)
+                })())
             }
         },
     )
@@ -1623,37 +1685,71 @@ impl SseDecode for crate::HostPlayerCommandDto {
                 let mut var_url = <String>::sse_decode(deserializer);
                 let mut var_generation = <u64>::sse_decode(deserializer);
                 let mut var_headers = <Vec<crate::HostHeaderDto>>::sse_decode(deserializer);
+                let mut var_commandId = <u64>::sse_decode(deserializer);
                 return crate::HostPlayerCommandDto::Play {
                     url: var_url,
                     generation: var_generation,
                     headers: var_headers,
+                    command_id: var_commandId,
                 };
             }
             1 => {
-                return crate::HostPlayerCommandDto::Pause;
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                let mut var_generation = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::Pause {
+                    command_id: var_commandId,
+                    generation: var_generation,
+                };
             }
             2 => {
-                return crate::HostPlayerCommandDto::Resume;
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                let mut var_generation = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::Resume {
+                    command_id: var_commandId,
+                    generation: var_generation,
+                };
             }
             3 => {
-                return crate::HostPlayerCommandDto::Stop;
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                let mut var_generation = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::Stop {
+                    command_id: var_commandId,
+                    generation: var_generation,
+                };
             }
             4 => {
-                return crate::HostPlayerCommandDto::Toggle;
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                let mut var_generation = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::Toggle {
+                    command_id: var_commandId,
+                    generation: var_generation,
+                };
             }
             5 => {
                 let mut var_positionMs = <u64>::sse_decode(deserializer);
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                let mut var_generation = <u64>::sse_decode(deserializer);
                 return crate::HostPlayerCommandDto::Seek {
                     position_ms: var_positionMs,
+                    command_id: var_commandId,
+                    generation: var_generation,
                 };
             }
             6 => {
                 let mut var_volume = <u32>::sse_decode(deserializer);
-                return crate::HostPlayerCommandDto::SetVolume { volume: var_volume };
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::SetVolume {
+                    volume: var_volume,
+                    command_id: var_commandId,
+                };
             }
             7 => {
                 let mut var_speed = <f64>::sse_decode(deserializer);
-                return crate::HostPlayerCommandDto::SetSpeed { speed: var_speed };
+                let mut var_commandId = <u64>::sse_decode(deserializer);
+                return crate::HostPlayerCommandDto::SetSpeed {
+                    speed: var_speed,
+                    command_id: var_commandId,
+                };
             }
             _ => {
                 unimplemented!("");
@@ -2500,15 +2596,16 @@ fn pde_ffi_dispatcher_primary_impl(
         13 => wire__crate__api__command_toggle_impl(port, ptr, rust_vec_len, data_len),
         14 => wire__crate__api__dispatch_impl(port, ptr, rust_vec_len, data_len),
         15 => wire__crate__api__event_next_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__host_player_next_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__host_player_report_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__host_player_report_event_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__host_player_stream_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__new_desktop_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__new_host_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__set_data_dir_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__state_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__subscribe_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__host_player_ack_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__host_player_next_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__host_player_report_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__host_player_report_event_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__host_player_stream_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__new_desktop_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__new_host_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__set_data_dir_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__state_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__subscribe_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2982,26 +3079,74 @@ impl flutter_rust_bridge::IntoDart for crate::HostPlayerCommandDto {
                 url,
                 generation,
                 headers,
+                command_id,
             } => [
                 0.into_dart(),
                 url.into_into_dart().into_dart(),
                 generation.into_into_dart().into_dart(),
                 headers.into_into_dart().into_dart(),
+                command_id.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::HostPlayerCommandDto::Pause => [1.into_dart()].into_dart(),
-            crate::HostPlayerCommandDto::Resume => [2.into_dart()].into_dart(),
-            crate::HostPlayerCommandDto::Stop => [3.into_dart()].into_dart(),
-            crate::HostPlayerCommandDto::Toggle => [4.into_dart()].into_dart(),
-            crate::HostPlayerCommandDto::Seek { position_ms } => {
-                [5.into_dart(), position_ms.into_into_dart().into_dart()].into_dart()
-            }
-            crate::HostPlayerCommandDto::SetVolume { volume } => {
-                [6.into_dart(), volume.into_into_dart().into_dart()].into_dart()
-            }
-            crate::HostPlayerCommandDto::SetSpeed { speed } => {
-                [7.into_dart(), speed.into_into_dart().into_dart()].into_dart()
-            }
+            crate::HostPlayerCommandDto::Pause {
+                command_id,
+                generation,
+            } => [
+                1.into_dart(),
+                command_id.into_into_dart().into_dart(),
+                generation.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::Resume {
+                command_id,
+                generation,
+            } => [
+                2.into_dart(),
+                command_id.into_into_dart().into_dart(),
+                generation.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::Stop {
+                command_id,
+                generation,
+            } => [
+                3.into_dart(),
+                command_id.into_into_dart().into_dart(),
+                generation.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::Toggle {
+                command_id,
+                generation,
+            } => [
+                4.into_dart(),
+                command_id.into_into_dart().into_dart(),
+                generation.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::Seek {
+                position_ms,
+                command_id,
+                generation,
+            } => [
+                5.into_dart(),
+                position_ms.into_into_dart().into_dart(),
+                command_id.into_into_dart().into_dart(),
+                generation.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::SetVolume { volume, command_id } => [
+                6.into_dart(),
+                volume.into_into_dart().into_dart(),
+                command_id.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::HostPlayerCommandDto::SetSpeed { speed, command_id } => [
+                7.into_dart(),
+                speed.into_into_dart().into_dart(),
+                command_id.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -3915,35 +4060,65 @@ impl SseEncode for crate::HostPlayerCommandDto {
                 url,
                 generation,
                 headers,
+                command_id,
             } => {
                 <i32>::sse_encode(0, serializer);
                 <String>::sse_encode(url, serializer);
                 <u64>::sse_encode(generation, serializer);
                 <Vec<crate::HostHeaderDto>>::sse_encode(headers, serializer);
+                <u64>::sse_encode(command_id, serializer);
             }
-            crate::HostPlayerCommandDto::Pause => {
+            crate::HostPlayerCommandDto::Pause {
+                command_id,
+                generation,
+            } => {
                 <i32>::sse_encode(1, serializer);
+                <u64>::sse_encode(command_id, serializer);
+                <u64>::sse_encode(generation, serializer);
             }
-            crate::HostPlayerCommandDto::Resume => {
+            crate::HostPlayerCommandDto::Resume {
+                command_id,
+                generation,
+            } => {
                 <i32>::sse_encode(2, serializer);
+                <u64>::sse_encode(command_id, serializer);
+                <u64>::sse_encode(generation, serializer);
             }
-            crate::HostPlayerCommandDto::Stop => {
+            crate::HostPlayerCommandDto::Stop {
+                command_id,
+                generation,
+            } => {
                 <i32>::sse_encode(3, serializer);
+                <u64>::sse_encode(command_id, serializer);
+                <u64>::sse_encode(generation, serializer);
             }
-            crate::HostPlayerCommandDto::Toggle => {
+            crate::HostPlayerCommandDto::Toggle {
+                command_id,
+                generation,
+            } => {
                 <i32>::sse_encode(4, serializer);
+                <u64>::sse_encode(command_id, serializer);
+                <u64>::sse_encode(generation, serializer);
             }
-            crate::HostPlayerCommandDto::Seek { position_ms } => {
+            crate::HostPlayerCommandDto::Seek {
+                position_ms,
+                command_id,
+                generation,
+            } => {
                 <i32>::sse_encode(5, serializer);
                 <u64>::sse_encode(position_ms, serializer);
+                <u64>::sse_encode(command_id, serializer);
+                <u64>::sse_encode(generation, serializer);
             }
-            crate::HostPlayerCommandDto::SetVolume { volume } => {
+            crate::HostPlayerCommandDto::SetVolume { volume, command_id } => {
                 <i32>::sse_encode(6, serializer);
                 <u32>::sse_encode(volume, serializer);
+                <u64>::sse_encode(command_id, serializer);
             }
-            crate::HostPlayerCommandDto::SetSpeed { speed } => {
+            crate::HostPlayerCommandDto::SetSpeed { speed, command_id } => {
                 <i32>::sse_encode(7, serializer);
                 <f64>::sse_encode(speed, serializer);
+                <u64>::sse_encode(command_id, serializer);
             }
             _ => {
                 unimplemented!("");

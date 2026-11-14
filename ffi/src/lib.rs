@@ -1278,6 +1278,8 @@ pub struct HostHeaderDto {
 
 /// 转发给宿主（Dart/just_audio）的播放指令 DTO。
 /// application `HostPlayerCommand` 的镜像，由 [HostPlayerStream] 转换。
+/// `command_id` 供宿主 ack 回销（hostPlayerAck）；歌曲域指令的
+/// `generation` 供宿主丢弃过期命令（lag 后缓冲旧命令不得直打当前曲目）。
 #[derive(Debug, Clone)]
 pub enum HostPlayerCommandDto {
     /// 播放指定 URL；headers 为国内音源自定义请求头（逐请求透传）。
@@ -1285,20 +1287,37 @@ pub enum HostPlayerCommandDto {
         url: String,
         generation: u64,
         headers: Vec<HostHeaderDto>,
+        command_id: u64,
     },
-    Pause,
-    Resume,
-    Stop,
-    Toggle,
+    Pause {
+        command_id: u64,
+        generation: u64,
+    },
+    Resume {
+        command_id: u64,
+        generation: u64,
+    },
+    Stop {
+        command_id: u64,
+        generation: u64,
+    },
+    Toggle {
+        command_id: u64,
+        generation: u64,
+    },
     /// 定位到绝对位置（毫秒）。
     Seek {
         position_ms: u64,
+        command_id: u64,
+        generation: u64,
     },
     SetVolume {
         volume: u32,
+        command_id: u64,
     },
     SetSpeed {
         speed: f64,
+        command_id: u64,
     },
 }
 
@@ -1309,6 +1328,7 @@ impl From<HostPlayerCommand> for HostPlayerCommandDto {
                 url,
                 generation,
                 headers,
+                command_id,
             } => Self::Play {
                 url,
                 generation,
@@ -1319,14 +1339,51 @@ impl From<HostPlayerCommand> for HostPlayerCommandDto {
                         value: pair.value,
                     })
                     .collect(),
+                command_id,
             },
-            HostPlayerCommand::Pause => Self::Pause,
-            HostPlayerCommand::Resume => Self::Resume,
-            HostPlayerCommand::Stop => Self::Stop,
-            HostPlayerCommand::Toggle => Self::Toggle,
-            HostPlayerCommand::Seek { position_ms } => Self::Seek { position_ms },
-            HostPlayerCommand::SetVolume { volume } => Self::SetVolume { volume },
-            HostPlayerCommand::SetSpeed { speed } => Self::SetSpeed { speed },
+            HostPlayerCommand::Pause {
+                command_id,
+                generation,
+            } => Self::Pause {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Resume {
+                command_id,
+                generation,
+            } => Self::Resume {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Stop {
+                command_id,
+                generation,
+            } => Self::Stop {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Toggle {
+                command_id,
+                generation,
+            } => Self::Toggle {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Seek {
+                position_ms,
+                command_id,
+                generation,
+            } => Self::Seek {
+                position_ms,
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::SetVolume { volume, command_id } => {
+                Self::SetVolume { volume, command_id }
+            }
+            HostPlayerCommand::SetSpeed { speed, command_id } => {
+                Self::SetSpeed { speed, command_id }
+            }
         }
     }
 }

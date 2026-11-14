@@ -481,19 +481,39 @@ sealed class HostPlayerCommandDto with _$HostPlayerCommandDto {
     required String url,
     required BigInt generation,
     required List<HostHeaderDto> headers,
+    required BigInt commandId,
   }) = HostPlayerCommandDto_Play;
-  const factory HostPlayerCommandDto.pause() = HostPlayerCommandDto_Pause;
-  const factory HostPlayerCommandDto.resume() = HostPlayerCommandDto_Resume;
-  const factory HostPlayerCommandDto.stop() = HostPlayerCommandDto_Stop;
-  const factory HostPlayerCommandDto.toggle() = HostPlayerCommandDto_Toggle;
+  const factory HostPlayerCommandDto.pause({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Pause;
+  const factory HostPlayerCommandDto.resume({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Resume;
+  const factory HostPlayerCommandDto.stop({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Stop;
+  const factory HostPlayerCommandDto.toggle({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Toggle;
 
   /// 定位到绝对位置（毫秒）。
-  const factory HostPlayerCommandDto.seek({required BigInt positionMs}) =
-      HostPlayerCommandDto_Seek;
-  const factory HostPlayerCommandDto.setVolume({required int volume}) =
-      HostPlayerCommandDto_SetVolume;
-  const factory HostPlayerCommandDto.setSpeed({required double speed}) =
-      HostPlayerCommandDto_SetSpeed;
+  const factory HostPlayerCommandDto.seek({
+    required BigInt positionMs,
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Seek;
+  const factory HostPlayerCommandDto.setVolume({
+    required int volume,
+    required BigInt commandId,
+  }) = HostPlayerCommandDto_SetVolume;
+  const factory HostPlayerCommandDto.setSpeed({
+    required double speed,
+    required BigInt commandId,
+  }) = HostPlayerCommandDto_SetSpeed;
 }
 
 class LeaderboardDto {

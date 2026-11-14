@@ -77,8 +77,9 @@ Future<VoicefoxController> newDesktop() =>
 Future<VoicefoxController> newHost() => RustLib.instance.api.crateApiNewHost();
 
 /// 播放指令流（Rust→Dart 反向信号面）。与 VoicefoxEventStream 同为
-/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err，
-/// 由 Dart 侧重订阅并重拉状态。
+/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err
+/// 字符串（含 "lagged" 与跳过条数），Dart 侧识别后回灌当前快照重同步
+/// 并继续消费缓冲内剩余指令（host_player_bridge.dart `_pumpCommands`）。
 Future<HostPlayerStream> hostPlayerStream({
   required VoicefoxController controller,
 }) => RustLib.instance.api.crateApiHostPlayerStream(controller: controller);
@@ -109,6 +110,21 @@ Future<void> hostPlayerReportEvent({
   controller: controller,
   kind: kind,
   generation: generation,
+  message: message,
+);
+
+/// 宿主 ack 一条播放指令（FFI-R06 A-1b：区分「已入队」与「宿主已执行」）。
+/// command_id 来自指令 DTO 的 command_id 字段；ok=false 仅诊断记录，
+/// 真实播放器错误经 host_player_report_event('error') 走既有错误链路。
+Future<void> hostPlayerAck({
+  required VoicefoxController controller,
+  required BigInt commandId,
+  required bool ok,
+  String? message,
+}) => RustLib.instance.api.crateApiHostPlayerAck(
+  controller: controller,
+  commandId: commandId,
+  ok: ok,
   message: message,
 );
 

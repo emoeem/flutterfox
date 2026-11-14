@@ -162,6 +162,22 @@ pub fn host_player_report_event(
     Ok(())
 }
 
+/// 宿主 ack 一条播放指令（FFI-R06 A-1b：区分「已入队」与「宿主已执行」）。
+/// command_id 来自指令 DTO 的 command_id 字段；ok=false 仅诊断记录，
+/// 真实播放器错误经 host_player_report_event('error') 走既有错误链路。
+pub fn host_player_ack(
+    controller: &VoicefoxController,
+    command_id: u64,
+    ok: bool,
+    message: Option<String>,
+) -> Result<(), String> {
+    let backend = controller
+        .host_player()
+        .ok_or_else(|| "控制器未启用转发型播放后端".to_string())?;
+    backend.ack(command_id, ok, message);
+    Ok(())
+}
+
 fn parse_host_state(state: &str) -> Option<lx_core::model::source::PlayerState> {
     use lx_core::model::source::PlayerState;
     Some(match state {

@@ -71,6 +71,11 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
   bool throwOnPause = false;
   bool disposed = false;
 
+  /// 测试注入宿主当前代次（FFI-R04 过期过滤用）。
+  void setGeneration(BigInt value) {
+    _generation = value;
+  }
+
   final _snapshots = StreamController<MobilePlaybackSnapshot>.broadcast();
   final _events = StreamController<MobilePlaybackEvent>.broadcast();
 
@@ -149,6 +154,7 @@ class FakeMobileAudioPlayer implements MobileAudioPlayer {
 class FakeHostStateSink implements HostStateSink {
   final reports = <({String state, BigInt positionMs, BigInt durationMs})>[];
   final events = <({String kind, BigInt generation, String? message})>[];
+  final acks = <({BigInt commandId, bool ok, String? message})>[];
 
   @override
   Future<void> report({
@@ -166,6 +172,15 @@ class FakeHostStateSink implements HostStateSink {
     String? message,
   }) async {
     events.add((kind: kind, generation: generation, message: message));
+  }
+
+  @override
+  Future<void> ack({
+    required BigInt commandId,
+    required bool ok,
+    String? message,
+  }) async {
+    acks.add((commandId: commandId, ok: ok, message: message));
   }
 }
 
@@ -199,6 +214,7 @@ void main() {
         headers: const [
           HostHeaderDto(name: 'Referer', value: 'https://example.com'),
         ],
+        commandId: BigInt.from(1),
       ),
     );
     await Future<void>.delayed(Duration.zero);
@@ -221,13 +237,38 @@ void main() {
     bridge.start();
     await Future<void>.delayed(Duration.zero);
 
-    source.emit(HostPlayerCommandDto_Pause());
-    source.emit(HostPlayerCommandDto_Resume());
-    source.emit(HostPlayerCommandDto_Seek(positionMs: BigInt.from(42000)));
-    source.emit(HostPlayerCommandDto_SetVolume(volume: 37));
-    source.emit(HostPlayerCommandDto_SetSpeed(speed: 1.5));
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.one,
+        generation: BigInt.zero,
+      ),
+    );
+    source.emit(
+      HostPlayerCommandDto_Resume(
+        commandId: BigInt.two,
+        generation: BigInt.zero,
+      ),
+    );
+    source.emit(
+      HostPlayerCommandDto_Seek(
+        positionMs: BigInt.from(42000),
+        commandId: BigInt.from(3),
+        generation: BigInt.zero,
+      ),
+    );
+    source.emit(
+      HostPlayerCommandDto_SetVolume(volume: 37, commandId: BigInt.from(4)),
+    );
+    source.emit(
+      HostPlayerCommandDto_SetSpeed(speed: 1.5, commandId: BigInt.from(5)),
+    );
     // Toggle：未播放 → resume。
-    source.emit(HostPlayerCommandDto_Toggle());
+    source.emit(
+      HostPlayerCommandDto_Toggle(
+        commandId: BigInt.from(6),
+        generation: BigInt.zero,
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
 
     expect(player.calls, [
@@ -245,7 +286,12 @@ void main() {
     // Toggle：播放中 → pause。
     player.setPlaying(true);
     await Future<void>.delayed(Duration.zero);
-    source.emit(HostPlayerCommandDto_Toggle());
+    source.emit(
+      HostPlayerCommandDto_Toggle(
+        commandId: BigInt.from(6),
+        generation: BigInt.zero,
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(player.calls.last, 'pause');
   });
@@ -365,7 +411,12 @@ void main() {
 
     // 继续：新指令仍被消费。
     await Future<void>.delayed(Duration.zero);
-    source.emit(HostPlayerCommandDto_Pause());
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.one,
+        generation: BigInt.zero,
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(player.calls, ['pause']);
 
@@ -374,7 +425,12 @@ void main() {
     source.failWith('receiving on an empty and closed channel');
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
-    source.emit(HostPlayerCommandDto_Resume());
+    source.emit(
+      HostPlayerCommandDto_Resume(
+        commandId: BigInt.two,
+        generation: BigInt.zero,
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(player.calls, ['pause'], reason: '循环已退出，resume 不应被消费');
   });
@@ -412,7 +468,12 @@ void main() {
     expect(sink.reports.last.positionMs, BigInt.from(8000));
 
     // 重同步后泵仍存活：后续指令正常消费。
-    source.emit(HostPlayerCommandDto_Pause());
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.one,
+        generation: BigInt.zero,
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
     expect(player.calls, contains('pause'));
   });
@@ -426,7 +487,12 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     player.throwOnPause = true;
-    source.emit(HostPlayerCommandDto_Pause());
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.one,
+        generation: BigInt.zero,
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
     expect(player.calls, isNot(contains('pause')), reason: 'pause 已失败');
@@ -437,6 +503,7 @@ void main() {
         url: 'https://example.com/next.mp3',
         generation: BigInt.from(3),
         headers: const [],
+        commandId: BigInt.from(2),
       ),
     );
     await Future<void>.delayed(Duration.zero);
@@ -461,6 +528,7 @@ void main() {
         url: 'https://example.com/late.mp3',
         generation: BigInt.from(4),
         headers: const [],
+        commandId: BigInt.from(3),
       ),
     );
     await Future<void>.delayed(Duration.zero);
@@ -477,5 +545,96 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
     expect(sink.reports.length, reportsBefore, reason: '订阅已取消，不再回流');
+  });
+
+  test('FFI-R04：歌曲域指令代次落后宿主 → 丢弃并 ack 失败，不误执行', () async {
+    final source = FakeCommandSource();
+    final player = FakeMobileAudioPlayer();
+    final sink = FakeHostStateSink();
+    final bridge = _bridge(source, player, sink);
+    bridge.start();
+    await Future<void>.delayed(Duration.zero);
+
+    // 宿主已切到代次 5（lag 后缓冲里是代次 3 的旧 Seek）。
+    player.setGeneration(BigInt.from(5));
+    source.emit(
+      HostPlayerCommandDto_Seek(
+        positionMs: BigInt.from(999),
+        commandId: BigInt.from(7),
+        generation: BigInt.from(3),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(player.seeks, isEmpty, reason: '过期 Seek 不得直打当前曲目');
+    expect(sink.acks, hasLength(1));
+    expect(sink.acks.single.commandId, BigInt.from(7));
+    expect(sink.acks.single.ok, isFalse);
+    expect(sink.acks.single.message, contains('代次 3 落后宿主当前 5'));
+
+    // 同代次（或更新）命令照常执行并 ack 成功。
+    source.emit(
+      HostPlayerCommandDto_Seek(
+        positionMs: BigInt.from(42),
+        commandId: BigInt.from(8),
+        generation: BigInt.from(5),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(player.seeks.single, const Duration(milliseconds: 42));
+    expect(sink.acks.last.ok, isTrue);
+    expect(sink.acks.last.commandId, BigInt.from(8));
+
+    // SetVolume 无代次（全局参数）永远执行。
+    source.emit(
+      HostPlayerCommandDto_SetVolume(volume: 80, commandId: BigInt.from(9)),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(player.volumes.single, closeTo(0.80, 1e-9));
+  });
+
+  test('FFI-R06：命令执行成功/失败均 ack 回销（区分已入队与已执行）', () async {
+    final source = FakeCommandSource();
+    final player = FakeMobileAudioPlayer();
+    final sink = FakeHostStateSink();
+    final bridge = _bridge(source, player, sink);
+    bridge.start();
+    await Future<void>.delayed(Duration.zero);
+
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.one,
+        generation: BigInt.zero,
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.acks, hasLength(1));
+    expect(sink.acks.single.commandId, BigInt.one);
+    expect(sink.acks.single.ok, isTrue, reason: '成功执行 → ack ok');
+
+    player.throwOnPause = true;
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.two,
+        generation: BigInt.zero,
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.acks, hasLength(2));
+    expect(sink.acks.last.commandId, BigInt.two);
+    expect(sink.acks.last.ok, isFalse, reason: '执行失败 → ack 失败');
+    expect(sink.acks.last.message, contains('注入的 pause 失败'));
+
+    // 泵在失败后仍存活：后续命令继续消费。
+    source.emit(
+      HostPlayerCommandDto_Pause(
+        commandId: BigInt.from(3),
+        generation: BigInt.zero,
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.acks, hasLength(3));
+    expect(sink.acks.last.ok, isTrue);
   });
 }

@@ -65,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 1355024124;
+  int get rustContentHash => 355897619;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -117,6 +117,13 @@ abstract class RustLibApi extends BaseApi {
 
   Future<VoicefoxEvent> crateApiEventNext({
     required VoicefoxEventStream stream,
+  });
+
+  Future<void> crateApiHostPlayerAck({
+    required VoicefoxController controller,
+    required BigInt commandId,
+    required bool ok,
+    String? message,
   });
 
   Future<HostPlayerCommandDto> crateApiHostPlayerNext({
@@ -633,6 +640,47 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "event_next", argNames: ["stream"]);
 
   @override
+  Future<void> crateApiHostPlayerAck({
+    required VoicefoxController controller,
+    required BigInt commandId,
+    required bool ok,
+    String? message,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerVoicefoxController(
+            controller,
+            serializer,
+          );
+          sse_encode_u_64(commandId, serializer);
+          sse_encode_bool(ok, serializer);
+          sse_encode_opt_String(message, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiHostPlayerAckConstMeta,
+        argValues: [controller, commandId, ok, message],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHostPlayerAckConstMeta => const TaskConstMeta(
+    debugName: "host_player_ack",
+    argNames: ["controller", "commandId", "ok", "message"],
+  );
+
+  @override
   Future<HostPlayerCommandDto> crateApiHostPlayerNext({
     required HostPlayerStream stream,
   }) {
@@ -647,7 +695,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 17,
             port: port_,
           );
         },
@@ -686,7 +734,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 18,
             port: port_,
           );
         },
@@ -727,7 +775,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 19,
             port: port_,
           );
         },
@@ -763,7 +811,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -793,7 +841,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -821,7 +869,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -850,7 +898,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -883,7 +931,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 24,
             port: port_,
           );
         },
@@ -916,7 +964,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 25,
             port: port_,
           );
         },
@@ -1471,21 +1519,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           url: dco_decode_String(raw[1]),
           generation: dco_decode_u_64(raw[2]),
           headers: dco_decode_list_host_header_dto(raw[3]),
+          commandId: dco_decode_u_64(raw[4]),
         );
       case 1:
-        return HostPlayerCommandDto_Pause();
+        return HostPlayerCommandDto_Pause(
+          commandId: dco_decode_u_64(raw[1]),
+          generation: dco_decode_u_64(raw[2]),
+        );
       case 2:
-        return HostPlayerCommandDto_Resume();
+        return HostPlayerCommandDto_Resume(
+          commandId: dco_decode_u_64(raw[1]),
+          generation: dco_decode_u_64(raw[2]),
+        );
       case 3:
-        return HostPlayerCommandDto_Stop();
+        return HostPlayerCommandDto_Stop(
+          commandId: dco_decode_u_64(raw[1]),
+          generation: dco_decode_u_64(raw[2]),
+        );
       case 4:
-        return HostPlayerCommandDto_Toggle();
+        return HostPlayerCommandDto_Toggle(
+          commandId: dco_decode_u_64(raw[1]),
+          generation: dco_decode_u_64(raw[2]),
+        );
       case 5:
-        return HostPlayerCommandDto_Seek(positionMs: dco_decode_u_64(raw[1]));
+        return HostPlayerCommandDto_Seek(
+          positionMs: dco_decode_u_64(raw[1]),
+          commandId: dco_decode_u_64(raw[2]),
+          generation: dco_decode_u_64(raw[3]),
+        );
       case 6:
-        return HostPlayerCommandDto_SetVolume(volume: dco_decode_u_32(raw[1]));
+        return HostPlayerCommandDto_SetVolume(
+          volume: dco_decode_u_32(raw[1]),
+          commandId: dco_decode_u_64(raw[2]),
+        );
       case 7:
-        return HostPlayerCommandDto_SetSpeed(speed: dco_decode_f_64(raw[1]));
+        return HostPlayerCommandDto_SetSpeed(
+          speed: dco_decode_f_64(raw[1]),
+          commandId: dco_decode_u_64(raw[2]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -2663,28 +2734,64 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_url = sse_decode_String(deserializer);
         var var_generation = sse_decode_u_64(deserializer);
         var var_headers = sse_decode_list_host_header_dto(deserializer);
+        var var_commandId = sse_decode_u_64(deserializer);
         return HostPlayerCommandDto_Play(
           url: var_url,
           generation: var_generation,
           headers: var_headers,
+          commandId: var_commandId,
         );
       case 1:
-        return HostPlayerCommandDto_Pause();
+        var var_commandId = sse_decode_u_64(deserializer);
+        var var_generation = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_Pause(
+          commandId: var_commandId,
+          generation: var_generation,
+        );
       case 2:
-        return HostPlayerCommandDto_Resume();
+        var var_commandId = sse_decode_u_64(deserializer);
+        var var_generation = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_Resume(
+          commandId: var_commandId,
+          generation: var_generation,
+        );
       case 3:
-        return HostPlayerCommandDto_Stop();
+        var var_commandId = sse_decode_u_64(deserializer);
+        var var_generation = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_Stop(
+          commandId: var_commandId,
+          generation: var_generation,
+        );
       case 4:
-        return HostPlayerCommandDto_Toggle();
+        var var_commandId = sse_decode_u_64(deserializer);
+        var var_generation = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_Toggle(
+          commandId: var_commandId,
+          generation: var_generation,
+        );
       case 5:
         var var_positionMs = sse_decode_u_64(deserializer);
-        return HostPlayerCommandDto_Seek(positionMs: var_positionMs);
+        var var_commandId = sse_decode_u_64(deserializer);
+        var var_generation = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_Seek(
+          positionMs: var_positionMs,
+          commandId: var_commandId,
+          generation: var_generation,
+        );
       case 6:
         var var_volume = sse_decode_u_32(deserializer);
-        return HostPlayerCommandDto_SetVolume(volume: var_volume);
+        var var_commandId = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_SetVolume(
+          volume: var_volume,
+          commandId: var_commandId,
+        );
       case 7:
         var var_speed = sse_decode_f_64(deserializer);
-        return HostPlayerCommandDto_SetSpeed(speed: var_speed);
+        var var_commandId = sse_decode_u_64(deserializer);
+        return HostPlayerCommandDto_SetSpeed(
+          speed: var_speed,
+          commandId: var_commandId,
+        );
       default:
         throw UnimplementedError('');
     }
@@ -4106,28 +4213,64 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         url: final url,
         generation: final generation,
         headers: final headers,
+        commandId: final commandId,
       ):
         sse_encode_i_32(0, serializer);
         sse_encode_String(url, serializer);
         sse_encode_u_64(generation, serializer);
         sse_encode_list_host_header_dto(headers, serializer);
-      case HostPlayerCommandDto_Pause():
+        sse_encode_u_64(commandId, serializer);
+      case HostPlayerCommandDto_Pause(
+        commandId: final commandId,
+        generation: final generation,
+      ):
         sse_encode_i_32(1, serializer);
-      case HostPlayerCommandDto_Resume():
+        sse_encode_u_64(commandId, serializer);
+        sse_encode_u_64(generation, serializer);
+      case HostPlayerCommandDto_Resume(
+        commandId: final commandId,
+        generation: final generation,
+      ):
         sse_encode_i_32(2, serializer);
-      case HostPlayerCommandDto_Stop():
+        sse_encode_u_64(commandId, serializer);
+        sse_encode_u_64(generation, serializer);
+      case HostPlayerCommandDto_Stop(
+        commandId: final commandId,
+        generation: final generation,
+      ):
         sse_encode_i_32(3, serializer);
-      case HostPlayerCommandDto_Toggle():
+        sse_encode_u_64(commandId, serializer);
+        sse_encode_u_64(generation, serializer);
+      case HostPlayerCommandDto_Toggle(
+        commandId: final commandId,
+        generation: final generation,
+      ):
         sse_encode_i_32(4, serializer);
-      case HostPlayerCommandDto_Seek(positionMs: final positionMs):
+        sse_encode_u_64(commandId, serializer);
+        sse_encode_u_64(generation, serializer);
+      case HostPlayerCommandDto_Seek(
+        positionMs: final positionMs,
+        commandId: final commandId,
+        generation: final generation,
+      ):
         sse_encode_i_32(5, serializer);
         sse_encode_u_64(positionMs, serializer);
-      case HostPlayerCommandDto_SetVolume(volume: final volume):
+        sse_encode_u_64(commandId, serializer);
+        sse_encode_u_64(generation, serializer);
+      case HostPlayerCommandDto_SetVolume(
+        volume: final volume,
+        commandId: final commandId,
+      ):
         sse_encode_i_32(6, serializer);
         sse_encode_u_32(volume, serializer);
-      case HostPlayerCommandDto_SetSpeed(speed: final speed):
+        sse_encode_u_64(commandId, serializer);
+      case HostPlayerCommandDto_SetSpeed(
+        speed: final speed,
+        commandId: final commandId,
+      ):
         sse_encode_i_32(7, serializer);
         sse_encode_f_64(speed, serializer);
+        sse_encode_u_64(commandId, serializer);
     }
   }
 

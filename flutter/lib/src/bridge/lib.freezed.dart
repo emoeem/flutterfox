@@ -4146,30 +4146,66 @@ as int,
 /// @nodoc
 mixin _$HostPlayerCommandDto {
 
-
+ BigInt get commandId;
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDtoCopyWith<HostPlayerCommandDto> get copyWith => _$HostPlayerCommandDtoCopyWithImpl<HostPlayerCommandDto>(this as HostPlayerCommandDto, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto);
+  final _this = this as HostPlayerCommandDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto&&(identical(other.commandId, _this.commandId) || other.commandId == _this.commandId));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+  final _this = this as HostPlayerCommandDto;
+  return Object.hash(runtimeType,_this.commandId);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto()';
+  final _this = this as HostPlayerCommandDto;
+  return 'HostPlayerCommandDto(commandId: ${_this.commandId})';
 }
 
 
 }
 
 /// @nodoc
-class $HostPlayerCommandDtoCopyWith<$Res>  {
-$HostPlayerCommandDtoCopyWith(HostPlayerCommandDto _, $Res Function(HostPlayerCommandDto) __);
+abstract mixin class $HostPlayerCommandDtoCopyWith<$Res>  {
+  factory $HostPlayerCommandDtoCopyWith(HostPlayerCommandDto value, $Res Function(HostPlayerCommandDto) _then) = _$HostPlayerCommandDtoCopyWithImpl;
+@useResult
+$Res call({
+ BigInt commandId
+});
+
+
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDtoCopyWithImpl<$Res>
+    implements $HostPlayerCommandDtoCopyWith<$Res> {
+  _$HostPlayerCommandDtoCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto _self;
+  final $Res Function(HostPlayerCommandDto) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? commandId = null,}) {
+  return _then(_self.copyWith(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
 }
 
 
@@ -4269,17 +4305,17 @@ return setSpeed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers)?  play,TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  stop,TResult Function()?  toggle,TResult Function( BigInt positionMs)?  seek,TResult Function( int volume)?  setVolume,TResult Function( double speed)?  setSpeed,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers,  BigInt commandId)?  play,TResult Function( BigInt commandId,  BigInt generation)?  pause,TResult Function( BigInt commandId,  BigInt generation)?  resume,TResult Function( BigInt commandId,  BigInt generation)?  stop,TResult Function( BigInt commandId,  BigInt generation)?  toggle,TResult Function( BigInt positionMs,  BigInt commandId,  BigInt generation)?  seek,TResult Function( int volume,  BigInt commandId)?  setVolume,TResult Function( double speed,  BigInt commandId)?  setSpeed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case HostPlayerCommandDto_Play() when play != null:
-return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause() when pause != null:
-return pause();case HostPlayerCommandDto_Resume() when resume != null:
-return resume();case HostPlayerCommandDto_Stop() when stop != null:
-return stop();case HostPlayerCommandDto_Toggle() when toggle != null:
-return toggle();case HostPlayerCommandDto_Seek() when seek != null:
-return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume() when setVolume != null:
-return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
-return setSpeed(_that.speed);case _:
+return play(_that.url,_that.generation,_that.headers,_that.commandId);case HostPlayerCommandDto_Pause() when pause != null:
+return pause(_that.commandId,_that.generation);case HostPlayerCommandDto_Resume() when resume != null:
+return resume(_that.commandId,_that.generation);case HostPlayerCommandDto_Stop() when stop != null:
+return stop(_that.commandId,_that.generation);case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle(_that.commandId,_that.generation);case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that.positionMs,_that.commandId,_that.generation);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that.volume,_that.commandId);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that.speed,_that.commandId);case _:
   return orElse();
 
 }
@@ -4297,17 +4333,17 @@ return setSpeed(_that.speed);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers)  play,required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  stop,required TResult Function()  toggle,required TResult Function( BigInt positionMs)  seek,required TResult Function( int volume)  setVolume,required TResult Function( double speed)  setSpeed,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers,  BigInt commandId)  play,required TResult Function( BigInt commandId,  BigInt generation)  pause,required TResult Function( BigInt commandId,  BigInt generation)  resume,required TResult Function( BigInt commandId,  BigInt generation)  stop,required TResult Function( BigInt commandId,  BigInt generation)  toggle,required TResult Function( BigInt positionMs,  BigInt commandId,  BigInt generation)  seek,required TResult Function( int volume,  BigInt commandId)  setVolume,required TResult Function( double speed,  BigInt commandId)  setSpeed,}) {final _that = this;
 switch (_that) {
 case HostPlayerCommandDto_Play():
-return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause():
-return pause();case HostPlayerCommandDto_Resume():
-return resume();case HostPlayerCommandDto_Stop():
-return stop();case HostPlayerCommandDto_Toggle():
-return toggle();case HostPlayerCommandDto_Seek():
-return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume():
-return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed():
-return setSpeed(_that.speed);}
+return play(_that.url,_that.generation,_that.headers,_that.commandId);case HostPlayerCommandDto_Pause():
+return pause(_that.commandId,_that.generation);case HostPlayerCommandDto_Resume():
+return resume(_that.commandId,_that.generation);case HostPlayerCommandDto_Stop():
+return stop(_that.commandId,_that.generation);case HostPlayerCommandDto_Toggle():
+return toggle(_that.commandId,_that.generation);case HostPlayerCommandDto_Seek():
+return seek(_that.positionMs,_that.commandId,_that.generation);case HostPlayerCommandDto_SetVolume():
+return setVolume(_that.volume,_that.commandId);case HostPlayerCommandDto_SetSpeed():
+return setSpeed(_that.speed,_that.commandId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -4321,17 +4357,17 @@ return setSpeed(_that.speed);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String url,  BigInt generation,  List<HostHeaderDto> headers)?  play,TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  stop,TResult? Function()?  toggle,TResult? Function( BigInt positionMs)?  seek,TResult? Function( int volume)?  setVolume,TResult? Function( double speed)?  setSpeed,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String url,  BigInt generation,  List<HostHeaderDto> headers,  BigInt commandId)?  play,TResult? Function( BigInt commandId,  BigInt generation)?  pause,TResult? Function( BigInt commandId,  BigInt generation)?  resume,TResult? Function( BigInt commandId,  BigInt generation)?  stop,TResult? Function( BigInt commandId,  BigInt generation)?  toggle,TResult? Function( BigInt positionMs,  BigInt commandId,  BigInt generation)?  seek,TResult? Function( int volume,  BigInt commandId)?  setVolume,TResult? Function( double speed,  BigInt commandId)?  setSpeed,}) {final _that = this;
 switch (_that) {
 case HostPlayerCommandDto_Play() when play != null:
-return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause() when pause != null:
-return pause();case HostPlayerCommandDto_Resume() when resume != null:
-return resume();case HostPlayerCommandDto_Stop() when stop != null:
-return stop();case HostPlayerCommandDto_Toggle() when toggle != null:
-return toggle();case HostPlayerCommandDto_Seek() when seek != null:
-return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume() when setVolume != null:
-return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
-return setSpeed(_that.speed);case _:
+return play(_that.url,_that.generation,_that.headers,_that.commandId);case HostPlayerCommandDto_Pause() when pause != null:
+return pause(_that.commandId,_that.generation);case HostPlayerCommandDto_Resume() when resume != null:
+return resume(_that.commandId,_that.generation);case HostPlayerCommandDto_Stop() when stop != null:
+return stop(_that.commandId,_that.generation);case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle(_that.commandId,_that.generation);case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that.positionMs,_that.commandId,_that.generation);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that.volume,_that.commandId);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that.speed,_that.commandId);case _:
   return null;
 
 }
@@ -4343,7 +4379,7 @@ return setSpeed(_that.speed);case _:
 
 
 class HostPlayerCommandDto_Play extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Play({required this.url, required this.generation, required  List<HostHeaderDto> headers}): _headers = headers,super._();
+  const HostPlayerCommandDto_Play({required this.url, required this.generation, required  List<HostHeaderDto> headers, required this.commandId}): _headers = headers,super._();
   
 
  final  String url;
@@ -4355,10 +4391,11 @@ class HostPlayerCommandDto_Play extends HostPlayerCommandDto {
   return EqualUnmodifiableListView(_headers);
 }
 
+@override final  BigInt commandId;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_PlayCopyWith<HostPlayerCommandDto_Play> get copyWith => _$HostPlayerCommandDto_PlayCopyWithImpl<HostPlayerCommandDto_Play>(this, _$identity);
 
@@ -4366,18 +4403,18 @@ $HostPlayerCommandDto_PlayCopyWith<HostPlayerCommandDto_Play> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other.headers, _headers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other.headers, _headers)&&(identical(other.commandId, commandId) || other.commandId == commandId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers));
+    return Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers),commandId);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers)';
+    return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers, commandId: $commandId)';
 }
 
 
@@ -4386,9 +4423,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_PlayCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_PlayCopyWith(HostPlayerCommandDto_Play value, $Res Function(HostPlayerCommandDto_Play) _then) = _$HostPlayerCommandDto_PlayCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String url, BigInt generation, List<HostHeaderDto> headers
+ String url, BigInt generation, List<HostHeaderDto> headers, BigInt commandId
 });
 
 
@@ -4405,12 +4442,13 @@ class _$HostPlayerCommandDto_PlayCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? url = null,Object? generation = null,Object? headers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? url = null,Object? generation = null,Object? headers = null,Object? commandId = null,}) {
   return _then(HostPlayerCommandDto_Play(
 url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
 as BigInt,headers: null == headers ? _self._headers : headers // ignore: cast_nullable_to_non_nullable
-as List<HostHeaderDto>,
+as List<HostHeaderDto>,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 
@@ -4421,142 +4459,296 @@ as List<HostHeaderDto>,
 
 
 class HostPlayerCommandDto_Pause extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Pause(): super._();
+  const HostPlayerCommandDto_Pause({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_PauseCopyWith<HostPlayerCommandDto_Pause> get copyWith => _$HostPlayerCommandDto_PauseCopyWithImpl<HostPlayerCommandDto_Pause>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.pause()';
+    return 'HostPlayerCommandDto.pause(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_PauseCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_PauseCopyWith(HostPlayerCommandDto_Pause value, $Res Function(HostPlayerCommandDto_Pause) _then) = _$HostPlayerCommandDto_PauseCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_PauseCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_PauseCopyWith<$Res> {
+  _$HostPlayerCommandDto_PauseCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Pause _self;
+  final $Res Function(HostPlayerCommandDto_Pause) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Pause(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Resume extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Resume(): super._();
+  const HostPlayerCommandDto_Resume({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_ResumeCopyWith<HostPlayerCommandDto_Resume> get copyWith => _$HostPlayerCommandDto_ResumeCopyWithImpl<HostPlayerCommandDto_Resume>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.resume()';
+    return 'HostPlayerCommandDto.resume(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_ResumeCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_ResumeCopyWith(HostPlayerCommandDto_Resume value, $Res Function(HostPlayerCommandDto_Resume) _then) = _$HostPlayerCommandDto_ResumeCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_ResumeCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_ResumeCopyWith<$Res> {
+  _$HostPlayerCommandDto_ResumeCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Resume _self;
+  final $Res Function(HostPlayerCommandDto_Resume) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Resume(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Stop extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Stop(): super._();
+  const HostPlayerCommandDto_Stop({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_StopCopyWith<HostPlayerCommandDto_Stop> get copyWith => _$HostPlayerCommandDto_StopCopyWithImpl<HostPlayerCommandDto_Stop>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.stop()';
+    return 'HostPlayerCommandDto.stop(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_StopCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_StopCopyWith(HostPlayerCommandDto_Stop value, $Res Function(HostPlayerCommandDto_Stop) _then) = _$HostPlayerCommandDto_StopCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_StopCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_StopCopyWith<$Res> {
+  _$HostPlayerCommandDto_StopCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Stop _self;
+  final $Res Function(HostPlayerCommandDto_Stop) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Stop(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Toggle extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Toggle(): super._();
+  const HostPlayerCommandDto_Toggle({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_ToggleCopyWith<HostPlayerCommandDto_Toggle> get copyWith => _$HostPlayerCommandDto_ToggleCopyWithImpl<HostPlayerCommandDto_Toggle>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.toggle()';
+    return 'HostPlayerCommandDto.toggle(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_ToggleCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_ToggleCopyWith(HostPlayerCommandDto_Toggle value, $Res Function(HostPlayerCommandDto_Toggle) _then) = _$HostPlayerCommandDto_ToggleCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_ToggleCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_ToggleCopyWith<$Res> {
+  _$HostPlayerCommandDto_ToggleCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Toggle _self;
+  final $Res Function(HostPlayerCommandDto_Toggle) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Toggle(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Seek extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Seek({required this.positionMs}): super._();
+  const HostPlayerCommandDto_Seek({required this.positionMs, required this.commandId, required this.generation}): super._();
   
 
  final  BigInt positionMs;
+@override final  BigInt commandId;
+ final  BigInt generation;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_SeekCopyWith<HostPlayerCommandDto_Seek> get copyWith => _$HostPlayerCommandDto_SeekCopyWithImpl<HostPlayerCommandDto_Seek>(this, _$identity);
 
@@ -4564,18 +4756,18 @@ $HostPlayerCommandDto_SeekCopyWith<HostPlayerCommandDto_Seek> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs)&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,positionMs);
+    return Object.hash(runtimeType,positionMs,commandId,generation);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.seek(positionMs: $positionMs)';
+    return 'HostPlayerCommandDto.seek(positionMs: $positionMs, commandId: $commandId, generation: $generation)';
 }
 
 
@@ -4584,9 +4776,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_SeekCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_SeekCopyWith(HostPlayerCommandDto_Seek value, $Res Function(HostPlayerCommandDto_Seek) _then) = _$HostPlayerCommandDto_SeekCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- BigInt positionMs
+ BigInt positionMs, BigInt commandId, BigInt generation
 });
 
 
@@ -4603,9 +4795,11 @@ class _$HostPlayerCommandDto_SeekCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? positionMs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? positionMs = null,Object? commandId = null,Object? generation = null,}) {
   return _then(HostPlayerCommandDto_Seek(
 positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
+as BigInt,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
 as BigInt,
   ));
 }
@@ -4617,14 +4811,15 @@ as BigInt,
 
 
 class HostPlayerCommandDto_SetVolume extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_SetVolume({required this.volume}): super._();
+  const HostPlayerCommandDto_SetVolume({required this.volume, required this.commandId}): super._();
   
 
  final  int volume;
+@override final  BigInt commandId;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_SetVolumeCopyWith<HostPlayerCommandDto_SetVolume> get copyWith => _$HostPlayerCommandDto_SetVolumeCopyWithImpl<HostPlayerCommandDto_SetVolume>(this, _$identity);
 
@@ -4632,18 +4827,18 @@ $HostPlayerCommandDto_SetVolumeCopyWith<HostPlayerCommandDto_SetVolume> get copy
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.commandId, commandId) || other.commandId == commandId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,volume);
+    return Object.hash(runtimeType,volume,commandId);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.setVolume(volume: $volume)';
+    return 'HostPlayerCommandDto.setVolume(volume: $volume, commandId: $commandId)';
 }
 
 
@@ -4652,9 +4847,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_SetVolumeCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_SetVolumeCopyWith(HostPlayerCommandDto_SetVolume value, $Res Function(HostPlayerCommandDto_SetVolume) _then) = _$HostPlayerCommandDto_SetVolumeCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- int volume
+ int volume, BigInt commandId
 });
 
 
@@ -4671,10 +4866,11 @@ class _$HostPlayerCommandDto_SetVolumeCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? volume = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? volume = null,Object? commandId = null,}) {
   return _then(HostPlayerCommandDto_SetVolume(
 volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
-as int,
+as int,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 
@@ -4685,14 +4881,15 @@ as int,
 
 
 class HostPlayerCommandDto_SetSpeed extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_SetSpeed({required this.speed}): super._();
+  const HostPlayerCommandDto_SetSpeed({required this.speed, required this.commandId}): super._();
   
 
  final  double speed;
+@override final  BigInt commandId;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_SetSpeedCopyWith<HostPlayerCommandDto_SetSpeed> get copyWith => _$HostPlayerCommandDto_SetSpeedCopyWithImpl<HostPlayerCommandDto_SetSpeed>(this, _$identity);
 
@@ -4700,18 +4897,18 @@ $HostPlayerCommandDto_SetSpeedCopyWith<HostPlayerCommandDto_SetSpeed> get copyWi
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.commandId, commandId) || other.commandId == commandId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,speed);
+    return Object.hash(runtimeType,speed,commandId);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.setSpeed(speed: $speed)';
+    return 'HostPlayerCommandDto.setSpeed(speed: $speed, commandId: $commandId)';
 }
 
 
@@ -4720,9 +4917,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_SetSpeedCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_SetSpeedCopyWith(HostPlayerCommandDto_SetSpeed value, $Res Function(HostPlayerCommandDto_SetSpeed) _then) = _$HostPlayerCommandDto_SetSpeedCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- double speed
+ double speed, BigInt commandId
 });
 
 
@@ -4739,10 +4936,11 @@ class _$HostPlayerCommandDto_SetSpeedCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? speed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? speed = null,Object? commandId = null,}) {
   return _then(HostPlayerCommandDto_SetSpeed(
 speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
-as double,
+as double,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 
