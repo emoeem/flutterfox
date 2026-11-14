@@ -475,6 +475,13 @@ class _LeftColumn extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               NowPlayingActionRow(model: model, song: song),
+              // P2-17×P2-18 交叉：无歌词时回退单列布局，LyricsPanel 不渲染，
+              // 重取入口必须留在单列内，不能只挂在歌词面板空态里。
+              if (model.state.lyrics.isEmpty ||
+                  model.state.lyrics.lines.isEmpty) ...[
+                const SizedBox(height: 10),
+                LyricsRetryButton(model: model, song: song),
+              ],
               const SizedBox(height: 20),
               RepaintBoundary(
                 child: Padding(

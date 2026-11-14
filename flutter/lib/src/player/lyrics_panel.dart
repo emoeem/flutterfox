@@ -10,8 +10,8 @@
 ///   手势并如实说明「不支持点击跳转」；
 /// - 手动滚动暂停跟随，停止滚动 2 秒后恢复跟随当前行；
 /// - 尊重 MediaQuery.disableAnimations：关闭动画时直接定位、样式瞬时切换；
-/// - 歌词数据只有 isEmpty 标志，无加载中状态、后端也无「重新获取歌词」命令，
-///   空态如实说明（不伪造重试按钮）——缺口登记为播放数据层任务。
+/// - 歌词空态与全屏单列布局共用 [LyricsRetryButton]：手动重取走真实
+///   LoadLyrics 命令（P2-17），在途禁用防重复，失败/超时如实提示。
 library;
 
 import 'dart:async';
@@ -158,11 +158,7 @@ class _LyricsPanelState extends State<LyricsPanel> {
             message:
                 '当前曲目没有可用的歌词数据。歌词由后端在切歌时自动获取，'
                 '也可点击下方按钮手动重新获取。',
-            action: TextButton.icon(
-              onPressed: () => model.loadLyrics(song),
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('重新获取歌词'),
-            ),
+            action: LyricsRetryButton(model: model, song: song),
           );
         }
         // 点击跳转门槛（§5.7:461）：歌词全部行无有效时间戳时，点击不
@@ -400,6 +396,149 @@ class _Status extends StatelessWidget {
           if (action != null) ...[const SizedBox(height: 12), action!],
         ],
       ),
+    );
+  }
+}
+
+/// 歌词手动重取按钮（P2-17）：歌词面板空态与全屏播放页无歌词单列布局共用
+/// （P2-18 交叉：单列下 LyricsPanel 不渲染，重取入口必须独立于面板存在）。
+///
+/// - 在途态禁用按钮防重复请求；切歌即复位（Rust 侧 prepare() 代次会丢弃
+///   旧请求，本地在途态随之失效）；
+/// - 成功信号：歌词内容（行数或首行文本）相对发起时快照发生变化；
+/// - 失败信号：后端 Notification「歌词加载失败」进入 lastNotification；
+/// - 12s 超时兜底：后端无任何事件返回时复位并提示，防永久卡在在途态。
+class LyricsRetryButton extends StatefulWidget {
+  const LyricsRetryButton({super.key, required this.model, required this.song});
+
+  final AppModel model;
+  final bridge.SongDto song;
+
+  @override
+  State<LyricsRetryButton> createState() => _LyricsRetryButtonState();
+}
+
+class _LyricsRetryButtonState extends State<LyricsRetryButton> {
+  static const _timeout = Duration(seconds: 12);
+
+  bool _inFlight = false;
+  bool _failed = false;
+  Timer? _timer;
+
+  /// 发起请求时的歌词内容快照（成功回填的判别基准）。
+  int _snapshotLength = 0;
+  String? _snapshotFirstText;
+
+  /// 发起请求时的通知快照（失败通知的判别基准）。
+  String? _notificationSeen;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.model.addListener(_onModelChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant LyricsRetryButton old) {
+    super.didUpdateWidget(old);
+    if (!identical(widget.song, old.song) || widget.model != old.model) {
+      old.model.removeListener(_onModelChanged);
+      widget.model.addListener(_onModelChanged);
+      _idle();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.model.removeListener(_onModelChanged);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _idle() {
+    _timer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _inFlight = false;
+      _failed = false;
+    });
+  }
+
+  void _start() {
+    if (_inFlight) return;
+    setState(() {
+      _inFlight = true;
+      _failed = false;
+    });
+    final lines = widget.model.state.lyrics.lines;
+    _snapshotLength = lines.length;
+    _snapshotFirstText = lines.isEmpty ? null : lines.first.text;
+    _notificationSeen = widget.model.lastNotification;
+    _timer = Timer(_timeout, () {
+      if (mounted && _inFlight) {
+        setState(() {
+          _inFlight = false;
+          _failed = true;
+        });
+      }
+    });
+    widget.model.loadLyrics(widget.song).catchError((Object _) {
+      // dispatch 本身失败（FFI 未就绪等）：按失败复位，不等事件。
+      if (mounted && _inFlight) {
+        setState(() {
+          _inFlight = false;
+          _failed = true;
+        });
+      }
+    });
+  }
+
+  void _onModelChanged() {
+    if (!_inFlight || !mounted) return;
+    final lines = widget.model.state.lyrics.lines;
+    final changed =
+        lines.length != _snapshotLength ||
+        (lines.isNotEmpty &&
+            _snapshotLength > 0 &&
+            lines.first.text != _snapshotFirstText);
+    final notification = widget.model.lastNotification;
+    final failedNow =
+        notification != null &&
+        notification != _notificationSeen &&
+        notification.contains('歌词加载失败');
+    if (!changed && !failedNow) return;
+    _timer?.cancel();
+    setState(() {
+      _inFlight = false;
+      _failed = failedNow;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton.icon(
+          onPressed: _inFlight ? null : _start,
+          icon: _inFlight
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.refresh, size: 18),
+          label: Text(_inFlight ? '获取中…' : '重新获取歌词'),
+        ),
+        if (_failed)
+          Text(
+            '暂未取到歌词，可再次尝试',
+            style: VxTypography.caption.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+      ],
     );
   }
 }

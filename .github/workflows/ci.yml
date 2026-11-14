@@ -338,8 +338,11 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── Flutter：analyze 零警告门禁 ──
-  flutter:
+  # ── Flutter：analyze 零警告门禁（SDK 固定 3.47.9：2026-11-14 起 stable
+  #    channel 漂移到 material.dart 整体弃用的版本，115 条 deprecated_member_use
+  #    info 使 --fatal-infos 必挂；固定到本地全量验证过的 3.47.9，material_ui
+  #    迁移属独立升级任务）──
+  flutter-analyze:
     name: Flutter (analyze)
     runs-on: ubuntu-24.04
 
@@ -351,11 +354,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up Flutter
+      - name: Set up Flutter (pinned)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.9
           cache: true
+
+      # 让 CI 日志可直接核对实际 SDK 版本（防 channel 漂移复发）。
+      - name: Print toolchain versions
+        run: |
+          flutter --version
+          dart --version
 
       # window_manager 0.6 起依赖 nativeapi(native-assets 构建), Linux 上
       # pkg-config 需要 GTK3/X11/Xi 开发包
@@ -369,6 +379,39 @@ jobs:
 
       - name: Analyze (zero warnings)
         run: flutter analyze --fatal-infos
+
+  # ── Flutter：全量测试（独立 job：analyze 失败不吞测试证据，两门禁独立收集）──
+  flutter-test:
+    name: Flutter (test)
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: flutter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter (pinned)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - name: Print toolchain versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Install native assets build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libx11-dev libxi-dev pkg-config
+
+      - name: Pub get
+        run: flutter pub get
 
       - name: Test (full widget suite)
         run: flutter test

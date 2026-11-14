@@ -1729,7 +1729,6 @@ impl ApplicationService {
                             });
                         }
                         Err(error) => {
-                            eprintln!("[DIAG-lyric] load err {error}");
                             let _ = events.send(ApplicationEvent::Notification {
                                 message: format!("歌词加载失败: {error}"),
                             });
@@ -2230,5 +2229,135 @@ mod tests {
         assert_eq!(mapped[0].name, "通勤");
         assert_eq!(mapped[0].song_count, 2);
         assert_eq!(mapped[0].source, SourceId::Wy);
+    }
+
+    /// P2-17 歌词重取链测试用 mock 获取器：lyric 为 None 时返回 NotFound。
+    struct MockLyricFetcher {
+        lyric: Option<String>,
+    }
+
+    #[async_trait::async_trait]
+    impl lx_core::traits::lyric_fetcher::LyricFetcher for MockLyricFetcher {
+        async fn fetch(
+            &self,
+            _song: &SongInfo,
+        ) -> Result<lx_core::model::lyric::LyricData, lx_core::traits::lyric_fetcher::LyricFetchError>
+        {
+            match &self.lyric {
+                Some(text) => Ok(lx_core::model::lyric::LyricData {
+                    lyric: text.clone(),
+                    ..Default::default()
+                }),
+                None => Err(lx_core::traits::lyric_fetcher::LyricFetchError::NotFound),
+            }
+        }
+    }
+
+    fn service_with_lyric_fetcher(
+        fetcher: MockLyricFetcher,
+    ) -> (ApplicationService, ApplicationEventStream) {
+        let player: Arc<dyn PlayerBackend> = crate::services::test_support::null_player();
+        let sources = Arc::new(SourceManager::new(
+            lx_core::model::source::SourceId::Kw,
+            &[lx_core::model::source::SourceId::Kw],
+        ));
+        let lyrics = Arc::new(LyricService::new(Arc::new(fetcher)));
+        let effects: Arc<dyn crate::services::PlaybackEffects> =
+            Arc::new(crate::services::test_support::NullEffects);
+        let service = ApplicationService::new(
+            Arc::clone(&player) as Arc<dyn PlayerBackend>,
+            Arc::clone(&sources),
+            lyrics,
+            effects,
+            None,
+            None,
+            None,
+        );
+        let receiver = service.subscribe();
+        (service, receiver)
+    }
+
+    /// P2-17 回归：LoadLyrics 成功路径——prepare() 代次令牌传给
+    /// LyricService（WIP 批次修复点：传 playback generation 会被 load_at
+    /// 过期校验整单丢弃），state.lyrics 回填并广播 LyricsChanged。
+    #[tokio::test]
+    async fn load_lyrics_success_updates_state_and_emits_lyrics_changed() {
+        let (service, mut receiver) = service_with_lyric_fetcher(MockLyricFetcher {
+            lyric: Some("[00:01.000]第一句\n[00:02.000]第二句".to_string()),
+        });
+
+        service
+            .dispatch(ApplicationCommand::LoadLyrics {
+                song: song("lyr-1"),
+            })
+            .await
+            .expect("LoadLyrics dispatch 应成功");
+
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let mut changed = false;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(std::time::Duration::from_millis(300), receiver.recv()).await
+            {
+                Ok(Ok(ApplicationEvent::LyricsChanged { song_id })) => {
+                    assert_eq!(song_id, "lyr-1");
+                    changed = true;
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        assert!(changed, "LoadLyrics 成功应广播 LyricsChanged");
+        assert!(
+            service
+                .state
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .lyrics
+                .is_some(),
+            "成功后 state.lyrics 应回填"
+        );
+    }
+
+    /// P2-17 回归：LoadLyrics 失败路径——发「歌词加载失败」Notification
+    /// 且不改 state.lyrics（旧歌词不被清掉、也不被错误结果污染）。
+    #[tokio::test]
+    async fn load_lyrics_failure_emits_notification_and_keeps_state() {
+        let (service, mut receiver) = service_with_lyric_fetcher(MockLyricFetcher { lyric: None });
+
+        service
+            .dispatch(ApplicationCommand::LoadLyrics {
+                song: song("lyr-2"),
+            })
+            .await
+            .expect("LoadLyrics dispatch 应成功");
+
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let mut notified = false;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(std::time::Duration::from_millis(300), receiver.recv()).await
+            {
+                Ok(Ok(ApplicationEvent::Notification { message })) => {
+                    assert!(
+                        message.contains("歌词加载失败"),
+                        "失败通知应带「歌词加载失败」前缀，实际 {message}"
+                    );
+                    notified = true;
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        assert!(notified, "LoadLyrics 失败应广播 Notification");
+        assert!(
+            service
+                .state
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .lyrics
+                .is_none(),
+            "失败不得写入 state.lyrics"
+        );
     }
 }
