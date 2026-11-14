@@ -255,10 +255,10 @@ class ThemeSelectionScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                // 如果当前启用了动态颜色，先关闭它
+                // 如果当前启用了封面主色提取，先关闭它
                 final settings = context.read<SettingsProvider>();
-                if (settings.useDynamicColor) {
-                  settings.setUseDynamicColor(false);
+                if (settings.useCoverDynamicColor) {
+                  settings.setUseCoverDynamicColor(false);
                 }
 
                 // 还原为完整的 Color 对象

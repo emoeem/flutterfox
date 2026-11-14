@@ -3632,8 +3632,8 @@ class PlaylistContentNotifier extends ChangeNotifier {
   // -- 主题管理 --
   // 提取并应用动态主题色
   Future<void> extractAndApplyDynamicColor(Uint8List? albumArt) async {
-    // 检查设置是否启用了动态颜色
-    if (!_settingsProvider.useDynamicColor || albumArt == null) {
+    // 检查设置是否启用了封面主色提取
+    if (!_settingsProvider.useCoverDynamicColor || albumArt == null) {
       return;
     }
 
