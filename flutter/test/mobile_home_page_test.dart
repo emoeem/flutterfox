@@ -9,8 +9,8 @@
 /// - 有曲后空库 Hero 消失、最近播放横滑卡封面 72dp ∈ 64-76；
 /// - 为你推荐走真实 `loadPlaylists` browse 槽（非 customPlaylists）：
 ///   无能力音源空态 / 成功态真实数据 / 失败态可读错误（P1-07 净化口径）；
-/// - 快捷入口真实落点：本地音乐 → 推入 LocalMusicPage；喜欢的歌曲 →
-///   推入 LibraryPage 歌曲档。
+/// - 快捷入口真实落点：本地音乐 → 推入 MobileLocalMusicPage（Batch C-B
+///   手机独立页）；喜欢的歌曲 → 推入 LibraryPage 歌曲档。
 ///
 /// 平台口径：直接 pump MobileShell（对齐 shell_test.dart 既有模式）。
 library;
@@ -30,6 +30,7 @@ import 'package:voicefox_flutter/src/nav_bus.dart';
 import 'package:voicefox_flutter/src/pages/library_page.dart';
 import 'package:voicefox_flutter/src/pages/local_music_page.dart';
 import 'package:voicefox_flutter/src/pages/mobile_home_page.dart';
+import 'package:voicefox_flutter/src/pages/mobile_local_music_page.dart';
 import 'package:voicefox_flutter/src/shell/mobile_shell.dart';
 
 bridge.SongDto _song(String id, String name, {String source = 'wy'}) =>
@@ -221,20 +222,20 @@ void main() {
   });
 
   group('快捷入口真实落点', () {
-    testWidgets('本地音乐 → 推入真实 LocalMusicPage；喜欢的歌曲 → 推入 LibraryPage 歌曲档', (
+    testWidgets('本地音乐 → 推入真实 MobileLocalMusicPage；喜欢的歌曲 → 推入 LibraryPage 歌曲档', (
       tester,
     ) async {
       _setSize(tester, const Size(390, 844));
       final model = AppModel();
       await _pumpShell(tester, model);
 
-      // 本地音乐：LocalMusicPage 只在推入路由时存在（IndexedStack 无此页）。
+      // 本地音乐：MobileLocalMusicPage（Batch C-B 手机独立页）只在推入
+      // 路由时存在（IndexedStack 无此页）。
       await tester.tap(_home(find.text('本地音乐')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(LocalMusicPage), findsOneWidget);
-      // §5.10 第三落点：页顶「添加目录」主按钮可达（手机窄视口为带
-      // tooltip 的图标按钮，≥600 为带标签按钮）。
+      expect(find.byType(MobileLocalMusicPage), findsOneWidget);
+      // §5.10 第三落点：页顶「添加目录」主按钮可达（AppBar 图标按钮）。
       expect(find.byTooltip('添加目录'), findsOneWidget);
       expect(find.byTooltip('播放全部'), findsOneWidget);
       // 无 Rust 控制器时页面如实显示配置加载态（不伪造目录/歌曲）。
@@ -245,8 +246,7 @@ void main() {
       // IndexedStack 常驻一份——非激活子树需 skipOffstage:false 才计入，
       // 推入路由激活一份，共两份）。
       await tester.tap(find.byIcon(Icons.arrow_back));
-      // LocalMusicPage 弹出转场完成后再点下一入口（否则点击命中被退场
-      // 路由拦截）。
+      // 推入页弹出转场完成后再点下一入口（否则点击命中被退场路由拦截）。
       await tester.pumpAndSettle();
       await tester.tap(_home(find.text('喜欢的歌曲')));
       await tester.pump(const Duration(milliseconds: 400));

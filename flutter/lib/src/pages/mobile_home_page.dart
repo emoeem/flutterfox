@@ -30,7 +30,8 @@ import '../design_system/design_tokens.dart';
 import '../nav_bus.dart';
 import 'home_shared.dart';
 import 'library_page.dart';
-import 'local_music_page.dart';
+import 'local_music_page.dart' show importLocalMusicDirectory;
+import 'mobile_local_music_page.dart';
 import 'playlist_detail_page.dart';
 
 class MobileHomePage extends StatelessWidget {
@@ -176,7 +177,8 @@ class _EmptyLibraryHero extends StatelessWidget {
 
 /// 快捷入口（§5.2 第 5 项）：本地音乐 / 喜欢的歌曲 / 下载。
 /// 三个入口全部落真实页面/目的地，不做占位跳转：
-/// - 本地音乐 → 真实 [LocalMusicPage]（页顶「添加目录」= §5.10 第三落点）；
+/// - 本地音乐 → 真实 [MobileLocalMusicPage]（Batch C-B 手机独立页；页顶
+///   「添加目录」= §5.10 第三落点）；
 /// - 喜欢的歌曲 → 真实 [LibraryPage] 歌曲档（songs = 喜欢的歌曲 + 账号
 ///   红心镜像，与桌面曲库「喜欢的歌曲」入口卡同一语义）；
 /// - 下载 → 壳一级目的地「下载」（navRequest=6 经 mapLegacyNavIndex）。
@@ -195,8 +197,11 @@ class _QuickEntries extends StatelessWidget {
         _EntryTile(
           icon: Icons.speaker_outlined,
           label: '本地音乐',
+          // Batch C-B：手机首页推手机独立本地音乐页（桌面 push 桌面版不动）。
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => LocalMusicPage(model)),
+            MaterialPageRoute<void>(
+              builder: (_) => MobileLocalMusicPage(model),
+            ),
           ),
         ),
         const SizedBox(width: VxSpacing.md),

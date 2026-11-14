@@ -29,6 +29,7 @@ import '../design_system/design_tokens.dart';
 import '../myune/widgets/toast_overlay.dart';
 import '../nav_bus.dart';
 import '../pages/local_music_page.dart';
+import '../pages/mobile_local_music_page.dart';
 import '../pages/settings_page.dart' show SettingsSection;
 import '../pages/help_page.dart' show appVersion;
 import '../player/mini_player_bar.dart';
@@ -241,10 +242,11 @@ class _BrandMark extends StatelessWidget {
 /// 本地音乐·在线歌单·排行榜 / 下载·音源管理·设置·帮助 / 底部版本信息。
 ///
 /// 落点语义（真实目的地，无占位）：
-/// - 本地音乐 → 推入真实 [LocalMusicPage]（与桌面「本地音乐仍由曲库页/
-///   抽屉入口进入」一致）；在线歌单·排行榜 → 发现（mapLegacyNavIndex
-///   3/4 同语义）；音源管理 → 设置页 sources 分组（真实音源开关所在，
-///   settings_page.dart SettingsSection.sources）。
+/// - 本地音乐 → 手机档推入真实 [MobileLocalMusicPage]（Batch C-B 手机
+///   独立页）、平板档推入桌面 [LocalMusicPage]（平板沿用桌面页）；在线
+///   歌单·排行榜 → 发现（mapLegacyNavIndex 3/4 同语义）；音源管理 →
+///   设置页 sources 分组（真实音源开关所在，settings_page.dart
+///   SettingsSection.sources）。
 ///
 /// 高亮塌缩规则：只有规范目的地行（首页/发现/搜索/我的音乐/下载/设置/
 /// 帮助）在 current == dest 时高亮；塌缩次级行（本地音乐/在线歌单/
@@ -258,10 +260,16 @@ class _ShellNavDrawer extends StatelessWidget {
     required this.model,
     required this.current,
     required this.onSelect,
+    this.mobile = false,
   });
 
   final AppModel model;
   final ShellDestination current;
+
+  /// 手机档（Batch C-B）：「本地音乐」推入手机独立页 MobileLocalMusicPage
+  ///（C-05）；平板档缺省 false，推入桌面 LocalMusicPage（平板显式沿用
+  /// 桌面页，与 buildShellPage 缺省 desktop 口径一致）。
+  final bool mobile;
 
   /// 选中回调：[ShellDestination] 目的地 + 设置页分组种子
   /// （仅「音源管理」传 SettingsSection.sources，其余 null）。
@@ -328,6 +336,8 @@ class _ShellNavDrawer extends StatelessWidget {
                     ),
                   _drawerGroupLabel(context, '内容'),
                   // 塌缩次级行：永不高亮（见类文档高亮塌缩规则）。
+                  // 本地音乐（Batch C-B）：手机档推入手机独立页（C-05），
+                  // 平板档维持桌面页（桌面 push 桌面版语义不动）。
                   _drawerRow(
                     context,
                     icon: Icons.speaker_outlined,
@@ -336,7 +346,9 @@ class _ShellNavDrawer extends StatelessWidget {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => LocalMusicPage(model),
+                          builder: (_) => mobile
+                              ? MobileLocalMusicPage(model)
+                              : LocalMusicPage(model),
                         ),
                       );
                     },
@@ -552,6 +564,8 @@ class _MobileShellState extends State<MobileShell> {
                   endDrawer: _ShellNavDrawer(
                     model: widget.model,
                     current: _s.destination,
+                    // 手机档：「本地音乐」推入手机独立页（Batch C-B）。
+                    mobile: true,
                     onSelect: (dest, seed) {
                       _s.settingsSection = seed;
                       _navigate(dest);

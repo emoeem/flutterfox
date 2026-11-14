@@ -30,6 +30,7 @@ import '../pages/downloads_page.dart';
 import '../pages/help_page.dart';
 import '../pages/home_page.dart';
 import '../pages/mobile_discover_page.dart';
+import '../pages/mobile_downloads_page.dart';
 import '../pages/mobile_home_page.dart';
 import '../pages/mobile_search_page.dart';
 import '../pages/library_page.dart';
@@ -795,8 +796,9 @@ enum ShellFormFactor { desktop, mobile }
 /// [settingsSection] 为 VOICEFOX_START_* 验收种子（移动壳默认 null）；
 /// [form] 选择壳形态（见 [ShellFormFactor]，缺省 desktop 桌面行为不变）。
 /// Batch C-A：home/discover/search 三槽在 mobile 形态产独立手机页
-/// （MobileHomePage / MobileDiscoverPage / MobileSearchPage），其余槽与
-/// 全部桌面/平板目的地行为不变。
+/// （MobileHomePage / MobileDiscoverPage / MobileSearchPage）；
+/// Batch C-B：downloads 槽在 mobile 形态产 MobileDownloadsPage（C-03）。
+/// 其余槽与全部桌面/平板目的地行为不变。
 Widget buildShellPage(
   AppModel model,
   ShellDestination dest, {
@@ -825,7 +827,12 @@ Widget buildShellPage(
               child: SearchPage(model, seedKeyword: searchSeed),
             ),
     ShellDestination.library => LibraryPage(model, initialTab: libraryTab),
-    ShellDestination.downloads => DownloadsPage(model),
+    // 下载槽（Batch C-B）：手机档用独立手机页（C-03 任务卡列表），桌面/
+    // 平板档维持桌面表格页（平板显式沿用桌面缺省）。
+    ShellDestination.downloads =>
+      form == ShellFormFactor.mobile
+          ? MobileDownloadsPage(model)
+          : DownloadsPage(model),
     ShellDestination.settings => SettingsPage(
       model,
       initialSection: settingsSection,
