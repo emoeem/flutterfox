@@ -153,3 +153,12 @@
 
 - 本表已证实风险登记入 `docs/redesign/04-defect-matrix.md`（FFI-R01/02/03/04/06/07/08/09/10/12 开放；R05/R11 观察态；R12 开放但低优先级）。
 - 修复批次实施后按证据逐条更新矩阵；未实施前矩阵条目一律标注「审计已证实，修复待批次 A-1/A-2/A-3」。
+
+
+## Batch B 实施记录（2026-11-14，主题真源统一，commits d2822f4/871513a/a718a44/c5ae5d5）
+
+实施设计（子代理产出，方案 Y）：新建 src/theme/app_theme.dart buildAppTheme 显式 ColorScheme（默认家族像素锚点 mocha primary==VxColors.accent）+ ThemeExtension VxPalette（无 M3 槽位 token）；ThemeProvider 委托 + themeKey 持久化；projection 推 themeKey（28 套投影失效修复 + flex 亮度 bug）；chrome 14 消费点切 scheme/VxPalette，VxChrome 删除；misansTextTheme 删除（字级层级+w700/w600 层级进运行时）；main 内联 fromSeed 移除 + guard 字面量禁令；dynamicColor 单源（useCoverDynamicColor 改名迁移，默认对齐 Rust false，死壳 tile 退役）。
+
+提交：B1 d2822f4（构建器+测试 44×2 亮度+像素锚点）/ B2 871513a（main 入口+guard）/ B4 a718a44（dynamicColor 单源）/ B3+B5 c5ae5d5（chrome 切换+misansTextTheme 退役）。全量 414 passed 0 failed。
+
+如实登记：默认主题视觉从 M3 tonal 变为显式色板（有像素锚点测试锁定，无人工视觉走查截图，待运行时验证批次/Golden）；旧 useDynamicColor prefs 死键保留（可逆）；明暗错配 seed 主题按主题个性强制（与预览构建器同规则）。

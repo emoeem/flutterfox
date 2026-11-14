@@ -135,3 +135,15 @@
 ## 10. Batch B 进入
 
 Batch A 全部收口（审计 + A-1/A-1b/A-2/A-3）。下一批 Batch B 主题真源统一（SR-03..08：双真源收敛、44 预设投影修复、dynamicColor 单源、Typography 层级、guard 补洞）。
+
+
+## 11. Batch B 主题真源统一（2026-11-14 晚，5 小批全部推送）
+
+| 批 | commit | 内容 |
+| --- | --- | --- |
+| B1 | d2822f4 | buildAppTheme 统一构建器（显式 ColorScheme+VxPalette 扩展+VxTypography textTheme+fallback）；ThemeProvider 委托+themeKey 持久化；projection 推 themeKey（28 套投影失效修复+flex 亮度 bug）；app_theme_test（44×2 亮度+像素锚点） |
+| B2 | 871513a | main.dart 内联 fromSeed 移除（uiOnly/引导骨架走 buildAppTheme）+ guard 字面量禁令（SR-07 补洞） |
+| B4 | a718a44 | dynamicColor 单源：useCoverDynamicColor 改名迁移（默认对齐 Rust false）+ 死壳 tile 退役（SR-06） |
+| B3+B5 | c5ae5d5 | chrome 14 消费点切 scheme/VxPalette + VxChrome 删除（SR-03 收口）+ misansTextTheme 退役（SR-08 字级层级收口） |
+
+结论：SR-03/04/05/07/08 代码+测试面全部关闭（SR-05 44×2 亮度可构建锁定、SR-08 w700/w600/w400 层级+fallback 测试锁定）；全量 414 passed 0 failed。未做项：人工视觉走查截图（默认主题像素由测试锚点锁定，页面级视觉证据待运行时验证批次/Golden）；44 预设的人工目检（仅自动化构建+锚点断言）。
