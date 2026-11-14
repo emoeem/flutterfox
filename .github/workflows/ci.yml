@@ -69,6 +69,8 @@ jobs:
         run: |
           if [ -n "$(git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge)" ]; then
             git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge
+            git diff --stat -- ffi/src/frb_generated.rs flutter/lib/src/bridge
+            git diff -- ffi/src/frb_generated.rs | head -80
             echo "::error::生成文件与手写 API 不同步：本地运行 flutter_rust_bridge_codegen generate 并提交结果"
             exit 1
           fi
