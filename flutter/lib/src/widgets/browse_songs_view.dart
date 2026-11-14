@@ -86,11 +86,7 @@ class BrowseSongsView extends StatelessWidget {
             ),
           );
         }
-        return SongTile(
-          model,
-          songs[index],
-          index: showIndex ? index : -1,
-        );
+        return SongTile(model, songs[index], index: showIndex ? index : -1);
       },
     );
   }

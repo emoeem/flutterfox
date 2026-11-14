@@ -27,19 +27,16 @@ const _macHan = [
 
 /// 平台 CJK 后备列表（Linux 分支与 FlClash 同序）。
 List<String> hanFallback(TargetPlatform platform) => switch (platform) {
-      TargetPlatform.windows => _windowsHan,
-      TargetPlatform.macOS => _macHan,
-      TargetPlatform.android => _linuxHan,
-      _ => _linuxHan,
-    };
+  TargetPlatform.windows => _windowsHan,
+  TargetPlatform.macOS => _macHan,
+  TargetPlatform.android => _linuxHan,
+  _ => _linuxHan,
+};
 
 /// 应用级字体回退：Material 2021 基座 + 平台 Han 列表。
 List<String> appFontFamilyFallback(TargetPlatform platform) {
   final base = Typography.material2021(platform: platform).black.bodyMedium!;
-  return [
-    ...?base.fontFamilyFallback,
-    ...hanFallback(platform),
-  ];
+  return [...?base.fontFamilyFallback, ...hanFallback(platform)];
 }
 
 /// 等宽数字字体（统计数字、时长标签）。

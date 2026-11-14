@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod metadata;
 pub mod scanner;
 
@@ -5,7 +6,7 @@ pub use metadata::MetadataEdit;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock, mpsc};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
@@ -56,6 +57,8 @@ pub struct LocalScanStats {
     pub parsed: usize,
     pub failed: usize,
     pub removed: usize,
+    /// 扩展名不属于音频/CUE 而被跳过的文件数（§5.10「无音频文件」列）。
+    pub skipped: usize,
 }
 
 struct WatcherHandle {
@@ -89,11 +92,21 @@ pub struct LocalSource {
     scan_stats: RwLock<LocalScanStats>,
     /// 当前加载的目录列表
     loaded_paths: RwLock<Vec<PathBuf>>,
+    /// 每个来源文件的首次发现时间（Unix 秒）；为「最近添加」排序预留。
+    first_seen: RwLock<HashMap<PathBuf, i64>>,
     scan_generation: AtomicU64,
     scan_in_progress: AtomicU64,
     /// 最近一次成功提交扫描结果的序号；页面据此判断排序缓存是否需要重建。
     library_generation: AtomicU64,
     watch_generation: AtomicU64,
+    /// 协作式取消标志：`cancel_scan()` 置位，扫描在下一个检查点提前返回
+    /// 且不提交（已提交结果保持不变）。注意这是单例共享标志：watcher
+    /// 线程的强制重扫（TUI-only，GUI 不调用 start_watcher）也会被它取消。
+    scan_cancel: AtomicBool,
+    /// 最近一次扫描是否被取消（事件负载用；下一次扫描开始时清零）。
+    last_scan_cancelled: AtomicBool,
+    /// 曲库缓存文件路径；`None` 表示不持久化（测试与旧构造路径）。
+    cache_path: Option<PathBuf>,
     watcher: Mutex<Option<WatcherHandle>>,
 }
 
@@ -107,12 +120,107 @@ impl LocalSource {
             last_scan_signatures: RwLock::new(HashMap::new()),
             scan_stats: RwLock::new(LocalScanStats::default()),
             loaded_paths: RwLock::new(Vec::new()),
+            first_seen: RwLock::new(HashMap::new()),
             scan_generation: AtomicU64::new(0),
             scan_in_progress: AtomicU64::new(0),
             library_generation: AtomicU64::new(0),
             watch_generation: AtomicU64::new(0),
+            scan_cancel: AtomicBool::new(false),
+            last_scan_cancelled: AtomicBool::new(false),
+            cache_path: None,
             watcher: Mutex::new(None),
         }
+    }
+
+    /// 生产构造：从默认数据目录加载曲库缓存（§8.4 重启后仍在）。
+    ///
+    /// 加载在构造内同步完成——GUI 的首个状态快照就带着本地歌曲，页面
+    /// 「曲库为空才自动扫描」的条件因此不会在每次启动时触发全量扫描。
+    pub fn with_default_cache() -> Self {
+        Self::with_cache_path(lx_core::fsutil::default_data_dir().join("local_library.json"))
+    }
+
+    /// 从指定文件加载缓存，供测试与自定义数据目录使用。
+    pub fn with_cache_path(path: PathBuf) -> Self {
+        let mut source = Self::new();
+        source.cache_path = Some(path.clone());
+        let Some(cache::LoadedCache {
+            loaded_paths: paths,
+            groups,
+            fingerprints,
+            failures,
+            first_seen,
+        }) = cache::load(&path)
+        else {
+            return source;
+        };
+        // 磁盘漂移校验：源文件已消失的歌曲不进渲染快照，转入 missing
+        //（播放列表/历史的路径语义保留）；指纹一并丢弃，修复路径交给
+        // 下次扫描（重新发现则按新增计，不静默删除用户数据）。
+        let mut kept_groups: HashMap<PathBuf, Vec<LocalSong>> = HashMap::new();
+        let mut kept_fingerprints: HashMap<PathBuf, scanner::FileFingerprint> = HashMap::new();
+        let mut missing = Vec::new();
+        for (root, songs) in groups {
+            let kept: Vec<LocalSong> = songs
+                .into_iter()
+                .filter(|local| {
+                    if local.file_path.exists() {
+                        true
+                    } else {
+                        missing.push(MissingLocalSong {
+                            path: local.file_path.clone(),
+                            song: local.song.clone(),
+                        });
+                        false
+                    }
+                })
+                .collect();
+            if !kept.is_empty() {
+                kept_fingerprints.extend(
+                    fingerprints
+                        .iter()
+                        .filter(|(file, _)| kept.iter().any(|local| &local.file_path == *file))
+                        .map(|(file, fingerprint)| (file.clone(), *fingerprint)),
+                );
+                kept_groups.insert(root, kept);
+            }
+        }
+        let first_seen = first_seen
+            .into_iter()
+            .filter(|(file, _)| kept_fingerprints.contains_key(file))
+            .collect::<HashMap<_, _>>();
+        let discovered = kept_fingerprints.len();
+        *source.songs.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(kept_groups);
+        *source
+            .fingerprints
+            .write()
+            .unwrap_or_else(|e| e.into_inner()) = Arc::new(kept_fingerprints);
+        *source.failures.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(failures);
+        *source.missing.write().unwrap_or_else(|e| e.into_inner()) =
+            Arc::new(deduplicate_missing(missing));
+        *source
+            .loaded_paths
+            .write()
+            .unwrap_or_else(|e| e.into_inner()) = paths;
+        *source.first_seen.write().unwrap_or_else(|e| e.into_inner()) = first_seen;
+        *source.scan_stats.write().unwrap_or_else(|e| e.into_inner()) = LocalScanStats {
+            discovered,
+            ..LocalScanStats::default()
+        };
+        // 代次 +1：页面排序缓存按代次重建，加载后的快照才能被消费。
+        source.library_generation.fetch_add(1, Ordering::Release);
+        source
+    }
+
+    /// 请求取消当前扫描；没有扫描在跑时是空操作（页面只在扫描中显示
+    /// 取消按钮）。取消 = 本次扫描不提交，已提交结果保持不变。
+    pub fn cancel_scan(&self) {
+        self.scan_cancel.store(true, Ordering::SeqCst);
+    }
+
+    /// 最近一次扫描是否被取消（事件负载判定用）。
+    pub fn last_scan_was_cancelled(&self) -> bool {
+        self.last_scan_cancelled.load(Ordering::SeqCst)
     }
 
     /// 曲库代次，每次扫描提交新结果时递增。
@@ -121,10 +229,19 @@ impl LocalSource {
     }
 
     pub fn begin_scan(&self) -> u64 {
+        // 新扫描开始：清掉上一轮遗留的取消请求与取消标记（没有扫描在跑
+        // 时请求取消是空操作，不该波及之后的新扫描）。
+        self.scan_cancel.store(false, Ordering::SeqCst);
+        self.last_scan_cancelled.store(false, Ordering::SeqCst);
         let generation = self.scan_generation.fetch_add(1, Ordering::SeqCst) + 1;
         self.scan_in_progress
             .fetch_max(generation, Ordering::SeqCst);
         generation
+    }
+
+    /// 当前是否被请求取消（扫描检查点用）。
+    fn scan_cancelled(&self) -> bool {
+        self.scan_cancel.load(Ordering::SeqCst)
     }
 
     pub fn is_scanning(&self) -> bool {
@@ -133,8 +250,17 @@ impl LocalSource {
 
     /// 扫描指定目录并加载歌曲
     pub fn scan(&self, paths: &[String], max_depth: u32) -> Vec<String> {
+        // 失败清单非空时强制重扫（P2-13）：「重试/重新扫描」必须重新解析
+        // 失败文件，否则无变化快路径把它们计成「复用」且失败清单一并蒸发
+        // （运行时实测 无法读取 1→0）。失败清空后恢复快路径（监听器触发的
+        // 重扫本就走 force，原地修改不被目录签名捕获，见 DirSignature 注释）。
+        let force = !self
+            .failures
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty();
         let generation = self.begin_scan();
-        self.scan_for_generation(paths, max_depth, generation, false)
+        self.scan_for_generation(paths, max_depth, generation, force)
     }
 
     pub fn scan_for_generation(
@@ -181,9 +307,55 @@ impl LocalSource {
         let previous_file_count = previous_fingerprints.len();
         let mut reused = 0;
         let mut parsed = 0;
+        let mut skipped = 0;
 
         for path_str in paths {
+            // 取消检查点：每个根目录处理前退出。取消 = 本次扫描不提交，
+            // 已提交的曲库快照保持原样（§5.10 流程 4：可取消，不整体回滚）。
+            if self.scan_cancelled() {
+                self.scan_cancel.store(false, Ordering::SeqCst);
+                self.last_scan_cancelled.store(true, Ordering::SeqCst);
+                return errors;
+            }
             let path = expand_path(path_str);
+            // 单文件导入（§5.10 流程 2「选择文件」）：直接解析该文件。
+            // 分组键落在父目录（canonical）——与目录扫描共享同一 root
+            // 语义，之后对父目录的整目录扫描会按文件路径去重合并，
+            // 不会产生重复记录（§8.4:862）。
+            if path.is_file() {
+                let source_key = scanner::canonicalize_public(&path);
+                let root = path
+                    .parent()
+                    .map(|parent| {
+                        parent
+                            .canonicalize()
+                            .unwrap_or_else(|_| parent.to_path_buf())
+                    })
+                    .unwrap_or_else(|| source_key.clone());
+                let mut report = scanner::scan_single_file(&path);
+                let previously_known = previous_fingerprints.get(&source_key)
+                    == report.fingerprints.get(&source_key)
+                    && previous_songs.get(&root).is_some_and(|songs| {
+                        songs.iter().any(|local| local.file_path == source_key)
+                    });
+                if previously_known {
+                    // 指纹未变：计入复用，不重复计解析数。
+                    reused += report.songs.len();
+                } else {
+                    parsed += report.parsed;
+                }
+                let mut merged = previous_songs.get(&root).cloned().unwrap_or_default();
+                // 本次扫描覆盖的来源文件替换旧记录，其余保留。
+                merged.retain(|local| !report.fingerprints.contains_key(&local.file_path));
+                merged.extend(report.songs);
+                all_songs.insert(root, merged);
+                all_fingerprints.extend(report.fingerprints.drain());
+                failures.extend(report.failures.into_iter().map(|failure| LocalScanFailure {
+                    path: failure.path,
+                    error: failure.error,
+                }));
+                continue;
+            }
             if !path.exists() || !path.is_dir() {
                 errors.push(format!("目录不存在: {}", path_str));
                 let root = path.canonicalize().unwrap_or(path);
@@ -239,6 +411,7 @@ impl LocalSource {
                 max_depth,
                 &previous,
                 &previous_root_fingerprints,
+                Some(&self.scan_cancel),
             );
             let songs = report.songs;
             let count = songs.len();
@@ -249,6 +422,7 @@ impl LocalSource {
                 .collect::<std::collections::HashSet<_>>();
             reused += report.reused;
             parsed += report.parsed;
+            skipped += report.skipped;
             all_fingerprints.extend(report.fingerprints);
             failures.extend(report.failures.into_iter().map(|failure| LocalScanFailure {
                 path: failure.path,
@@ -281,6 +455,16 @@ impl LocalSource {
         if self.scan_generation.load(Ordering::SeqCst) != generation {
             return errors;
         }
+        // 提交段前最终取消检查点（P1-17）：扫描器在取消时返回「已处理的
+        // 部分」报告（scanner.rs 契约：调用方丢弃、不提交），且点击取消与
+        // 扫描自然结束之间存在竞态——若取消发生在最后一个根目录扫描途中
+        // 或提交段前，循环会正常走完并带着部分结果进入提交。这里统一按
+        // 「取消→结果未提交」收口：丢弃本轮报告，已入库快照保持原样。
+        if self.scan_cancelled() {
+            self.scan_cancel.store(false, Ordering::SeqCst);
+            self.last_scan_cancelled.store(true, Ordering::SeqCst);
+            return errors;
+        }
         // 补全本次没有重扫的根目录（未纳入 paths 的旧目录、命中快路径的目录、
         // 以及临时不可用的目录）与它们的指纹、目录签名，保持快照内容与旧实现
         // 完全一致；只有这里会复制未变化的条目，且每个条目只复制一次。
@@ -307,7 +491,33 @@ impl LocalSource {
             parsed,
             failed: failures.len(),
             removed: previous_file_count.saturating_sub(all_fingerprints.len()),
+            skipped,
         };
+        // 扫描提交点持久化曲库缓存（§8.4：重启后仍在）。新文件的首次
+        // 发现时间在这里补记，为「最近添加」排序预留。写失败只记日志。
+        // 写盘在快照 move 进各锁之前完成，直接借用本地集合，不额外克隆。
+        if let Some(cache_path) = &self.cache_path {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|value| value.as_secs() as i64)
+                .unwrap_or_default();
+            {
+                let mut first_seen = self.first_seen.write().unwrap_or_else(|e| e.into_inner());
+                for file in all_fingerprints.keys() {
+                    first_seen.entry(file.clone()).or_insert(now);
+                }
+            }
+            let first_seen = self.first_seen.read().unwrap_or_else(|e| e.into_inner());
+            let loaded: Vec<PathBuf> = paths.iter().map(|path| expand_path(path)).collect();
+            cache::store(
+                cache_path,
+                &loaded,
+                &all_songs,
+                &all_fingerprints,
+                &failures,
+                &first_seen,
+            );
+        }
         *self.songs.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(all_songs);
         *self.fingerprints.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(all_fingerprints);
         *self.failures.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(failures);
@@ -1003,7 +1213,7 @@ mod tests {
         let previous_fingerprints = HashMap::from([(audio.clone(), fingerprint)]);
 
         let report =
-            scanner::scan_directory_incremental(&dir, 0, &previous, &previous_fingerprints);
+            scanner::scan_directory_incremental(&dir, 0, &previous, &previous_fingerprints, None);
 
         assert_eq!(report.reused, 2);
         assert_eq!(report.songs.len(), 2);
@@ -1072,6 +1282,245 @@ mod tests {
         source.scan_for_generation(&paths, 0, generation, true);
         assert_eq!(source.scan_failures().len(), 1, "force 后应重新解析该文件");
 
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// 合成一段可被 lofty 解析的最小 PCM WAV（§5.10 导入端到端夹具）。
+    fn write_wav(path: &std::path::Path) {
+        let sample_rate = 8000u32;
+        let samples = 800usize;
+        let data_len = (samples * 2) as u32;
+        let mut bytes: Vec<u8> = Vec::new();
+        bytes.extend_from_slice(b"RIFF");
+        bytes.extend_from_slice(&(36 + data_len).to_le_bytes());
+        bytes.extend_from_slice(b"WAVE");
+        bytes.extend_from_slice(b"fmt ");
+        bytes.extend_from_slice(&16u32.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&sample_rate.to_le_bytes());
+        bytes.extend_from_slice(&(sample_rate * 2).to_le_bytes());
+        bytes.extend_from_slice(&2u16.to_le_bytes());
+        bytes.extend_from_slice(&16u16.to_le_bytes());
+        bytes.extend_from_slice(b"data");
+        bytes.extend_from_slice(&data_len.to_le_bytes());
+        for index in 0..samples {
+            let t = index as f32 / sample_rate as f32;
+            let value = (t * 440.0 * 2.0 * std::f32::consts::PI).sin() * 8000.0;
+            bytes.extend_from_slice(&(value as i16).to_le_bytes());
+        }
+        std::fs::write(path, bytes).unwrap();
+    }
+
+    fn scratch_dir(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "voicefox-local-{}-{}-{}",
+            tag,
+            std::process::id(),
+            std::thread::current()
+                .name()
+                .unwrap_or("t")
+                .replace("::", "_")
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn ten_thousand_files_rescan_reuses_fingerprints_without_reparsing() {
+        let dir = scratch_dir("10k");
+        for index in 0..10_000 {
+            write_wav(&dir.join(format!("track-{index:05}.wav")));
+        }
+        let source = LocalSource::new();
+        source.scan(&[dir.display().to_string()], 0);
+        let first = source.scan_stats();
+        assert_eq!(first.discovered, 10_000, "首轮应发现全部文件");
+        assert_eq!(first.parsed, 10_000, "首轮全部需解析");
+
+        // 复扫：目录签名未变 → 快路径整组复用；10k 条可用性契约
+        // reused==10000 / parsed==0。
+        source.scan(&[dir.display().to_string()], 0);
+        let second = source.scan_stats();
+        assert_eq!(second.reused, 10_000);
+        assert_eq!(second.parsed, 0);
+        assert_eq!(source.all_songs().len(), 10_000);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn cancelled_scan_keeps_last_committed_snapshot() {
+        let dir = scratch_dir("cancel");
+        write_wav(&dir.join("a.wav"));
+        let source = LocalSource::new();
+        source.scan(&[dir.display().to_string()], 0);
+        let before = source.all_songs().len();
+        assert_eq!(before, 1);
+
+        // 取消下一次扫描：检查点提前返回，已提交结果不回滚。
+        let generation = source.begin_scan();
+        source.cancel_scan();
+        let errors = source.scan_for_generation(&[dir.display().to_string()], 0, generation, false);
+        assert!(errors.is_empty());
+        assert!(source.last_scan_was_cancelled());
+        assert_eq!(source.all_songs().len(), before, "取消后曲库快照不变");
+        assert!(!source.is_scanning());
+        assert_eq!(source.loaded_paths().len(), 1, "保留上一次提交的目录集");
+
+        // 取消标志已消费：下一次扫描正常提交。
+        source.scan(&[dir.display().to_string()], 0);
+        assert!(!source.last_scan_was_cancelled());
+        assert_eq!(source.all_songs().len(), 1);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn cancelled_before_commit_segment_does_not_commit() {
+        // P1-17 竞态收口：取消请求晚于根目录循环内检查点（扫描自然结束、
+        // 提交段前才置位——点击取消与扫描结束的竞态，运行时 14900 首部分
+        // 入库即此形态）时，同样不得提交。paths 为空让循环跳过、直接到达
+        // 提交段前的最终检查点。
+        let dir = scratch_dir("cancel-commit");
+        write_wav(&dir.join("a.wav"));
+        let source = LocalSource::new();
+        source.scan(&[dir.display().to_string()], 0);
+        let before = source.all_songs().len();
+        let stats_before = source.scan_stats();
+
+        let generation = source.begin_scan();
+        source.cancel_scan();
+        let errors = source.scan_for_generation(&[], 0, generation, false);
+        assert!(errors.is_empty());
+        assert!(source.last_scan_was_cancelled());
+        assert_eq!(source.all_songs().len(), before, "提交段前的取消不提交");
+        assert_eq!(source.scan_stats(), stats_before, "统计条不展示本轮值");
+        assert!(!source.is_scanning());
+
+        // 取消标志已消费：下一次扫描正常提交。
+        source.scan(&[dir.display().to_string()], 0);
+        assert!(!source.last_scan_was_cancelled());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn manual_rescan_reparses_failed_files_instead_of_counting_reuse() {
+        // P2-13：失败清单非空时手动重扫（重试语义）必须强制重新解析失败
+        // 文件——无变化快路径会把损坏文件计成「复用」且失败清单蒸发
+        // （运行时实测 无法读取 1→0）。
+        let dir = scratch_dir("retry");
+        std::fs::write(dir.join("broken.wav"), b"not audio").unwrap();
+        write_wav(&dir.join("ok.wav"));
+        let paths = vec![dir.display().to_string()];
+        let source = LocalSource::new();
+
+        source.scan(&paths, 0);
+        let first = source.scan_stats();
+        assert_eq!(first.failed, 1, "首轮记录损坏文件");
+        assert_eq!(first.reused, 0);
+
+        // 无变化重扫（重试语义）：重新解析失败文件并重新报告，不得计复用。
+        source.scan(&paths, 0);
+        let second = source.scan_stats();
+        assert_eq!(second.failed, 1, "损坏文件重新解析仍失败（非复用/蒸发）");
+        assert_eq!(second.reused, 1, "有效文件按指纹复用");
+        assert_eq!(source.scan_failures().len(), 1);
+        assert_eq!(source.all_songs().len(), 1);
+
+        // 修复文件后重扫：重新解析成功，失败清单清空。
+        write_wav(&dir.join("broken.wav"));
+        source.scan(&paths, 0);
+        let third = source.scan_stats();
+        assert_eq!(third.failed, 0);
+        assert_eq!(third.parsed, 1, "原损坏文件重新解析成功");
+        assert_eq!(source.all_songs().len(), 2);
+
+        // 失败清单已空：恢复无变化快路径（§8.4 性能契约不受影响）。
+        source.scan(&paths, 0);
+        let fourth = source.scan_stats();
+        assert_eq!(fourth.parsed, 0);
+        assert_eq!(fourth.reused, 2);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn single_file_import_groups_under_parent_and_rescan_does_not_duplicate() {
+        let dir = scratch_dir("single-file");
+        write_wav(&dir.join("one.wav"));
+        write_wav(&dir.join("two.wav"));
+        let source = LocalSource::new();
+
+        // 单文件导入 one.wav：分组键 = 父目录 canonical。
+        source.scan(&[dir.join("one.wav").display().to_string()], 0);
+        assert_eq!(source.all_songs().len(), 1);
+        let paths = source.loaded_paths();
+        assert_eq!(paths.len(), 1);
+        assert!(paths[0].is_file(), "loaded_paths 记录文件路径本身");
+
+        // 再导入同目录 two.wav：与 one.wav 合并在同一父目录组，不互顶。
+        source.scan(&[dir.join("two.wav").display().to_string()], 0);
+        assert_eq!(source.all_songs().len(), 2);
+
+        // 重扫父目录：目录扫描覆盖同组，指纹复用，不产生重复记录（§8.4:862）。
+        let stats = {
+            source.scan(&[dir.display().to_string()], 0);
+            source.scan_stats()
+        };
+        assert_eq!(source.all_songs().len(), 2, "目录重扫不得重复建记录");
+        assert_eq!(stats.reused, 2);
+        assert_eq!(stats.parsed, 0);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn library_cache_survives_restart_and_enables_incremental_rescan() {
+        let dir = scratch_dir("cache");
+        write_wav(&dir.join("a.wav"));
+        write_wav(&dir.join("b.wav"));
+        let cache = dir.join("local_library.json");
+        let paths = vec![dir.display().to_string()];
+
+        {
+            let source = LocalSource::with_cache_path(cache.clone());
+            source.scan(&paths, 0);
+            assert_eq!(source.all_songs().len(), 2);
+        }
+        assert!(cache.exists(), "扫描提交点应写缓存");
+
+        // 「重启」：新构造同步加载缓存，local_songs 快照非空。
+        let restarted = LocalSource::with_cache_path(cache.clone());
+        assert_eq!(
+            restarted.all_songs().len(),
+            2,
+            "构造内同步加载，首帧快照即非空"
+        );
+        assert_eq!(restarted.loaded_paths().len(), 1);
+
+        // 重扫走指纹增量：不重新解析。
+        restarted.scan(&paths, 0);
+        let stats = restarted.scan_stats();
+        assert_eq!(stats.reused, 2);
+        assert_eq!(stats.parsed, 0);
+
+        // 磁盘漂移：源文件消失的歌曲不进快照，缓存文件本身保留。
+        std::fs::remove_file(dir.join("b.wav")).unwrap();
+        let drifted = LocalSource::with_cache_path(cache.clone());
+        assert_eq!(drifted.all_songs().len(), 1);
+        assert_eq!(drifted.missing_songs().len(), 1);
+        assert!(cache.exists(), "漂移不静默删用户数据，修复走下次扫描");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn skipped_counts_non_audio_files() {
+        let dir = scratch_dir("skipped");
+        write_wav(&dir.join("a.wav"));
+        std::fs::write(dir.join("cover.jpg"), b"image").unwrap();
+        std::fs::write(dir.join("notes.txt"), b"notes").unwrap();
+        let source = LocalSource::new();
+        source.scan(&[dir.display().to_string()], 0);
+        let stats = source.scan_stats();
+        assert_eq!(stats.discovered, 1);
+        assert_eq!(stats.skipped, 2, "非音频扩展名计入「无音频文件」列");
         std::fs::remove_dir_all(&dir).ok();
     }
 }

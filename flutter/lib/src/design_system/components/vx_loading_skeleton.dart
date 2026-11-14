@@ -102,10 +102,7 @@ class VxLoadingSkeleton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AspectRatio(
-          aspectRatio: 1,
-          child: _block(color, radius: VxRadius.lg),
-        ),
+        AspectRatio(aspectRatio: 1, child: _block(color, radius: VxRadius.lg)),
         const SizedBox(height: 9),
         FractionallySizedBox(
           alignment: Alignment.centerLeft,

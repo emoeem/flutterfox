@@ -28,7 +28,13 @@ class SettingsProvider with ChangeNotifier {
   static const _fontSizeKey = 'fontSize';
   static const _lyricAlignmentKey = 'lyricAlignment';
   static const _useBlurBackgroundKey = 'useBlurBackground'; // 模糊背景设置的 key
-  static const _useDynamicColorKey = 'useDynamicColor'; // 动态颜色设置的 key
+  // 封面主色提取开关（旧名 useDynamicColor 语义混淆：实际门控的是播放封面
+  // 取色 setSeedColor，而非系统动态色 config.dynamicColor，故改名区分）。
+  static const _useCoverDynamicColorKey = 'useCoverDynamicColor';
+  // 旧 prefs key：仅迁移期读取，不再写入。
+  static const _legacyUseDynamicColorKey = 'useDynamicColor';
+  // 默认关闭，与 Rust 侧系统动态色权威 config.dynamicColor 的默认对齐。
+  static const _useCoverDynamicColorDefault = false;
   static const _allowAnyFormatKey = 'allowAnyFormat'; // 允许任何格式设置的 key
   static const _forceSingleLineLyricKey =
       'forceSingleLineLyric'; // 强制单行歌词设置的 key
@@ -81,7 +87,7 @@ class SettingsProvider with ChangeNotifier {
   double _fontSize = 22.0; // 默认字体大小
   TextAlign _lyricAlignment = TextAlign.center; // 默认居中对齐
   bool _useBlurBackground = true; // 默认启用模糊背景
-  bool _useDynamicColor = true; // 默认启用动态颜色
+  bool _useCoverDynamicColor = _useCoverDynamicColorDefault; // 默认关闭封面主色提取
   bool _allowAnyFormat = false; // 默认不允许任何格式
   bool _forceSingleLineLyric = false; // 默认不强制单行显示歌词
   double _lyricVerticalSpacing = 6.0; // 默认歌词垂直间距为6.0
@@ -137,7 +143,7 @@ class SettingsProvider with ChangeNotifier {
   double get fontSize => _fontSize;
   TextAlign get lyricAlignment => _lyricAlignment;
   bool get useBlurBackground => _useBlurBackground; // 获取模糊背景设置
-  bool get useDynamicColor => _useDynamicColor; // 获取动态颜色设置
+  bool get useCoverDynamicColor => _useCoverDynamicColor; // 获取封面主色提取开关
   bool get allowAnyFormat => _allowAnyFormat; // 获取允许任何格式设置
   bool get forceSingleLineLyric => _forceSingleLineLyric; // 获取强制单行歌词设置
   double get lyricVerticalSpacing => _lyricVerticalSpacing; // 获取歌词垂直间距
@@ -224,7 +230,9 @@ class SettingsProvider with ChangeNotifier {
     _maxLinesPerLyric = prefs.getInt(_prefsKey) ?? 2;
     _fontSize = prefs.getDouble(_fontSizeKey) ?? 20.0;
     _useBlurBackground = prefs.getBool(_useBlurBackgroundKey) ?? true;
-    _useDynamicColor = prefs.getBool(_useDynamicColorKey) ?? true; // 加载动态颜色设置
+    _useCoverDynamicColor = await _migrateUseCoverDynamicColor(
+      prefs,
+    ); // 加载封面主色提取开关（含旧 key 迁移）
     _allowAnyFormat = prefs.getBool(_allowAnyFormatKey) ?? false; // 加载允许任何格式设置
     _forceSingleLineLyric =
         prefs.getBool(_forceSingleLineLyricKey) ?? false; // 加载强制单行歌词设置
@@ -362,13 +370,33 @@ class SettingsProvider with ChangeNotifier {
     await prefs.setBool(_useBlurBackgroundKey, value);
   }
 
-  void setUseDynamicColor(bool value) async {
-    if (_useDynamicColor != value) {
-      _useDynamicColor = value;
+  void setUseCoverDynamicColor(bool value) async {
+    if (_useCoverDynamicColor != value) {
+      _useCoverDynamicColor = value;
       notifyListeners();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_useDynamicColorKey, value);
+      await prefs.setBool(_useCoverDynamicColorKey, value);
     }
+  }
+
+  /// 一次性迁移：旧 prefs key `useDynamicColor` → `useCoverDynamicColor`。
+  ///
+  /// 旧开关默认 true 且语义混淆（实际门控封面主色提取，而非系统动态色
+  /// `config.dynamicColor`）。新默认 false 与 Rust 权威对齐，且旧默认 true
+  /// 无法与用户显式开启区分，故迁移语义为：
+  /// - 新 key 已存在 → 直接读新 key（迁移已完成）；
+  /// - 旧值显式 false → false；
+  /// - 旧值 true（旧默认）/ 缺失 → 新默认 false。
+  /// 迁移结果落盘新 key；旧 key 保留只读，不清理。
+  Future<bool> _migrateUseCoverDynamicColor(SharedPreferences prefs) async {
+    final stored = prefs.getBool(_useCoverDynamicColorKey);
+    if (stored != null) {
+      return stored;
+    }
+    final legacy = prefs.getBool(_legacyUseDynamicColorKey);
+    final migrated = legacy == false ? false : _useCoverDynamicColorDefault;
+    await prefs.setBool(_useCoverDynamicColorKey, migrated);
+    return migrated;
   }
 
   void setEnableOnlineLyrics(bool value) async {

@@ -28,12 +28,7 @@ class AlbumSongsPage extends StatefulWidget {
   /// 本地专辑等场景：直接展示的曲目（来自本地曲库快照）。
   final List<bridge.SongDto>? presetSongs;
 
-  const AlbumSongsPage(
-    this.model,
-    this.album, {
-    super.key,
-    this.presetSongs,
-  });
+  const AlbumSongsPage(this.model, this.album, {super.key, this.presetSongs});
 
   @override
   State<AlbumSongsPage> createState() => _AlbumSongsPageState();
@@ -73,6 +68,16 @@ class _AlbumSongsPageState extends State<AlbumSongsPage> {
     final result = _result;
     if (result == null || result.loading) return;
     _model.loadAlbumSongs(_album, page: result.page + 1);
+  }
+
+  /// 下拉刷新（§5.6）：完成 Future = 本代次 page=1 响应或错误落槽；
+  /// preset（本地专辑）无后端命令，不接下拉——否则 spinner 永不完成。
+  Future<void> _refresh() async {
+    if (_preset) return;
+    final wait = _model.awaitBrowseResponse(_kind, _album.source, _album.id);
+    final error = await _model.loadAlbumSongs(_album);
+    if (error != null) return;
+    await wait.timeout(const Duration(seconds: 15), onTimeout: () {});
   }
 
   List<bridge.SongDto> _sorted(List<bridge.SongDto> songs) {
@@ -174,6 +179,7 @@ class _AlbumSongsPageState extends State<AlbumSongsPage> {
                   onRetry: _reload,
                   hasMore: result?.hasMore ?? false,
                   onLoadMore: _loadMore,
+                  onRefresh: _preset ? null : _refresh,
                 ),
               ),
             ],
@@ -255,9 +261,7 @@ class _AlbumSongsPageState extends State<AlbumSongsPage> {
         VxDetailAction(
           icon: Icons.shuffle,
           label: '随机播放',
-          tooltip: songs.isEmpty
-              ? '曲目加载后可用'
-              : '从已载入曲目随机一首开始（顺序继续）',
+          tooltip: songs.isEmpty ? '曲目加载后可用' : '从已载入曲目随机一首开始（顺序继续）',
           onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
         ),
       ],

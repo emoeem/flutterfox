@@ -659,8 +659,10 @@ class FontService {
 
       if (nameId == 1) {
         if (isWinChinese) chineseFamily = _decodeUtf16BE(strBytes);
-        if (isWinEnglish && englishFamily.isEmpty) englishFamily = _decodeUtf16BE(strBytes);
-        if (isMac && englishFamily.isEmpty) englishFamily = _decodeMacRoman(strBytes);
+        if (isWinEnglish && englishFamily.isEmpty)
+          englishFamily = _decodeUtf16BE(strBytes);
+        if (isMac && englishFamily.isEmpty)
+          englishFamily = _decodeMacRoman(strBytes);
       } else if (nameId == 2) {
         if (subfamily.isEmpty) {
           final v = decode();
@@ -708,5 +710,4 @@ class FontService {
     }
     return buffer.toString().trim();
   }
-
 }

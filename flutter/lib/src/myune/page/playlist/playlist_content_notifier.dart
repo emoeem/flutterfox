@@ -773,7 +773,7 @@ class PlaylistContentNotifier extends ChangeNotifier {
     final key = lines.length == 0
         ? '0'
         : '${lines.length}:${lines.first.timestamp.inMilliseconds}:'
-            '${lines.last.timestamp.inMilliseconds}';
+              '${lines.last.timestamp.inMilliseconds}';
     if (key == _externalLyricsKey) return;
     _externalLyricsKey = key;
     _lyricsHandler.adoptExternalLyrics(lines);
@@ -1564,9 +1564,7 @@ class PlaylistContentNotifier extends ChangeNotifier {
 
     List<PlatformFile> result;
     if (allowAnyFormat) {
-      result = await FilePicker.pickFiles(
-        type: FileType.any,
-      );
+      result = await FilePicker.pickFiles(type: FileType.any);
     } else {
       result = await FilePicker.pickFiles(
         type: FileType.custom,
@@ -3634,8 +3632,8 @@ class PlaylistContentNotifier extends ChangeNotifier {
   // -- 主题管理 --
   // 提取并应用动态主题色
   Future<void> extractAndApplyDynamicColor(Uint8List? albumArt) async {
-    // 检查设置是否启用了动态颜色
-    if (!_settingsProvider.useDynamicColor || albumArt == null) {
+    // 检查设置是否启用了封面主色提取
+    if (!_settingsProvider.useCoverDynamicColor || albumArt == null) {
       return;
     }
 

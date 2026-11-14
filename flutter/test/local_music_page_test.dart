@@ -5,38 +5,38 @@ import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
 import 'package:voicefox_flutter/src/pages/local_music_page.dart';
 
 bridge.ConfigDto _config({List<String> paths = const []}) => bridge.ConfigDto(
-      theme: 'catppuccin-mocha',
-      dynamicColor: false,
-      themeMode: 'system',
-      volume: 100,
-      playbackSpeed: 1.0,
-      playMode: 'none',
-      historyLimit: 100,
-      defaultSource: 'kw',
-      enabledSources: const ['kw'],
-      jsSourcesFirst: false,
-      downloadDir: '/tmp',
-      downloadQuality: null,
-      downloadConcurrency: 2,
-      showTranslation: true,
-      showYrc: false,
-      lyricOffsetMs: 0,
-      proxyUrl: '',
-      networkTimeoutSecs: BigInt.from(30),
-      localMusicEnabled: true,
-      localMusicPaths: paths,
-      localMusicMaxDepth: 0,
-    );
+  theme: 'catppuccin-mocha',
+  dynamicColor: false,
+  themeMode: 'system',
+  volume: 100,
+  playbackSpeed: 1.0,
+  playMode: 'none',
+  historyLimit: 100,
+  defaultSource: 'kw',
+  enabledSources: const ['kw'],
+  jsSourcesFirst: false,
+  downloadDir: '/tmp',
+  downloadQuality: null,
+  downloadConcurrency: 2,
+  showTranslation: true,
+  showYrc: false,
+  lyricOffsetMs: 0,
+  proxyUrl: '',
+  networkTimeoutSecs: BigInt.from(30),
+  localMusicEnabled: true,
+  localMusicPaths: paths,
+  localMusicMaxDepth: 0,
+);
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'local',
-      name: name,
-      singer: '本地歌手',
-      albumName: '本地专辑',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'local',
+  name: name,
+  singer: '本地歌手',
+  albumName: '本地专辑',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 void main() {
   testWidgets('扫描中展示加载态', (tester) async {

@@ -348,3 +348,18 @@ pub enum PlayerState {
     Paused,
     Stopped,
 }
+
+impl PlayerState {
+    /// 跨语言协议字符串（FFI-R10 A-3 单一来源）：DTO 与 progress 事件的
+    /// playback_state 字段都从这里取值，Dart 侧 parse_host_state 与
+    /// MobilePlaybackPhase 映射与之对齐，禁止再各处手写字符串。
+    pub fn as_protocol_str(&self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Loading => "loading",
+            Self::Playing => "playing",
+            Self::Paused => "paused",
+            Self::Stopped => "stopped",
+        }
+    }
+}

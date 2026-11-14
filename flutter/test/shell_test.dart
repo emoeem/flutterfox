@@ -2,19 +2,25 @@
 /// - Shell 渲染（PlayerBar 存在、Sidebar 5 一级入口、Header 搜索框）；
 /// - 断点形态切换（1440 三栏内嵌 / 1200 右栏浮层 / 960-1199 侧栏折叠 /
 ///   <960 降级隐藏）；
-/// - 页面切换后 PlayerBar 仍在、播放状态不重置（IndexedStack + AppModel 真源）。
+/// - 页面切换后 PlayerBar 仍在、播放状态不重置（IndexedStack + AppModel 真源）；
+/// - 推入式详情页播放器跨页面保持（§7.5 / Phase 6 退出条件「播放器跨页面
+///   保持」，2026-11-13 QA P1：详情页经内容区内嵌 Navigator 落内容区，
+///   不再整页覆盖壳层）。
 ///
 /// 不起 Rust 控制器：AppModel 用空状态 + debugSet* 钩子；dispatch 在无控制
 /// 器时安全返回错误串，页面自身的加载请求不会影响测试。
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voicefox_flutter/src/app_model.dart';
 import 'package:voicefox_flutter/src/myune/page/setting/settings_provider.dart';
 import 'package:voicefox_flutter/src/myune/services/notification_service.dart';
+import 'package:voicefox_flutter/src/nav_bus.dart';
+import 'package:voicefox_flutter/src/pages/local_music_page.dart';
 import 'package:voicefox_flutter/src/player/player_bar.dart';
 import 'package:voicefox_flutter/src/shell/app_shell.dart';
 import 'package:voicefox_flutter/src/shell/app_sidebar.dart';
@@ -47,15 +53,26 @@ void main() {
   });
 
   group('resolveShellMetrics 断点规则', () {
+    test(
+      'Phase 6 规格常量对齐（§7.1 侧栏 240–300 / §7.4 右栏 300–420 默认 340 / §7.5 播放栏 84）',
+      () {
+        expect(ShellBreakpoints.sidebarWidth, 240);
+        expect(ShellBreakpoints.sidebarMinWidth, 240);
+        expect(ShellBreakpoints.sidebarMaxWidth, 300);
+        expect(ShellBreakpoints.sidebarCollapsedWidth, 72);
+        expect(ShellBreakpoints.contextDefaultWidth, 340);
+        expect(ShellBreakpoints.contextMinWidth, 300);
+        expect(ShellBreakpoints.contextMaxWidth, 420);
+        expect(ShellBreakpoints.playerBarHeight, 84);
+      },
+    );
+
     test('≥1440 三栏内嵌，≥1600 内边距 32', () {
       final m = resolveShellMetrics(1440, contextOpen: true);
       expect(m.sidebar, SidebarMode.expanded);
       expect(m.context, ContextPanelMode.inline);
       expect(m.contentPadding, 28);
-      expect(
-        resolveShellMetrics(1600, contextOpen: true).contentPadding,
-        32,
-      );
+      expect(resolveShellMetrics(1600, contextOpen: true).contentPadding, 32);
     });
 
     test('1200–1439：侧栏展开、右栏浮层', () {
@@ -70,8 +87,10 @@ void main() {
       expect(m.sidebar, SidebarMode.collapsed);
       expect(m.context, ContextPanelMode.overlay);
       expect(m.contentPadding, 20);
-      expect(resolveShellMetrics(959, contextOpen: true).sidebar,
-          SidebarMode.hidden);
+      expect(
+        resolveShellMetrics(959, contextOpen: true).sidebar,
+        SidebarMode.hidden,
+      );
     });
 
     test('<960：降级布局侧栏隐藏', () {
@@ -83,8 +102,7 @@ void main() {
   });
 
   group('Shell 渲染与断点', () {
-    testWidgets('渲染：PlayerBar 常驻、侧栏 5 一级入口、Header 搜索框、右栏默认关闭',
-        (tester) async {
+    testWidgets('渲染：PlayerBar 常驻、侧栏 5 一级入口、Header 搜索框、右栏默认关闭', (tester) async {
       _setSize(tester, const Size(1440, 900));
       final model = AppModel();
       await tester.pumpWidget(_harness(model));
@@ -94,7 +112,10 @@ void main() {
       // 侧栏 5 个一级入口（探索组 3 项 + 我的音乐 + 底部下载）。
       for (final label in ['首页', '发现', '搜索', '我的音乐', '下载']) {
         expect(
-          find.descendant(of: find.byType(AppSidebar), matching: find.text(label)),
+          find.descendant(
+            of: find.byType(AppSidebar),
+            matching: find.text(label),
+          ),
           findsWidgets,
           reason: '侧栏缺少一级入口：$label',
         );
@@ -201,7 +222,12 @@ void main() {
       // 从首页切到「我的音乐」（侧栏导航行文字；组标签与导航行同名，
       // 取文档序最后的导航行）。
       await tester.tap(
-        find.descendant(of: find.byType(AppSidebar), matching: find.text('我的音乐')).last,
+        find
+            .descendant(
+              of: find.byType(AppSidebar),
+              matching: find.text('我的音乐'),
+            )
+            .last,
       );
       await tester.pumpAndSettle();
       // 我的音乐页出现（Phase 5 入口卡；页面标题与侧栏同名，改用
@@ -243,6 +269,122 @@ void main() {
       await tester.tap(find.byTooltip('歌词面板'));
       await tester.pumpAndSettle();
       expect(find.byType(ContextPanel), findsNothing);
+    });
+  });
+
+  group('推入式详情页播放器跨页面保持（§7.5 / Phase 6 退出条件）', () {
+    /// 从首页 →「我的音乐」→ 入口卡推入本地音乐页（QA P1 实拍路径，
+    /// desktop-library-1024x640-minwindow.png：本地音乐页无侧栏/无播放栏）。
+    /// 展开态走侧栏文字行；折叠态（960–1199，含 QA 视口 1024）纯图标行
+    /// tooltip 同名（app_sidebar.dart 折叠行 tooltip=dest.label）。
+    Future<void> pushLocalMusicFromLibrary(WidgetTester tester) async {
+      final textRow = find.descendant(
+        of: find.byType(AppSidebar),
+        matching: find.text('我的音乐'),
+      );
+      if (textRow.evaluate().isNotEmpty) {
+        await tester.tap(textRow.last);
+      } else {
+        await tester.tap(find.byTooltip('我的音乐'));
+      }
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('本地音乐'));
+      // 本地音乐页在测试环境（config==null）渲染「正在加载配置…」无限
+      // spinner，pumpAndSettle 永不收敛：固定泵完路由转场即可。
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    AppModel modelWithSong() {
+      final model = AppModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+        positionMs: 42000,
+        durationMs: 244000,
+      );
+      return model;
+    }
+
+    /// 泵到目标从树里消失（有界）：pop 的退出转场完成/overlay 摘除需要
+    /// 多帧，而本地音乐页的配置加载 spinner 让 pumpAndSettle 永不收敛。
+    Future<void> pumpUntilGone(WidgetTester tester, Finder finder) async {
+      for (var i = 0; i < 20 && finder.evaluate().isNotEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(finder, findsNothing);
+    }
+
+    testWidgets('1024×640（QA 视口）：推入本地音乐页后 PlayerBar/侧栏仍在、曲目进度保持', (
+      tester,
+    ) async {
+      _setSize(tester, const Size(1024, 640));
+      final model = modelWithSong();
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+
+      await pushLocalMusicFromLibrary(tester);
+
+      // 详情页确实推入内容区内嵌 Navigator（栈非空），页面本体在树。
+      expect(contentNavigatorKey.currentState!.canPop(), isTrue);
+      expect(find.byType(LocalMusicPage), findsOneWidget);
+      // 推入页不再整页覆盖壳层（QA P1 回归）：侧栏 + 常驻播放栏全在。
+      expect(find.byType(PlayerBar), findsOneWidget);
+      expect(find.byType(AppSidebar), findsOneWidget);
+      // 播放真源跨推入页保持（§9）：曲目与真实总时长不变。
+      expect(find.text('夜航'), findsOneWidget);
+      expect(find.text('04:04'), findsOneWidget);
+      expect(model.state.playback.song?.name, '夜航');
+      expect(model.state.playback.state, 'paused');
+    });
+
+    testWidgets('1440 三栏：推入页不挡右栏，Esc 先关右栏再退推入页', (tester) async {
+      _setSize(tester, const Size(1440, 900));
+      final model = modelWithSong();
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+
+      await pushLocalMusicFromLibrary(tester);
+      expect(contentNavigatorKey.currentState!.canPop(), isTrue);
+
+      // 推入页内 Header/右栏开关仍可达（chrome 未被覆盖）。
+      await tester.tap(find.byTooltip('队列面板'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(ContextPanel), findsOneWidget);
+
+      // Esc 链（§4.3 先关最上层）：右栏 > 内容区内嵌路由。
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(ContextPanel), findsNothing);
+      expect(contentNavigatorKey.currentState!.canPop(), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      // 泵完内容区 Navigator 的 pop 转场（退出转场+overlay 摘除需多帧）。
+      await pumpUntilGone(tester, find.byType(LocalMusicPage));
+      expect(contentNavigatorKey.currentState!.canPop(), isFalse);
+      // 退出推入页后壳层完整，播放栏常驻。
+      expect(find.byType(PlayerBar), findsOneWidget);
+      expect(find.text('夜航'), findsOneWidget);
+    });
+
+    testWidgets('详情页自身返回钮经内容区 Navigator 返回，壳层保持', (tester) async {
+      _setSize(tester, const Size(1440, 900));
+      final model = modelWithSong();
+      await tester.pumpWidget(_harness(model));
+      await tester.pumpAndSettle();
+
+      await pushLocalMusicFromLibrary(tester);
+      // LocalMusicPage 顶栏返回钮（tooltip「返回」，与 Header「后退」不撞）。
+      await tester.tap(find.byTooltip('返回'));
+      // 泵完内容区 Navigator 的 pop 转场（退出转场+overlay 摘除需多帧）。
+      await pumpUntilGone(tester, find.byType(LocalMusicPage));
+
+      expect(contentNavigatorKey.currentState!.canPop(), isFalse);
+      expect(find.byType(PlayerBar), findsOneWidget);
+      expect(find.byType(AppSidebar), findsOneWidget);
     });
   });
 }

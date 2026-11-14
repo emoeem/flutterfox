@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../theme/app_theme.dart' show VxPalette;
 import '../design_tokens.dart';
 import 'vx_cover_fallback.dart';
 
@@ -58,17 +59,15 @@ class VxHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
-    final heroBorder = dark ? VxDarkHero.border : VxLightHero.border;
-    final start = dark ? VxDarkHero.gradientStart : VxLightHero.gradientStart;
-    final mid = dark ? VxDarkHero.gradientMid : VxLightHero.gradientMid;
-    final end = dark ? VxDarkHero.gradientEnd : VxLightHero.gradientEnd;
-    final glow = dark ? VxDarkHero.glow : VxLightHero.glow;
-    final accentGlow = dark
-        ? VxDarkHero.accentGlow
-        : VxLightHero.accentGlow;
+    final scheme = Theme.of(context).colorScheme;
+    // B3：hero 渐变六值随主题（VxPalette 扩展下发，非亮暗三元）。
+    final palette = VxPalette.of(context);
+    final heroBorder = palette.heroBorder;
+    final start = palette.heroGradientStart;
+    final mid = palette.heroGradientMid;
+    final end = palette.heroGradientEnd;
+    final glow = palette.heroGlow;
+    final accentGlow = palette.heroAccentGlow;
 
     return Container(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -142,9 +141,7 @@ class VxHero extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       title,
-                      style: VxTypography.h1.copyWith(
-                        color: scheme.onSurface,
-                      ),
+                      style: VxTypography.h1.copyWith(color: scheme.onSurface),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -176,9 +173,7 @@ class VxHero extends StatelessWidget {
                                 alpha: 0.06,
                               ),
                               side: BorderSide(
-                                color: scheme.onSurface.withValues(
-                                  alpha: 0.14,
-                                ),
+                                color: scheme.onSurface.withValues(alpha: 0.14),
                               ),
                             ),
                             child: Text(secondaryLabel!),
@@ -214,14 +209,20 @@ class VxHero extends StatelessWidget {
   }
 
   Widget _heroArt() {
-    final inner = cover ?? VxCoverFallback(title: fallbackSeed ?? title, radius: VxRadius.lg);
+    final inner =
+        cover ??
+        VxCoverFallback(title: fallbackSeed ?? title, radius: VxRadius.lg);
     return Container(
       width: 178,
       height: 178,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(VxRadius.lg),
         boxShadow: const [
-          BoxShadow(color: Color(0x70000000), blurRadius: 32, offset: Offset(0, 14)),
+          BoxShadow(
+            color: Color(0x70000000),
+            blurRadius: 32,
+            offset: Offset(0, 14),
+          ),
         ],
       ),
       child: ClipRRect(

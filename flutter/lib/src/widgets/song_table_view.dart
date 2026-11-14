@@ -32,6 +32,7 @@ class VxSongTable extends StatefulWidget {
     this.onRetry,
     this.hasMore = false,
     this.onLoadMore,
+    this.onRefresh,
     this.onRemoveSong,
     this.padding = const EdgeInsets.only(top: 4, bottom: VxSpacing.xl),
     this.focusOnEnter = true,
@@ -73,6 +74,13 @@ class VxSongTable extends StatefulWidget {
   /// 加载下一页回调。
   final VoidCallback? onLoadMore;
 
+  /// 下拉刷新回调（§5.6 触底分页 + 下拉刷新）。非空时列表包
+  /// RefreshIndicator 并放开 AlwaysScrollableScrollPhysics（内容不满一屏
+  /// 也可下拉）；完成 Future 由调用方提供（page=1 响应或错误落槽时
+  /// complete，见 AppModel.awaitBrowseResponse），本组件不伪造完成时机。
+  /// 桌面鼠标无下拉手势：页面保留既有「刷新」菜单项为主入口。
+  final Future<void> Function()? onRefresh;
+
   /// 从歌单移除回调（自建歌单详情用）；逐行透传给右键菜单。
   final void Function(bridge.SongDto song)? onRemoveSong;
 
@@ -107,9 +115,7 @@ class _VxSongTableState extends State<VxSongTable> {
       }
       if (isShiftPressed() && _selected.isNotEmpty) {
         // Shift：从既有选区到点击处做范围选择。
-        final anchor = _selected.reduce(
-          (a, b) => a < b ? a : b,
-        );
+        final anchor = _selected.reduce((a, b) => a < b ? a : b);
         final start = anchor < index ? anchor : index;
         final end = anchor < index ? index : anchor;
         _selected
@@ -178,7 +184,7 @@ class _VxSongTableState extends State<VxSongTable> {
       );
     }
     final scheme = Theme.of(context).colorScheme;
-    return NotificationListener<ScrollNotification>(
+    final list = NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         // 触底自动翻页（与翻页按钮二选一均可触发，幂等）。
         if (widget.hasMore &&
@@ -194,6 +200,11 @@ class _VxSongTableState extends State<VxSongTable> {
         onKeyEvent: widget.focusOnEnter ? _onKeyEvent : null,
         child: ListView.builder(
           padding: widget.padding,
+          // 下拉刷新需在内容不满一屏时也可触发（否则 spinner 永不出现，
+          // 手势等于摆设）；无 onRefresh 保持默认物理不扰动桌面滚动。
+          physics: widget.onRefresh != null
+              ? const AlwaysScrollableScrollPhysics()
+              : null,
           itemCount: songs.length + (widget.hasMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index >= songs.length) return _footer(context);
@@ -224,6 +235,8 @@ class _VxSongTableState extends State<VxSongTable> {
         ),
       ),
     );
+    if (widget.onRefresh == null) return list;
+    return RefreshIndicator(onRefresh: widget.onRefresh!, child: list);
   }
 
   Widget _footer(BuildContext context) {

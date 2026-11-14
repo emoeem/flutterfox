@@ -38,7 +38,9 @@ Widget _harness(AppModel model) {
         value: NotificationService(),
       ),
     ],
-    child: MaterialApp(home: TouchShell(model: model, touchPlatformOverride: true)),
+    child: MaterialApp(
+      home: TouchShell(model: model, touchPlatformOverride: true),
+    ),
   );
 }
 
@@ -96,19 +98,22 @@ void main() {
   });
 
   group('平台隔离：非触屏平台任何宽度不进移动/平板壳', () {
-    test('resolveDeviceFormFactor 显式 override 注入：isTouch=false 全宽度 desktop',
-        () {
-      for (final width in [360.0, 600.0, 768.0, 1024.0, 1440.0, 1920.0]) {
-        expect(
-          resolveDeviceFormFactor(width, isTouch: false),
-          DeviceFormFactor.desktop,
-          reason: '非触屏平台宽度 $width 不得进入移动/平板形态',
-        );
-      }
-    });
+    test(
+      'resolveDeviceFormFactor 显式 override 注入：isTouch=false 全宽度 desktop',
+      () {
+        for (final width in [360.0, 600.0, 768.0, 1024.0, 1440.0, 1920.0]) {
+          expect(
+            resolveDeviceFormFactor(width, isTouch: false),
+            DeviceFormFactor.desktop,
+            reason: '非触屏平台宽度 $width 不得进入移动/平板形态',
+          );
+        }
+      },
+    );
 
-    testWidgets('TouchShell 在非触屏平台兜底为空渲染（不进 MobileShell/TabletShell）',
-        (tester) async {
+    testWidgets('TouchShell 在非触屏平台兜底为空渲染（不进 MobileShell/TabletShell）', (
+      tester,
+    ) async {
       final model = AppModel();
       // 逐宽度验证：不注入 override 时（宿主 dart:io 平台恒 false），
       // 任何宽度都不进移动/平板壳。
@@ -121,10 +126,16 @@ void main() {
         _setSize(tester, size);
         await tester.pumpWidget(_desktopHarness(model));
         await tester.pumpAndSettle();
-        expect(find.byType(MobileShell), findsNothing,
-            reason: '宽度 ${size.width} 不得进手机壳');
-        expect(find.byType(TabletShell), findsNothing,
-            reason: '宽度 ${size.width} 不得进平板壳');
+        expect(
+          find.byType(MobileShell),
+          findsNothing,
+          reason: '宽度 ${size.width} 不得进手机壳',
+        );
+        expect(
+          find.byType(TabletShell),
+          findsNothing,
+          reason: '宽度 ${size.width} 不得进平板壳',
+        );
       }
       expect(find.byType(NavigationBar), findsNothing);
       expect(find.byType(NavigationRail), findsNothing);
@@ -152,7 +163,10 @@ void main() {
 
       expect(find.byType(MiniPlayerBar), findsOneWidget);
       expect(
-        find.descendant(of: find.byType(MiniPlayerBar), matching: find.text('夜航')),
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -223,13 +237,18 @@ void main() {
       await tester.pumpWidget(_harness(model));
       await tester.pumpAndSettle();
 
-      // 手机档：底部导航切到「下载」（第 5 主入口）。
-      await tester.tap(find.text('下载'));
+      // 手机档：底部导航切到「下载」（第 5 主入口）——限定底栏查找：
+      // 手机首页快捷入口也有同名「下载」卡（R5 口径，与 mobile_shell_test
+      // 同一消歧）。
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.text('下载'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(
-        tester
-            .widget<NavigationBar>(find.byType(NavigationBar))
-            .selectedIndex,
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
         4,
       );
 
@@ -238,7 +257,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TabletShell), findsOneWidget);
       expect(
-        tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
         4,
         reason: '跨档后导航目的地不丢（TouchShellSession）',
       );
@@ -253,7 +274,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TabletShell), findsOneWidget);
       expect(
-        tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
         4,
       );
       expect(find.byType(MiniPlayerBar), findsOneWidget);
@@ -263,9 +286,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(MobileShell), findsOneWidget);
       expect(
-        tester
-            .widget<NavigationBar>(find.byType(NavigationBar))
-            .selectedIndex,
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
         4,
       );
     });
@@ -278,7 +299,10 @@ void main() {
 
       // 点迷你播放栏开全屏。
       await tester.tap(
-        find.descendant(of: find.byType(MiniPlayerBar), matching: find.text('夜航')),
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.byType(MobileNowPlayingPage), findsOneWidget);

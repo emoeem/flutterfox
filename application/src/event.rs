@@ -5,6 +5,17 @@ use lx_core::model::playlist::{Album, Artist, Playlist, PlaylistCategory};
 use lx_core::model::song::SongInfo;
 use lx_core::model::source::{PlayerState, SourceId};
 
+/// 本地扫描统计快照（§5.10 流程 5 的可见统计：新增/复用/失败/跳过/移除）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LocalScanStatsInfo {
+    pub discovered: usize,
+    pub reused: usize,
+    pub parsed: usize,
+    pub failed: usize,
+    pub removed: usize,
+    pub skipped: usize,
+}
+
 #[derive(Debug, Clone)]
 pub enum ApplicationCommand {
     Search {
@@ -112,6 +123,18 @@ pub enum ApplicationCommand {
     DownloadCancel {
         id: u64,
     },
+    /// 暂停下载：引擎在下一个检查点停下，保留 staged 前缀供续传。
+    DownloadPause {
+        id: u64,
+    },
+    /// 继续暂停的下载：解析到与暂停时同源才做 Range 续传。
+    DownloadResume {
+        id: u64,
+    },
+    /// 删除已完成任务对应的本地文件并回收下载记录（UI 二次确认后下发）。
+    DownloadDeleteFile {
+        id: u64,
+    },
     DownloadClearFinished,
     // ── 扫码登录（直接走 SourceManager）──
     QrLoginStart {
@@ -124,6 +147,8 @@ pub enum ApplicationCommand {
         paths: Vec<String>,
         max_depth: u32,
     },
+    /// 取消进行中的本地扫描：本次扫描不提交，已提交结果保持不变。
+    LocalScanCancel,
     // ── 账号歌单镜像（远程缓存，只读）──
     /// 列出某平台缓存的账号歌单（不含红心集合）。
     AccountPlaylists {
@@ -263,7 +288,7 @@ pub enum ApplicationEvent {
     Notification {
         message: String,
     },
-    /// 收藏/历史/自定义歌单有任何变化的信号；数据本体看 StateChanged 快照。
+    /// 收藏/历史/自定义歌单有任何变化的信号；数据本体经 state() 快照恢复（A-2 起不再尾随 StateChanged）。
     LibraryChanged,
     /// 新建自建歌单成功：带回生成的 id，前端可立即把歌曲加进去。
     /// 与本事件前后脚发出的 `LibraryChanged` 负责刷新列表快照。
@@ -271,7 +296,7 @@ pub enum ApplicationEvent {
         id: String,
         name: String,
     },
-    /// 下载任务列表有变化；数据本体看 StateChanged 快照的 downloads 字段。
+    /// 下载任务列表有变化；数据本体经 state() 快照恢复（A-2 起不再尾随 StateChanged）。
     DownloadsChanged,
     /// 配置被替换（含 ConfigGet 的应答）。
     ConfigChanged {
@@ -289,8 +314,14 @@ pub enum ApplicationEvent {
         user_name: Option<String>,
     },
     /// 本地扫描完成。
+    ///
+    /// `cancelled = true` 表示用户取消：本次结果未提交，`stats` 为 `None`
+    ///（`scan_stats` 里留着的是上一次扫描的旧值，不能当本次统计展示）。
+    /// 正常完成时 `stats` 携带本次统计（新增/复用/失败/跳过/移除/发现）。
     LocalScanCompleted {
         warnings: Vec<String>,
+        stats: Option<LocalScanStatsInfo>,
+        cancelled: bool,
     },
     /// 同步预览就绪（未写任何缓存）。
     SyncPreviewReady {

@@ -47,6 +47,9 @@ class _LibraryPageState extends State<LibraryPage> {
   String _sort = 'default';
   bool _grid = true;
 
+  /// 来源筛选（§5.5）；null = 全部来源。
+  String? _sourceFilter;
+
   /// 红心镜像视图：local = 本地收藏；wy/tx = 账号镜像（来源明确标注）。
   String _favoriteView = 'local';
   static const _mirrorPlatforms = [('wy', '网易云'), ('tx', 'QQ')];
@@ -63,6 +66,7 @@ class _LibraryPageState extends State<LibraryPage> {
           children: [
             _header(context),
             if (_tab == LibraryTab.songs) _favoriteViewSwitch(context),
+            _sourceChips(context),
             Expanded(child: _body(context)),
           ],
         );
@@ -78,18 +82,39 @@ class _LibraryPageState extends State<LibraryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '我的音乐',
-                  style: VxTypography.h1.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // 窄视口（<512：手机档 360-599 全覆盖）标题独占一行、工具条
+              // 移到下一行（Phase 2 QA P1）：同 Row 时定宽 200 搜索条 +
+              // 三图标占 308-360px，h1「我的音乐」需 ≥113.6px，430 视口
+              // 剩余 90px 必折两行（「我的音/乐」），360 更挤。512 分界由
+              // 最宽工具档（专辑/歌手 360px）反推：宽档需 ≥505.6 才放得下。
+              final compact = constraints.maxWidth < 512;
+              final title = Text(
+                '我的音乐',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VxTypography.h1.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ),
-              _tools(context),
-            ],
+              );
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: VxSpacing.md),
+                    _tools(context, compact: true),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  _tools(context),
+                ],
+              );
+            },
           ),
           const SizedBox(height: VxSpacing.md),
           _entryCards(context),
@@ -102,33 +127,45 @@ class _LibraryPageState extends State<LibraryPage> {
 
   /// 独立入口：最近播放 / 本地音乐 / 喜欢的歌曲（语义互不混用）。
   Widget _entryCards(BuildContext context) {
-    return Row(
-      children: [
-        _entryCard(
-          context,
-          icon: Icons.history,
-          label: '最近播放',
-          count: _model.state.history.length,
-          unit: '首',
-          onTap: () => _openRecent(context),
-        ),
-        _entryCard(
-          context,
-          icon: Icons.speaker_outlined,
-          label: '本地音乐',
-          count: _model.state.localSongs.length,
-          unit: '首',
-          onTap: () => _openLocalMusic(context),
-        ),
-        _entryCard(
-          context,
-          icon: Icons.favorite_border,
-          label: '喜欢的歌曲',
-          count: _model.state.favorites.length,
-          unit: '首',
-          onTap: () => setState(() => _tab = LibraryTab.songs),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 窄视口（<512，与 _header compact 同阈值）：三列等分下「标签 +
+        // 计数」同一行放不下（430 视口每列 ~131px，「最近播放」4 字 +
+        // 「N 首」必触发省略号截断，P2-10）——标签独占一行、计数移到
+        // 第二行；桌面 ≥512 保持单行布局。
+        final compact = constraints.maxWidth < 512;
+        return Row(
+          children: [
+            _entryCard(
+              context,
+              compact: compact,
+              icon: Icons.history,
+              label: '最近播放',
+              count: _model.state.history.length,
+              unit: '首',
+              onTap: () => _openRecent(context),
+            ),
+            _entryCard(
+              context,
+              compact: compact,
+              icon: Icons.speaker_outlined,
+              label: '本地音乐',
+              count: _model.state.localSongs.length,
+              unit: '首',
+              onTap: () => _openLocalMusic(context),
+            ),
+            _entryCard(
+              context,
+              compact: compact,
+              icon: Icons.favorite_border,
+              label: '喜欢的歌曲',
+              count: _model.state.favorites.length,
+              unit: '首',
+              onTap: () => setState(() => _tab = LibraryTab.songs),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -139,8 +176,19 @@ class _LibraryPageState extends State<LibraryPage> {
     required int count,
     required String unit,
     required VoidCallback onTap,
+    bool compact = false,
   }) {
     final scheme = Theme.of(context).colorScheme;
+    final countText = Text(
+      '$count $unit',
+      style: VxTypography.mono.copyWith(color: scheme.onSurfaceVariant),
+    );
+    final labelText = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: VxTypography.titleSm.copyWith(color: scheme.onSurface),
+    );
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(VxRadius.md),
@@ -154,31 +202,43 @@ class _LibraryPageState extends State<LibraryPage> {
           decoration: BoxDecoration(
             color: scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(VxRadius.md),
-            border:
-                Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: scheme.primary),
-              const SizedBox(width: VxSpacing.sm),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: VxTypography.titleSm.copyWith(
-                    color: scheme.onSurface,
-                  ),
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 标签独占一行（不与图标同排）：360 最窄档三列内宽
+                    // ~77px，四字标签 ~56px 仅在独占整行时放得下。
+                    // P2-15：5 字标签（喜欢的歌曲 ~74px）在 360 档越界触发
+                    // ellipsis 截断——FittedBox scaleDown 按需整行缩小渲染，
+                    // 省略号路径在结构上不可能再触发（只缩放不裁切）。
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: labelText,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(icon, size: 14, color: scheme.primary),
+                        const SizedBox(width: VxSpacing.sm),
+                        countText,
+                      ],
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Icon(icon, size: 18, color: scheme.primary),
+                    const SizedBox(width: VxSpacing.sm),
+                    Expanded(child: labelText),
+                    countText,
+                  ],
                 ),
-              ),
-              Text(
-                '$count $unit',
-                style: VxTypography.mono.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -186,36 +246,136 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _tabs(BuildContext context) {
     // Wrap：桌面一行放下时与 Row 视觉一致；手机窄宽自动换行不溢出
-    // （Phase 7 触屏适配）。
+    // （Phase 7 触屏适配）。计数随来源筛选同步变化（§5.5）。
+    final customVisible = _sourceFilter == null || _sourceFilter == 'local';
     return Wrap(
       children: [
         _tabPill(
           context,
           tab: LibraryTab.songs,
           label: '歌曲',
-          count: _model.state.favorites.length,
+          count: _model.state.favorites
+              .where((s) => _matchesSource(s.source))
+              .length,
         ),
         _tabPill(
           context,
           tab: LibraryTab.albums,
           label: '专辑',
-          count: _albumGroups().length,
+          count: _albumGroups().where((g) => _matchesSource(g.source)).length,
         ),
         _tabPill(
           context,
           tab: LibraryTab.artists,
           label: '歌手',
-          count: _artistGroups().length,
+          count: _artistGroups().where((g) => _matchesSource(g.source)).length,
         ),
         _tabPill(
           context,
           tab: LibraryTab.playlists,
           label: '歌单',
           count:
-              _model.state.customPlaylists.length +
-              _model.state.favoritePlaylists.length,
+              (customVisible ? _model.state.customPlaylists.length : 0) +
+              _model.state.favoritePlaylists
+                  .where((p) => _matchesSource(p.source))
+                  .length,
         ),
       ],
+    );
+  }
+
+  // ── 来源筛选 chips（§5.5：本地/在线来源不能混淆，过滤后标题与计数同步）──
+
+  bool _matchesSource(String source) =>
+      _sourceFilter == null || source == _sourceFilter;
+
+  /// 从 favorites + history + localSongs 实际出现的 song.source 派生
+  /// （与专辑/歌手聚合同一数据域；无数据不显示，不伪造）。
+  List<String> _availableSources() {
+    final seen = <String>[];
+    for (final song in [
+      ..._model.state.favorites,
+      ..._model.state.history,
+      ..._model.state.localSongs,
+    ]) {
+      final source = song.source.trim();
+      if (source.isEmpty) continue;
+      if (!seen.contains(source)) seen.add(source);
+    }
+    return seen;
+  }
+
+  /// 来源 chips 行（横向滚动）。少于 2 个来源时无可筛，整行不显示。
+  /// 组合规则：歌曲档本地视图按 favorites 的 source 过滤；镜像视图的
+  /// songs 来源固定平台 id，选其他来源如实为空；自建歌单是本地数据，
+  /// 仅在「全部来源」或「本地音乐」下展示。
+  Widget _sourceChips(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final sources = _availableSources();
+    if (sources.length < 2) return const SizedBox.shrink();
+    Widget chip(String label, {required bool selected, required onTap}) {
+      return Padding(
+        padding: const EdgeInsets.only(right: VxSpacing.sm),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => setState(onTap),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: VxSpacing.md,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.14)
+                  : scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? scheme.primary.withValues(alpha: 0.4)
+                    : scheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[
+                  Icon(Icons.check, size: 14, color: scheme.primary),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  label,
+                  style: VxTypography.caption.copyWith(
+                    color: selected ? scheme.primary : scheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: SizedBox(
+        height: 36,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            chip(
+              '全部来源',
+              selected: _sourceFilter == null,
+              onTap: () => _sourceFilter = null,
+            ),
+            for (final source in sources)
+              chip(
+                songSourceLabel(_model, source),
+                selected: _sourceFilter == source,
+                onTap: () => _sourceFilter = source,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -254,8 +414,7 @@ class _LibraryPageState extends State<LibraryPage> {
               ),
               const SizedBox(width: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: count == 0
                       ? scheme.surfaceContainerHighest
@@ -279,29 +438,33 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  Widget _tools(BuildContext context) {
+  Widget _tools(BuildContext context, {bool compact = false}) {
     final showSort = _tab != LibraryTab.playlists;
-    final showViewToggle = _tab == LibraryTab.albums || _tab == LibraryTab.artists;
+    final showViewToggle =
+        _tab == LibraryTab.albums || _tab == LibraryTab.artists;
+    final searchField = TextField(
+      onChanged: (value) => setState(() => _query = value.trim()),
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: '在当前视图中搜索…',
+        prefixIcon: const Icon(Icons.search, size: 18),
+        prefixIconConstraints: const BoxConstraints(minWidth: 34),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(VxRadius.md),
+        ),
+      ),
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: 200,
-          child: TextField(
-            onChanged: (value) => setState(() => _query = value.trim()),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: '在当前视图中搜索…',
-              prefixIcon: const Icon(Icons.search, size: 18),
-              prefixIconConstraints: const BoxConstraints(minWidth: 34),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(VxRadius.md),
-              ),
-            ),
-          ),
-        ),
+        // compact（窄视口独立工具行）：弹性宽度——固定 200 在 360 视口的
+        // 专辑/歌手档（三图标 160 + 分隔 16）会横向溢出；桌面保持 200 定宽
+        // 视觉零变化。
+        if (compact)
+          Expanded(child: searchField)
+        else
+          SizedBox(width: 200, child: searchField),
         if (showSort) ...[
           const SizedBox(width: VxSpacing.sm),
           PopupMenuButton<String>(
@@ -325,8 +488,10 @@ class _LibraryPageState extends State<LibraryPage> {
           IconButton(
             tooltip: _grid ? '切换为列表' : '切换为网格',
             onPressed: () => setState(() => _grid = !_grid),
-            icon: Icon(_grid ? Icons.view_list_outlined : Icons.grid_view_outlined,
-                size: 20),
+            icon: Icon(
+              _grid ? Icons.view_list_outlined : Icons.grid_view_outlined,
+              size: 20,
+            ),
           ),
         ],
         const SizedBox(width: VxSpacing.xs),
@@ -399,14 +564,16 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _songsBody(BuildContext context) {
     if (_favoriteView == 'local') {
       final songs = _sortedSongs(
-        _model.state.favorites.where(_matchesSong).toList(),
+        _model.state.favorites
+            .where(_matchesSong)
+            .where((s) => _matchesSource(s.source))
+            .toList(),
       );
       return VxSongTable(
         model: _model,
         songs: songs,
         emptyTitle: _query.isEmpty ? '还没有收藏' : '没有匹配的歌曲',
-        emptySubtitle:
-            _query.isEmpty ? '在搜索页点击心形把歌曲收进来' : '换个关键词试试',
+        emptySubtitle: _query.isEmpty ? '在搜索页点击心形把歌曲收进来' : '换个关键词试试',
       );
     }
     final result = _model.accountFavorites(_favoriteView);
@@ -423,14 +590,22 @@ class _LibraryPageState extends State<LibraryPage> {
       );
     }
     final songs = _sortedSongs(
-      result.songs.where(_matchesSong).toList(),
+      result.songs
+          .where(_matchesSong)
+          .where((s) => _matchesSource(s.source))
+          .toList(),
     );
     return VxSongTable(
       model: _model,
       songs: songs,
       emptyTitle: result.notice ?? '暂无账号红心镜像',
-      emptySubtitle:
-          result.notice == null ? '请先在「发现 → 我的歌单」中同步账号歌单' : null,
+      // 镜像 songs 的来源固定平台 id：所选来源不匹配时如实为空表（§5.5
+      // 「本地/在线来源筛选不能混淆」，计数同步变化）。
+      emptySubtitle: result.notice == null
+          ? (songs.isEmpty && _sourceFilter != null
+                ? '所选来源下没有账号红心镜像歌曲'
+                : '请先在「发现 → 我的歌单」中同步账号歌单')
+          : null,
     );
   }
 
@@ -496,10 +671,12 @@ class _LibraryPageState extends State<LibraryPage> {
     final filtered = q.isEmpty
         ? groups
         : groups
-            .where((g) =>
-                g.name.toLowerCase().contains(q) ||
-                g.singer.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (g) =>
+                    g.name.toLowerCase().contains(q) ||
+                    g.singer.toLowerCase().contains(q),
+              )
+              .toList();
     final list = [...filtered];
     switch (_sort) {
       case 'title':
@@ -530,7 +707,9 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _albumsBody(BuildContext context) {
-    final groups = _sortedAlbums(_albumGroups());
+    final groups = _sortedAlbums(
+      _albumGroups().where((g) => _matchesSource(g.source)).toList(),
+    );
     if (groups.isEmpty) {
       return VxEmptyState(
         icon: Icons.album_outlined,
@@ -566,12 +745,12 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   bridge.AlbumDto _albumDtoOf(_AlbumGroup group) => bridge.AlbumDto(
-        id: group.albumId ?? group.name,
-        name: group.name,
-        source: group.source,
-        coverUrl: group.coverUrl,
-        artist: group.singer,
-      );
+    id: group.albumId ?? group.name,
+    name: group.name,
+    source: group.source,
+    coverUrl: group.coverUrl,
+    artist: group.singer,
+  );
 
   void _openAlbum(BuildContext context, _AlbumGroup group) {
     final album = _albumDtoOf(group);
@@ -579,11 +758,7 @@ class _LibraryPageState extends State<LibraryPage> {
       MaterialPageRoute<void>(
         builder: (_) => _model.supportsAlbum(group.source)
             ? AlbumSongsPage(_model, album)
-            : AlbumSongsPage(
-                _model,
-                album,
-                presetSongs: [...group.songs],
-              ),
+            : AlbumSongsPage(_model, album, presetSongs: [...group.songs]),
       ),
     );
   }
@@ -631,7 +806,9 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _artistsBody(BuildContext context) {
-    final groups = _sortedArtists(_artistGroups());
+    final groups = _sortedArtists(
+      _artistGroups().where((g) => _matchesSource(g.source)).toList(),
+    );
     if (groups.isEmpty) {
       return VxEmptyState(
         icon: Icons.person_outline,
@@ -677,11 +854,7 @@ class _LibraryPageState extends State<LibraryPage> {
       MaterialPageRoute<void>(
         builder: (_) => _model.supportsArtist(group.source)
             ? ArtistDetailPage(_model, artist)
-            : ArtistDetailPage(
-                _model,
-                artist,
-                presetSongs: [...group.songs],
-              ),
+            : ArtistDetailPage(_model, artist, presetSongs: [...group.songs]),
       ),
     );
   }
@@ -719,7 +892,11 @@ class _LibraryPageState extends State<LibraryPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: CustomPlaylistsSection(_model, query: _query),
+          child: CustomPlaylistsSection(
+            _model,
+            query: _query,
+            source: _sourceFilter,
+          ),
         ),
         const Divider(height: 1),
         _favoritePlaylists(context),
@@ -731,11 +908,10 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _favoritePlaylists(BuildContext context) {
     final playlists = _model.state.favoritePlaylists;
     final q = _query.toLowerCase();
-    final filtered = q.isEmpty
-        ? playlists
-        : playlists
-            .where((p) => p.name.toLowerCase().contains(q))
-            .toList();
+    final filtered = playlists
+        .where((p) => _matchesSource(p.source))
+        .where((p) => q.isEmpty || p.name.toLowerCase().contains(q))
+        .toList();
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -807,15 +983,15 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   void _openRecent(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => RecentSongsPage(_model)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => RecentSongsPage(_model)));
   }
 
   void _openLocalMusic(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => LocalMusicPage(_model)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => LocalMusicPage(_model)));
   }
 }
 

@@ -8,7 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../design_tokens.dart';
+import '../../theme/app_theme.dart' show VxPalette;
 import '../voicefox_theme.dart' show vxMonoStyle;
 import 'vx_hover.dart';
 
@@ -52,10 +52,8 @@ class VxSeekBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final trackColor = dark
-        ? VxDarkSurface.seekTrack
-        : VxLightColors.seekTrack;
+    // B3：轨底色随主题（VxPalette 扩展下发，非亮暗三元）。
+    final trackColor = VxPalette.of(context).seekTrack;
     final v = value?.clamp(0.0, 1.0);
 
     return VxHoverBuilder(
@@ -64,7 +62,10 @@ class VxSeekBar extends StatelessWidget {
           final width = constraints.maxWidth;
           final thumbLeft = v == null
               ? 0.0
-              : (v * width - 6).clamp(0.0, (width - 12).clamp(0.0, double.infinity));
+              : (v * width - 6).clamp(
+                  0.0,
+                  (width - 12).clamp(0.0, double.infinity),
+                );
           return SizedBox(
             height: 14,
             child: Stack(
@@ -119,11 +120,7 @@ class VxSeekBar extends StatelessWidget {
 
 /// "时间 + 进度条 + 时间"标准行（概念稿 `.seek`）。
 class VxSeekRow extends StatelessWidget {
-  const VxSeekRow({
-    super.key,
-    required this.position,
-    required this.duration,
-  });
+  const VxSeekRow({super.key, required this.position, required this.duration});
 
   /// 当前位置；null（含时长未知）显示 `--:--`。
   final Duration? position;

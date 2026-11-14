@@ -15,21 +15,21 @@ import '../design_system/components/vx_seek_bar.dart';
 import '../widgets/live_progress.dart';
 
 /// 「时间 + 可拖动进度条 + 时间」实时行。
+///
+/// 进度订阅 [AppModel.playbackTick]（纯 position/duration 节流通知）：
+/// 4Hz 进度更新只重建本行，不重建外层 PlayerBar/页面（§7.5/§11.1）。
+/// `playing` 由调用方传入（状态迁移走全模型通知，重建调用方时下发）。
 class LiveSeekRow extends StatefulWidget {
   const LiveSeekRow({
     super.key,
     required this.model,
-    required this.positionMs,
-    required this.durationMs,
     required this.playing,
     this.onDragPreview,
   });
 
   final AppModel model;
 
-  /// AppModel 播放快照的位置（插值由本组件内部完成）。
-  final BigInt positionMs;
-  final BigInt durationMs;
+  /// 是否播放中（状态迁移时由调用方经全模型通知下发）。
   final bool playing;
 
   /// 拖动会话回调：拖动中传 0..1 预览值，结束时传 null（时长未知不回调）。
@@ -43,15 +43,15 @@ class _LiveSeekRowState extends State<LiveSeekRow> {
   /// 拖动会话内的临时值（0..1）；null = 未在拖动。
   double? _drag;
 
-  bool get _hasDuration => widget.durationMs > BigInt.zero;
+  bool _hasDuration(BigInt durationMs) => durationMs > BigInt.zero;
 
   void _preview(double fraction) {
     setState(() => _drag = fraction.clamp(0.0, 1.0));
     widget.onDragPreview?.call(_drag);
   }
 
-  void _commit(double? fraction) {
-    final total = Duration(milliseconds: widget.durationMs.toInt());
+  void _commit(double? fraction, BigInt durationMs) {
+    final total = Duration(milliseconds: durationMs.toInt());
     if (fraction != null && total.inMilliseconds > 0) {
       widget.model.seekMs(
         BigInt.from((total.inMilliseconds * fraction).round()),
@@ -63,77 +63,85 @@ class _LiveSeekRowState extends State<LiveSeekRow> {
 
   @override
   Widget build(BuildContext context) {
-    return LivePlayback(
-      positionMs: widget.positionMs,
-      durationMs: widget.durationMs,
-      playing: widget.playing,
-      builder: (context, position, duration) {
-        final total = duration.inMilliseconds;
-        final liveFraction = total > 0
-            ? (position.inMilliseconds / total).clamp(0.0, 1.0)
-            : null;
-        final shown = _drag ?? liveFraction;
-        final shownPosition = _drag != null && total > 0
-            ? Duration(milliseconds: (total * _drag!).round())
-            : position;
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            return SizedBox(
-              height: 16,
-              child: Row(
-                children: [
-                  VxTimeLabel(shownPosition),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        VxSeekBar(value: shown),
-                        Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTapDown: _hasDuration
-                                ? (details) {
-                                    final f = (details.localPosition.dx / width)
-                                        .clamp(0.0, 1.0);
-                                    _preview(f);
-                                    _commit(f);
-                                  }
-                                : null,
-                            onHorizontalDragStart: _hasDuration
-                                ? (details) => _preview(
-                                    (details.localPosition.dx / width)
-                                        .clamp(0.0, 1.0),
-                                  )
-                                : null,
-                            onHorizontalDragUpdate: _hasDuration
-                                ? (details) {
-                                    final current = _drag ?? 0.0;
-                                    _preview(
-                                      current +
-                                          details.delta.dx / width,
-                                    );
-                                  }
-                                : null,
-                            onHorizontalDragEnd: _hasDuration
-                                ? (_) => _commit(_drag)
-                                : null,
-                            onHorizontalDragCancel: _hasDuration
-                                ? () {
-                                    widget.onDragPreview?.call(null);
-                                    setState(() => _drag = null);
-                                  }
-                                : null,
-                          ),
+    return ListenableBuilder(
+      listenable: widget.model.playbackTick,
+      builder: (context, _) {
+        final playback = widget.model.state.playback;
+        final positionMs = playback.positionMs;
+        final durationMs = playback.durationMs;
+        return LivePlayback(
+          positionMs: positionMs,
+          durationMs: durationMs,
+          playing: widget.playing,
+          builder: (context, position, duration) {
+            final total = duration.inMilliseconds;
+            final liveFraction = total > 0
+                ? (position.inMilliseconds / total).clamp(0.0, 1.0)
+                : null;
+            final shown = _drag ?? liveFraction;
+            final shownPosition = _drag != null && total > 0
+                ? Duration(milliseconds: (total * _drag!).round())
+                : position;
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                return SizedBox(
+                  height: 16,
+                  child: Row(
+                    children: [
+                      VxTimeLabel(shownPosition),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            VxSeekBar(value: shown),
+                            Positioned.fill(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTapDown: _hasDuration(durationMs)
+                                    ? (details) {
+                                        final f =
+                                            (details.localPosition.dx / width)
+                                                .clamp(0.0, 1.0);
+                                        _preview(f);
+                                        _commit(f, durationMs);
+                                      }
+                                    : null,
+                                onHorizontalDragStart: _hasDuration(durationMs)
+                                    ? (details) => _preview(
+                                        (details.localPosition.dx / width)
+                                            .clamp(0.0, 1.0),
+                                      )
+                                    : null,
+                                onHorizontalDragUpdate: _hasDuration(durationMs)
+                                    ? (details) {
+                                        final current = _drag ?? 0.0;
+                                        _preview(
+                                          current + details.delta.dx / width,
+                                        );
+                                      }
+                                    : null,
+                                onHorizontalDragEnd: _hasDuration(durationMs)
+                                    ? (_) => _commit(_drag, durationMs)
+                                    : null,
+                                onHorizontalDragCancel: _hasDuration(durationMs)
+                                    ? () {
+                                        widget.onDragPreview?.call(null);
+                                        setState(() => _drag = null);
+                                      }
+                                    : null,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 10),
+                      // 时长读不到显示 --:--（P0-F1），不伪造 00:00。
+                      VxTimeLabel(_hasDuration(durationMs) ? duration : null),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  // 时长读不到显示 --:--（P0-F1），不伪造 00:00。
-                  VxTimeLabel(_hasDuration ? duration : null),
-                ],
-              ),
+                );
+              },
             );
           },
         );

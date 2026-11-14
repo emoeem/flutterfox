@@ -6,6 +6,8 @@
 
 mod frb_generated;
 
+pub mod crash_log;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -649,6 +651,23 @@ pub struct PushReportDto {
     pub failed: Vec<String>,
 }
 
+/// 本地扫描统计（§5.10 流程 5：新增/复用/失败/跳过/移除）。
+#[derive(Debug, Clone)]
+pub struct ScanStatsDto {
+    /// 本次发现的全部音频/CUE 文件数。
+    pub discovered: u32,
+    /// 指纹命中直接复用的歌曲数（未重新解析标签）。
+    pub reused: u32,
+    /// 本次实际解析入库的歌曲数（新增）。
+    pub parsed: u32,
+    /// 解析失败的文件数（重扫即重试，失败不回滚其余结果）。
+    pub failed: u32,
+    /// 已消失文件的记录数。
+    pub removed: u32,
+    /// 扩展名不属于音频/CUE 而被跳过的文件数（「无音频文件」）。
+    pub skipped: u32,
+}
+
 #[derive(Debug, Clone)]
 pub struct VoicefoxEvent {
     pub kind: String,
@@ -670,6 +689,10 @@ pub struct VoicefoxEvent {
     pub status: Option<String>,
     pub user_name: Option<String>,
     pub warnings: Vec<String>,
+    /// 本地扫描统计（kind == "local_music" 且未取消时携带）。
+    pub scan_stats: Option<ScanStatsDto>,
+    /// 本地扫描是否被用户取消（取消的扫描不提交，stats 为空）。
+    pub scan_cancelled: bool,
     pub config: Option<ConfigDto>,
     // ── 浏览数据面（kind == "browse"）──
     pub browse_kind: Option<String>,
@@ -730,6 +753,8 @@ impl From<ApplicationEvent> for VoicefoxEvent {
             status: None,
             user_name: None,
             warnings: vec![],
+            scan_stats: None,
+            scan_cancelled: false,
             config: None,
             browse_kind: None,
             source: None,
@@ -828,9 +853,22 @@ impl From<ApplicationEvent> for VoicefoxEvent {
                 event.keyword = Some(source.as_str().to_string());
                 event
             }
-            ApplicationEvent::LocalScanCompleted { warnings } => {
+            ApplicationEvent::LocalScanCompleted {
+                warnings,
+                stats,
+                cancelled,
+            } => {
                 let mut event = empty();
                 event.warnings = warnings;
+                event.scan_cancelled = cancelled;
+                event.scan_stats = stats.map(|stats| ScanStatsDto {
+                    discovered: stats.discovered as u32,
+                    reused: stats.reused as u32,
+                    parsed: stats.parsed as u32,
+                    failed: stats.failed as u32,
+                    removed: stats.removed as u32,
+                    skipped: stats.skipped as u32,
+                });
                 event
             }
             ApplicationEvent::ConfigChanged { config } => {
@@ -1028,16 +1066,7 @@ impl From<ApplicationEvent> for VoicefoxEvent {
                 let mut event = empty();
                 event.position_ms = position.as_millis() as u64;
                 event.duration_ms = duration.as_millis() as u64;
-                event.playback_state = Some(
-                    match state {
-                        lx_core::model::source::PlayerState::Idle => "idle",
-                        lx_core::model::source::PlayerState::Loading => "loading",
-                        lx_core::model::source::PlayerState::Playing => "playing",
-                        lx_core::model::source::PlayerState::Paused => "paused",
-                        lx_core::model::source::PlayerState::Stopped => "stopped",
-                    }
-                    .to_string(),
-                );
+                event.playback_state = Some(state.as_protocol_str().to_string());
                 event
             }
             ApplicationEvent::LibraryChanged
@@ -1115,6 +1144,11 @@ impl VoicefoxController {
     #[cfg(feature = "desktop-mpv")]
     pub fn new_desktop() -> Result<Self, String> {
         let (config, path) = voicefox_runtime::load_config().map_err(|e| e.to_string())?;
+        // P1-05/P2-08：GUI 无 TUI 的 tracing 落盘，panic 面接 crash.log
+        // 取证（引擎级 SIGABRT 无 unwind 不经此 hook，边界见 crash_log 模块注释）。
+        crate::crash_log::install_gui_panic_hook(
+            path.parent().unwrap_or_else(|| std::path::Path::new(".")),
+        );
         let runtime = voicefox_runtime::ApplicationRuntime::desktop(config, path)
             .map_err(|e| e.to_string())?;
         Ok(Self::from_application(runtime.application())
@@ -1140,6 +1174,14 @@ impl VoicefoxController {
     pub fn new_host() -> Result<Self, String> {
         let (config, path) = voicefox_runtime::load_config().map_err(|e| e.to_string())?;
         let backend = Arc::new(HostPlayerBackend::new());
+        // FFI-R07：常驻存活看门狗（std 线程）。宿主断连/回流断流时把
+        // Loading/Playing 强制回落 Stopped，避免 UI 永久冻结在最后快照。
+        // 5s 检查间隔 / 20s 回流静默阈值：远小于用户可感知的故障时长，
+        // 远大于正常回流节奏（500ms 节流）。
+        backend.start_liveness_watchdog(
+            std::time::Duration::from_secs(5),
+            std::time::Duration::from_secs(20),
+        );
         let runtime = voicefox_runtime::ApplicationRuntime::from_parts(
             config,
             path,
@@ -1179,13 +1221,20 @@ impl VoicefoxController {
             .into_iter()
             .map(Into::into)
             .collect();
-        state.local_songs = self
-            .application
+        // FFI-R09（A-2）：state() 不再携带 local_songs 全量快照——大曲库下
+        // 每次调用是 O(n) 克隆 + FFI 序列化，而本地曲目只在扫描/导入/删除后
+        // 才变化。改由 [api::local_songs] 独立拉取（Dart 在引导与
+        // local_music 事件时调用），播放/搜索/下载等高频事件不再搬运曲库。
+        state
+    }
+
+    /// 本地曲库全量快照（FFI-R09 A-2：从 state() 拆出的独立读取口）。
+    pub fn local_songs(&self) -> Vec<SongDto> {
+        self.application
             .local_songs()
             .into_iter()
             .map(Into::into)
-            .collect();
-        state
+            .collect()
     }
 
     pub async fn dispatch(&self, command: FfiCommand) -> Result<(), String> {
@@ -1227,6 +1276,8 @@ pub struct HostHeaderDto {
 
 /// 转发给宿主（Dart/just_audio）的播放指令 DTO。
 /// application `HostPlayerCommand` 的镜像，由 [HostPlayerStream] 转换。
+/// `command_id` 供宿主 ack 回销（hostPlayerAck）；歌曲域指令的
+/// `generation` 供宿主丢弃过期命令（lag 后缓冲旧命令不得直打当前曲目）。
 #[derive(Debug, Clone)]
 pub enum HostPlayerCommandDto {
     /// 播放指定 URL；headers 为国内音源自定义请求头（逐请求透传）。
@@ -1234,20 +1285,37 @@ pub enum HostPlayerCommandDto {
         url: String,
         generation: u64,
         headers: Vec<HostHeaderDto>,
+        command_id: u64,
     },
-    Pause,
-    Resume,
-    Stop,
-    Toggle,
+    Pause {
+        command_id: u64,
+        generation: u64,
+    },
+    Resume {
+        command_id: u64,
+        generation: u64,
+    },
+    Stop {
+        command_id: u64,
+        generation: u64,
+    },
+    Toggle {
+        command_id: u64,
+        generation: u64,
+    },
     /// 定位到绝对位置（毫秒）。
     Seek {
         position_ms: u64,
+        command_id: u64,
+        generation: u64,
     },
     SetVolume {
         volume: u32,
+        command_id: u64,
     },
     SetSpeed {
         speed: f64,
+        command_id: u64,
     },
 }
 
@@ -1258,6 +1326,7 @@ impl From<HostPlayerCommand> for HostPlayerCommandDto {
                 url,
                 generation,
                 headers,
+                command_id,
             } => Self::Play {
                 url,
                 generation,
@@ -1268,14 +1337,51 @@ impl From<HostPlayerCommand> for HostPlayerCommandDto {
                         value: pair.value,
                     })
                     .collect(),
+                command_id,
             },
-            HostPlayerCommand::Pause => Self::Pause,
-            HostPlayerCommand::Resume => Self::Resume,
-            HostPlayerCommand::Stop => Self::Stop,
-            HostPlayerCommand::Toggle => Self::Toggle,
-            HostPlayerCommand::Seek { position_ms } => Self::Seek { position_ms },
-            HostPlayerCommand::SetVolume { volume } => Self::SetVolume { volume },
-            HostPlayerCommand::SetSpeed { speed } => Self::SetSpeed { speed },
+            HostPlayerCommand::Pause {
+                command_id,
+                generation,
+            } => Self::Pause {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Resume {
+                command_id,
+                generation,
+            } => Self::Resume {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Stop {
+                command_id,
+                generation,
+            } => Self::Stop {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Toggle {
+                command_id,
+                generation,
+            } => Self::Toggle {
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::Seek {
+                position_ms,
+                command_id,
+                generation,
+            } => Self::Seek {
+                position_ms,
+                command_id,
+                generation,
+            },
+            HostPlayerCommand::SetVolume { volume, command_id } => {
+                Self::SetVolume { volume, command_id }
+            }
+            HostPlayerCommand::SetSpeed { speed, command_id } => {
+                Self::SetSpeed { speed, command_id }
+            }
         }
     }
 }
@@ -1339,6 +1445,9 @@ pub enum FfiCommand {
     SearchMore {
         keyword: String,
         page: u32,
+        /// 可选音源过滤；None 为聚合搜索（Rust 侧 append 时兜底沿用本次查询
+        /// 建立时的过滤，见 ApplicationService::start_search）。
+        source: Option<String>,
     },
     // ── 库（收藏/历史/自定义歌单）──
     LibraryRefresh,
@@ -1379,6 +1488,11 @@ pub enum FfiCommand {
     CustomPlaylistDetail {
         id: String,
     },
+    // ── 歌词 ──
+    /// P2-17：手动重新获取当前歌曲歌词（自动获取失败/为空时的兜底入口）。
+    LoadLyrics {
+        song: SongDto,
+    },
     // ── 配置 ──
     ConfigGet,
     ConfigUpdate {
@@ -1389,6 +1503,15 @@ pub enum FfiCommand {
         song: SongDto,
     },
     DownloadCancel {
+        id: u64,
+    },
+    DownloadPause {
+        id: u64,
+    },
+    DownloadResume {
+        id: u64,
+    },
+    DownloadDeleteFile {
         id: u64,
     },
     DownloadClearFinished,
@@ -1403,6 +1526,7 @@ pub enum FfiCommand {
         paths: Vec<String>,
         max_depth: u32,
     },
+    LocalScanCancel,
     // ── 账号歌单镜像 / 同步 ──
     AccountPlaylists {
         source: String,
@@ -1513,10 +1637,17 @@ impl FfiCommand {
                     None => None,
                 },
             },
-            FfiCommand::SearchMore { keyword, page } => ApplicationCommand::SearchMore {
+            FfiCommand::SearchMore {
                 keyword,
                 page,
-                source: None,
+                source,
+            } => ApplicationCommand::SearchMore {
+                keyword,
+                page,
+                source: match source {
+                    Some(id) => Some(parse_source(&id)?),
+                    None => None,
+                },
             },
             FfiCommand::LibraryRefresh => ApplicationCommand::LibraryRefresh,
             FfiCommand::FavoritesAdd { song } => ApplicationCommand::FavoritesAdd {
@@ -1539,6 +1670,9 @@ impl FfiCommand {
                 song: song.into_song()?,
             },
             FfiCommand::HistoryClear => ApplicationCommand::HistoryClear,
+            FfiCommand::LoadLyrics { song } => ApplicationCommand::LoadLyrics {
+                song: song.into_song()?,
+            },
             FfiCommand::CustomPlaylistCreate { name } => {
                 ApplicationCommand::CustomPlaylistCreate { name }
             }
@@ -1572,6 +1706,9 @@ impl FfiCommand {
                 song: song.into_song()?,
             },
             FfiCommand::DownloadCancel { id } => ApplicationCommand::DownloadCancel { id },
+            FfiCommand::DownloadPause { id } => ApplicationCommand::DownloadPause { id },
+            FfiCommand::DownloadResume { id } => ApplicationCommand::DownloadResume { id },
+            FfiCommand::DownloadDeleteFile { id } => ApplicationCommand::DownloadDeleteFile { id },
             FfiCommand::DownloadClearFinished => ApplicationCommand::DownloadClearFinished,
             FfiCommand::QrLoginStart { source, kind } => ApplicationCommand::QrLoginStart {
                 source: parse_source(&source)?,
@@ -1584,6 +1721,7 @@ impl FfiCommand {
             FfiCommand::LocalScan { paths, max_depth } => {
                 ApplicationCommand::LocalScan { paths, max_depth }
             }
+            FfiCommand::LocalScanCancel => ApplicationCommand::LocalScanCancel,
             FfiCommand::AccountPlaylists { source } => ApplicationCommand::AccountPlaylists {
                 source: parse_source(&source)?,
             },

@@ -50,10 +50,7 @@ class _GalleryPageState extends State<GalleryPage> {
             appBar: AppBar(
               title: const Text('Voicefox UI Gallery'),
               actions: [
-                Text(
-                  _dark ? '深色预览' : '浅色预览',
-                  style: VxTypography.caption,
-                ),
+                Text(_dark ? '深色预览' : '浅色预览', style: VxTypography.caption),
                 Switch(
                   value: !_dark,
                   onChanged: (v) => setState(() => _dark = !v),
@@ -73,16 +70,18 @@ class _GalleryPageState extends State<GalleryPage> {
                   _section('SectionHeader 分区标题', _sectionHeaders()),
                   _section('TrackRow 三密度与状态', _trackRows()),
                   _section('AlbumCard / PlaylistCard / ArtistCard', _cards()),
-                  _section('VxHero 首页 Hero', VxHero(
-                    eyebrow: 'CONTINUE LISTENING',
-                    title: '让音乐继续',
-                    description:
-                        '从最近播放的专辑、歌单或歌曲继续你的音乐旅程。',
-                    primaryLabel: '继续播放',
-                    onPrimary: () {},
-                    secondaryLabel: '更多',
-                    onSecondary: () {},
-                  )),
+                  _section(
+                    'VxHero 首页 Hero',
+                    VxHero(
+                      eyebrow: 'CONTINUE LISTENING',
+                      title: '让音乐继续',
+                      description: '从最近播放的专辑、歌单或歌曲继续你的音乐旅程。',
+                      primaryLabel: '继续播放',
+                      onPrimary: () {},
+                      secondaryLabel: '更多',
+                      onSecondary: () {},
+                    ),
+                  ),
                   _section('空状态 / 加载骨架 / 错误状态', _states()),
                   _section('进度条与播放控制', _player()),
                 ],
@@ -179,7 +178,8 @@ class _GalleryPageState extends State<GalleryPage> {
           spacing: VxSpacing.md,
           runSpacing: VxSpacing.md,
           children: [
-            for (final (name, color) in darkTokens) _swatch(scheme, name, color),
+            for (final (name, color) in darkTokens)
+              _swatch(scheme, name, color),
           ],
         ),
         const SizedBox(height: VxSpacing.lg),
@@ -253,10 +253,7 @@ class _GalleryPageState extends State<GalleryPage> {
       ('TitleSm 13/600', VxTypography.titleSm),
       ('Body 14/400', VxTypography.body),
       ('Caption 12/400', VxTypography.caption),
-      (
-        'Mono 12/500（tabular figures）',
-        vxMonoStyle(scheme.onSurface),
-      ),
+      ('Mono 12/500（tabular figures）', vxMonoStyle(scheme.onSurface)),
       ('Eyebrow 10/700', VxTypography.eyebrow),
     ];
     return Column(
@@ -308,8 +305,7 @@ class _GalleryPageState extends State<GalleryPage> {
         ),
         VxTrackRow(
           index: 2,
-          title:
-              '这是一首特别特别长的中文歌曲标题用来验证播放态下省略号截断策略是否稳定且不破坏行高约束',
+          title: '这是一首特别特别长的中文歌曲标题用来验证播放态下省略号截断策略是否稳定且不破坏行高约束',
           artist: '长标题样例歌手',
           album: '长标题样例专辑',
           duration: const Duration(minutes: 3, seconds: 58),

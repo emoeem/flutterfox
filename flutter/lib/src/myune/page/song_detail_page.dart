@@ -450,8 +450,9 @@ class _SongDetailPageState extends State<SongDetailPage> {
                                                 .watch<SettingsProvider>()
                                                 .maxLinesPerLyric,
                                             onTapLine: (index) {
-                                              playlistNotifier
-                                                  .seekToLyricLine(index);
+                                              playlistNotifier.seekToLyricLine(
+                                                index,
+                                              );
                                             },
                                           );
                                         },
@@ -796,8 +797,9 @@ class _SongDetailPageState extends State<SongDetailPage> {
                                                 .watch<SettingsProvider>()
                                                 .maxLinesPerLyric,
                                             onTapLine: (index) {
-                                              playlistNotifier
-                                                  .seekToLyricLine(index);
+                                              playlistNotifier.seekToLyricLine(
+                                                index,
+                                              );
                                             },
                                           );
                                         },

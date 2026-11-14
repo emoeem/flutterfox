@@ -66,7 +66,8 @@ class PlayerPage extends StatelessWidget {
             actions: [
               if (song != null) ...[
                 IconButton(
-                  tooltip: favorite ? '取消收藏' : '收藏',
+                  // §8.5：说明写入本地曲库，不假装远端账号红心。
+                  tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
                   onPressed: () => model.toggleFavorite(song),
                   icon: Icon(
                     favorite ? Icons.favorite : Icons.favorite_border,
@@ -96,23 +97,33 @@ class PlayerPage extends StatelessWidget {
                       final wide = constraints.maxWidth >= 840;
                       final lyrics = model.state.lyrics;
                       final offset = model.config?.lyricOffsetMs ?? 0;
-                      final lyricsPanel = LivePlayback(
-                        positionMs: playback.positionMs,
-                        durationMs: playback.durationMs,
-                        playing: playback.state == 'playing',
-                        builder: (context, position, duration) => LyricsView(
-                          lines: lyrics.lines,
-                          // Rust 快照的 currentLine 不随播放推进，这里用插值位置
-                          // + 歌词偏移在前端二分推导，保证滚动与高亮实时。
-                          currentIndex: lyricIndexAt(
-                            lyrics.lines,
-                            position.inMilliseconds,
-                            offsetMs: offset,
-                          ),
-                          translation: lyrics.translation,
-                          snapshotCurrentLine: lyrics.currentLine,
-                          onSeekMs: (ms) => model.seekMs(BigInt.from(ms)),
-                        ),
+                      // 歌词推进订阅 playbackTick：纯进度变化只重建歌词视图。
+                      final lyricsPanel = ListenableBuilder(
+                        listenable: model.playbackTick,
+                        builder: (context, _) {
+                          final playback = model.state.playback;
+                          return LivePlayback(
+                            positionMs: playback.positionMs,
+                            durationMs: playback.durationMs,
+                            playing: playback.state == 'playing',
+                            builder: (context, position, duration) =>
+                                LyricsView(
+                                  lines: lyrics.lines,
+                                  // Rust 快照的 currentLine 不随播放推进，这里用
+                                  // 插值位置 + 歌词偏移在前端二分推导，保证滚动
+                                  // 与高亮实时。
+                                  currentIndex: lyricIndexAt(
+                                    lyrics.lines,
+                                    position.inMilliseconds,
+                                    offsetMs: offset,
+                                  ),
+                                  translation: lyrics.translation,
+                                  snapshotCurrentLine: lyrics.currentLine,
+                                  onSeekMs: (ms) =>
+                                      model.seekMs(BigInt.from(ms)),
+                                ),
+                          );
+                        },
                       );
                       final transport = _Transport(
                         model: model,
@@ -230,43 +241,50 @@ class _Transport extends StatelessWidget {
             info,
           ],
           const SizedBox(height: 12),
-          LivePlayback(
-            positionMs: playback.positionMs,
-            durationMs: playback.durationMs,
-            playing: playing,
-            builder: (context, position, duration) => Column(
-              children: [
-                Slider(
-                  max: duration.inMilliseconds > 0
-                      ? duration.inMilliseconds.toDouble()
-                      : 1,
-                  value: position.inMilliseconds
-                      .clamp(
-                        0,
-                        duration.inMilliseconds > 0
-                            ? duration.inMilliseconds
-                            : 1,
-                      )
-                      .toDouble(),
-                  onChanged: duration > Duration.zero
-                      ? (value) => model.seekMs(BigInt.from(value.round()))
-                      : null,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // 进度订阅 playbackTick：纯进度变化只重建滑条区。
+          ListenableBuilder(
+            listenable: model.playbackTick,
+            builder: (context, _) {
+              final playback = model.state.playback;
+              return LivePlayback(
+                positionMs: playback.positionMs,
+                durationMs: playback.durationMs,
+                playing: playing,
+                builder: (context, position, duration) => Column(
                   children: [
-                    Text(
-                      formatDuration(position),
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Slider(
+                      max: duration.inMilliseconds > 0
+                          ? duration.inMilliseconds.toDouble()
+                          : 1,
+                      value: position.inMilliseconds
+                          .clamp(
+                            0,
+                            duration.inMilliseconds > 0
+                                ? duration.inMilliseconds
+                                : 1,
+                          )
+                          .toDouble(),
+                      onChanged: duration > Duration.zero
+                          ? (value) => model.seekMs(BigInt.from(value.round()))
+                          : null,
                     ),
-                    Text(
-                      formatDuration(duration),
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          formatDuration(position),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          formatDuration(duration),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           const SizedBox(height: 4),
           Row(

@@ -1,10 +1,13 @@
 /// Phase 2 全局 PlayerBar（计划书 §3.5，应用唯一常驻播放栏）。
 ///
 /// 规格：
-/// - 高度 92px，顶部 2px 进度线；
+/// - 高度 §7.5 带 76–84：取 ShellBreakpoints.playerBarHeight（84，Phase 6
+///   由 92 收敛），顶部 2px 进度线；
 /// - 左区 280–340：封面 56 + 歌名/歌手 + 收藏；点封面进入全屏播放页
 ///   （Phase 3 NowPlayingPage，Shell 统一打开并隐藏本栏防双重控制）；
 /// - 中区弹性：随机/上一首/播放暂停/下一首/循环 + 时间与可拖动进度；
+///   无歌曲时中区留白（P2-11/§7.5：不保留不可点击的假控件），左区
+///   空态提示仍在；
 /// - 右区 250–320：音量 / 输出 / 歌词 / 队列 / 更多；窄窗口逐级收缩，
 ///   保证任何宽度不横向溢出（Phase 0 F2/F3 的布局修复点）。
 ///
@@ -19,8 +22,10 @@ import '../bridge/lib.dart' as bridge;
 import '../config_ext.dart';
 import '../design_system/components/vx_player_controls.dart';
 import '../design_system/design_tokens.dart';
+import '../theme/app_theme.dart' show VxPalette;
 import '../widgets/cover_image.dart';
 import '../widgets/live_progress.dart';
+import '../shell/responsive_shell.dart';
 import 'progress_control.dart';
 
 /// 全局播放栏。
@@ -71,32 +76,45 @@ class _PlayerBarState extends State<PlayerBar> {
             final midRight = barWidth >= 880;
             final compactLeft = barWidth < 760;
             return Container(
-              height: 92,
-              decoration: const BoxDecoration(
-                color: VxColors.surface1,
-                border: Border(top: BorderSide(color: VxColors.divider)),
+              height: ShellBreakpoints.playerBarHeight,
+              // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位。
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                border: Border(
+                  top: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
               ),
               child: Stack(
                 children: [
                   // 顶部 2px 进度线（时长未知时不显示进度，只留轨道）。
+                  // 订阅 playbackTick：4Hz 进度只重建本线，不重建 PlayerBar。
                   Positioned(
                     left: 0,
                     right: 0,
                     top: 0,
                     height: 2,
                     child: RepaintBoundary(
-                      child: LivePlayback(
-                        positionMs: playback.positionMs,
-                        durationMs: playback.durationMs,
-                        playing: playing,
-                        builder: (context, position, duration) {
-                          final total = duration.inMilliseconds;
-                          final fraction = _dragFraction ??
-                              (total > 0
-                                  ? (position.inMilliseconds / total)
-                                      .clamp(0.0, 1.0)
-                                  : null);
-                          return _ProgressLine(fraction: fraction);
+                      child: ListenableBuilder(
+                        listenable: model.playbackTick,
+                        builder: (context, _) {
+                          final playback = model.state.playback;
+                          return LivePlayback(
+                            positionMs: playback.positionMs,
+                            durationMs: playback.durationMs,
+                            playing: playing,
+                            builder: (context, position, duration) {
+                              final total = duration.inMilliseconds;
+                              final fraction =
+                                  _dragFraction ??
+                                  (total > 0
+                                      ? (position.inMilliseconds / total).clamp(
+                                          0.0,
+                                          1.0,
+                                        )
+                                      : null);
+                              return _ProgressLine(fraction: fraction);
+                            },
+                          );
                         },
                       ),
                     ),
@@ -106,17 +124,23 @@ class _PlayerBarState extends State<PlayerBar> {
                     child: Row(
                       children: [
                         // ── 左区：封面 + 曲目信息 + 收藏 ──
-                        Flexible(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: compactLeft ? 260 : 340,
-                            ),
-                            child: _TrackInfo(
-                              model: model,
-                              song: song,
-                              showFavorite: !compactLeft,
-                              onOpenNowPlaying: widget.onOpenNowPlaying,
-                            ),
+                        // P1-14 根因修复（2026-11-13 实测定位）：这里原来是
+                        // Flexible(flex=1, loose)——与中区 Expanded(flex=1)
+                        // 平分剩余空间，左区实际内容仅 ~280px，flex 分配却把
+                        // 一半空间（826px）划给中区，行尾留下 ~547px 空档
+                        // （右簇不贴右缘的来源）。左区改为非 flex 子项，
+                        // 由 ConstrainedBox 钳宽（内层 _TrackInfo 已是
+                        // mainAxisSize.min + 文本 Flexible，窄窗不溢出），
+                        // 中区 Expanded 独占全部剩余空间 → 右簇贴右缘。
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compactLeft ? 260 : 340,
+                          ),
+                          child: _TrackInfo(
+                            model: model,
+                            song: song,
+                            showFavorite: !compactLeft,
+                            onOpenNowPlaying: widget.onOpenNowPlaying,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -127,9 +151,8 @@ class _PlayerBarState extends State<PlayerBar> {
                               model: model,
                               playing: playing,
                               compact: barWidth < 700,
-                              onDragPreview: (fraction) => setState(
-                                () => _dragFraction = fraction,
-                              ),
+                              onDragPreview: (fraction) =>
+                                  setState(() => _dragFraction = fraction),
                             ),
                           ),
                         ),
@@ -164,8 +187,9 @@ class _ProgressLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final track = dark ? VxDarkSurface.seekTrack : VxLightColors.seekTrack;
+    // B3：轨底/进度色随主题（VxPalette 扩展下发，非亮暗三元）。
+    final track = VxPalette.of(context).seekTrack;
+    final progress = Theme.of(context).colorScheme.primary;
     final v = fraction?.clamp(0.0, 1.0);
     return ColoredBox(
       color: track,
@@ -174,7 +198,7 @@ class _ProgressLine extends StatelessWidget {
           : FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: v,
-              child: const ColoredBox(color: VxColors.accent),
+              child: ColoredBox(color: progress),
             ),
     );
   }
@@ -213,11 +237,7 @@ class _TrackInfo extends StatelessWidget {
               width: 56,
               height: 56,
               child: hasSong
-                  ? CoverImage(
-                      url: s.coverUrl,
-                      size: 56,
-                      radius: VxRadius.sm,
-                    )
+                  ? CoverImage(url: s.coverUrl, size: 56, radius: VxRadius.sm)
                   : ColoredBox(
                       color: scheme.surfaceContainerHigh,
                       child: Icon(
@@ -243,9 +263,7 @@ class _TrackInfo extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                s == null
-                    ? '选择一首歌曲开始播放'
-                    : '${s.singer} · ${s.source}',
+                s == null ? '选择一首歌曲开始播放' : '${s.singer} · ${s.source}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: VxTypography.caption.copyWith(
@@ -261,7 +279,8 @@ class _TrackInfo extends StatelessWidget {
             builder: (context, _) {
               final favorite = model.isFavorite(s);
               return IconButton(
-                tooltip: favorite ? '取消收藏' : '收藏',
+                // §8.5：收藏操作必须说明写入本地还是远端（favorite 只写本地曲库）。
+                tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => model.toggleFavorite(song!),
                 icon: Icon(
@@ -303,21 +322,21 @@ class _CenterTransport extends StatelessWidget {
     final mode = model.config?.playMode ?? 'list-loop';
     final hasSong = playback.song != null;
     final configReady = model.config != null;
+    // P2-11 / §7.5：空态不保留不可点击的假控件——无歌曲时传输控制与
+    // 进度行不进树（左区空态提示仍在，右区音量/面板开关真实可用）。
+    if (!hasSong) return const SizedBox.shrink();
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (compact)
-          _CompactTransport(
-            model: model,
-            playing: playing,
-            enabled: hasSong,
-          )
+          _CompactTransport(model: model, playing: playing)
         else
           VxPlayerControls(
             isPlaying: playing,
             shuffleOn: mode == 'random',
             repeatOn: mode == 'list-loop' || mode == 'single-loop',
-            enabled: hasSong,
+            // §8.3：单曲循环档独立视觉态（repeat_one 图标 + tooltip）。
+            repeatSingle: mode == 'single-loop',
             onShuffle: configReady
                 ? () => _setPlayMode(mode == 'random' ? 'list-loop' : 'random')
                 : null,
@@ -327,12 +346,11 @@ class _CenterTransport extends StatelessWidget {
             onRepeat: configReady ? () => _cycleRepeat(mode) : null,
           ),
         const SizedBox(height: 2),
-        // 时间 + 可拖动进度条 + 时间：插值与真实 seek 在共用 LiveSeekRow，
-        // 时长读不到显示 --:--（P0-F1），不伪造 00:00。
+        // 时间 + 可拖动进度条 + 时间：插值与真实 seek 在共用 LiveSeekRow
+        // （内部订阅 playbackTick，4Hz 只重建本行）；时长读不到显示 --:--，
+        // 不伪造 00:00。
         LiveSeekRow(
           model: model,
-          positionMs: playback.positionMs,
-          durationMs: playback.durationMs,
           playing: playing,
           onDragPreview: onDragPreview,
         ),
@@ -354,35 +372,25 @@ class _CenterTransport extends StatelessWidget {
 
 /// 窄窗紧凑传输控制：上一首 / 播放暂停 / 下一首，视觉与 VxPlayerControls
 /// 一致（34px 主文本圆钮 + 图标按钮），只是收起次级的随机/循环。
+/// 仅由 PlayerBar 中区挂载（桌面壳专用；空态整段不进树，P2-11）。
 class _CompactTransport extends StatelessWidget {
-  const _CompactTransport({
-    required this.model,
-    required this.playing,
-    required this.enabled,
-  });
+  const _CompactTransport({required this.model, required this.playing});
 
   final AppModel model;
   final bool playing;
-  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final playIconColor = dark ? VxColors.onPlayIcon : VxLightColors.onPlayIcon;
+    // B3：播放圆钮图标色随主题（VxPalette 扩展下发）。
+    final playIconColor = VxPalette.of(context).onPlayIcon;
     Widget ctrl(IconData icon, String tooltip, VoidCallback? onPressed) {
       return IconButton(
-        onPressed: enabled ? onPressed : null,
+        onPressed: onPressed,
         tooltip: tooltip,
         visualDensity: VisualDensity.compact,
         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-        icon: Icon(
-          icon,
-          size: 20,
-          color: enabled
-              ? scheme.onSurfaceVariant
-              : scheme.onSurface.withValues(alpha: 0.38),
-        ),
+        icon: Icon(icon, size: 20, color: scheme.onSurfaceVariant),
       );
     }
 
@@ -394,23 +402,19 @@ class _CompactTransport extends StatelessWidget {
         Tooltip(
           message: playing ? '暂停' : '播放',
           child: InkWell(
-            onTap: enabled ? model.toggle : null,
+            onTap: model.toggle,
             customBorder: const CircleBorder(),
             child: Container(
               width: 34,
               height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: enabled
-                    ? scheme.onSurface
-                    : scheme.surfaceContainerHigh,
+                color: scheme.onSurface,
               ),
               child: Icon(
                 playing ? Icons.pause : Icons.play_arrow,
                 size: 18,
-                color: enabled
-                    ? playIconColor
-                    : scheme.onSurface.withValues(alpha: 0.38),
+                color: playIconColor,
               ),
             ),
           ),
@@ -458,19 +462,31 @@ class _RightZone extends StatelessWidget {
                 child: Text('由系统管理（后端未提供设备枚举）'),
               ),
             ],
-            icon: Icon(Icons.speaker_outlined, size: 20, color: scheme.onSurfaceVariant),
+            icon: Icon(
+              Icons.speaker_outlined,
+              size: 20,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         IconButton(
           tooltip: '歌词',
           visualDensity: VisualDensity.compact,
           onPressed: onOpenLyrics,
-          icon: Icon(Icons.lyrics_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.lyrics_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         IconButton(
           tooltip: '队列',
           visualDensity: VisualDensity.compact,
           onPressed: onOpenQueue,
-          icon: Icon(Icons.queue_music_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.queue_music_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         if (showOutputAndMore)
           PopupMenuButton<String>(
@@ -487,7 +503,11 @@ class _RightZone extends StatelessWidget {
                 model.dispatch(const bridge.FfiCommand.stop());
               }
             },
-            icon: Icon(Icons.more_horiz, size: 20, color: scheme.onSurfaceVariant),
+            icon: Icon(
+              Icons.more_horiz,
+              size: 20,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
       ],
     );
@@ -546,10 +566,12 @@ class _VolumeControlState extends State<_VolumeControl> {
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       trackHeight: 3,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 5),
-                      overlayShape:
-                          const RoundSliderOverlayShape(overlayRadius: 10),
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 5,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 10,
+                      ),
                     ),
                     child: Slider(
                       value: volume.clamp(0.0, 1.0),

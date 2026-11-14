@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 import '../../../services/notification_service.dart';
-import '../../playlist/playlist_content_notifier.dart';
 
 import '../theme_selection_screen.dart';
 import '../../../theme/theme_provider.dart';
@@ -222,34 +221,12 @@ class _GeneralTabState extends State<GeneralTab> {
             ],
           ),
         ),
-        // 启用动态获取颜色
-        SwitchListTile(
-          title: Row(
-            children: [
-              Text('动态主题配色', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(width: 4),
-              const InfoIcon("启用后将使用当前播放歌曲的封面颜色作为主题配色"),
-            ],
-          ),
-          value: settings.useDynamicColor,
-          onChanged: (value) {
-            context.read<SettingsProvider>().setUseDynamicColor(value);
-            // 当启用动态颜色时，立即提取当前播放歌曲的封面颜色
-            if (value) {
-              final playlistNotifier = context.read<PlaylistContentNotifier>();
-              final currentSong = playlistNotifier.currentSong;
-              if (currentSong != null) {
-                playlistNotifier.extractAndApplyDynamicColor(
-                  currentSong.albumArt,
-                );
-              }
-            }
-            // 当关闭动态颜色时，恢复用户手动选择的种子色
-            if (!value) {
-              context.read<ThemeProvider>().restoreLastManualColor();
-            }
-          },
-        ),
+        // 「动态主题配色」开关已退役（B4 dynamicColor 单一权威）：原开关读写的
+        // SettingsProvider.useDynamicColor 已更名 useCoverDynamicColor（仅门控
+        // 播放封面主色提取），与本页暗示的系统动态色语义混淆。系统动态色的
+        // 单一权威是 Rust config.dynamicColor，在设置页外观组「跟随系统动态
+        // 取色」（pages/settings_page.dart）切换；关闭后的种子色回退由
+        // ThemeProvider.restoreLastManualColor 承接。
         // 是否启用从网络获取歌词
         SwitchListTile(
           title: const Row(

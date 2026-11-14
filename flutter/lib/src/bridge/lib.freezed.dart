@@ -56,7 +56,7 @@ extension FfiCommandPatterns on FfiCommand {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FfiCommand_Pause value)?  pause,TResult Function( FfiCommand_Resume value)?  resume,TResult Function( FfiCommand_Toggle value)?  toggle,TResult Function( FfiCommand_Stop value)?  stop,TResult Function( FfiCommand_SeekMs value)?  seekMs,TResult Function( FfiCommand_SetVolume value)?  setVolume,TResult Function( FfiCommand_PlaySong value)?  playSong,TResult Function( FfiCommand_QueueAdd value)?  queueAdd,TResult Function( FfiCommand_QueueRemove value)?  queueRemove,TResult Function( FfiCommand_QueueClear value)?  queueClear,TResult Function( FfiCommand_Next value)?  next,TResult Function( FfiCommand_Previous value)?  previous,TResult Function( FfiCommand_Search value)?  search,TResult Function( FfiCommand_SearchMore value)?  searchMore,TResult Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult Function( FfiCommand_HistoryClear value)?  historyClear,TResult Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult Function( FfiCommand_ConfigGet value)?  configGet,TResult Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult Function( FfiCommand_LocalScan value)?  localScan,TResult Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult Function( FfiCommand_SyncPreview value)?  syncPreview,TResult Function( FfiCommand_SyncRun value)?  syncRun,TResult Function( FfiCommand_SyncCancel value)?  syncCancel,TResult Function( FfiCommand_PushTargets value)?  pushTargets,TResult Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult Function( FfiCommand_PushPlan value)?  pushPlan,TResult Function( FfiCommand_PushRun value)?  pushRun,TResult Function( FfiCommand_PushCancel value)?  pushCancel,TResult Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult Function( FfiCommand_PlaylistList value)?  playlistList,TResult Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult Function( FfiCommand_PlaySongs value)?  playSongs,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FfiCommand_Pause value)?  pause,TResult Function( FfiCommand_Resume value)?  resume,TResult Function( FfiCommand_Toggle value)?  toggle,TResult Function( FfiCommand_Stop value)?  stop,TResult Function( FfiCommand_SeekMs value)?  seekMs,TResult Function( FfiCommand_SetVolume value)?  setVolume,TResult Function( FfiCommand_PlaySong value)?  playSong,TResult Function( FfiCommand_QueueAdd value)?  queueAdd,TResult Function( FfiCommand_QueueRemove value)?  queueRemove,TResult Function( FfiCommand_QueueClear value)?  queueClear,TResult Function( FfiCommand_Next value)?  next,TResult Function( FfiCommand_Previous value)?  previous,TResult Function( FfiCommand_Search value)?  search,TResult Function( FfiCommand_SearchMore value)?  searchMore,TResult Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult Function( FfiCommand_HistoryClear value)?  historyClear,TResult Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult Function( FfiCommand_LoadLyrics value)?  loadLyrics,TResult Function( FfiCommand_ConfigGet value)?  configGet,TResult Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult Function( FfiCommand_DownloadPause value)?  downloadPause,TResult Function( FfiCommand_DownloadResume value)?  downloadResume,TResult Function( FfiCommand_DownloadDeleteFile value)?  downloadDeleteFile,TResult Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult Function( FfiCommand_LocalScan value)?  localScan,TResult Function( FfiCommand_LocalScanCancel value)?  localScanCancel,TResult Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult Function( FfiCommand_SyncPreview value)?  syncPreview,TResult Function( FfiCommand_SyncRun value)?  syncRun,TResult Function( FfiCommand_SyncCancel value)?  syncCancel,TResult Function( FfiCommand_PushTargets value)?  pushTargets,TResult Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult Function( FfiCommand_PushPlan value)?  pushPlan,TResult Function( FfiCommand_PushRun value)?  pushRun,TResult Function( FfiCommand_PushCancel value)?  pushCancel,TResult Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult Function( FfiCommand_PlaylistList value)?  playlistList,TResult Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult Function( FfiCommand_PlaySongs value)?  playSongs,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
@@ -86,15 +86,20 @@ return customPlaylistRename(_that);case FfiCommand_CustomPlaylistDelete() when c
 return customPlaylistDelete(_that);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
 return customPlaylistRemoveSong(_that);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
-return customPlaylistDetail(_that);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistDetail(_that);case FfiCommand_LoadLyrics() when loadLyrics != null:
+return loadLyrics(_that);case FfiCommand_ConfigGet() when configGet != null:
 return configGet(_that);case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel(_that);case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -132,7 +137,7 @@ return playSongs(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FfiCommand_Pause value)  pause,required TResult Function( FfiCommand_Resume value)  resume,required TResult Function( FfiCommand_Toggle value)  toggle,required TResult Function( FfiCommand_Stop value)  stop,required TResult Function( FfiCommand_SeekMs value)  seekMs,required TResult Function( FfiCommand_SetVolume value)  setVolume,required TResult Function( FfiCommand_PlaySong value)  playSong,required TResult Function( FfiCommand_QueueAdd value)  queueAdd,required TResult Function( FfiCommand_QueueRemove value)  queueRemove,required TResult Function( FfiCommand_QueueClear value)  queueClear,required TResult Function( FfiCommand_Next value)  next,required TResult Function( FfiCommand_Previous value)  previous,required TResult Function( FfiCommand_Search value)  search,required TResult Function( FfiCommand_SearchMore value)  searchMore,required TResult Function( FfiCommand_LibraryRefresh value)  libraryRefresh,required TResult Function( FfiCommand_FavoritesAdd value)  favoritesAdd,required TResult Function( FfiCommand_FavoritesRemove value)  favoritesRemove,required TResult Function( FfiCommand_FavoritePlaylistAdd value)  favoritePlaylistAdd,required TResult Function( FfiCommand_FavoritePlaylistRemove value)  favoritePlaylistRemove,required TResult Function( FfiCommand_HistoryRemove value)  historyRemove,required TResult Function( FfiCommand_HistoryClear value)  historyClear,required TResult Function( FfiCommand_CustomPlaylistCreate value)  customPlaylistCreate,required TResult Function( FfiCommand_CustomPlaylistRename value)  customPlaylistRename,required TResult Function( FfiCommand_CustomPlaylistDelete value)  customPlaylistDelete,required TResult Function( FfiCommand_CustomPlaylistAddSongs value)  customPlaylistAddSongs,required TResult Function( FfiCommand_CustomPlaylistRemoveSong value)  customPlaylistRemoveSong,required TResult Function( FfiCommand_CustomPlaylistDetail value)  customPlaylistDetail,required TResult Function( FfiCommand_ConfigGet value)  configGet,required TResult Function( FfiCommand_ConfigUpdate value)  configUpdate,required TResult Function( FfiCommand_DownloadEnqueue value)  downloadEnqueue,required TResult Function( FfiCommand_DownloadCancel value)  downloadCancel,required TResult Function( FfiCommand_DownloadClearFinished value)  downloadClearFinished,required TResult Function( FfiCommand_QrLoginStart value)  qrLoginStart,required TResult Function( FfiCommand_QrLoginCancel value)  qrLoginCancel,required TResult Function( FfiCommand_LocalScan value)  localScan,required TResult Function( FfiCommand_AccountPlaylists value)  accountPlaylists,required TResult Function( FfiCommand_AccountFavorites value)  accountFavorites,required TResult Function( FfiCommand_AccountPlaylistDetail value)  accountPlaylistDetail,required TResult Function( FfiCommand_SyncPreview value)  syncPreview,required TResult Function( FfiCommand_SyncRun value)  syncRun,required TResult Function( FfiCommand_SyncCancel value)  syncCancel,required TResult Function( FfiCommand_PushTargets value)  pushTargets,required TResult Function( FfiCommand_PushCreateTarget value)  pushCreateTarget,required TResult Function( FfiCommand_PushPlan value)  pushPlan,required TResult Function( FfiCommand_PushRun value)  pushRun,required TResult Function( FfiCommand_PushCancel value)  pushCancel,required TResult Function( FfiCommand_PlaylistCategories value)  playlistCategories,required TResult Function( FfiCommand_PlaylistList value)  playlistList,required TResult Function( FfiCommand_PlaylistDetail value)  playlistDetail,required TResult Function( FfiCommand_LeaderboardBoards value)  leaderboardBoards,required TResult Function( FfiCommand_LeaderboardSongs value)  leaderboardSongs,required TResult Function( FfiCommand_ArtistSongs value)  artistSongs,required TResult Function( FfiCommand_ArtistAlbums value)  artistAlbums,required TResult Function( FfiCommand_AlbumSongs value)  albumSongs,required TResult Function( FfiCommand_PlaySongs value)  playSongs,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FfiCommand_Pause value)  pause,required TResult Function( FfiCommand_Resume value)  resume,required TResult Function( FfiCommand_Toggle value)  toggle,required TResult Function( FfiCommand_Stop value)  stop,required TResult Function( FfiCommand_SeekMs value)  seekMs,required TResult Function( FfiCommand_SetVolume value)  setVolume,required TResult Function( FfiCommand_PlaySong value)  playSong,required TResult Function( FfiCommand_QueueAdd value)  queueAdd,required TResult Function( FfiCommand_QueueRemove value)  queueRemove,required TResult Function( FfiCommand_QueueClear value)  queueClear,required TResult Function( FfiCommand_Next value)  next,required TResult Function( FfiCommand_Previous value)  previous,required TResult Function( FfiCommand_Search value)  search,required TResult Function( FfiCommand_SearchMore value)  searchMore,required TResult Function( FfiCommand_LibraryRefresh value)  libraryRefresh,required TResult Function( FfiCommand_FavoritesAdd value)  favoritesAdd,required TResult Function( FfiCommand_FavoritesRemove value)  favoritesRemove,required TResult Function( FfiCommand_FavoritePlaylistAdd value)  favoritePlaylistAdd,required TResult Function( FfiCommand_FavoritePlaylistRemove value)  favoritePlaylistRemove,required TResult Function( FfiCommand_HistoryRemove value)  historyRemove,required TResult Function( FfiCommand_HistoryClear value)  historyClear,required TResult Function( FfiCommand_CustomPlaylistCreate value)  customPlaylistCreate,required TResult Function( FfiCommand_CustomPlaylistRename value)  customPlaylistRename,required TResult Function( FfiCommand_CustomPlaylistDelete value)  customPlaylistDelete,required TResult Function( FfiCommand_CustomPlaylistAddSongs value)  customPlaylistAddSongs,required TResult Function( FfiCommand_CustomPlaylistRemoveSong value)  customPlaylistRemoveSong,required TResult Function( FfiCommand_CustomPlaylistDetail value)  customPlaylistDetail,required TResult Function( FfiCommand_LoadLyrics value)  loadLyrics,required TResult Function( FfiCommand_ConfigGet value)  configGet,required TResult Function( FfiCommand_ConfigUpdate value)  configUpdate,required TResult Function( FfiCommand_DownloadEnqueue value)  downloadEnqueue,required TResult Function( FfiCommand_DownloadCancel value)  downloadCancel,required TResult Function( FfiCommand_DownloadPause value)  downloadPause,required TResult Function( FfiCommand_DownloadResume value)  downloadResume,required TResult Function( FfiCommand_DownloadDeleteFile value)  downloadDeleteFile,required TResult Function( FfiCommand_DownloadClearFinished value)  downloadClearFinished,required TResult Function( FfiCommand_QrLoginStart value)  qrLoginStart,required TResult Function( FfiCommand_QrLoginCancel value)  qrLoginCancel,required TResult Function( FfiCommand_LocalScan value)  localScan,required TResult Function( FfiCommand_LocalScanCancel value)  localScanCancel,required TResult Function( FfiCommand_AccountPlaylists value)  accountPlaylists,required TResult Function( FfiCommand_AccountFavorites value)  accountFavorites,required TResult Function( FfiCommand_AccountPlaylistDetail value)  accountPlaylistDetail,required TResult Function( FfiCommand_SyncPreview value)  syncPreview,required TResult Function( FfiCommand_SyncRun value)  syncRun,required TResult Function( FfiCommand_SyncCancel value)  syncCancel,required TResult Function( FfiCommand_PushTargets value)  pushTargets,required TResult Function( FfiCommand_PushCreateTarget value)  pushCreateTarget,required TResult Function( FfiCommand_PushPlan value)  pushPlan,required TResult Function( FfiCommand_PushRun value)  pushRun,required TResult Function( FfiCommand_PushCancel value)  pushCancel,required TResult Function( FfiCommand_PlaylistCategories value)  playlistCategories,required TResult Function( FfiCommand_PlaylistList value)  playlistList,required TResult Function( FfiCommand_PlaylistDetail value)  playlistDetail,required TResult Function( FfiCommand_LeaderboardBoards value)  leaderboardBoards,required TResult Function( FfiCommand_LeaderboardSongs value)  leaderboardSongs,required TResult Function( FfiCommand_ArtistSongs value)  artistSongs,required TResult Function( FfiCommand_ArtistAlbums value)  artistAlbums,required TResult Function( FfiCommand_AlbumSongs value)  albumSongs,required TResult Function( FfiCommand_PlaySongs value)  playSongs,}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause():
@@ -162,15 +167,20 @@ return customPlaylistRename(_that);case FfiCommand_CustomPlaylistDelete():
 return customPlaylistDelete(_that);case FfiCommand_CustomPlaylistAddSongs():
 return customPlaylistAddSongs(_that);case FfiCommand_CustomPlaylistRemoveSong():
 return customPlaylistRemoveSong(_that);case FfiCommand_CustomPlaylistDetail():
-return customPlaylistDetail(_that);case FfiCommand_ConfigGet():
+return customPlaylistDetail(_that);case FfiCommand_LoadLyrics():
+return loadLyrics(_that);case FfiCommand_ConfigGet():
 return configGet(_that);case FfiCommand_ConfigUpdate():
 return configUpdate(_that);case FfiCommand_DownloadEnqueue():
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel():
-return downloadCancel(_that);case FfiCommand_DownloadClearFinished():
+return downloadCancel(_that);case FfiCommand_DownloadPause():
+return downloadPause(_that);case FfiCommand_DownloadResume():
+return downloadResume(_that);case FfiCommand_DownloadDeleteFile():
+return downloadDeleteFile(_that);case FfiCommand_DownloadClearFinished():
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart():
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel():
 return qrLoginCancel(_that);case FfiCommand_LocalScan():
-return localScan(_that);case FfiCommand_AccountPlaylists():
+return localScan(_that);case FfiCommand_LocalScanCancel():
+return localScanCancel(_that);case FfiCommand_AccountPlaylists():
 return accountPlaylists(_that);case FfiCommand_AccountFavorites():
 return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail():
 return accountPlaylistDetail(_that);case FfiCommand_SyncPreview():
@@ -204,7 +214,7 @@ return playSongs(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FfiCommand_Pause value)?  pause,TResult? Function( FfiCommand_Resume value)?  resume,TResult? Function( FfiCommand_Toggle value)?  toggle,TResult? Function( FfiCommand_Stop value)?  stop,TResult? Function( FfiCommand_SeekMs value)?  seekMs,TResult? Function( FfiCommand_SetVolume value)?  setVolume,TResult? Function( FfiCommand_PlaySong value)?  playSong,TResult? Function( FfiCommand_QueueAdd value)?  queueAdd,TResult? Function( FfiCommand_QueueRemove value)?  queueRemove,TResult? Function( FfiCommand_QueueClear value)?  queueClear,TResult? Function( FfiCommand_Next value)?  next,TResult? Function( FfiCommand_Previous value)?  previous,TResult? Function( FfiCommand_Search value)?  search,TResult? Function( FfiCommand_SearchMore value)?  searchMore,TResult? Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult? Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult? Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult? Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult? Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult? Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult? Function( FfiCommand_HistoryClear value)?  historyClear,TResult? Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult? Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult? Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult? Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult? Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult? Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult? Function( FfiCommand_ConfigGet value)?  configGet,TResult? Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult? Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult? Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult? Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult? Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult? Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult? Function( FfiCommand_LocalScan value)?  localScan,TResult? Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult? Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult? Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult? Function( FfiCommand_SyncPreview value)?  syncPreview,TResult? Function( FfiCommand_SyncRun value)?  syncRun,TResult? Function( FfiCommand_SyncCancel value)?  syncCancel,TResult? Function( FfiCommand_PushTargets value)?  pushTargets,TResult? Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult? Function( FfiCommand_PushPlan value)?  pushPlan,TResult? Function( FfiCommand_PushRun value)?  pushRun,TResult? Function( FfiCommand_PushCancel value)?  pushCancel,TResult? Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult? Function( FfiCommand_PlaylistList value)?  playlistList,TResult? Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult? Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult? Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult? Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult? Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult? Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult? Function( FfiCommand_PlaySongs value)?  playSongs,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FfiCommand_Pause value)?  pause,TResult? Function( FfiCommand_Resume value)?  resume,TResult? Function( FfiCommand_Toggle value)?  toggle,TResult? Function( FfiCommand_Stop value)?  stop,TResult? Function( FfiCommand_SeekMs value)?  seekMs,TResult? Function( FfiCommand_SetVolume value)?  setVolume,TResult? Function( FfiCommand_PlaySong value)?  playSong,TResult? Function( FfiCommand_QueueAdd value)?  queueAdd,TResult? Function( FfiCommand_QueueRemove value)?  queueRemove,TResult? Function( FfiCommand_QueueClear value)?  queueClear,TResult? Function( FfiCommand_Next value)?  next,TResult? Function( FfiCommand_Previous value)?  previous,TResult? Function( FfiCommand_Search value)?  search,TResult? Function( FfiCommand_SearchMore value)?  searchMore,TResult? Function( FfiCommand_LibraryRefresh value)?  libraryRefresh,TResult? Function( FfiCommand_FavoritesAdd value)?  favoritesAdd,TResult? Function( FfiCommand_FavoritesRemove value)?  favoritesRemove,TResult? Function( FfiCommand_FavoritePlaylistAdd value)?  favoritePlaylistAdd,TResult? Function( FfiCommand_FavoritePlaylistRemove value)?  favoritePlaylistRemove,TResult? Function( FfiCommand_HistoryRemove value)?  historyRemove,TResult? Function( FfiCommand_HistoryClear value)?  historyClear,TResult? Function( FfiCommand_CustomPlaylistCreate value)?  customPlaylistCreate,TResult? Function( FfiCommand_CustomPlaylistRename value)?  customPlaylistRename,TResult? Function( FfiCommand_CustomPlaylistDelete value)?  customPlaylistDelete,TResult? Function( FfiCommand_CustomPlaylistAddSongs value)?  customPlaylistAddSongs,TResult? Function( FfiCommand_CustomPlaylistRemoveSong value)?  customPlaylistRemoveSong,TResult? Function( FfiCommand_CustomPlaylistDetail value)?  customPlaylistDetail,TResult? Function( FfiCommand_LoadLyrics value)?  loadLyrics,TResult? Function( FfiCommand_ConfigGet value)?  configGet,TResult? Function( FfiCommand_ConfigUpdate value)?  configUpdate,TResult? Function( FfiCommand_DownloadEnqueue value)?  downloadEnqueue,TResult? Function( FfiCommand_DownloadCancel value)?  downloadCancel,TResult? Function( FfiCommand_DownloadPause value)?  downloadPause,TResult? Function( FfiCommand_DownloadResume value)?  downloadResume,TResult? Function( FfiCommand_DownloadDeleteFile value)?  downloadDeleteFile,TResult? Function( FfiCommand_DownloadClearFinished value)?  downloadClearFinished,TResult? Function( FfiCommand_QrLoginStart value)?  qrLoginStart,TResult? Function( FfiCommand_QrLoginCancel value)?  qrLoginCancel,TResult? Function( FfiCommand_LocalScan value)?  localScan,TResult? Function( FfiCommand_LocalScanCancel value)?  localScanCancel,TResult? Function( FfiCommand_AccountPlaylists value)?  accountPlaylists,TResult? Function( FfiCommand_AccountFavorites value)?  accountFavorites,TResult? Function( FfiCommand_AccountPlaylistDetail value)?  accountPlaylistDetail,TResult? Function( FfiCommand_SyncPreview value)?  syncPreview,TResult? Function( FfiCommand_SyncRun value)?  syncRun,TResult? Function( FfiCommand_SyncCancel value)?  syncCancel,TResult? Function( FfiCommand_PushTargets value)?  pushTargets,TResult? Function( FfiCommand_PushCreateTarget value)?  pushCreateTarget,TResult? Function( FfiCommand_PushPlan value)?  pushPlan,TResult? Function( FfiCommand_PushRun value)?  pushRun,TResult? Function( FfiCommand_PushCancel value)?  pushCancel,TResult? Function( FfiCommand_PlaylistCategories value)?  playlistCategories,TResult? Function( FfiCommand_PlaylistList value)?  playlistList,TResult? Function( FfiCommand_PlaylistDetail value)?  playlistDetail,TResult? Function( FfiCommand_LeaderboardBoards value)?  leaderboardBoards,TResult? Function( FfiCommand_LeaderboardSongs value)?  leaderboardSongs,TResult? Function( FfiCommand_ArtistSongs value)?  artistSongs,TResult? Function( FfiCommand_ArtistAlbums value)?  artistAlbums,TResult? Function( FfiCommand_AlbumSongs value)?  albumSongs,TResult? Function( FfiCommand_PlaySongs value)?  playSongs,}){
 final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
@@ -234,15 +244,20 @@ return customPlaylistRename(_that);case FfiCommand_CustomPlaylistDelete() when c
 return customPlaylistDelete(_that);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
 return customPlaylistRemoveSong(_that);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
-return customPlaylistDetail(_that);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistDetail(_that);case FfiCommand_LoadLyrics() when loadLyrics != null:
+return loadLyrics(_that);case FfiCommand_ConfigGet() when configGet != null:
 return configGet(_that);case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished(_that);case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel(_that);case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel(_that);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -279,7 +294,7 @@ return playSongs(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  toggle,TResult Function()?  stop,TResult Function( BigInt field0)?  seekMs,TResult Function( int volume)?  setVolume,TResult Function( SongDto song)?  playSong,TResult Function( SongDto song,  bool next)?  queueAdd,TResult Function( int index)?  queueRemove,TResult Function()?  queueClear,TResult Function()?  next,TResult Function()?  previous,TResult Function( String keyword,  String? source)?  search,TResult Function( String keyword,  int page)?  searchMore,TResult Function()?  libraryRefresh,TResult Function( SongDto song)?  favoritesAdd,TResult Function( SongDto song)?  favoritesRemove,TResult Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult Function( SongDto song)?  historyRemove,TResult Function()?  historyClear,TResult Function( String name)?  customPlaylistCreate,TResult Function( String id,  String name)?  customPlaylistRename,TResult Function( String id)?  customPlaylistDelete,TResult Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult Function( String id)?  customPlaylistDetail,TResult Function()?  configGet,TResult Function( ConfigDto config)?  configUpdate,TResult Function( SongDto song)?  downloadEnqueue,TResult Function( BigInt id)?  downloadCancel,TResult Function()?  downloadClearFinished,TResult Function( String source,  String kind)?  qrLoginStart,TResult Function()?  qrLoginCancel,TResult Function( List<String> paths,  int maxDepth)?  localScan,TResult Function( String source)?  accountPlaylists,TResult Function( String source)?  accountFavorites,TResult Function( String source,  String playlistId)?  accountPlaylistDetail,TResult Function( String source)?  syncPreview,TResult Function( String source)?  syncRun,TResult Function()?  syncCancel,TResult Function( String source)?  pushTargets,TResult Function( String source,  String name)?  pushCreateTarget,TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult Function( String source)?  pushRun,TResult Function()?  pushCancel,TResult Function( String source)?  playlistCategories,TResult Function( String source,  String category,  int page)?  playlistList,TResult Function( String source,  String playlistId,  int page)?  playlistDetail,TResult Function( String source)?  leaderboardBoards,TResult Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult Function( ArtistDto artist,  int page)?  artistSongs,TResult Function( ArtistDto artist,  int page)?  artistAlbums,TResult Function( AlbumDto album,  int page)?  albumSongs,TResult Function( List<SongDto> songs,  int index)?  playSongs,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  toggle,TResult Function()?  stop,TResult Function( BigInt field0)?  seekMs,TResult Function( int volume)?  setVolume,TResult Function( SongDto song)?  playSong,TResult Function( SongDto song,  bool next)?  queueAdd,TResult Function( int index)?  queueRemove,TResult Function()?  queueClear,TResult Function()?  next,TResult Function()?  previous,TResult Function( String keyword,  String? source)?  search,TResult Function( String keyword,  int page,  String? source)?  searchMore,TResult Function()?  libraryRefresh,TResult Function( SongDto song)?  favoritesAdd,TResult Function( SongDto song)?  favoritesRemove,TResult Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult Function( SongDto song)?  historyRemove,TResult Function()?  historyClear,TResult Function( String name)?  customPlaylistCreate,TResult Function( String id,  String name)?  customPlaylistRename,TResult Function( String id)?  customPlaylistDelete,TResult Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult Function( String id)?  customPlaylistDetail,TResult Function( SongDto song)?  loadLyrics,TResult Function()?  configGet,TResult Function( ConfigDto config)?  configUpdate,TResult Function( SongDto song)?  downloadEnqueue,TResult Function( BigInt id)?  downloadCancel,TResult Function( BigInt id)?  downloadPause,TResult Function( BigInt id)?  downloadResume,TResult Function( BigInt id)?  downloadDeleteFile,TResult Function()?  downloadClearFinished,TResult Function( String source,  String kind)?  qrLoginStart,TResult Function()?  qrLoginCancel,TResult Function( List<String> paths,  int maxDepth)?  localScan,TResult Function()?  localScanCancel,TResult Function( String source)?  accountPlaylists,TResult Function( String source)?  accountFavorites,TResult Function( String source,  String playlistId)?  accountPlaylistDetail,TResult Function( String source)?  syncPreview,TResult Function( String source)?  syncRun,TResult Function()?  syncCancel,TResult Function( String source)?  pushTargets,TResult Function( String source,  String name)?  pushCreateTarget,TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult Function( String source)?  pushRun,TResult Function()?  pushCancel,TResult Function( String source)?  playlistCategories,TResult Function( String source,  String category,  int page)?  playlistList,TResult Function( String source,  String playlistId,  int page)?  playlistDetail,TResult Function( String source)?  leaderboardBoards,TResult Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult Function( ArtistDto artist,  int page)?  artistSongs,TResult Function( ArtistDto artist,  int page)?  artistAlbums,TResult Function( AlbumDto album,  int page)?  albumSongs,TResult Function( List<SongDto> songs,  int index)?  playSongs,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
 return pause();case FfiCommand_Resume() when resume != null:
@@ -295,7 +310,7 @@ return queueClear();case FfiCommand_Next() when next != null:
 return next();case FfiCommand_Previous() when previous != null:
 return previous();case FfiCommand_Search() when search != null:
 return search(_that.keyword,_that.source);case FfiCommand_SearchMore() when searchMore != null:
-return searchMore(_that.keyword,_that.page);case FfiCommand_LibraryRefresh() when libraryRefresh != null:
+return searchMore(_that.keyword,_that.page,_that.source);case FfiCommand_LibraryRefresh() when libraryRefresh != null:
 return libraryRefresh();case FfiCommand_FavoritesAdd() when favoritesAdd != null:
 return favoritesAdd(_that.song);case FfiCommand_FavoritesRemove() when favoritesRemove != null:
 return favoritesRemove(_that.song);case FfiCommand_FavoritePlaylistAdd() when favoritePlaylistAdd != null:
@@ -308,15 +323,20 @@ return customPlaylistRename(_that.id,_that.name);case FfiCommand_CustomPlaylistD
 return customPlaylistDelete(_that.id);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that.id,_that.songs);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
 return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
-return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistDetail(_that.id);case FfiCommand_LoadLyrics() when loadLyrics != null:
+return loadLyrics(_that.song);case FfiCommand_ConfigGet() when configGet != null:
 return configGet();case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that.id);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that.id);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that.id);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished();case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel();case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel();case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that.source);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -354,7 +374,7 @@ return playSongs(_that.songs,_that.index);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  toggle,required TResult Function()  stop,required TResult Function( BigInt field0)  seekMs,required TResult Function( int volume)  setVolume,required TResult Function( SongDto song)  playSong,required TResult Function( SongDto song,  bool next)  queueAdd,required TResult Function( int index)  queueRemove,required TResult Function()  queueClear,required TResult Function()  next,required TResult Function()  previous,required TResult Function( String keyword,  String? source)  search,required TResult Function( String keyword,  int page)  searchMore,required TResult Function()  libraryRefresh,required TResult Function( SongDto song)  favoritesAdd,required TResult Function( SongDto song)  favoritesRemove,required TResult Function( PlaylistDto playlist)  favoritePlaylistAdd,required TResult Function( PlaylistDto playlist)  favoritePlaylistRemove,required TResult Function( SongDto song)  historyRemove,required TResult Function()  historyClear,required TResult Function( String name)  customPlaylistCreate,required TResult Function( String id,  String name)  customPlaylistRename,required TResult Function( String id)  customPlaylistDelete,required TResult Function( String id,  List<SongDto> songs)  customPlaylistAddSongs,required TResult Function( String id,  SongDto song)  customPlaylistRemoveSong,required TResult Function( String id)  customPlaylistDetail,required TResult Function()  configGet,required TResult Function( ConfigDto config)  configUpdate,required TResult Function( SongDto song)  downloadEnqueue,required TResult Function( BigInt id)  downloadCancel,required TResult Function()  downloadClearFinished,required TResult Function( String source,  String kind)  qrLoginStart,required TResult Function()  qrLoginCancel,required TResult Function( List<String> paths,  int maxDepth)  localScan,required TResult Function( String source)  accountPlaylists,required TResult Function( String source)  accountFavorites,required TResult Function( String source,  String playlistId)  accountPlaylistDetail,required TResult Function( String source)  syncPreview,required TResult Function( String source)  syncRun,required TResult Function()  syncCancel,required TResult Function( String source)  pushTargets,required TResult Function( String source,  String name)  pushCreateTarget,required TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)  pushPlan,required TResult Function( String source)  pushRun,required TResult Function()  pushCancel,required TResult Function( String source)  playlistCategories,required TResult Function( String source,  String category,  int page)  playlistList,required TResult Function( String source,  String playlistId,  int page)  playlistDetail,required TResult Function( String source)  leaderboardBoards,required TResult Function( String source,  String boardId,  int page)  leaderboardSongs,required TResult Function( ArtistDto artist,  int page)  artistSongs,required TResult Function( ArtistDto artist,  int page)  artistAlbums,required TResult Function( AlbumDto album,  int page)  albumSongs,required TResult Function( List<SongDto> songs,  int index)  playSongs,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  toggle,required TResult Function()  stop,required TResult Function( BigInt field0)  seekMs,required TResult Function( int volume)  setVolume,required TResult Function( SongDto song)  playSong,required TResult Function( SongDto song,  bool next)  queueAdd,required TResult Function( int index)  queueRemove,required TResult Function()  queueClear,required TResult Function()  next,required TResult Function()  previous,required TResult Function( String keyword,  String? source)  search,required TResult Function( String keyword,  int page,  String? source)  searchMore,required TResult Function()  libraryRefresh,required TResult Function( SongDto song)  favoritesAdd,required TResult Function( SongDto song)  favoritesRemove,required TResult Function( PlaylistDto playlist)  favoritePlaylistAdd,required TResult Function( PlaylistDto playlist)  favoritePlaylistRemove,required TResult Function( SongDto song)  historyRemove,required TResult Function()  historyClear,required TResult Function( String name)  customPlaylistCreate,required TResult Function( String id,  String name)  customPlaylistRename,required TResult Function( String id)  customPlaylistDelete,required TResult Function( String id,  List<SongDto> songs)  customPlaylistAddSongs,required TResult Function( String id,  SongDto song)  customPlaylistRemoveSong,required TResult Function( String id)  customPlaylistDetail,required TResult Function( SongDto song)  loadLyrics,required TResult Function()  configGet,required TResult Function( ConfigDto config)  configUpdate,required TResult Function( SongDto song)  downloadEnqueue,required TResult Function( BigInt id)  downloadCancel,required TResult Function( BigInt id)  downloadPause,required TResult Function( BigInt id)  downloadResume,required TResult Function( BigInt id)  downloadDeleteFile,required TResult Function()  downloadClearFinished,required TResult Function( String source,  String kind)  qrLoginStart,required TResult Function()  qrLoginCancel,required TResult Function( List<String> paths,  int maxDepth)  localScan,required TResult Function()  localScanCancel,required TResult Function( String source)  accountPlaylists,required TResult Function( String source)  accountFavorites,required TResult Function( String source,  String playlistId)  accountPlaylistDetail,required TResult Function( String source)  syncPreview,required TResult Function( String source)  syncRun,required TResult Function()  syncCancel,required TResult Function( String source)  pushTargets,required TResult Function( String source,  String name)  pushCreateTarget,required TResult Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)  pushPlan,required TResult Function( String source)  pushRun,required TResult Function()  pushCancel,required TResult Function( String source)  playlistCategories,required TResult Function( String source,  String category,  int page)  playlistList,required TResult Function( String source,  String playlistId,  int page)  playlistDetail,required TResult Function( String source)  leaderboardBoards,required TResult Function( String source,  String boardId,  int page)  leaderboardSongs,required TResult Function( ArtistDto artist,  int page)  artistSongs,required TResult Function( ArtistDto artist,  int page)  artistAlbums,required TResult Function( AlbumDto album,  int page)  albumSongs,required TResult Function( List<SongDto> songs,  int index)  playSongs,}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause():
 return pause();case FfiCommand_Resume():
@@ -370,7 +390,7 @@ return queueClear();case FfiCommand_Next():
 return next();case FfiCommand_Previous():
 return previous();case FfiCommand_Search():
 return search(_that.keyword,_that.source);case FfiCommand_SearchMore():
-return searchMore(_that.keyword,_that.page);case FfiCommand_LibraryRefresh():
+return searchMore(_that.keyword,_that.page,_that.source);case FfiCommand_LibraryRefresh():
 return libraryRefresh();case FfiCommand_FavoritesAdd():
 return favoritesAdd(_that.song);case FfiCommand_FavoritesRemove():
 return favoritesRemove(_that.song);case FfiCommand_FavoritePlaylistAdd():
@@ -383,15 +403,20 @@ return customPlaylistRename(_that.id,_that.name);case FfiCommand_CustomPlaylistD
 return customPlaylistDelete(_that.id);case FfiCommand_CustomPlaylistAddSongs():
 return customPlaylistAddSongs(_that.id,_that.songs);case FfiCommand_CustomPlaylistRemoveSong():
 return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_CustomPlaylistDetail():
-return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet():
+return customPlaylistDetail(_that.id);case FfiCommand_LoadLyrics():
+return loadLyrics(_that.song);case FfiCommand_ConfigGet():
 return configGet();case FfiCommand_ConfigUpdate():
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue():
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel():
-return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished():
+return downloadCancel(_that.id);case FfiCommand_DownloadPause():
+return downloadPause(_that.id);case FfiCommand_DownloadResume():
+return downloadResume(_that.id);case FfiCommand_DownloadDeleteFile():
+return downloadDeleteFile(_that.id);case FfiCommand_DownloadClearFinished():
 return downloadClearFinished();case FfiCommand_QrLoginStart():
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel():
 return qrLoginCancel();case FfiCommand_LocalScan():
-return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists():
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_LocalScanCancel():
+return localScanCancel();case FfiCommand_AccountPlaylists():
 return accountPlaylists(_that.source);case FfiCommand_AccountFavorites():
 return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail():
 return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview():
@@ -425,7 +450,7 @@ return playSongs(_that.songs,_that.index);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  toggle,TResult? Function()?  stop,TResult? Function( BigInt field0)?  seekMs,TResult? Function( int volume)?  setVolume,TResult? Function( SongDto song)?  playSong,TResult? Function( SongDto song,  bool next)?  queueAdd,TResult? Function( int index)?  queueRemove,TResult? Function()?  queueClear,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function( String keyword,  String? source)?  search,TResult? Function( String keyword,  int page)?  searchMore,TResult? Function()?  libraryRefresh,TResult? Function( SongDto song)?  favoritesAdd,TResult? Function( SongDto song)?  favoritesRemove,TResult? Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult? Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult? Function( SongDto song)?  historyRemove,TResult? Function()?  historyClear,TResult? Function( String name)?  customPlaylistCreate,TResult? Function( String id,  String name)?  customPlaylistRename,TResult? Function( String id)?  customPlaylistDelete,TResult? Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult? Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult? Function( String id)?  customPlaylistDetail,TResult? Function()?  configGet,TResult? Function( ConfigDto config)?  configUpdate,TResult? Function( SongDto song)?  downloadEnqueue,TResult? Function( BigInt id)?  downloadCancel,TResult? Function()?  downloadClearFinished,TResult? Function( String source,  String kind)?  qrLoginStart,TResult? Function()?  qrLoginCancel,TResult? Function( List<String> paths,  int maxDepth)?  localScan,TResult? Function( String source)?  accountPlaylists,TResult? Function( String source)?  accountFavorites,TResult? Function( String source,  String playlistId)?  accountPlaylistDetail,TResult? Function( String source)?  syncPreview,TResult? Function( String source)?  syncRun,TResult? Function()?  syncCancel,TResult? Function( String source)?  pushTargets,TResult? Function( String source,  String name)?  pushCreateTarget,TResult? Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult? Function( String source)?  pushRun,TResult? Function()?  pushCancel,TResult? Function( String source)?  playlistCategories,TResult? Function( String source,  String category,  int page)?  playlistList,TResult? Function( String source,  String playlistId,  int page)?  playlistDetail,TResult? Function( String source)?  leaderboardBoards,TResult? Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult? Function( ArtistDto artist,  int page)?  artistSongs,TResult? Function( ArtistDto artist,  int page)?  artistAlbums,TResult? Function( AlbumDto album,  int page)?  albumSongs,TResult? Function( List<SongDto> songs,  int index)?  playSongs,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  toggle,TResult? Function()?  stop,TResult? Function( BigInt field0)?  seekMs,TResult? Function( int volume)?  setVolume,TResult? Function( SongDto song)?  playSong,TResult? Function( SongDto song,  bool next)?  queueAdd,TResult? Function( int index)?  queueRemove,TResult? Function()?  queueClear,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function( String keyword,  String? source)?  search,TResult? Function( String keyword,  int page,  String? source)?  searchMore,TResult? Function()?  libraryRefresh,TResult? Function( SongDto song)?  favoritesAdd,TResult? Function( SongDto song)?  favoritesRemove,TResult? Function( PlaylistDto playlist)?  favoritePlaylistAdd,TResult? Function( PlaylistDto playlist)?  favoritePlaylistRemove,TResult? Function( SongDto song)?  historyRemove,TResult? Function()?  historyClear,TResult? Function( String name)?  customPlaylistCreate,TResult? Function( String id,  String name)?  customPlaylistRename,TResult? Function( String id)?  customPlaylistDelete,TResult? Function( String id,  List<SongDto> songs)?  customPlaylistAddSongs,TResult? Function( String id,  SongDto song)?  customPlaylistRemoveSong,TResult? Function( String id)?  customPlaylistDetail,TResult? Function( SongDto song)?  loadLyrics,TResult? Function()?  configGet,TResult? Function( ConfigDto config)?  configUpdate,TResult? Function( SongDto song)?  downloadEnqueue,TResult? Function( BigInt id)?  downloadCancel,TResult? Function( BigInt id)?  downloadPause,TResult? Function( BigInt id)?  downloadResume,TResult? Function( BigInt id)?  downloadDeleteFile,TResult? Function()?  downloadClearFinished,TResult? Function( String source,  String kind)?  qrLoginStart,TResult? Function()?  qrLoginCancel,TResult? Function( List<String> paths,  int maxDepth)?  localScan,TResult? Function()?  localScanCancel,TResult? Function( String source)?  accountPlaylists,TResult? Function( String source)?  accountFavorites,TResult? Function( String source,  String playlistId)?  accountPlaylistDetail,TResult? Function( String source)?  syncPreview,TResult? Function( String source)?  syncRun,TResult? Function()?  syncCancel,TResult? Function( String source)?  pushTargets,TResult? Function( String source,  String name)?  pushCreateTarget,TResult? Function( String source,  String localName,  List<SongDto> localSongs,  bool isFavorites,  String targetKind,  String targetId,  String targetName,  int targetSongCount)?  pushPlan,TResult? Function( String source)?  pushRun,TResult? Function()?  pushCancel,TResult? Function( String source)?  playlistCategories,TResult? Function( String source,  String category,  int page)?  playlistList,TResult? Function( String source,  String playlistId,  int page)?  playlistDetail,TResult? Function( String source)?  leaderboardBoards,TResult? Function( String source,  String boardId,  int page)?  leaderboardSongs,TResult? Function( ArtistDto artist,  int page)?  artistSongs,TResult? Function( ArtistDto artist,  int page)?  artistAlbums,TResult? Function( AlbumDto album,  int page)?  albumSongs,TResult? Function( List<SongDto> songs,  int index)?  playSongs,}) {final _that = this;
 switch (_that) {
 case FfiCommand_Pause() when pause != null:
 return pause();case FfiCommand_Resume() when resume != null:
@@ -441,7 +466,7 @@ return queueClear();case FfiCommand_Next() when next != null:
 return next();case FfiCommand_Previous() when previous != null:
 return previous();case FfiCommand_Search() when search != null:
 return search(_that.keyword,_that.source);case FfiCommand_SearchMore() when searchMore != null:
-return searchMore(_that.keyword,_that.page);case FfiCommand_LibraryRefresh() when libraryRefresh != null:
+return searchMore(_that.keyword,_that.page,_that.source);case FfiCommand_LibraryRefresh() when libraryRefresh != null:
 return libraryRefresh();case FfiCommand_FavoritesAdd() when favoritesAdd != null:
 return favoritesAdd(_that.song);case FfiCommand_FavoritesRemove() when favoritesRemove != null:
 return favoritesRemove(_that.song);case FfiCommand_FavoritePlaylistAdd() when favoritePlaylistAdd != null:
@@ -454,15 +479,20 @@ return customPlaylistRename(_that.id,_that.name);case FfiCommand_CustomPlaylistD
 return customPlaylistDelete(_that.id);case FfiCommand_CustomPlaylistAddSongs() when customPlaylistAddSongs != null:
 return customPlaylistAddSongs(_that.id,_that.songs);case FfiCommand_CustomPlaylistRemoveSong() when customPlaylistRemoveSong != null:
 return customPlaylistRemoveSong(_that.id,_that.song);case FfiCommand_CustomPlaylistDetail() when customPlaylistDetail != null:
-return customPlaylistDetail(_that.id);case FfiCommand_ConfigGet() when configGet != null:
+return customPlaylistDetail(_that.id);case FfiCommand_LoadLyrics() when loadLyrics != null:
+return loadLyrics(_that.song);case FfiCommand_ConfigGet() when configGet != null:
 return configGet();case FfiCommand_ConfigUpdate() when configUpdate != null:
 return configUpdate(_that.config);case FfiCommand_DownloadEnqueue() when downloadEnqueue != null:
 return downloadEnqueue(_that.song);case FfiCommand_DownloadCancel() when downloadCancel != null:
-return downloadCancel(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
+return downloadCancel(_that.id);case FfiCommand_DownloadPause() when downloadPause != null:
+return downloadPause(_that.id);case FfiCommand_DownloadResume() when downloadResume != null:
+return downloadResume(_that.id);case FfiCommand_DownloadDeleteFile() when downloadDeleteFile != null:
+return downloadDeleteFile(_that.id);case FfiCommand_DownloadClearFinished() when downloadClearFinished != null:
 return downloadClearFinished();case FfiCommand_QrLoginStart() when qrLoginStart != null:
 return qrLoginStart(_that.source,_that.kind);case FfiCommand_QrLoginCancel() when qrLoginCancel != null:
 return qrLoginCancel();case FfiCommand_LocalScan() when localScan != null:
-return localScan(_that.paths,_that.maxDepth);case FfiCommand_AccountPlaylists() when accountPlaylists != null:
+return localScan(_that.paths,_that.maxDepth);case FfiCommand_LocalScanCancel() when localScanCancel != null:
+return localScanCancel();case FfiCommand_AccountPlaylists() when accountPlaylists != null:
 return accountPlaylists(_that.source);case FfiCommand_AccountFavorites() when accountFavorites != null:
 return accountFavorites(_that.source);case FfiCommand_AccountPlaylistDetail() when accountPlaylistDetail != null:
 return accountPlaylistDetail(_that.source,_that.playlistId);case FfiCommand_SyncPreview() when syncPreview != null:
@@ -1131,11 +1161,14 @@ as String?,
 
 
 class FfiCommand_SearchMore extends FfiCommand {
-  const FfiCommand_SearchMore({required this.keyword, required this.page}): super._();
+  const FfiCommand_SearchMore({required this.keyword, required this.page, this.source}): super._();
   
 
  final  String keyword;
  final  int page;
+/// 可选音源过滤；None 为聚合搜索（Rust 侧 append 时兜底沿用本次查询
+/// 建立时的过滤，见 ApplicationService::start_search）。
+ final  String? source;
 
 /// Create a copy of FfiCommand
 /// with the given fields replaced by the non-null parameter values.
@@ -1147,18 +1180,18 @@ $FfiCommand_SearchMoreCopyWith<FfiCommand_SearchMore> get copyWith => _$FfiComma
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SearchMore&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.page, page) || other.page == page));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_SearchMore&&(identical(other.keyword, keyword) || other.keyword == keyword)&&(identical(other.page, page) || other.page == page)&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,keyword,page);
+    return Object.hash(runtimeType,keyword,page,source);
 }
 
 @override
 String toString() {
-    return 'FfiCommand.searchMore(keyword: $keyword, page: $page)';
+    return 'FfiCommand.searchMore(keyword: $keyword, page: $page, source: $source)';
 }
 
 
@@ -1169,7 +1202,7 @@ abstract mixin class $FfiCommand_SearchMoreCopyWith<$Res> implements $FfiCommand
   factory $FfiCommand_SearchMoreCopyWith(FfiCommand_SearchMore value, $Res Function(FfiCommand_SearchMore) _then) = _$FfiCommand_SearchMoreCopyWithImpl;
 @useResult
 $Res call({
- String keyword, int page
+ String keyword, int page, String? source
 });
 
 
@@ -1186,11 +1219,12 @@ class _$FfiCommand_SearchMoreCopyWithImpl<$Res>
 
 /// Create a copy of FfiCommand
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? keyword = null,Object? page = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? keyword = null,Object? page = null,Object? source = freezed,}) {
   return _then(FfiCommand_SearchMore(
 keyword: null == keyword ? _self.keyword : keyword // ignore: cast_nullable_to_non_nullable
 as String,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
-as int,
+as int,source: freezed == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -2024,6 +2058,74 @@ as String,
 /// @nodoc
 
 
+class FfiCommand_LoadLyrics extends FfiCommand {
+  const FfiCommand_LoadLyrics({required this.song}): super._();
+  
+
+ final  SongDto song;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_LoadLyricsCopyWith<FfiCommand_LoadLyrics> get copyWith => _$FfiCommand_LoadLyricsCopyWithImpl<FfiCommand_LoadLyrics>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LoadLyrics&&(identical(other.song, song) || other.song == song));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,song);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.loadLyrics(song: $song)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_LoadLyricsCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_LoadLyricsCopyWith(FfiCommand_LoadLyrics value, $Res Function(FfiCommand_LoadLyrics) _then) = _$FfiCommand_LoadLyricsCopyWithImpl;
+@useResult
+$Res call({
+ SongDto song
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_LoadLyricsCopyWithImpl<$Res>
+    implements $FfiCommand_LoadLyricsCopyWith<$Res> {
+  _$FfiCommand_LoadLyricsCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_LoadLyrics _self;
+  final $Res Function(FfiCommand_LoadLyrics) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? song = null,}) {
+  return _then(FfiCommand_LoadLyrics(
+song: null == song ? _self.song : song // ignore: cast_nullable_to_non_nullable
+as SongDto,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class FfiCommand_ConfigGet extends FfiCommand {
   const FfiCommand_ConfigGet(): super._();
   
@@ -2260,6 +2362,210 @@ as BigInt,
 /// @nodoc
 
 
+class FfiCommand_DownloadPause extends FfiCommand {
+  const FfiCommand_DownloadPause({required this.id}): super._();
+  
+
+ final  BigInt id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_DownloadPauseCopyWith<FfiCommand_DownloadPause> get copyWith => _$FfiCommand_DownloadPauseCopyWithImpl<FfiCommand_DownloadPause>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadPause&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.downloadPause(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_DownloadPauseCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_DownloadPauseCopyWith(FfiCommand_DownloadPause value, $Res Function(FfiCommand_DownloadPause) _then) = _$FfiCommand_DownloadPauseCopyWithImpl;
+@useResult
+$Res call({
+ BigInt id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_DownloadPauseCopyWithImpl<$Res>
+    implements $FfiCommand_DownloadPauseCopyWith<$Res> {
+  _$FfiCommand_DownloadPauseCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_DownloadPause _self;
+  final $Res Function(FfiCommand_DownloadPause) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_DownloadPause(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_DownloadResume extends FfiCommand {
+  const FfiCommand_DownloadResume({required this.id}): super._();
+  
+
+ final  BigInt id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_DownloadResumeCopyWith<FfiCommand_DownloadResume> get copyWith => _$FfiCommand_DownloadResumeCopyWithImpl<FfiCommand_DownloadResume>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadResume&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.downloadResume(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_DownloadResumeCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_DownloadResumeCopyWith(FfiCommand_DownloadResume value, $Res Function(FfiCommand_DownloadResume) _then) = _$FfiCommand_DownloadResumeCopyWithImpl;
+@useResult
+$Res call({
+ BigInt id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_DownloadResumeCopyWithImpl<$Res>
+    implements $FfiCommand_DownloadResumeCopyWith<$Res> {
+  _$FfiCommand_DownloadResumeCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_DownloadResume _self;
+  final $Res Function(FfiCommand_DownloadResume) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_DownloadResume(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FfiCommand_DownloadDeleteFile extends FfiCommand {
+  const FfiCommand_DownloadDeleteFile({required this.id}): super._();
+  
+
+ final  BigInt id;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FfiCommand_DownloadDeleteFileCopyWith<FfiCommand_DownloadDeleteFile> get copyWith => _$FfiCommand_DownloadDeleteFileCopyWithImpl<FfiCommand_DownloadDeleteFile>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_DownloadDeleteFile&&(identical(other.id, id) || other.id == id));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
+
+@override
+String toString() {
+    return 'FfiCommand.downloadDeleteFile(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FfiCommand_DownloadDeleteFileCopyWith<$Res> implements $FfiCommandCopyWith<$Res> {
+  factory $FfiCommand_DownloadDeleteFileCopyWith(FfiCommand_DownloadDeleteFile value, $Res Function(FfiCommand_DownloadDeleteFile) _then) = _$FfiCommand_DownloadDeleteFileCopyWithImpl;
+@useResult
+$Res call({
+ BigInt id
+});
+
+
+
+
+}
+/// @nodoc
+class _$FfiCommand_DownloadDeleteFileCopyWithImpl<$Res>
+    implements $FfiCommand_DownloadDeleteFileCopyWith<$Res> {
+  _$FfiCommand_DownloadDeleteFileCopyWithImpl(this._self, this._then);
+
+  final FfiCommand_DownloadDeleteFile _self;
+  final $Res Function(FfiCommand_DownloadDeleteFile) _then;
+
+/// Create a copy of FfiCommand
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(FfiCommand_DownloadDeleteFile(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class FfiCommand_DownloadClearFinished extends FfiCommand {
   const FfiCommand_DownloadClearFinished(): super._();
   
@@ -2466,6 +2772,38 @@ as int,
 
 
 }
+
+/// @nodoc
+
+
+class FfiCommand_LocalScanCancel extends FfiCommand {
+  const FfiCommand_LocalScanCancel(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FfiCommand_LocalScanCancel);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'FfiCommand.localScanCancel()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 
@@ -3808,30 +4146,66 @@ as int,
 /// @nodoc
 mixin _$HostPlayerCommandDto {
 
-
+ BigInt get commandId;
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDtoCopyWith<HostPlayerCommandDto> get copyWith => _$HostPlayerCommandDtoCopyWithImpl<HostPlayerCommandDto>(this as HostPlayerCommandDto, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto);
+  final _this = this as HostPlayerCommandDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto&&(identical(other.commandId, _this.commandId) || other.commandId == _this.commandId));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+  final _this = this as HostPlayerCommandDto;
+  return Object.hash(runtimeType,_this.commandId);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto()';
+  final _this = this as HostPlayerCommandDto;
+  return 'HostPlayerCommandDto(commandId: ${_this.commandId})';
 }
 
 
 }
 
 /// @nodoc
-class $HostPlayerCommandDtoCopyWith<$Res>  {
-$HostPlayerCommandDtoCopyWith(HostPlayerCommandDto _, $Res Function(HostPlayerCommandDto) __);
+abstract mixin class $HostPlayerCommandDtoCopyWith<$Res>  {
+  factory $HostPlayerCommandDtoCopyWith(HostPlayerCommandDto value, $Res Function(HostPlayerCommandDto) _then) = _$HostPlayerCommandDtoCopyWithImpl;
+@useResult
+$Res call({
+ BigInt commandId
+});
+
+
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDtoCopyWithImpl<$Res>
+    implements $HostPlayerCommandDtoCopyWith<$Res> {
+  _$HostPlayerCommandDtoCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto _self;
+  final $Res Function(HostPlayerCommandDto) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? commandId = null,}) {
+  return _then(_self.copyWith(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
 }
 
 
@@ -3931,17 +4305,17 @@ return setSpeed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers)?  play,TResult Function()?  pause,TResult Function()?  resume,TResult Function()?  stop,TResult Function()?  toggle,TResult Function( BigInt positionMs)?  seek,TResult Function( int volume)?  setVolume,TResult Function( double speed)?  setSpeed,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers,  BigInt commandId)?  play,TResult Function( BigInt commandId,  BigInt generation)?  pause,TResult Function( BigInt commandId,  BigInt generation)?  resume,TResult Function( BigInt commandId,  BigInt generation)?  stop,TResult Function( BigInt commandId,  BigInt generation)?  toggle,TResult Function( BigInt positionMs,  BigInt commandId,  BigInt generation)?  seek,TResult Function( int volume,  BigInt commandId)?  setVolume,TResult Function( double speed,  BigInt commandId)?  setSpeed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case HostPlayerCommandDto_Play() when play != null:
-return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause() when pause != null:
-return pause();case HostPlayerCommandDto_Resume() when resume != null:
-return resume();case HostPlayerCommandDto_Stop() when stop != null:
-return stop();case HostPlayerCommandDto_Toggle() when toggle != null:
-return toggle();case HostPlayerCommandDto_Seek() when seek != null:
-return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume() when setVolume != null:
-return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
-return setSpeed(_that.speed);case _:
+return play(_that.url,_that.generation,_that.headers,_that.commandId);case HostPlayerCommandDto_Pause() when pause != null:
+return pause(_that.commandId,_that.generation);case HostPlayerCommandDto_Resume() when resume != null:
+return resume(_that.commandId,_that.generation);case HostPlayerCommandDto_Stop() when stop != null:
+return stop(_that.commandId,_that.generation);case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle(_that.commandId,_that.generation);case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that.positionMs,_that.commandId,_that.generation);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that.volume,_that.commandId);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that.speed,_that.commandId);case _:
   return orElse();
 
 }
@@ -3959,17 +4333,17 @@ return setSpeed(_that.speed);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers)  play,required TResult Function()  pause,required TResult Function()  resume,required TResult Function()  stop,required TResult Function()  toggle,required TResult Function( BigInt positionMs)  seek,required TResult Function( int volume)  setVolume,required TResult Function( double speed)  setSpeed,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String url,  BigInt generation,  List<HostHeaderDto> headers,  BigInt commandId)  play,required TResult Function( BigInt commandId,  BigInt generation)  pause,required TResult Function( BigInt commandId,  BigInt generation)  resume,required TResult Function( BigInt commandId,  BigInt generation)  stop,required TResult Function( BigInt commandId,  BigInt generation)  toggle,required TResult Function( BigInt positionMs,  BigInt commandId,  BigInt generation)  seek,required TResult Function( int volume,  BigInt commandId)  setVolume,required TResult Function( double speed,  BigInt commandId)  setSpeed,}) {final _that = this;
 switch (_that) {
 case HostPlayerCommandDto_Play():
-return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause():
-return pause();case HostPlayerCommandDto_Resume():
-return resume();case HostPlayerCommandDto_Stop():
-return stop();case HostPlayerCommandDto_Toggle():
-return toggle();case HostPlayerCommandDto_Seek():
-return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume():
-return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed():
-return setSpeed(_that.speed);}
+return play(_that.url,_that.generation,_that.headers,_that.commandId);case HostPlayerCommandDto_Pause():
+return pause(_that.commandId,_that.generation);case HostPlayerCommandDto_Resume():
+return resume(_that.commandId,_that.generation);case HostPlayerCommandDto_Stop():
+return stop(_that.commandId,_that.generation);case HostPlayerCommandDto_Toggle():
+return toggle(_that.commandId,_that.generation);case HostPlayerCommandDto_Seek():
+return seek(_that.positionMs,_that.commandId,_that.generation);case HostPlayerCommandDto_SetVolume():
+return setVolume(_that.volume,_that.commandId);case HostPlayerCommandDto_SetSpeed():
+return setSpeed(_that.speed,_that.commandId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -3983,17 +4357,17 @@ return setSpeed(_that.speed);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String url,  BigInt generation,  List<HostHeaderDto> headers)?  play,TResult? Function()?  pause,TResult? Function()?  resume,TResult? Function()?  stop,TResult? Function()?  toggle,TResult? Function( BigInt positionMs)?  seek,TResult? Function( int volume)?  setVolume,TResult? Function( double speed)?  setSpeed,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String url,  BigInt generation,  List<HostHeaderDto> headers,  BigInt commandId)?  play,TResult? Function( BigInt commandId,  BigInt generation)?  pause,TResult? Function( BigInt commandId,  BigInt generation)?  resume,TResult? Function( BigInt commandId,  BigInt generation)?  stop,TResult? Function( BigInt commandId,  BigInt generation)?  toggle,TResult? Function( BigInt positionMs,  BigInt commandId,  BigInt generation)?  seek,TResult? Function( int volume,  BigInt commandId)?  setVolume,TResult? Function( double speed,  BigInt commandId)?  setSpeed,}) {final _that = this;
 switch (_that) {
 case HostPlayerCommandDto_Play() when play != null:
-return play(_that.url,_that.generation,_that.headers);case HostPlayerCommandDto_Pause() when pause != null:
-return pause();case HostPlayerCommandDto_Resume() when resume != null:
-return resume();case HostPlayerCommandDto_Stop() when stop != null:
-return stop();case HostPlayerCommandDto_Toggle() when toggle != null:
-return toggle();case HostPlayerCommandDto_Seek() when seek != null:
-return seek(_that.positionMs);case HostPlayerCommandDto_SetVolume() when setVolume != null:
-return setVolume(_that.volume);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
-return setSpeed(_that.speed);case _:
+return play(_that.url,_that.generation,_that.headers,_that.commandId);case HostPlayerCommandDto_Pause() when pause != null:
+return pause(_that.commandId,_that.generation);case HostPlayerCommandDto_Resume() when resume != null:
+return resume(_that.commandId,_that.generation);case HostPlayerCommandDto_Stop() when stop != null:
+return stop(_that.commandId,_that.generation);case HostPlayerCommandDto_Toggle() when toggle != null:
+return toggle(_that.commandId,_that.generation);case HostPlayerCommandDto_Seek() when seek != null:
+return seek(_that.positionMs,_that.commandId,_that.generation);case HostPlayerCommandDto_SetVolume() when setVolume != null:
+return setVolume(_that.volume,_that.commandId);case HostPlayerCommandDto_SetSpeed() when setSpeed != null:
+return setSpeed(_that.speed,_that.commandId);case _:
   return null;
 
 }
@@ -4005,7 +4379,7 @@ return setSpeed(_that.speed);case _:
 
 
 class HostPlayerCommandDto_Play extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Play({required this.url, required this.generation, required  List<HostHeaderDto> headers}): _headers = headers,super._();
+  const HostPlayerCommandDto_Play({required this.url, required this.generation, required  List<HostHeaderDto> headers, required this.commandId}): _headers = headers,super._();
   
 
  final  String url;
@@ -4017,10 +4391,11 @@ class HostPlayerCommandDto_Play extends HostPlayerCommandDto {
   return EqualUnmodifiableListView(_headers);
 }
 
+@override final  BigInt commandId;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_PlayCopyWith<HostPlayerCommandDto_Play> get copyWith => _$HostPlayerCommandDto_PlayCopyWithImpl<HostPlayerCommandDto_Play>(this, _$identity);
 
@@ -4028,18 +4403,18 @@ $HostPlayerCommandDto_PlayCopyWith<HostPlayerCommandDto_Play> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other.headers, _headers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Play&&(identical(other.url, url) || other.url == url)&&(identical(other.generation, generation) || other.generation == generation)&&const DeepCollectionEquality().equals(other.headers, _headers)&&(identical(other.commandId, commandId) || other.commandId == commandId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers));
+    return Object.hash(runtimeType,url,generation,const DeepCollectionEquality().hash(_headers),commandId);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers)';
+    return 'HostPlayerCommandDto.play(url: $url, generation: $generation, headers: $headers, commandId: $commandId)';
 }
 
 
@@ -4048,9 +4423,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_PlayCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_PlayCopyWith(HostPlayerCommandDto_Play value, $Res Function(HostPlayerCommandDto_Play) _then) = _$HostPlayerCommandDto_PlayCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String url, BigInt generation, List<HostHeaderDto> headers
+ String url, BigInt generation, List<HostHeaderDto> headers, BigInt commandId
 });
 
 
@@ -4067,12 +4442,13 @@ class _$HostPlayerCommandDto_PlayCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? url = null,Object? generation = null,Object? headers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? url = null,Object? generation = null,Object? headers = null,Object? commandId = null,}) {
   return _then(HostPlayerCommandDto_Play(
 url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
 as BigInt,headers: null == headers ? _self._headers : headers // ignore: cast_nullable_to_non_nullable
-as List<HostHeaderDto>,
+as List<HostHeaderDto>,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 
@@ -4083,142 +4459,296 @@ as List<HostHeaderDto>,
 
 
 class HostPlayerCommandDto_Pause extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Pause(): super._();
+  const HostPlayerCommandDto_Pause({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_PauseCopyWith<HostPlayerCommandDto_Pause> get copyWith => _$HostPlayerCommandDto_PauseCopyWithImpl<HostPlayerCommandDto_Pause>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Pause&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.pause()';
+    return 'HostPlayerCommandDto.pause(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_PauseCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_PauseCopyWith(HostPlayerCommandDto_Pause value, $Res Function(HostPlayerCommandDto_Pause) _then) = _$HostPlayerCommandDto_PauseCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_PauseCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_PauseCopyWith<$Res> {
+  _$HostPlayerCommandDto_PauseCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Pause _self;
+  final $Res Function(HostPlayerCommandDto_Pause) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Pause(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Resume extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Resume(): super._();
+  const HostPlayerCommandDto_Resume({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_ResumeCopyWith<HostPlayerCommandDto_Resume> get copyWith => _$HostPlayerCommandDto_ResumeCopyWithImpl<HostPlayerCommandDto_Resume>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Resume&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.resume()';
+    return 'HostPlayerCommandDto.resume(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_ResumeCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_ResumeCopyWith(HostPlayerCommandDto_Resume value, $Res Function(HostPlayerCommandDto_Resume) _then) = _$HostPlayerCommandDto_ResumeCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_ResumeCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_ResumeCopyWith<$Res> {
+  _$HostPlayerCommandDto_ResumeCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Resume _self;
+  final $Res Function(HostPlayerCommandDto_Resume) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Resume(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Stop extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Stop(): super._();
+  const HostPlayerCommandDto_Stop({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_StopCopyWith<HostPlayerCommandDto_Stop> get copyWith => _$HostPlayerCommandDto_StopCopyWithImpl<HostPlayerCommandDto_Stop>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Stop&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.stop()';
+    return 'HostPlayerCommandDto.stop(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_StopCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_StopCopyWith(HostPlayerCommandDto_Stop value, $Res Function(HostPlayerCommandDto_Stop) _then) = _$HostPlayerCommandDto_StopCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_StopCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_StopCopyWith<$Res> {
+  _$HostPlayerCommandDto_StopCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Stop _self;
+  final $Res Function(HostPlayerCommandDto_Stop) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Stop(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Toggle extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Toggle(): super._();
+  const HostPlayerCommandDto_Toggle({required this.commandId, required this.generation}): super._();
   
 
+@override final  BigInt commandId;
+ final  BigInt generation;
 
-
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$HostPlayerCommandDto_ToggleCopyWith<HostPlayerCommandDto_Toggle> get copyWith => _$HostPlayerCommandDto_ToggleCopyWithImpl<HostPlayerCommandDto_Toggle>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Toggle&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode {
+    return Object.hash(runtimeType,commandId,generation);
+}
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.toggle()';
+    return 'HostPlayerCommandDto.toggle(commandId: $commandId, generation: $generation)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $HostPlayerCommandDto_ToggleCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
+  factory $HostPlayerCommandDto_ToggleCopyWith(HostPlayerCommandDto_Toggle value, $Res Function(HostPlayerCommandDto_Toggle) _then) = _$HostPlayerCommandDto_ToggleCopyWithImpl;
+@override @useResult
+$Res call({
+ BigInt commandId, BigInt generation
+});
 
 
+
+
+}
+/// @nodoc
+class _$HostPlayerCommandDto_ToggleCopyWithImpl<$Res>
+    implements $HostPlayerCommandDto_ToggleCopyWith<$Res> {
+  _$HostPlayerCommandDto_ToggleCopyWithImpl(this._self, this._then);
+
+  final HostPlayerCommandDto_Toggle _self;
+  final $Res Function(HostPlayerCommandDto_Toggle) _then;
+
+/// Create a copy of HostPlayerCommandDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? commandId = null,Object? generation = null,}) {
+  return _then(HostPlayerCommandDto_Toggle(
+commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class HostPlayerCommandDto_Seek extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_Seek({required this.positionMs}): super._();
+  const HostPlayerCommandDto_Seek({required this.positionMs, required this.commandId, required this.generation}): super._();
   
 
  final  BigInt positionMs;
+@override final  BigInt commandId;
+ final  BigInt generation;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_SeekCopyWith<HostPlayerCommandDto_Seek> get copyWith => _$HostPlayerCommandDto_SeekCopyWithImpl<HostPlayerCommandDto_Seek>(this, _$identity);
 
@@ -4226,18 +4756,18 @@ $HostPlayerCommandDto_SeekCopyWith<HostPlayerCommandDto_Seek> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_Seek&&(identical(other.positionMs, positionMs) || other.positionMs == positionMs)&&(identical(other.commandId, commandId) || other.commandId == commandId)&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,positionMs);
+    return Object.hash(runtimeType,positionMs,commandId,generation);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.seek(positionMs: $positionMs)';
+    return 'HostPlayerCommandDto.seek(positionMs: $positionMs, commandId: $commandId, generation: $generation)';
 }
 
 
@@ -4246,9 +4776,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_SeekCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_SeekCopyWith(HostPlayerCommandDto_Seek value, $Res Function(HostPlayerCommandDto_Seek) _then) = _$HostPlayerCommandDto_SeekCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- BigInt positionMs
+ BigInt positionMs, BigInt commandId, BigInt generation
 });
 
 
@@ -4265,9 +4795,11 @@ class _$HostPlayerCommandDto_SeekCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? positionMs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? positionMs = null,Object? commandId = null,Object? generation = null,}) {
   return _then(HostPlayerCommandDto_Seek(
 positionMs: null == positionMs ? _self.positionMs : positionMs // ignore: cast_nullable_to_non_nullable
+as BigInt,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,generation: null == generation ? _self.generation : generation // ignore: cast_nullable_to_non_nullable
 as BigInt,
   ));
 }
@@ -4279,14 +4811,15 @@ as BigInt,
 
 
 class HostPlayerCommandDto_SetVolume extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_SetVolume({required this.volume}): super._();
+  const HostPlayerCommandDto_SetVolume({required this.volume, required this.commandId}): super._();
   
 
  final  int volume;
+@override final  BigInt commandId;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_SetVolumeCopyWith<HostPlayerCommandDto_SetVolume> get copyWith => _$HostPlayerCommandDto_SetVolumeCopyWithImpl<HostPlayerCommandDto_SetVolume>(this, _$identity);
 
@@ -4294,18 +4827,18 @@ $HostPlayerCommandDto_SetVolumeCopyWith<HostPlayerCommandDto_SetVolume> get copy
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetVolume&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.commandId, commandId) || other.commandId == commandId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,volume);
+    return Object.hash(runtimeType,volume,commandId);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.setVolume(volume: $volume)';
+    return 'HostPlayerCommandDto.setVolume(volume: $volume, commandId: $commandId)';
 }
 
 
@@ -4314,9 +4847,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_SetVolumeCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_SetVolumeCopyWith(HostPlayerCommandDto_SetVolume value, $Res Function(HostPlayerCommandDto_SetVolume) _then) = _$HostPlayerCommandDto_SetVolumeCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- int volume
+ int volume, BigInt commandId
 });
 
 
@@ -4333,10 +4866,11 @@ class _$HostPlayerCommandDto_SetVolumeCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? volume = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? volume = null,Object? commandId = null,}) {
   return _then(HostPlayerCommandDto_SetVolume(
 volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
-as int,
+as int,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 
@@ -4347,14 +4881,15 @@ as int,
 
 
 class HostPlayerCommandDto_SetSpeed extends HostPlayerCommandDto {
-  const HostPlayerCommandDto_SetSpeed({required this.speed}): super._();
+  const HostPlayerCommandDto_SetSpeed({required this.speed, required this.commandId}): super._();
   
 
  final  double speed;
+@override final  BigInt commandId;
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $HostPlayerCommandDto_SetSpeedCopyWith<HostPlayerCommandDto_SetSpeed> get copyWith => _$HostPlayerCommandDto_SetSpeedCopyWithImpl<HostPlayerCommandDto_SetSpeed>(this, _$identity);
 
@@ -4362,18 +4897,18 @@ $HostPlayerCommandDto_SetSpeedCopyWith<HostPlayerCommandDto_SetSpeed> get copyWi
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HostPlayerCommandDto_SetSpeed&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.commandId, commandId) || other.commandId == commandId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,speed);
+    return Object.hash(runtimeType,speed,commandId);
 }
 
 @override
 String toString() {
-    return 'HostPlayerCommandDto.setSpeed(speed: $speed)';
+    return 'HostPlayerCommandDto.setSpeed(speed: $speed, commandId: $commandId)';
 }
 
 
@@ -4382,9 +4917,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $HostPlayerCommandDto_SetSpeedCopyWith<$Res> implements $HostPlayerCommandDtoCopyWith<$Res> {
   factory $HostPlayerCommandDto_SetSpeedCopyWith(HostPlayerCommandDto_SetSpeed value, $Res Function(HostPlayerCommandDto_SetSpeed) _then) = _$HostPlayerCommandDto_SetSpeedCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- double speed
+ double speed, BigInt commandId
 });
 
 
@@ -4401,10 +4936,11 @@ class _$HostPlayerCommandDto_SetSpeedCopyWithImpl<$Res>
 
 /// Create a copy of HostPlayerCommandDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? speed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? speed = null,Object? commandId = null,}) {
   return _then(HostPlayerCommandDto_SetSpeed(
 speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
-as double,
+as double,commandId: null == commandId ? _self.commandId : commandId // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 

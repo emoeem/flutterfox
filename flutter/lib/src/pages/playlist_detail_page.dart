@@ -14,10 +14,10 @@ import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
+import '../design_system/components/vx_artwork.dart';
 import '../design_system/components/vx_detail_hero.dart';
 import '../design_system/components/vx_section_header.dart';
 import '../design_system/design_tokens.dart';
-import '../widgets/cover_image.dart';
 import '../widgets/push_dialog.dart';
 import '../widgets/song_table_view.dart';
 import '../widgets/sync_dialog.dart';
@@ -42,12 +42,42 @@ class PlaylistDetailPage extends StatefulWidget {
 }
 
 class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
+  /// 收藏 pending：在途时忽略再次点击（toggle 语义下第二击会在乐观翻转
+  /// 后的判定下派发反向命令，确认后状态与用户意图相反）；乐观翻转只改
+  /// 本地图标，成功确认以 'library' 事件 → _refreshState 刷新的真实
+  /// favoritePlaylists 快照为准（失败回滚；不做超时假成功）。
+  bool _favPending = false;
+  bool? _favOverride;
+
   @override
   void initState() {
     super.initState();
+    // §8.1「页面切换先显示对应 loading，不闪现旧歌单歌曲」：同步预清槽
+    // （不通知——通知会让导航 build 中的祖先 ListenableBuilder 在 build 期
+    // 被标脏），首帧即加载态；真正的请求派发 defer 到帧后。
+    _model.prepareBrowseLoad(_kind, _playlist.source, _playlist.id);
+    _model.addListener(_onModelChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _reload();
     });
+  }
+
+  @override
+  void dispose() {
+    _model.removeListener(_onModelChanged);
+    super.dispose();
+  }
+
+  void _onModelChanged() {
+    if (!mounted || !_favPending || _favOverride == null) return;
+    // 'library' 事件（FavoritePlaylistAdd/Remove → publish_library）触发
+    // _refreshState；快照与乐观值一致即服务端已确认本代操作，清 pending。
+    if (_isFavoritePlaylist == _favOverride) {
+      setState(() {
+        _favPending = false;
+        _favOverride = null;
+      });
+    }
   }
 
   AppModel get _model => widget.model;
@@ -77,15 +107,51 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   /// 歌单是否已在本地收藏（收藏歌单镜像里按 source + id 匹配）。
   bool get _isFavoritePlaylist => _model.state.favoritePlaylists.any(
-        (item) => item.id == _playlist.id && item.source == _playlist.source,
-      );
+    (item) => item.id == _playlist.id && item.source == _playlist.source,
+  );
 
-  void _toggleFavoritePlaylist() {
-    _model.dispatch(
-      _isFavoritePlaylist
-          ? bridge.FfiCommand.favoritePlaylistRemove(playlist: _playlist)
-          : bridge.FfiCommand.favoritePlaylistAdd(playlist: _playlist),
+  /// 图标显示值：pending 在途时用乐观翻转值，否则以真实快照为准。
+  bool get _favDisplayed => _favOverride ?? _isFavoritePlaylist;
+
+  Future<void> _toggleFavoritePlaylist() async {
+    if (_favPending) return; // §9 加载中防重复提交（双击竞态）
+    final target = !_isFavoritePlaylist;
+    setState(() {
+      _favPending = true;
+      _favOverride = target;
+    });
+    final command = target
+        ? bridge.FfiCommand.favoritePlaylistAdd(playlist: _playlist)
+        : bridge.FfiCommand.favoritePlaylistRemove(playlist: _playlist);
+    final error = await _model.dispatchWithError(command);
+    if (!mounted) return;
+    if (error != null) {
+      // 失败回滚乐观 UI（§9）。错误文案由命令层 lastError/
+      // lastNotification → 全局 toast 呈现，页面不再渲染第二份。
+      setState(() {
+        _favPending = false;
+        _favOverride = null;
+      });
+      return;
+    }
+    // 成功路径不在此等待：确认由 _onModelChanged 以真实快照驱动。
+  }
+
+  /// 下拉刷新（§5.6）：复用 load* 的 _beginBrowse 清槽 + 撤分页 arm；
+  /// 完成 Future = 本代次 page=1 响应或错误落槽。命令立即失败（未达
+  /// Rust）时 toast 已提示、spinner 收起；控制器失联事件可能永不到达，
+  /// 加超时兜底不允许 spinner 永挂（§9）。
+  Future<void> _refresh() async {
+    final wait = _model.awaitBrowseResponse(
+      _kind,
+      _playlist.source,
+      _playlist.id,
     );
+    final error = _account
+        ? await _model.loadAccountPlaylistDetail(_playlist.source, _playlist.id)
+        : await _model.loadPlaylistDetail(_playlist);
+    if (error != null) return;
+    await wait.timeout(const Duration(seconds: 15), onTimeout: () {});
   }
 
   /// 随机播放：从已载入曲目随机选一首开始（顺序继续）。
@@ -143,6 +209,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                   onRetry: _reload,
                   hasMore: result?.hasMore ?? false,
                   onLoadMore: _loadMore,
+                  onRefresh: _refresh,
                 ),
               ),
             ],
@@ -195,21 +262,20 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       eyebrow: _account ? '账号歌单' : '歌单',
       title: _playlist.name,
       meta: meta,
-      badges: [
-        songSourceLabel(_model, _playlist.source),
-        if (_account) '账号镜像',
-      ],
+      badges: [songSourceLabel(_model, _playlist.source), if (_account) '账号镜像'],
       description: (description == null || description.isEmpty)
           ? null
           : description,
-      cover: (_playlist.coverUrl == null || _playlist.coverUrl!.isEmpty)
-          ? null
-          : CoverImage(
-              url: _playlist.coverUrl,
-              size: 224,
-              radius: 12,
-              icon: Icons.queue_music_outlined,
-            ),
+      cover: VxArtwork(
+        url: _playlist.coverUrl,
+        source: _playlist.source,
+        entityType: 'playlist',
+        entityId: _playlist.id,
+        entityName: _playlist.name,
+        size: 224,
+        radius: 12,
+        icon: Icons.queue_music_outlined,
+      ),
       fallbackSeed: _playlist.name,
       actions: [
         VxDetailAction(
@@ -221,14 +287,18 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         VxDetailAction(
           icon: Icons.shuffle,
           label: '随机播放',
-          tooltip: songs.isEmpty
-              ? '曲目加载后可用'
-              : '从已载入曲目随机一首开始（顺序继续）',
+          tooltip: songs.isEmpty ? '曲目加载后可用' : '从已载入曲目随机一首开始（顺序继续）',
           onPressed: songs.isEmpty ? null : () => _playShuffled(songs),
         ),
         VxDetailAction(
-          icon: _isFavoritePlaylist ? Icons.favorite : Icons.favorite_border,
-          label: _isFavoritePlaylist ? '取消收藏' : '收藏',
+          icon: _favDisplayed ? Icons.favorite : Icons.favorite_border,
+          label: _favPending
+              ? '收藏处理中…'
+              : _favDisplayed
+              ? '取消收藏'
+              : '收藏',
+          // §8.5：收藏歌单写入本地收藏镜像（favoritePlaylists），不写远端账号。
+          tooltip: '收藏到本地歌单收藏夹（不写入远端账号）',
           onPressed: _toggleFavoritePlaylist,
         ),
         // 同步只对账号歌单有意义：Diff 预览/写入都在对话框内收口。
@@ -237,8 +307,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             icon: Icons.sync_outlined,
             label: '同步',
             tooltip: '预览远端与本地镜像差异并同步（对话框内完成）',
-            onPressed: () =>
-                showSyncDialog(context, _model, _playlist.source),
+            onPressed: () => showSyncDialog(context, _model, _playlist.source),
           ),
       ],
       trailingActions: [
@@ -262,9 +331,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             PopupMenuItem(
               value: 'push',
               enabled: songs.isNotEmpty,
-              child: Text(
-                songs.isNotEmpty ? '推送到远端' : '推送到远端（曲目加载后可用）',
-              ),
+              child: Text(songs.isNotEmpty ? '推送到远端' : '推送到远端（曲目加载后可用）'),
             ),
           ],
         ),

@@ -68,11 +68,14 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: ShellBreakpoints.headerHeight,
-      decoration: const BoxDecoration(
-        color: VxColors.surface1,
-        border: Border(bottom: BorderSide(color: VxColors.divider)),
+      // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位
+      //（buildAppTheme 显式映射，浅色 = VxLightColors 等值）。
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(bottom: BorderSide(color: scheme.outline)),
       ),
       child: Stack(
         children: [
@@ -121,10 +124,11 @@ class AppHeader extends StatelessWidget {
           width: 26,
           height: 26,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            // B3：品牌渐变随主题（primary/secondary = Vx accent/accentDeep）。
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [VxColors.accent, VxColors.accentDeep],
+              colors: [scheme.primary, scheme.secondary],
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -134,7 +138,7 @@ class AppHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: VxColors.onAccent,
+              color: scheme.onPrimary,
               height: 1,
             ),
           ),
@@ -177,7 +181,9 @@ class AppHeader extends StatelessWidget {
           icon: Icon(
             Icons.arrow_back_ios_new,
             size: 17,
-            color: canBack ? scheme.onSurfaceVariant : scheme.onSurface.withValues(alpha: 0.25),
+            color: canBack
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface.withValues(alpha: 0.25),
           ),
         ),
         const SizedBox(width: 2),
@@ -187,7 +193,9 @@ class AppHeader extends StatelessWidget {
           icon: Icon(
             Icons.arrow_forward_ios,
             size: 17,
-            color: canForward ? scheme.onSurfaceVariant : scheme.onSurface.withValues(alpha: 0.25),
+            color: canForward
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface.withValues(alpha: 0.25),
           ),
         ),
       ],
@@ -213,7 +221,11 @@ class AppHeader extends StatelessWidget {
                 fontSize: 13,
                 color: scheme.onSurfaceVariant,
               ),
-              prefixIcon: Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
+              prefixIcon: Icon(
+                Icons.search,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
               prefixIconConstraints: const BoxConstraints(minWidth: 36),
               suffixIcon: _KbdChip(),
               suffixIconConstraints: const BoxConstraints(minWidth: 0),

@@ -5,7 +5,9 @@
 /// - 1200–1439：Sidebar 240，右栏默认隐藏，打开时覆盖式浮层；
 /// - 960–1199：Sidebar 折叠 72，右栏浮层；
 /// - <960：不再强行压缩三栏，降级布局（Sidebar 隐藏，经 Header 菜单按需
-///   浮出），右栏浮层；底部 PlayerBar 始终常驻（Phase 0 F2 的修复点）。
+///   浮出），右栏浮层；底部 PlayerBar 始终常驻（Phase 0 F2 的修复点），
+///   且跨推入式详情页常驻（§7.5：详情页经 nav_bus.contentNavigatorKey
+///   落内容区内嵌 Navigator，见 app_shell.dart，2026-11-13 QA P1 修复）。
 ///
 /// Phase 7 追加：设备形态选择（[resolveDeviceFormFactor]）与平板三档
 /// （[resolveTabletLayout]）。作用域铁律：桌面（非触屏平台）所有宽度
@@ -36,13 +38,22 @@ abstract final class ShellBreakpoints {
   /// <960：降级布局，Sidebar 隐藏。
   static const double sidebarCollapse = 960;
 
-  /// 尺寸规格（§3.1 表格）。
+  /// 尺寸规格（§3.1 表格 + §7.2/§7.4/§7.5 Phase 6 对齐）。
   static const double sidebarWidth = 240;
+
+  /// §7.1 展开态可拖调宽度带（Phase 6）：未拖调走 [sidebarWidth]，
+  /// 拖调后记忆用户值并钳制在本带内。
+  static const double sidebarMinWidth = 240;
+  static const double sidebarMaxWidth = 300;
   static const double sidebarCollapsedWidth = 72;
   static const double headerHeight = 56;
-  static const double playerBarHeight = 92;
-  static const double contextDefaultWidth = 320;
-  static const double contextMinWidth = 280;
+
+  /// §7.5 播放栏高度带 76–84：Phase 6 由 92 收敛到带内上沿 84。
+  static const double playerBarHeight = 84;
+
+  /// §7.4 右栏 300–420 可拖调，默认 340（Phase 6 由 280–420/320 对齐）。
+  static const double contextDefaultWidth = 340;
+  static const double contextMinWidth = 300;
   static const double contextMaxWidth = 420;
 }
 
@@ -51,8 +62,8 @@ abstract final class MobileBreakpoints {
   /// <600：手机形态（MobileShell，底部导航）。
   static const double handsetMax = 600;
 
-  /// <900：平板纯 NavigationRail 档（图标 rail）。
-  static const double tabletRailMax = 900;
+  /// <840：平板纯 NavigationRail 档（图标 rail，§4.1）。
+  static const double tabletRailMax = 840;
 
   /// <1200：平板双栏档（展开 Rail + 内容）；≥1200 三栏（+ ContextPanel 内嵌）。
   static const double tabletDualMax = 1200;
@@ -72,10 +83,10 @@ enum DeviceFormFactor {
 
 /// 平板档内布局（Phase 7 任务：NavigationRail / 双栏 / 三栏三态）。
 enum TabletLayout {
-  /// 600-899：图标 NavigationRail + 内容；右栏浮层。
+  /// 600-839：图标 NavigationRail + 内容；右栏浮层（§4.1）。
   rail,
 
-  /// 900-1199：展开（带标签）Rail + 内容双栏；右栏浮层。
+  /// 840-1199：展开（带标签）Rail + 内容双栏；右栏浮层（§4.1）。
   dual,
 
   /// ≥1200：Rail + 内容 + ContextPanel 内嵌三栏。
@@ -84,7 +95,10 @@ enum TabletLayout {
 
 /// 解析宽度 → 设备形态。桌面平台（[isTouch] = false）恒为
 /// [DeviceFormFactor.desktop]，宽度完全不参与，保证桌面四档零变化。
-DeviceFormFactor resolveDeviceFormFactor(double width, {required bool isTouch}) {
+DeviceFormFactor resolveDeviceFormFactor(
+  double width, {
+  required bool isTouch,
+}) {
   if (!isTouch) return DeviceFormFactor.desktop;
   return width < MobileBreakpoints.handsetMax
       ? DeviceFormFactor.handset

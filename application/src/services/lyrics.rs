@@ -23,6 +23,11 @@ impl LyricsService {
         Ok(self.inner.current_state())
     }
 
+    /// 开启新一次歌词加载前取过期令牌（P2-17：令牌必须来自本服务代次）。
+    pub fn prepare(&self) -> u64 {
+        self.inner.prepare()
+    }
+
     pub fn update_position(&self, position: Duration) {
         self.inner.update_position(position);
     }

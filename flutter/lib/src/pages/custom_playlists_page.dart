@@ -29,7 +29,17 @@ class CustomPlaylistsSection extends StatelessWidget {
   /// 名称过滤关键词；null / 空串不过滤。
   final String? query;
 
-  const CustomPlaylistsSection(this.model, {super.key, this.query});
+  /// 来源筛选（曲库来源 chips）：自建歌单是本地数据、无音源字段，仅在
+  /// 未选来源或所选为本地（source == 'local'）时展示；其余来源如实过滤
+  /// 为空（§5.5 来源过滤后标题和计数同步变化）。
+  final String? source;
+
+  const CustomPlaylistsSection(
+    this.model, {
+    super.key,
+    this.query,
+    this.source,
+  });
 
   Future<void> _create(BuildContext context) async {
     final name = await promptCustomPlaylistName(context);
@@ -49,11 +59,14 @@ class CustomPlaylistsSection extends StatelessWidget {
       listenable: model,
       builder: (context, _) {
         final keyword = query?.trim().toLowerCase() ?? '';
-        final playlists = keyword.isEmpty
+        final sourceOk = source == null || source == 'local';
+        final playlists = !sourceOk
+            ? const []
+            : keyword.isEmpty
             ? model.state.customPlaylists
             : model.state.customPlaylists
-                .where((p) => p.name.toLowerCase().contains(keyword))
-                .toList();
+                  .where((p) => p.name.toLowerCase().contains(keyword))
+                  .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -83,10 +96,12 @@ class CustomPlaylistsSection extends StatelessWidget {
               child: playlists.isEmpty
                   ? EmptyState(
                       icon: Icons.playlist_add,
-                      title: keyword.isEmpty
+                      title: sourceOk && keyword.isEmpty
                           ? '还没有自建歌单'
                           : '没有匹配的歌单',
-                      subtitle: keyword.isEmpty
+                      subtitle: !sourceOk
+                          ? '自建歌单是本地数据，选「全部来源」或「本地音乐」时展示'
+                          : keyword.isEmpty
                           ? '点「新建歌单」，或在歌曲菜单里选择「加入歌单」'
                           : '换个关键词试试',
                     )

@@ -20,7 +20,7 @@ use tokio::sync::{Semaphore, mpsc};
 
 use crate::engine::{
     DownloadEngine, DownloadError, DownloadOptions, DownloadProgress, DownloadRequest,
-    ProgressSnapshot,
+    ProgressSnapshot, staging_path,
 };
 use crate::naming::{
     AUDIO_EXTENSIONS, detect_extension, extension_from_url, normalize_extension, render_filename,
@@ -55,14 +55,19 @@ pub enum DownloadState {
     Done,
     Skipped,
     Cancelled,
+    Paused,
     Failed,
 }
 
 impl DownloadState {
+    /// 是否仍在任务列表里参与「清除已完成」的保留判定。
+    ///
+    /// Paused 也算活跃：暂停任务被 clear_finished 清掉就永远无法恢复了。
+    /// 取消对暂停任务走 `cancel()` 的专门分支（顺带清 staged 文件）。
     pub fn is_active(self) -> bool {
         matches!(
             self,
-            Self::Queued | Self::Resolving | Self::Downloading | Self::Tagging
+            Self::Queued | Self::Resolving | Self::Downloading | Self::Tagging | Self::Paused
         )
     }
 
@@ -75,7 +80,25 @@ impl DownloadState {
             Self::Done => "已完成",
             Self::Skipped => "已跳过",
             Self::Cancelled => "已取消",
+            Self::Paused => "已暂停",
             Self::Failed => "失败",
+        }
+    }
+
+    /// 跨进程（FFI）使用的机读状态键。GUI 下载页按这些键做分组与文案；
+    /// `label()` 的人类可读中文只服务 TUI，两侧不能混用——历史上 wire 上
+    /// 发过中文 label，Dart 侧匹配英文键全部落空，本轮统一为英文键。
+    pub fn code(self) -> &'static str {
+        match self {
+            Self::Queued => "queued",
+            Self::Resolving => "resolving",
+            Self::Downloading => "downloading",
+            Self::Tagging => "tagging",
+            Self::Done => "done",
+            Self::Skipped => "skipped",
+            Self::Cancelled => "cancelled",
+            Self::Paused => "paused",
+            Self::Failed => "failed",
         }
     }
 }
@@ -102,6 +125,9 @@ pub struct DownloadTask {
     pub duration_secs: u64,
     /// 入队来源：自动缓存的任务在文案与通知上更安静。
     pub trigger: DownloadTrigger,
+    /// 最近一次实际开始下载的 URL：恢复（继续）时用于判断「与暂停时同源」，
+    /// 不同源（重新解析到别的 CDN 节点）不做 Range 续传，避免字节错位。
+    pub last_url: Option<String>,
 }
 
 /// 界面每帧读取的任务快照。
@@ -347,12 +373,29 @@ impl DownloadManager {
     }
 
     /// 取消任务；已完成的任务只是从列表中移除。
+    ///
+    /// 暂停任务没有在跑的协程可以响应 `progress.cancel()`，所以走专门
+    /// 分支：置 Cancelled 的同时清掉 staged 临时文件并释放 inflight 占位，
+    /// 否则任务被移除后残留 `.part` 且无法重新入队。
     pub fn cancel(&self, id: u64) {
         let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
         let Some(task) = tasks.iter_mut().find(|task| task.id == id) else {
             return;
         };
-        if task.state.is_active() {
+        if task.state == DownloadState::Paused {
+            let staging = staging_path(&task.dest);
+            task.progress.cancel();
+            task.state = DownloadState::Cancelled;
+            task.error = None;
+            task.finished_at = Some(Instant::now());
+            let song = task.song.clone();
+            drop(tasks);
+            let _ = std::fs::remove_file(staging);
+            self.inflight
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .remove(&inflight_key(&song));
+        } else if task.state.is_active() {
             task.progress.cancel();
             task.state = DownloadState::Cancelled;
             task.error = None;
@@ -360,6 +403,158 @@ impl DownloadManager {
         } else {
             tasks.retain(|task| task.id != id);
         }
+    }
+
+    /// 暂停任务：设标志让下载循环在下一个检查点退出，状态立即置为
+    /// Paused（迟到状态更新被 `update_state`/`finish` 短路）。
+    ///
+    /// queued/resolving 阶段暂停同样成立：协程会在引擎入口或解析后检查到
+    /// 暂停标志并退出，此时还没有写入任何字节。
+    pub fn pause(&self, id: u64) {
+        let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
+        let Some(task) = tasks.iter_mut().find(|task| task.id == id) else {
+            return;
+        };
+        if matches!(
+            task.state,
+            DownloadState::Queued
+                | DownloadState::Resolving
+                | DownloadState::Downloading
+                | DownloadState::Tagging
+        ) {
+            task.progress.pause();
+            task.state = DownloadState::Paused;
+            task.error = None;
+            task.finished_at = Some(Instant::now());
+        }
+    }
+
+    /// 恢复暂停的任务：重新入队协程；解析到与暂停时相同的 URL 才做
+    /// Range 续传，否则按整体重下处理（引擎对 staged 前缀做长度与总长
+    /// 校验，不匹配自动回退）。已在队列中的同曲不会重复恢复。
+    pub fn resume(
+        self: &Arc<Self>,
+        id: u64,
+        sources: Arc<SourceManager>,
+        notify: mpsc::UnboundedSender<AppAction>,
+    ) -> bool {
+        let song = {
+            let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
+            let Some(task) = tasks.iter_mut().find(|task| task.id == id) else {
+                return false;
+            };
+            if task.state != DownloadState::Paused {
+                return false;
+            }
+            task.state = DownloadState::Queued;
+            task.error = None;
+            task.progress.unpause();
+            task.song.clone()
+        };
+        let Ok(progress) = self.task_progress(id) else {
+            return false;
+        };
+        let inflight_key = inflight_key(&song);
+        // 暂停路径不释放 inflight 占位，这里补齐防御性插入即可。
+        self.inflight
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .insert(inflight_key.clone());
+        let staged = {
+            let tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
+            tasks
+                .iter()
+                .find(|task| task.id == id)
+                .and_then(|task| {
+                    task.last_url.as_ref().map(|url| {
+                        (
+                            url.clone(),
+                            task.dest.clone(),
+                            std::fs::metadata(staging_path(&task.dest))
+                                .map(|meta| meta.len())
+                                .unwrap_or(0),
+                        )
+                    })
+                })
+                .unwrap_or_default()
+        };
+        if staged.2 == 0 {
+            // 无有效前缀（分片路径暂停已清文件）：进度计数一并归零，
+            // 否则恢复后的 downloaded 会虚高一截。
+            progress.reset();
+        }
+        let resume = (staged.2 > 0).then_some(ResumeContext {
+            url: staged.0,
+            dest: staged.1,
+            resume_from: staged.2,
+        });
+        let settings = self
+            .settings
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        let quality = settings.quality();
+        let stem = render_filename(&settings.filename_template, &song, quality);
+        let manager = Arc::clone(self);
+        let semaphore = Arc::clone(
+            &self
+                .semaphore
+                .read()
+                .unwrap_or_else(|error| error.into_inner()),
+        );
+        self.handle.spawn(async move {
+            let _permit = semaphore.acquire_owned().await;
+            manager
+                .run_task(
+                    id,
+                    song,
+                    inflight_key,
+                    quality,
+                    stem,
+                    settings,
+                    sources,
+                    notify,
+                    DownloadTrigger::Manual,
+                    resume,
+                )
+                .await;
+        });
+        true
+    }
+
+    /// 删除已完成/已跳过任务对应的本地文件，并回收该曲的去重记录；
+    /// 任务行从列表移除。进行中的任务不支持删除（先暂停或取消）。
+    ///
+    /// 删除后播放解析器的 `existing_download` 命中自动消失，同一首歌
+    /// 回落到流播或可重新下载。
+    pub fn delete_file(&self, id: u64) -> bool {
+        let (dest, song) = {
+            let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
+            let Some(index) = tasks.iter().position(|task| {
+                task.id == id && matches!(task.state, DownloadState::Done | DownloadState::Skipped)
+            }) else {
+                return false;
+            };
+            let task = tasks.remove(index);
+            (task.dest, task.song)
+        };
+        match std::fs::remove_file(&dest) {
+            Ok(()) => {}
+            // 文件本来就不在（用户手动删过）：记录仍要回收。
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                tracing::warn!("删除下载文件失败 {}: {error}", dest.display());
+                return false;
+            }
+        }
+        let rel_path = relative_path(&self.download_dir(), &dest);
+        self.records
+            .remove_for_song(&song.singer, &song.name, rel_path.as_deref());
+        self.inflight
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .remove(&inflight_key(&song));
+        true
     }
 
     /// 清空已结束的任务记录，保留进行中的。
@@ -443,8 +638,8 @@ impl DownloadManager {
     ) {
         let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(task) = tasks.iter_mut().find(|task| task.id == id) {
-            // 已取消的任务保持取消状态，避免迟到的结果改写用户操作。
-            if task.state == DownloadState::Cancelled {
+            // 已取消/已暂停的任务保持现状，避免迟到的结果改写用户操作。
+            if matches!(task.state, DownloadState::Cancelled | DownloadState::Paused) {
                 return;
             }
             task.state = state;
@@ -461,13 +656,21 @@ impl DownloadManager {
     fn update_state(&self, id: u64, state: DownloadState, dest: Option<PathBuf>) {
         let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(task) = tasks.iter_mut().find(|task| task.id == id) {
-            if task.state == DownloadState::Cancelled {
+            if matches!(task.state, DownloadState::Cancelled | DownloadState::Paused) {
                 return;
             }
             task.state = state;
             if let Some(dest) = dest {
                 task.dest = dest;
             }
+        }
+    }
+
+    /// 记录最近一次实际开始下载的 URL（暂停恢复的「同源续传」判定用）。
+    fn set_last_url(&self, id: u64, url: &str) {
+        let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(task) = tasks.iter_mut().find(|task| task.id == id) {
+            task.last_url = Some(url.to_string());
         }
     }
 
@@ -636,6 +839,7 @@ impl DownloadManager {
             expected_size: None,
             duration_secs: song.duration.as_secs(),
             trigger,
+            last_url: None,
         };
         {
             let mut tasks = self.tasks.lock().unwrap_or_else(|error| error.into_inner());
@@ -659,7 +863,7 @@ impl DownloadManager {
             let _permit = semaphore.acquire_owned().await;
             manager
                 .run_task(
-                    id, song, dedup_key, quality, stem, settings, sources, notify, trigger,
+                    id, song, dedup_key, quality, stem, settings, sources, notify, trigger, None,
                 )
                 .await;
         });
@@ -678,14 +882,19 @@ impl DownloadManager {
         sources: Arc<SourceManager>,
         notify: mpsc::UnboundedSender<AppAction>,
         trigger: DownloadTrigger,
+        resume: Option<ResumeContext>,
     ) {
         let result = self
-            .prepare_and_download(id, &song, quality, &stem, &settings, &sources)
+            .prepare_and_download(id, &song, quality, &stem, &settings, &sources, resume)
             .await;
-        self.inflight
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .remove(&dedup_key);
+        // 暂停时保留 inflight 占位：恢复走 resume()，重新入队会被
+        // 「这首歌已经在下载队列中」拦住，避免暂停任务旁边再挂一个新任务。
+        if !matches!(result, Err(TaskError::Paused)) {
+            self.inflight
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .remove(&dedup_key);
+        }
 
         match result {
             Ok(DownloadOutcome::Done { dest, bytes }) => {
@@ -717,6 +926,11 @@ impl DownloadManager {
                 tracing::info!("download cancelled: {}", song.name);
                 self.finish(id, DownloadState::Cancelled, None, 0, None);
             }
+            Err(TaskError::Paused) => {
+                // 状态已在 pause() 里置为 Paused；staged 前缀与进度都保留，
+                // 这里不再改写状态，也不发通知打扰。
+                tracing::info!("download paused: {}", song.name);
+            }
             Err(TaskError::Failed(error)) => {
                 tracing::warn!("download failed: {}: {error}", song.name);
                 self.finish(id, DownloadState::Failed, Some(error.clone()), 0, None);
@@ -729,6 +943,7 @@ impl DownloadManager {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn prepare_and_download(
         &self,
         id: u64,
@@ -737,6 +952,7 @@ impl DownloadManager {
         stem: &str,
         settings: &RuntimeSettings,
         sources: &Arc<SourceManager>,
+        resume: Option<ResumeContext>,
     ) -> Result<DownloadOutcome, TaskError> {
         let engine = Arc::clone(
             &self
@@ -768,7 +984,13 @@ impl DownloadManager {
         let mut skip_builtin_fallback = false;
         let mut last_error = None;
         let mut downloaded = None;
+        // 恢复上下文只对「解析到与暂停时同源」的第一次尝试生效；换源后
+        // 旧前缀作废（清 staged 文件），按整体重下继续。
+        let mut resume_pending = resume;
         for attempt in 0..DOWNLOAD_ATTEMPTS {
+            if progress.is_paused() {
+                return Err(TaskError::Paused);
+            }
             // 解析失败不必立刻放弃：下一轮从后面的 JS 音源继续试；
             // 如果上一轮已经拿到非音频响应，则禁止重复使用同一个内置回退地址。
             let Ok((resolved_song, url, js_index)) = resolve_download_url(
@@ -793,10 +1015,25 @@ impl DownloadManager {
                 continue;
             };
 
-            let extension_hint = extension_from_url(&url.url)
-                .unwrap_or_else(|| guess_extension(quality).to_string());
-            let dest = unique_dest(&settings.dir, stem, &extension_hint);
+            let (dest, resume_from) = match resume_pending.take() {
+                // 同源：沿用暂停时的目标路径与 staged 前缀，走 Range 续传。
+                Some(context) if context.url == url.url => (context.dest, context.resume_from),
+                Some(context) => {
+                    // 不同源：旧前缀不可信（换 CDN 节点可能字节错位），清掉。
+                    let _ = std::fs::remove_file(staging_path(&context.dest));
+                    progress.reset();
+                    let extension_hint = extension_from_url(&url.url)
+                        .unwrap_or_else(|| guess_extension(quality).to_string());
+                    (unique_dest(&settings.dir, stem, &extension_hint), 0)
+                }
+                None => {
+                    let extension_hint = extension_from_url(&url.url)
+                        .unwrap_or_else(|| guess_extension(quality).to_string());
+                    (unique_dest(&settings.dir, stem, &extension_hint), 0)
+                }
+            };
             self.update_state(id, DownloadState::Downloading, Some(dest.clone()));
+            self.set_last_url(id, &url.url);
             self.set_expected_size(id, url.size);
             // 下次重试用后面那个 JS 音源，避免反复拿到同一个失效链接。
             js_start_index = js_index.map_or(js_start_index, |index| index + 1);
@@ -839,6 +1076,7 @@ impl DownloadManager {
                 // 音源注入的备用 CDN 与严格分片要求一并交给下载引擎。
                 candidate_urls: url.candidate_urls.clone(),
                 max_chunk_size: url.max_chunk_size,
+                resume_from,
             };
             match engine.download(&request, &progress).await {
                 Ok(bytes) => {
@@ -862,6 +1100,9 @@ impl DownloadManager {
                 Err(error) => {
                     if matches!(error, DownloadError::Cancelled) {
                         return Err(TaskError::Cancelled);
+                    }
+                    if matches!(error, DownloadError::Paused) {
+                        return Err(TaskError::Paused);
                     }
                     tracing::debug!("download attempt {} failed: {error}", attempt + 1);
                     last_error = Some(error.to_string());
@@ -962,7 +1203,22 @@ enum DownloadOutcome {
 
 enum TaskError {
     Cancelled,
+    /// 用户请求暂停：任务状态已由 `pause()` 置为 Paused，这里只需保留
+    /// 现场（staged 前缀、inflight 占位、进度计数）等待继续或取消。
+    Paused,
     Failed(String),
+}
+
+/// 恢复下载的上下文：暂停时记下的解析 URL 与目标路径。
+struct ResumeContext {
+    url: String,
+    dest: PathBuf,
+    resume_from: u64,
+}
+
+/// 入队去重键：与 `enqueue_with_trigger` 的 dedup_key 保持同一格式。
+fn inflight_key(song: &SongInfo) -> String {
+    format!("{}:{}", song.source.as_str(), song.id)
 }
 
 impl TaskError {
@@ -1272,6 +1528,7 @@ mod tests {
                 expected_size: None,
                 duration_secs: 0,
                 trigger: DownloadTrigger::Manual,
+                last_url: None,
             }
         }
 
@@ -1284,6 +1541,97 @@ mod tests {
 
         assert_eq!(tasks.len(), FINISHED_TASK_LIMIT + 1);
         assert!(tasks.iter().any(|task| task.id == 9999));
+    }
+
+    fn pause_fixture_task(id: u64, state: DownloadState) -> DownloadTask {
+        DownloadTask {
+            id,
+            name: format!("song {id}"),
+            singer: String::new(),
+            source: SourceId::Kw,
+            quality: Quality::Flac,
+            dest: PathBuf::from(format!("/tmp/{id}.flac")),
+            song: SongInfo::new(
+                format!("id-{id}"),
+                SourceId::Kw,
+                format!("song {id}"),
+                String::new(),
+            ),
+            state,
+            error: None,
+            progress: DownloadProgress::new(),
+            started_at: Instant::now(),
+            finished_at: None,
+            bytes: 0,
+            expected_size: None,
+            duration_secs: 0,
+            trigger: DownloadTrigger::Manual,
+            last_url: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn pause_during_resolving_keeps_paused_against_late_results() {
+        // P2-14：解析（resolving）阶段点击暂停 → 任务立即 Paused，且解析
+        // 失败/下载错误的迟到结果（finish/update_state）不得把 Paused 改写
+        // 成失败。运行时 D4 观察到「失败」即沿改写路径发生；这里锁定短路
+        // 防线（无网络、确定性，不驱动真实解析协程）。
+        let manager = DownloadManager::new(&test_config(), tokio::runtime::Handle::current());
+        manager
+            .tasks
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .push(pause_fixture_task(7, DownloadState::Resolving));
+
+        manager.pause(7);
+        let view = manager
+            .snapshot()
+            .into_iter()
+            .find(|task| task.id == 7)
+            .expect("任务应在快照中");
+        assert_eq!(view.state, DownloadState::Paused, "暂停点击立即生效");
+
+        // 迟到的失败/下载态/完成结果一律短路：Paused 是用户决策。
+        manager.finish(
+            7,
+            DownloadState::Failed,
+            Some("获取播放地址失败".to_string()),
+            0,
+            None,
+        );
+        manager.update_state(7, DownloadState::Downloading, None);
+        manager.finish(7, DownloadState::Done, None, 1024, None);
+        let view = manager
+            .snapshot()
+            .into_iter()
+            .find(|task| task.id == 7)
+            .expect("任务应在快照中");
+        assert_eq!(view.state, DownloadState::Paused, "迟到结果不得改写已暂停");
+
+        // §5.11 各活跃态均可暂停（排队/解析/下载/写标签）。
+        for (index, state) in [
+            DownloadState::Queued,
+            DownloadState::Resolving,
+            DownloadState::Downloading,
+            DownloadState::Tagging,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let id = 100 + index as u64;
+            manager
+                .tasks
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .push(pause_fixture_task(id, state));
+            manager.pause(id);
+            let view = manager
+                .snapshot()
+                .into_iter()
+                .find(|task| task.id == id)
+                .expect("任务应在快照中");
+            assert_eq!(view.state, DownloadState::Paused, "{state:?} 也可暂停");
+        }
     }
 
     #[test]
@@ -1317,6 +1665,7 @@ mod tests {
                 downloaded: 10,
                 total: 20,
                 cancelled: false,
+                paused: false,
             },
             elapsed: Duration::from_secs(1),
             bytes: 20,

@@ -80,9 +80,7 @@ class VoicefoxQueueDrawer extends StatelessWidget {
             ),
             const Divider(height: 1),
             if (queue.isEmpty)
-              const Expanded(
-                child: Center(child: Text('当前没有播放任何歌曲')),
-              )
+              const Expanded(child: Center(child: Text('当前没有播放任何歌曲')))
             else
               Expanded(
                 child: ListView.builder(

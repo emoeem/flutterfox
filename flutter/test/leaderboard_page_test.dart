@@ -7,19 +7,18 @@ import 'package:voicefox_flutter/src/pages/leaderboard_page.dart';
 bridge.SourceCapabilitiesDto _caps({
   String id = 'kw',
   bool leaderboard = true,
-}) =>
-    bridge.SourceCapabilitiesDto(
-      id: id,
-      name: id.toUpperCase(),
-      playlists: true,
-      playlistCategories: true,
-      playlistSearch: true,
-      album: true,
-      artist: true,
-      leaderboard: leaderboard,
-      login: false,
-      qrLogin: false,
-    );
+}) => bridge.SourceCapabilitiesDto(
+  id: id,
+  name: id.toUpperCase(),
+  playlists: true,
+  playlistCategories: true,
+  playlistSearch: true,
+  album: true,
+  artist: true,
+  leaderboard: leaderboard,
+  login: false,
+  qrLogin: false,
+);
 
 const _board = bridge.LeaderboardDto(
   id: 'b1',
@@ -29,14 +28,14 @@ const _board = bridge.LeaderboardDto(
 );
 
 bridge.SongDto _song(String name) => bridge.SongDto(
-      id: 's1',
-      source: 'kw',
-      name: name,
-      singer: '歌手',
-      albumName: '专辑',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+  id: 's1',
+  source: 'kw',
+  name: name,
+  singer: '歌手',
+  albumName: '专辑',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 void main() {
   testWidgets('无支持音源时展示空态', (tester) async {
@@ -88,11 +87,7 @@ void main() {
     await tester.pump();
     expect(find.text('加载中…'), findsOneWidget);
 
-    model.debugBrowseLoaded(
-      kind: 'leaderboard_songs',
-      source: 'kw',
-      id: 'b1',
-    );
+    model.debugBrowseLoaded(kind: 'leaderboard_songs', source: 'kw', id: 'b1');
     await tester.pump();
     expect(find.text('榜单暂无歌曲'), findsOneWidget);
 

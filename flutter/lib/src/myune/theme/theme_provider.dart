@@ -7,27 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_fonts/system_fonts.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../theme/app_theme.dart';
+
 class ThemeProvider with ChangeNotifier {
-  static const TextStyle defaultStyle = TextStyle(fontWeight: FontWeight.w400);
-
-  static const TextTheme misansTextTheme = TextTheme(
-    displayLarge: defaultStyle,
-    displayMedium: defaultStyle,
-    displaySmall: defaultStyle,
-    headlineLarge: defaultStyle,
-    headlineMedium: defaultStyle,
-    headlineSmall: defaultStyle,
-    titleLarge: defaultStyle,
-    titleMedium: defaultStyle,
-    titleSmall: defaultStyle,
-    bodyLarge: defaultStyle,
-    bodyMedium: defaultStyle,
-    bodySmall: defaultStyle,
-    labelLarge: defaultStyle,
-    labelMedium: defaultStyle,
-    labelSmall: defaultStyle,
-  );
-
   static final int _defaultSeedColorValue = Colors.blue.toARGB32(); // 默认蓝色
   Color _currentSeedColor = Color(
     _defaultSeedColorValue,
@@ -36,6 +18,17 @@ class ThemeProvider with ChangeNotifier {
     _defaultSeedColorValue,
   ); // 用户最后一次手动选择的种子色，用于在关闭动态配色时恢复
 
+  /// 动态种子（B1）：由 setSeedColor 注入（main.dart DynamicColorBuilder
+  /// 的系统调色板 / 封面取色 / vendored 手动选色都走该入口），非 null 时
+  /// getters 以它为 buildAppTheme 的 dynamicSeed。冷启动只恢复
+  /// _currentSeedColor 不恢复本字段——命名主题默认不受历史种子污染。
+  Color? _dynamicSeed;
+  Color? get dynamicSeed => _dynamicSeed;
+
+  /// 当前命名主题 key（B1）：AppModel.themeKey 经 MyuneProjection 推入。
+  String? _themeKey;
+  String get currentThemeKey => _themeKey ?? 'catppuccin-mocha';
+
   ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -43,6 +36,7 @@ class ThemeProvider with ChangeNotifier {
   static const String _seedColorKey = 'user_seed_color';
   static const String _lastManualSeedColorKey =
       'user_last_manual_seed_color'; // 用户手动选择的种子色，用于在关闭动态配色时恢复
+  static const String _themeKeyKey = 'user_theme_key';
 
   static const String _fontFamilyKey = 'user_font_family';
   String _currentFontFamily = 'Misans'; // 默认字体
@@ -61,29 +55,44 @@ class ThemeProvider with ChangeNotifier {
     return ColorScheme.fromSeed(seedColor: _currentSeedColor);
   }
 
-  ThemeData get lightThemeData => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _currentSeedColor,
-      brightness: Brightness.light,
-    ),
+  /// B1：委托统一构建器 buildAppTheme（命名主题显式色板 + VxTypography
+  /// 层级 + VxPalette 扩展），不再 fromSeed/misansTextTheme。
+  ThemeData get lightThemeData => buildAppTheme(
+    currentThemeKey,
+    Brightness.light,
+    dynamicSeed: dynamicSeed,
     fontFamily: _currentFontFamily,
-    textTheme: misansTextTheme,
+    platform: defaultTargetPlatform,
   ).makeMouseClickable();
 
-  ThemeData get darkThemeData => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _currentSeedColor,
-      brightness: Brightness.dark,
-    ),
+  ThemeData get darkThemeData => buildAppTheme(
+    currentThemeKey,
+    Brightness.dark,
+    dynamicSeed: dynamicSeed,
     fontFamily: _currentFontFamily,
-    textTheme: misansTextTheme,
+    platform: defaultTargetPlatform,
   ).makeMouseClickable();
+
+  /// 命名主题切换（B1）：乐观更新 + 持久化 + notifyListeners。
+  /// 推 key 即回到命名主题模式，清除动态种子覆盖（动态色路径由 main.dart
+  /// 的 DynamicColorBuilder 持续经 setSeedColor 重新注入，不受影响）。
+  Future<void> setThemeKey(String key) async {
+    final keyChanged = _themeKey != key;
+    final seedCleared = _dynamicSeed != null;
+    if (!keyChanged && !seedCleared) return;
+    _themeKey = key;
+    _dynamicSeed = null;
+    notifyListeners();
+    if (keyChanged) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_themeKeyKey, key);
+    }
+  }
 
   Future<void> setSeedColor(Color newColor, {bool isManual = false}) async {
-    if (_currentSeedColor != newColor) {
+    if (_currentSeedColor != newColor || _dynamicSeed != newColor) {
       _currentSeedColor = newColor;
+      _dynamicSeed = newColor;
       notifyListeners();
       await _saveSeedColor(newColor);
     }
@@ -204,6 +213,14 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
+  Future<void> _loadThemeKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedKey = prefs.getString(_themeKeyKey);
+    if (savedKey != null && savedKey.isNotEmpty) {
+      _themeKey = savedKey;
+    }
+  }
+
   void setFontFamily(String fontFamily) async {
     if (_currentFontFamily == fontFamily) return; // 没变就直接退出
     _currentFontFamily = fontFamily;
@@ -220,7 +237,12 @@ class ThemeProvider with ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    await Future.wait([_loadSeedColor(), _loadDarkMode(), _loadFontFamily()]);
+    await Future.wait([
+      _loadSeedColor(),
+      _loadDarkMode(),
+      _loadFontFamily(),
+      _loadThemeKey(),
+    ]);
     await _migrateManualColorKey();
     await _loadLastManualSeedColor();
     notifyListeners();
@@ -251,64 +273,5 @@ class DesktopButtonTheme {
       OutlinedButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor));
 }
 
-// 代码来源: https://github.com/flutter/flutter/issues/182466#issuecomment-3932182424
-// 旨在修复Flutter 3.40+ 鼠标点击光标被移除的问题
-// 参考 https://github.com/flutter/flutter/issues/182466
-// TODO: 请等待Flutter修复该问题
-
-extension on ThemeData {
-  ThemeData makeMouseClickable() {
-    final WidgetStateMouseCursor clickable =
-        defaultTargetPlatform != TargetPlatform.android
-        ? WidgetStateMouseCursor.clickable
-        : WidgetStateMouseCursor.adaptiveClickable;
-    return copyWith(
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: (elevatedButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: (filledButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: (outlinedButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      floatingActionButtonTheme: floatingActionButtonTheme.copyWith(
-        mouseCursor: clickable,
-      ),
-      iconButtonTheme: IconButtonThemeData(
-        style: (iconButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      menuButtonTheme: MenuButtonThemeData(
-        style: (menuButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      menuTheme: MenuThemeData(
-        submenuIcon: menuTheme.submenuIcon,
-        style: (menuTheme.style ?? const MenuStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      checkboxTheme: checkboxTheme.copyWith(mouseCursor: clickable),
-      popupMenuTheme: popupMenuTheme.copyWith(mouseCursor: clickable),
-      segmentedButtonTheme: segmentedButtonTheme.copyWith(
-        style: (segmentedButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: (textButtonTheme.style ?? const ButtonStyle()).copyWith(
-          mouseCursor: clickable,
-        ),
-      ),
-    );
-  }
-}
+// makeMouseClickable 已上移至 theme/app_theme.dart 的公有扩展
+// MouseClickableTheme（B1）：统一构建器与 vendored ThemeProvider 共用。

@@ -57,8 +57,12 @@ class VxCardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final shadowColor = dark ? const Color(0x25000000) : const Color(0x1A000000);
-    final crossAxis = centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final shadowColor = dark
+        ? const Color(0x25000000)
+        : const Color(0x1A000000);
+    final crossAxis = centered
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start;
 
     return SizedBox(
       width: width,
@@ -132,14 +136,22 @@ class VxCardShell extends StatelessWidget {
   }
 
   Widget _cover(Color shadowColor) {
-    final inner = cover ??
-        VxCoverFallback(title: fallbackSeed ?? title, radius: circle ? 0 : VxRadius.lg);
+    final inner =
+        cover ??
+        VxCoverFallback(
+          title: fallbackSeed ?? title,
+          radius: circle ? 0 : VxRadius.lg,
+        );
     if (circle) {
       return DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow(color: shadowColor, blurRadius: 16, offset: const Offset(0, 6)),
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: ClipOval(child: inner),
@@ -149,7 +161,11 @@ class VxCardShell extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(VxRadius.lg),
         boxShadow: [
-          BoxShadow(color: shadowColor, blurRadius: 16, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: ClipRRect(

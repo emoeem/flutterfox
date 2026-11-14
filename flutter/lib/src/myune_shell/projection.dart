@@ -13,7 +13,6 @@ import '../myune/page/setting/settings_provider.dart';
 import '../myune/services/notification_service.dart';
 import '../myune/theme/theme_provider.dart';
 import '../myune_seam/cover_loader.dart';
-import '../theme/seed_colors.dart';
 
 /// 把 voicefox 的 AppModel 快照持续投影进 myune 的 Provider 图：
 ///
@@ -62,18 +61,20 @@ class MyuneProjection {
     );
     _playlist.adoptExternalLyrics(_toLyrics(_model.state.lyrics));
     final queue = _model.state.queue;
-    _playlist.adoptExternalQueue(
-      [for (final item in queue) _toSong(item, null)],
-      _model.state.queueIndex,
-    );
+    _playlist.adoptExternalQueue([
+      for (final item in queue) _toSong(item, null),
+    ], _model.state.queueIndex);
     _pumpToasts();
   }
 
   /// 主题桥接：ConfigDto（theme key + 明暗三态）→ myune ThemeProvider。
   ///
-  /// 动态取色开启时不覆盖 seed——那个 seed 由 main 的 DynamicColorBuilder
-  /// 注入系统调色板。ThemeProvider 的 SharedPreferences 持久化是无害回声，
-  /// 真源是 Rust 配置。
+  /// B1：投影**主题 key**（ThemeProvider getters 委托 buildAppTheme 按注册
+  /// 表构建显式色板，44 套预设全支持），不再投影种子色——旧 _seedFor 只
+  /// 遍历 TUI 同源 16 套，flex/flclash 类从未真正生效。动态取色开启时不推
+  /// key——种子由 main 的 DynamicColorBuilder 经 setSeedColor 注入
+  /// （ThemeProvider.dynamicSeed 路径，getters 以 dynamicSeed 优先）。
+  /// ThemeProvider 的 SharedPreferences 持久化是无害回声，真源是 Rust 配置。
   void _applyTheme() {
     final mode = switch (_model.config?.themeMode) {
       'light' => ThemeMode.light,
@@ -84,18 +85,7 @@ class MyuneProjection {
       _theme.setThemeMode(mode);
     }
     if (_model.useDynamicColor) return;
-    final seed = _seedFor(_model.themeKey);
-    if (_theme.currentSeedColor != seed) {
-      _theme.setSeedColor(seed);
-    }
-  }
-
-  /// TUI 同源 seed 表的强调色作为 M3 种子；未知 key 回退 Mocha。
-  static Color _seedFor(String key) {
-    for (final theme in kSeedThemes) {
-      if (theme.key == key) return Color(hexOf(theme.accent));
-    }
-    return const Color(0xFF89B4FA);
+    _theme.setThemeKey(_model.themeKey);
   }
 
   /// AppModel 的错误/通知统一浮成 myune 的 toast。
@@ -131,16 +121,18 @@ class MyuneProjection {
     if (url == null || url.isEmpty) {
       return;
     }
-    unawaited(loadCoverBytes(url).then((bytes) {
-      if (url != _coverUrl) return;
-      _cover = bytes;
-      _playlist.adoptExternalState(
-        song: _currentSongWithCover(bytes),
-        position: _currentPosition(),
-        total: _currentTotal(),
-        playing: _currentPlaying(),
-      );
-    }));
+    unawaited(
+      loadCoverBytes(url).then((bytes) {
+        if (url != _coverUrl) return;
+        _cover = bytes;
+        _playlist.adoptExternalState(
+          song: _currentSongWithCover(bytes),
+          position: _currentPosition(),
+          total: _currentTotal(),
+          playing: _currentPlaying(),
+        );
+      }),
+    );
   }
 
   bridge.SongDto? get _currentDto => _model.state.playback.song;
@@ -212,11 +204,7 @@ class MyuneHost {
     final settings = SettingsProvider();
     final theme = ThemeProvider();
     final notifications = NotificationService();
-    final playlist = PlaylistContentNotifier(
-      settings,
-      theme,
-      notifications,
-    );
+    final playlist = PlaylistContentNotifier(settings, theme, notifications);
     // 主题初始化是异步的（字体/配色），失败不影响页面渲染。
     unawaited(theme.initialize());
     MyuneProjection(

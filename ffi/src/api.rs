@@ -32,8 +32,12 @@ pub fn command_previous() -> FfiCommand {
 pub fn command_search(keyword: String, source: Option<String>) -> FfiCommand {
     FfiCommand::Search { keyword, source }
 }
-pub fn command_search_more(keyword: String, page: u32) -> FfiCommand {
-    FfiCommand::SearchMore { keyword, page }
+pub fn command_search_more(keyword: String, page: u32, source: Option<String>) -> FfiCommand {
+    FfiCommand::SearchMore {
+        keyword,
+        page,
+        source,
+    }
 }
 pub fn command_play(song: SongDto) -> FfiCommand {
     FfiCommand::PlaySong { song }
@@ -46,6 +50,11 @@ pub fn command_queue_remove(index: u32) -> FfiCommand {
 }
 pub fn command_queue_clear() -> FfiCommand {
     FfiCommand::QueueClear
+}
+
+/// P2-17：手动重新获取一首歌的歌词（歌词面板空态的重取入口）。
+pub fn command_load_lyrics(song: SongDto) -> FfiCommand {
+    FfiCommand::LoadLyrics { song }
 }
 
 /// FRB 生成代码无条件引用此函数，因此签名必须始终存在；
@@ -81,8 +90,9 @@ pub fn new_host() -> Result<VoicefoxController, String> {
 }
 
 /// 播放指令流（Rust→Dart 反向信号面）。与 VoicefoxEventStream 同为
-/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err，
-/// 由 Dart 侧重订阅并重拉状态。
+/// 「Dart 持流轮询 next」模式；Lagged（宿主消费落后丢指令）返回 Err
+/// 字符串（含 "lagged" 与跳过条数），Dart 侧识别后回灌当前快照重同步
+/// 并继续消费缓冲内剩余指令（host_player_bridge.dart `_pumpCommands`）。
 pub fn host_player_stream(controller: &VoicefoxController) -> HostPlayerStream {
     HostPlayerStream {
         inner: controller
@@ -152,6 +162,22 @@ pub fn host_player_report_event(
     Ok(())
 }
 
+/// 宿主 ack 一条播放指令（FFI-R06 A-1b：区分「已入队」与「宿主已执行」）。
+/// command_id 来自指令 DTO 的 command_id 字段；ok=false 仅诊断记录，
+/// 真实播放器错误经 host_player_report_event('error') 走既有错误链路。
+pub fn host_player_ack(
+    controller: &VoicefoxController,
+    command_id: u64,
+    ok: bool,
+    message: Option<String>,
+) -> Result<(), String> {
+    let backend = controller
+        .host_player()
+        .ok_or_else(|| "控制器未启用转发型播放后端".to_string())?;
+    backend.ack(command_id, ok, message);
+    Ok(())
+}
+
 fn parse_host_state(state: &str) -> Option<lx_core::model::source::PlayerState> {
     use lx_core::model::source::PlayerState;
     Some(match state {
@@ -177,6 +203,13 @@ pub fn set_data_dir(path: Option<String>) {
 
 pub fn state(controller: &VoicefoxController) -> VoicefoxState {
     controller.state()
+}
+
+/// 本地曲库全量快照（FFI-R09 A-2：从 state() 拆出的独立读取口）。
+/// 大曲库下 state() 不再每次搬运整库；Dart 在引导与 local_music 事件时
+/// 单独调用本接口。
+pub fn local_songs(controller: &VoicefoxController) -> Vec<SongDto> {
+    controller.local_songs()
 }
 
 pub async fn dispatch(controller: &VoicefoxController, command: FfiCommand) -> Result<(), String> {

@@ -144,6 +144,40 @@ impl SourceManager {
         manager
     }
 
+    /// 生产构造：本地音源带曲库持久化缓存（§8.4 重启后仍在）。
+    /// 测试用 `new()`：本地音源不读写数据目录。
+    pub fn with_persistent_local(default: SourceId, enabled: &[SourceId]) -> Self {
+        let local_source = Arc::new(LocalSource::with_default_cache());
+        let bili_source = Arc::new(BiliSource::new());
+        let mut manager = Self {
+            sources: HashMap::new(),
+            js_sources: std::sync::RwLock::new(JsSourceState {
+                generation: 0,
+                sources: Vec::new(),
+            }),
+            local_source: Arc::clone(&local_source),
+            bili_source: Arc::clone(&bili_source),
+            default: std::sync::RwLock::new(default),
+            enabled: std::sync::RwLock::new(enabled.iter().copied().collect()),
+            js_url_first: std::sync::atomic::AtomicBool::new(false),
+            lyric_negative_cache: std::sync::Mutex::new(HashMap::new()),
+        };
+        manager.register(Arc::new(KwSource::new()));
+        manager.register(Arc::new(KgSource::new()));
+        manager.register(Arc::new(MgSource::new()));
+        manager.register(Arc::new(TxSource::new()));
+        manager.register(Arc::new(WySource::new()));
+        manager.register(Arc::new(QianqianSource::new()));
+        manager.register(Arc::new(JooxSource::new()));
+        manager.register(Arc::new(FivesingSource::new()));
+        manager.register(Arc::new(JamendoSource::new()));
+        manager.register(Arc::new(AppleSource::new()));
+        manager.register(Arc::new(SodaSource::new()));
+        manager.register(bili_source);
+        manager.register(local_source);
+        manager
+    }
+
     pub fn register(&mut self, source: Arc<dyn MusicSource>) {
         self.sources.insert(source.id(), source);
     }

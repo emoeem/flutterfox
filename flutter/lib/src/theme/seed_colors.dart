@@ -20,7 +20,13 @@ const List<SeedTheme> kSeedThemes = [
   SeedTheme('one-dark-pro', 'One Dark Pro', '#282C34', '#61AFEF', true),
   SeedTheme('nord', 'Nord', '#2E3440', '#88C0D0', true),
   SeedTheme('catppuccin-mocha', 'Catppuccin Mocha', '#1E1E2E', '#89B4FA', true),
-  SeedTheme('catppuccin-latte', 'Catppuccin Latte', '#EFF1F5', '#1E66F5', false),
+  SeedTheme(
+    'catppuccin-latte',
+    'Catppuccin Latte',
+    '#EFF1F5',
+    '#1E66F5',
+    false,
+  ),
   SeedTheme('gruvbox-dark', 'Gruvbox Dark', '#282828', '#FABD2F', true),
   SeedTheme('gruvbox-light', 'Gruvbox Light', '#FBF1C7', '#B57614', false),
   SeedTheme('tokyo-night', 'Tokyo Night', '#1A1B26', '#7AA2F7', true),
@@ -31,7 +37,13 @@ const List<SeedTheme> kSeedThemes = [
   SeedTheme('kanagawa', 'Kanagawa', '#1F1F28', '#7FB4CA', true),
   SeedTheme('everforest', 'Everforest', '#2F3537', '#83C178', true),
   SeedTheme('cyberpunk', 'Cyberpunk', '#0D0221', '#00FFFF', true),
-  SeedTheme('midnight-commander', 'Midnight Commander', '#0000AA', '#00AAAA', true),
+  SeedTheme(
+    'midnight-commander',
+    'Midnight Commander',
+    '#0000AA',
+    '#00AAAA',
+    true,
+  ),
 ];
 
 /// "#RRGGBB" → 不透明 ARGB。`Color(0x1E1E2E)` 的 alpha 是 0x00：
