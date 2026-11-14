@@ -1230,13 +1230,20 @@ impl VoicefoxController {
             .into_iter()
             .map(Into::into)
             .collect();
-        state.local_songs = self
-            .application
+        // FFI-R09（A-2）：state() 不再携带 local_songs 全量快照——大曲库下
+        // 每次调用是 O(n) 克隆 + FFI 序列化，而本地曲目只在扫描/导入/删除后
+        // 才变化。改由 [api::local_songs] 独立拉取（Dart 在引导与
+        // local_music 事件时调用），播放/搜索/下载等高频事件不再搬运曲库。
+        state
+    }
+
+    /// 本地曲库全量快照（FFI-R09 A-2：从 state() 拆出的独立读取口）。
+    pub fn local_songs(&self) -> Vec<SongDto> {
+        self.application
             .local_songs()
             .into_iter()
             .map(Into::into)
-            .collect();
-        state
+            .collect()
     }
 
     pub async fn dispatch(&self, command: FfiCommand) -> Result<(), String> {

@@ -288,7 +288,7 @@ pub enum ApplicationEvent {
     Notification {
         message: String,
     },
-    /// 收藏/历史/自定义歌单有任何变化的信号；数据本体看 StateChanged 快照。
+    /// 收藏/历史/自定义歌单有任何变化的信号；数据本体经 state() 快照恢复（A-2 起不再尾随 StateChanged）。
     LibraryChanged,
     /// 新建自建歌单成功：带回生成的 id，前端可立即把歌曲加进去。
     /// 与本事件前后脚发出的 `LibraryChanged` 负责刷新列表快照。
@@ -296,7 +296,7 @@ pub enum ApplicationEvent {
         id: String,
         name: String,
     },
-    /// 下载任务列表有变化；数据本体看 StateChanged 快照的 downloads 字段。
+    /// 下载任务列表有变化；数据本体经 state() 快照恢复（A-2 起不再尾随 StateChanged）。
     DownloadsChanged,
     /// 配置被替换（含 ConfigGet 的应答）。
     ConfigChanged {

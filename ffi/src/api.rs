@@ -205,6 +205,13 @@ pub fn state(controller: &VoicefoxController) -> VoicefoxState {
     controller.state()
 }
 
+/// 本地曲库全量快照（FFI-R09 A-2：从 state() 拆出的独立读取口）。
+/// 大曲库下 state() 不再每次搬运整库；Dart 在引导与 local_music 事件时
+/// 单独调用本接口。
+pub fn local_songs(controller: &VoicefoxController) -> Vec<SongDto> {
+    controller.local_songs()
+}
+
 pub async fn dispatch(controller: &VoicefoxController, command: FfiCommand) -> Result<(), String> {
     controller.dispatch(command).await
 }

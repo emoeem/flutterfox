@@ -139,6 +139,12 @@ Future<void> setDataDir({String? path}) =>
 Future<VoicefoxState> state({required VoicefoxController controller}) =>
     RustLib.instance.api.crateApiState(controller: controller);
 
+/// 本地曲库全量快照（FFI-R09 A-2：从 state() 拆出的独立读取口）。
+/// 大曲库下 state() 不再每次搬运整库；Dart 在引导与 local_music 事件时
+/// 单独调用本接口。
+Future<List<SongDto>> localSongs({required VoicefoxController controller}) =>
+    RustLib.instance.api.crateApiLocalSongs(controller: controller);
+
 Future<void> dispatch({
   required VoicefoxController controller,
   required FfiCommand command,

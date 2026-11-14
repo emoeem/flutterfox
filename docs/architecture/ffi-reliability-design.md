@@ -91,9 +91,34 @@
 | 18 | 事件泵/命令泵生命周期测试补齐（state()、event_next、双泵守卫） | 审计缺口 | 测试文件 | 覆盖矩阵第四节三行「无」缺口 |
 
 修复分批建议（可独立验收、可回退）：
-- **批次 A-1（移动命令可靠性）**：#1+#2+#3+#4+#5+#6 + 各自测试，同一契约变更批次内同步 Rust/Dart/生成码/文档。**实施状态（2026-11-14）**：#1/#3/#4/#5/#6 已在工作区实施并通过定向+全量测试（见下「A-1 实施记录」）；#2（commandId/generation 全命令覆盖）需改 HostPlayerCommandDto + FRB 再生成，独立为 A-1b 小批（codegen 工具本地可用：`~/.cargo/bin/flutter_rust_bridge_codegen`）。
-- **批次 A-2（事件与快照）**：#7+#9+#10+#11+#14（#8/#16 触碰 FFI 接口形状，独立小批）。
-- **批次 A-3（协议与工程）**：#8+#15+#16+#17+#18。
+- **批次 A-1（移动命令可靠性）**：#1+#3+#4+#5+#6 已实施（commit `f56e08b`，见下「A-1 实施记录」）。
+- **批次 A-1b（#2 命令代次/ID + ack 契约）**：已实施（commit `5e6f066`，见「A-1b 实施记录」）。
+- **批次 A-2（事件与快照）**：#7+#9+#10+#11+#14+#8+#16，见「A-2 实施记录」。
+- **批次 A-3（协议与工程）**：#15+#17+#18（#16 已并入 A-2）。
+
+## A-1b 实施记录（2026-11-14，commit `5e6f066`）
+
+| 修复 | 实施 | 测试 |
+|---|---|---|
+| #2 R04 命令契约升级 | HostPlayerCommand 8 变体携带 command_id（后端 send_command 统一打戳）+ 歌曲域指令携带发送时刻 generation（Play 保留解析代次）；DTO 镜像 + FRB 2.13.0 再生成（幂等哈希校验通过）；新 FFI hostPlayerAck | Rust `commands_stamped_and_acked`（id 单调/Play 代次不覆写/歌曲域补代次/ack 销账/无消费者不登记）；Dart `FFI-R04：歌曲域指令代次落后宿主 → 丢弃并 ack 失败` |
+| #2 R06 ack 回销 | Dart _runCommand 三段化（过期过滤→_execute→ack 成功/失败均回销）；HostStateSink.ack 抽象 + RustHostStateSink + pending 表销账 | Dart `FFI-R06：命令执行成功/失败均 ack 回销` |
+| 教训修正 | CI clippy 门禁实为 `-D warnings -A clippy::double_must_use`（ci.yml:38；30 条基线告警即 double_must_use，async_trait 宏展开）；A-1 曾用宽松口径对账致 f56e08b Lint 失败（command_id 死代码 + map_or 可简化），本批修复并确立「以 CI 同款命令对账」 | CI 同款 clippy 0 error |
+
+未实施：ack 失败的 Rust 业务消费（失败 Play 触发 UI 反馈）留 A-2 后评估；R02 慢 Play 分流依赖本契约（A-1c 评估）。
+
+## A-2 实施记录（2026-11-14，当日晚间）
+
+| 修复 | 实施 | 说明 |
+|---|---|---|
+| #14 R08 尾随快照降级 | service.rs emit() 不再为每事件广播 StateChanged(Box<ApplicationState>)（旧实现整克隆后 Dart 在 FFI 边界整体丢弃）；StateChanged 变体保留（pub API），event.rs:291/299、service.rs:1497 过时注释同步 | 事件广播不再携带全量克隆 |
+| #7 R08 Dart 消费 | 不需要：尾随快照移除后，恢复统一走 _refreshState（单飞），行为等价且省一次克隆+传输 | 设计变更记录 |
+| #9 R09 刷新单飞 | app_model._refreshState 改单飞+追尾（在途合并、风暴后最终态最新）；快照拉取失败登记 lastError 不再抛未处理异常 | |
+| #10 R09 attach 顺序 | _attach 改先 subscribe 起泵再拉快照，消除拉取窗口丢事件 | |
+| #11 R08 泵死亡可见化 | _eventLoop 连续 5 次失败置 `streamDead` 公开标志退出（不再无限 1s 重试空转，重订阅失败也计数）；`restartEventLoop()` 显式重连 | |
+| #8 R09 local_songs 拆分 | VoicefoxController::state() 不再填充 local_songs（O(n) 克隆+FFI 序列化移出高频路径）；新 FFI `localSongs(controller)`；Dart `refreshLocalSongs()` 在引导与 local_music 事件时按需拉取，页面消费 `state.localSongs` 零改动 | |
+| #16 R09 downloads 节流 | downloads_bridge 轮询 500ms→1s | |
+
+待门禁确认后提交。
 
 ## A-1 实施记录（2026-11-14，工作区改动，未 commit）
 

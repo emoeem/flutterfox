@@ -1494,7 +1494,7 @@ impl ApplicationService {
             .ok_or_else(|| "本地存储不可用".to_string())
     }
 
-    /// 刷新收藏/历史/自定义歌单快照并广播 LibraryChanged + StateChanged。
+    /// 刷新收藏/历史/自定义歌单快照并广播 LibraryChanged（A-2 起不再尾随 StateChanged，数据经 state() 恢复）。
     fn publish_library(&self) {
         let Some(store) = self.library.as_ref() else {
             return;
@@ -1769,14 +1769,13 @@ impl ApplicationService {
     }
 
     fn emit(&self, event: ApplicationEvent) {
-        let is_state = matches!(event, ApplicationEvent::StateChanged(_));
+        // FFI-R09（A-2）：不再为每个事件尾随广播全量 StateChanged 快照。
+        // 旧实现每次 emit 都克隆整份 ApplicationState（含 search.items/
+        // queue/history），而 Dart 侧 _handleEvent 没有 state_changed 分支，
+        // 快照在 FFI 边界被整体丢弃，纯浪费。数据恢复统一走 Dart 的
+        // _refreshState 拉取（已带单飞+追尾合并）；StateChanged 变体保留
+        // （pub API），语义降级为「显式携带快照的事件」，当前无发送方。
         let _ = self.events.send(event);
-        if !is_state {
-            let snapshot = self.state();
-            let _ = self
-                .events
-                .send(ApplicationEvent::StateChanged(Box::new(snapshot)));
-        }
     }
 }
 

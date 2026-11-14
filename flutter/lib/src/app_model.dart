@@ -88,6 +88,18 @@ class AppModel extends ChangeNotifier {
   bridge.VoicefoxState _state = _emptyState();
   final Map<PlaylistKey, BrowseResult> _browse = {};
 
+  /// 事件泵连续失败计数（FFI-R08 A-2：达到上限置 streamDead）。
+  int _eventLoopFailures = 0;
+  static const int eventLoopMaxFailures = 5;
+
+  /// 事件泵死亡标志（true = 实时事件不可用；UI 可据此展示降级提示，
+  /// 调用 [restartEventLoop] 显式重连）。
+  bool streamDead = false;
+
+  /// 快照刷新单飞（FFI-R09 A-2）：在途标记 + 追尾请求标记。
+  bool _refreshPending = false;
+  Future<void>? _refreshInFlight;
+
   /// 下拉刷新完成判据的等待者（按槽键）：命令 fire-and-forget，完成信号
   /// 只能来自 browse 事件。page=1 非追加响应或 BrowseFailed（page=0）到达
   /// 即完成；过期 append 不完成（刷新仍在途）。等待者一次性消费。
@@ -215,12 +227,16 @@ class AppModel extends ChangeNotifier {
 
   Future<void> _attach(bridge.VoicefoxController controller) async {
     _controller = controller;
-    _state = await bridge.state(controller: controller);
+    // FFI-R09（A-2）：先订阅再拉快照，消除「拉取期间发布的事件丢失」
+    // 窗口。订阅先行时事件在拉取期间排入广播缓冲，泵按序消费；拉到的
+    // 快照即使略旧也会被后续事件的刷新覆盖（_refreshState 单飞+追尾）。
     _stream = await bridge.subscribe(controller: controller);
     if (!_pumping) {
       _pumping = true;
       unawaited(_eventLoop());
     }
+    await _refreshState();
+    unawaited(refreshLocalSongs());
     // 启动即拉一次库与配置快照
     unawaited(dispatch(const bridge.FfiCommand.libraryRefresh()));
     unawaited(dispatch(const bridge.FfiCommand.configGet()));
@@ -229,17 +245,32 @@ class AppModel extends ChangeNotifier {
 
   /// FRB 的事件流是「每次 await next() 取一条」，用自循环消费；
   /// 异常时退避重订阅，避免静默失联。
+  ///
+  /// FFI-R08（A-2）：连续 [eventLoopMaxFailures] 次重订阅失败后置
+  /// [streamDead]（UI 可读取展示「实时更新不可用」）并退出循环，
+  /// 不再无限 1s 重试空转；[restartEventLoop] 显式重连。
   Future<void> _eventLoop() async {
     while (true) {
       final stream = _stream;
       if (stream == null) return;
       try {
         final event = await bridge.eventNext(stream: stream);
+        _eventLoopFailures = 0;
         _handleEvent(event);
       } on Object catch (error) {
         // release 模式 debugPrint 可能被引擎日志吞掉；事件流故障必须可见
         // （否则 UI 靠 _refreshState 轮询继续工作，故障不可排查）。
         stderr.writeln('voicefox event stream error: $error');
+        _eventLoopFailures += 1;
+        if (_eventLoopFailures >= eventLoopMaxFailures) {
+          streamDead = true;
+          notifyListeners();
+          stderr.writeln(
+            'voicefox event stream dead: 连续 $_eventLoopFailures 次失败，'
+            '泵退出（UI 可提示并调用 restartEventLoop 重连）',
+          );
+          return;
+        }
         await Future<void>.delayed(const Duration(seconds: 1));
         final controller = _controller;
         if (controller == null) return;
@@ -249,10 +280,31 @@ class AppModel extends ChangeNotifier {
           // 重订阅成功后必须整份重拉快照，否则界面停在旧状态。
           await _refreshState();
         } on Object {
-          return;
+          // 重订阅失败计入失败计数，下一轮再试直至达到上限（不再静默
+          // 直接退出——旧实现这里 return 导致泵死亡无任何可见信号）。
+          continue;
         }
       }
     }
+  }
+
+  /// streamDead 后重连事件泵（显式触发；旧循环已退出，不会产生双泵）。
+  Future<void> restartEventLoop() async {
+    if (!streamDead) return;
+    streamDead = false;
+    _eventLoopFailures = 0;
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      _stream = await bridge.subscribe(controller: controller);
+    } on Object catch (error) {
+      stderr.writeln('voicefox event stream restart failed: $error');
+      streamDead = true;
+      return;
+    }
+    unawaited(_eventLoop());
+    await _refreshState();
+    notifyListeners();
   }
 
   void _handleEvent(bridge.VoicefoxEvent event) {
@@ -318,6 +370,9 @@ class AppModel extends ChangeNotifier {
         scanCancelled = event.scanCancelled;
         scanStats = event.scanCancelled ? null : event.scanStats;
         unawaited(_refreshState());
+        // FFI-R09（A-2）：本地曲库已从 state() 拆出，扫描/导入/删除后
+        // 经专用接口按需拉取。
+        unawaited(refreshLocalSongs());
       case 'browse':
         _applyBrowseEvent(event);
       case 'sync':
@@ -336,11 +391,45 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 全量快照刷新（FFI-R09 A-2：单飞 + 追尾重拉）。
+  ///
+  /// - 并发发起合并：在途期间的新请求只置 [_refreshPending]，不再叠加
+  ///   FFI state() 调用（一次事件风暴 N 次调用只拉一次）；
+  /// - 在途结束后若仍有挂起请求则再拉一轮，保证风暴后的最终态最新；
+  /// - 单飞下完成天然有序，progress 快照走独立的轻量 _applyPlaybackProgress
+  ///   路径，不与本路径竞争整份状态。
   Future<void> _refreshState() async {
+    _refreshPending = true;
+    if (_refreshInFlight != null) return;
+    while (_refreshPending) {
+      _refreshPending = false;
+      final controller = _controller;
+      if (controller == null) return;
+      try {
+        final state = await bridge.state(controller: controller);
+        _state = state;
+        notifyListeners();
+      } on Object catch (error) {
+        // 快照拉取失败不再静默抛未处理异常：登记 lastError 并继续
+        // （下一轮事件/追尾请求会重试）。
+        lastError = _logAndSanitize('状态快照刷新失败: $error');
+        notifyListeners();
+      }
+    }
+  }
+
+  /// 本地曲库独立拉取（FFI-R09 A-2：state() 不再携带 local_songs 全量，
+  /// 仅在引导与 local_music 事件时按需拉取）。
+  Future<void> refreshLocalSongs() async {
     final controller = _controller;
     if (controller == null) return;
-    _state = await bridge.state(controller: controller);
-    notifyListeners();
+    try {
+      final songs = await bridge.localSongs(controller: controller);
+      _replaceState(localSongs: songs);
+    } on Object catch (error) {
+      lastError = _logAndSanitize('本地曲库刷新失败: $error');
+      notifyListeners();
+    }
   }
 
   /// `kind == "progress"`：播放器 watcher 的位置/时长/状态快照。

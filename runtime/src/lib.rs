@@ -404,14 +404,17 @@ impl voicefox_application::DownloadsEngine for RuntimeDownloads {
     }
 }
 
-/// 下载快照轮询桥：活跃任务存在时每 500ms 推一次变更，空闲时不发事件。
+/// 下载快照轮询桥：活跃任务存在时每 1s 推一次变更，空闲时不发事件。
+/// （FFI-R09 A-2 节流：500ms→1s。每次 publish_downloads 都会触发 Dart
+/// 全量 _refreshState；本地曲库拆出 state() 后单次成本已降，但活跃下载
+/// 期间无需亚秒级事件刷新，UI 进度由任务快照本身承载。）
 async fn downloads_bridge(
     service: voicefox_application::ApplicationService,
     engine: Arc<dyn voicefox_application::DownloadsEngine>,
 ) {
     let mut last: Vec<voicefox_application::DownloadTaskInfo> = Vec::new();
     loop {
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
         let current = engine.snapshot();
         if current != last {
             service.publish_downloads(current.clone());
