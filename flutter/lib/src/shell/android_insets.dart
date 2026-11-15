@@ -20,6 +20,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../design_system/design_tokens.dart';
+
 /// 主题亮暗 → 状态栏/导航条图标样式（透明系统栏 + 图标对比度随主题翻转）。
 SystemUiOverlayStyle statusBarOverlayStyle(Brightness brightness) {
   final overlay = brightness == Brightness.dark
@@ -85,6 +87,18 @@ InsetLayers resolveInsetLayers({
   miniPlayerHeight: hasSong ? miniPlayerHeight : 0,
   navigationBarHeight: navigationBarHeight,
 );
+
+/// 手机滚动区底部统一 padding（Batch C-D，指南 §6.2.6「不得所有页面固定
+/// 使用同一个 24px 值」的单源化收口）。
+///
+/// 联动语义（本文件契约的另一半）：MiniPlayer + NavigationBar 由壳层
+/// Scaffold `bottomNavigationBar` 消费、系统导航条 inset 由 SafeArea /
+/// NavigationBar 消费（见 [InsetLayers] 分层），滚动内容**不被遮挡**——
+/// 因此滚动 padding 不是遮挡补偿，而是「列表最后一项与底层结构之间的
+/// 呼吸空间」，全部手机页统一取 [VxSpacing.xl] 单一出处（壳 body 页与
+/// 推入路由页同值；桌面/平板共用页面数值不变）。若未来出现 overlay 型
+/// 底栏（浮动 MiniPlayer 等），唯一改动点是本函数。
+double mobileListBottomPadding() => VxSpacing.xl;
 
 /// 触屏壳的统一系统栏样式挂载点：跟随主题亮暗翻转状态栏/导航条图标，
 /// 全壳（含全屏播放页）只此一处 AnnotatedRegion。

@@ -320,4 +320,56 @@ void main() {
       expect(find.byType(NavigationBar), findsNothing);
     });
   });
+
+  group('C-D 手机档 390/430 全目的地矩阵（设置分组列表/帮助手机形态接线）', () {
+    for (final size in const [Size(390, 844), Size(430, 932)]) {
+      testWidgets('${size.width}×${size.height}：五主入口 + 设置/帮助抽屉目的地无溢出', (
+        tester,
+      ) async {
+        _setSize(tester, size);
+        final model = AppModel();
+        await tester.pumpWidget(
+          _shellHarness(model, MobileShell(model: model)),
+        );
+        await tester.pumpAndSettle();
+
+        // 五主入口逐个切换（底部导航；C-A/C-B 手机页与曲库 <512 补丁全链）。
+        for (final label in ['首页', '发现', '搜索', '我的音乐', '下载']) {
+          await tester.tap(find.text(label));
+          await tester.pumpAndSettle();
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: '$label @ ${size.width}',
+          );
+        }
+
+        // 抽屉二级：设置（C-D 分组列表页）。
+        await tester.tap(find.byIcon(Icons.menu));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find
+              .descendant(of: find.byType(Drawer), matching: find.text('设置'))
+              .last,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('播放与音效'), findsOneWidget, reason: 'C-06 分组列表');
+        expect(find.text('快捷键'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // 抽屉二级：帮助（C-07 手机形态）。
+        await tester.tap(find.byIcon(Icons.menu));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find
+              .descendant(of: find.byType(Drawer), matching: find.text('帮助'))
+              .last,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('功能地图'), findsOneWidget);
+        expect(find.text('触屏操作'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }

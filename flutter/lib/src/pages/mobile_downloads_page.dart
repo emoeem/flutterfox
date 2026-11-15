@@ -21,6 +21,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/design_tokens.dart';
@@ -103,7 +105,7 @@ class _MobileDownloadsPageState extends State<MobileDownloadsPage> {
       builder: (context, _) {
         final tasks = _filteredTasks;
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, mobileListBottomPadding()),
           children: [
             _head(context),
             const SizedBox(height: VxSpacing.md),

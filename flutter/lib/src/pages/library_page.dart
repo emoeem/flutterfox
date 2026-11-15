@@ -10,6 +10,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_album_card.dart';
@@ -735,7 +737,7 @@ class _LibraryPageState extends State<LibraryPage> {
           const minCard = 156;
           final columns = (constraints.maxWidth ~/ minCard).clamp(2, 8);
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
               mainAxisSpacing: VxSpacing.lg,
@@ -750,7 +752,7 @@ class _LibraryPageState extends State<LibraryPage> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
       itemCount: groups.length,
       itemBuilder: (context, index) => _albumListRow(context, groups[index]),
     );
@@ -834,7 +836,7 @@ class _LibraryPageState extends State<LibraryPage> {
           const minCard = 156;
           final columns = (constraints.maxWidth ~/ minCard).clamp(2, 8);
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
               mainAxisSpacing: VxSpacing.lg,
@@ -849,7 +851,7 @@ class _LibraryPageState extends State<LibraryPage> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
       itemCount: groups.length,
       itemBuilder: (context, index) => _artistListRow(context, groups[index]),
     );
@@ -953,7 +955,12 @@ class _LibraryPageState extends State<LibraryPage> {
                     message: '在歌单详情页点收藏，把远端歌单存进本地库。',
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      4,
+                      12,
+                      mobileListBottomPadding(),
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) =>
                         _favoritePlaylistRow(context, filtered[index]),

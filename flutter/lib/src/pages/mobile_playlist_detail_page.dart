@@ -24,6 +24,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_artwork.dart';
@@ -376,7 +378,7 @@ class _MobilePlaylistDetailPageState extends State<MobilePlaylistDetailPage> {
       // 分页尾态（账号歌单无分页，不出尾态）：与桌面表格 footer 同语义。
       if (!_account && result.hasMore)
         SliverToBoxAdapter(child: _footer(context, result)),
-      const SliverToBoxAdapter(child: SizedBox(height: VxSpacing.xl)),
+      SliverToBoxAdapter(child: SizedBox(height: mobileListBottomPadding())),
     ];
   }
 

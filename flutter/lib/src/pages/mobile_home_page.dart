@@ -18,6 +18,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_artwork.dart';
@@ -48,7 +50,7 @@ class MobileHomePage extends StatelessWidget {
         final song = model.state.playback.song;
         final emptyLibrary = song == null && history.isEmpty;
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, mobileListBottomPadding()),
           children: [
             const _GreetingHead(),
             const SizedBox(height: 16),

@@ -22,6 +22,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_album_card.dart';
@@ -335,7 +337,7 @@ class _MobileSearchPageState extends State<MobileSearchPage> {
       },
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.only(bottom: VxSpacing.xl),
+        padding: EdgeInsets.only(bottom: mobileListBottomPadding()),
         itemCount: items.length + 1,
         itemBuilder: (context, index) {
           if (index >= items.length) return SearchResultFooter(_ctrl);
