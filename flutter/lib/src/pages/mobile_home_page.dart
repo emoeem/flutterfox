@@ -32,7 +32,7 @@ import 'home_shared.dart';
 import 'library_page.dart';
 import 'local_music_page.dart' show importLocalMusicDirectory;
 import 'mobile_local_music_page.dart';
-import 'playlist_detail_page.dart';
+import 'mobile_playlist_detail_page.dart';
 
 class MobileHomePage extends StatelessWidget {
   final AppModel model;
@@ -212,7 +212,12 @@ class _QuickEntries extends StatelessWidget {
             MaterialPageRoute<void>(
               builder: (_) => Scaffold(
                 body: SafeArea(
-                  child: LibraryPage(model, initialTab: LibraryTab.songs),
+                  // 手机形态位（Batch C-C）：歌单行 push 手机版歌单详情页（C-04）。
+                  child: LibraryPage(
+                    model,
+                    initialTab: LibraryTab.songs,
+                    mobileForm: true,
+                  ),
                 ),
               ),
             ),
@@ -445,14 +450,15 @@ class _RecommendedSectionState extends State<_RecommendedSection> {
               radius: 0,
               allowRetry: false,
             ),
+            // 歌单详情落点（Batch C-C，C-04）：手机档推手机版歌单详情页。
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => PlaylistDetailPage(_model, playlist),
+                builder: (_) => MobilePlaylistDetailPage(_model, playlist),
               ),
             ),
             onPlay: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => PlaylistDetailPage(_model, playlist),
+                builder: (_) => MobilePlaylistDetailPage(_model, playlist),
               ),
             ),
           );

@@ -798,6 +798,9 @@ enum ShellFormFactor { desktop, mobile }
 /// Batch C-A：home/discover/search 三槽在 mobile 形态产独立手机页
 /// （MobileHomePage / MobileDiscoverPage / MobileSearchPage）；
 /// Batch C-B：downloads 槽在 mobile 形态产 MobileDownloadsPage（C-03）。
+/// Batch C-C：library 槽向 LibraryPage 传手机形态位（歌单行 push 手机版
+/// 歌单详情，C-04）；help 槽在 mobile 形态过滤桌面键盘快捷键段（C-07，
+/// 触屏无键盘，替换为触屏操作段）。
 /// 其余槽与全部桌面/平板目的地行为不变。
 Widget buildShellPage(
   AppModel model,
@@ -826,7 +829,13 @@ Widget buildShellPage(
               key: ValueKey('search-page:$searchSeed'),
               child: SearchPage(model, seedKeyword: searchSeed),
             ),
-    ShellDestination.library => LibraryPage(model, initialTab: libraryTab),
+    // 曲库槽（Batch C-C）：页面本体两档共用（<512 宽度补丁既有），
+    // mobileForm 只驱动歌单行 push 落点（手机版歌单详情，C-04）。
+    ShellDestination.library => LibraryPage(
+      model,
+      initialTab: libraryTab,
+      mobileForm: form == ShellFormFactor.mobile,
+    ),
     // 下载槽（Batch C-B）：手机档用独立手机页（C-03 任务卡列表），桌面/
     // 平板档维持桌面表格页（平板显式沿用桌面缺省）。
     ShellDestination.downloads =>
@@ -837,6 +846,10 @@ Widget buildShellPage(
       model,
       initialSection: settingsSection,
     ),
-    ShellDestination.help => const HelpPage(),
+    // 帮助槽（Batch C-C）：手机档过滤桌面键盘快捷键段（C-07）。
+    ShellDestination.help =>
+      form == ShellFormFactor.mobile
+          ? const HelpPage(showDesktopShortcuts: false)
+          : const HelpPage(),
   };
 }

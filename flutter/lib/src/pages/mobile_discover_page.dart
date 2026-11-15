@@ -31,7 +31,7 @@ import '../design_system/design_tokens.dart';
 import '../nav_bus.dart';
 import 'discover_shared.dart';
 import 'leaderboard_page.dart';
-import 'playlist_detail_page.dart';
+import 'mobile_playlist_detail_page.dart';
 
 class MobileDiscoverPage extends StatefulWidget {
   final AppModel model;
@@ -425,9 +425,10 @@ class _MobileDiscoverPageState extends State<MobileDiscoverPage> {
                 icon: Icons.queue_music,
                 allowRetry: false,
               ),
+              // 歌单详情落点（Batch C-C，C-04）：手机档推手机版歌单详情页。
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => PlaylistDetailPage(_model, playlist),
+                  builder: (_) => MobilePlaylistDetailPage(_model, playlist),
                 ),
               ),
             );

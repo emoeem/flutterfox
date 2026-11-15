@@ -281,6 +281,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('功能地图'), findsOneWidget);
+      // C-07：手机形态过滤桌面键盘快捷键段（触屏无键盘），替换为触屏
+      // 操作段（真实能力：长按菜单/下拉刷新/横滑切歌/抽屉）。
+      expect(find.text('播放页快捷键'), findsNothing);
+      expect(find.text('空格'), findsNothing);
+      expect(find.text('触屏操作'), findsOneWidget);
+      expect(find.text('长按歌曲行'), findsOneWidget);
     });
 
     testWidgets('抽屉 §5.9 清单：音源状态/次级入口/音源管理落点/版本信息', (tester) async {

@@ -124,9 +124,7 @@ void main() {
   });
 
   group('VxPalette ThemeExtension', () {
-    testWidgets('VxPalette.of 可从主题读取（默认主题取 design_tokens 常量）', (
-      tester,
-    ) async {
+    testWidgets('VxPalette.of 可从主题读取（默认主题取 design_tokens 常量）', (tester) async {
       VxPalette? palette;
       await tester.pumpWidget(
         MaterialApp(
