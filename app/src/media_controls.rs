@@ -19,14 +19,23 @@ use lx_core::events::Notification;
 use tokio::sync::mpsc;
 #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
 pub(crate) fn current_media_snapshot(ctx: &AppContext) -> media_session::MediaSnapshot {
+    use media_session::MediaLoopStatus;
     let song = ctx.current_song.read().unwrap_or_else(|e| e.into_inner());
+    // TUI PlayMode → crate MediaLoopStatus/shuffle 解耦映射（Batch F §9.2）。
+    let (loop_status, shuffle) = match ctx.playlist.mode() {
+        crate::playlist::mode::PlayMode::SingleLoop => (MediaLoopStatus::Track, false),
+        crate::playlist::mode::PlayMode::ListLoop => (MediaLoopStatus::Playlist, false),
+        crate::playlist::mode::PlayMode::Random => (MediaLoopStatus::None, true),
+        _ => (MediaLoopStatus::None, false),
+    };
     media_session::MediaSnapshot::new(
         *ctx.player_state.borrow(),
         song.as_ref(),
         *ctx.position.borrow(),
         *ctx.duration.borrow(),
         ctx.player.volume(),
-        ctx.playlist.mode(),
+        loop_status,
+        shuffle,
         ctx.playlist.len(),
         ctx.position_epoch(),
     )

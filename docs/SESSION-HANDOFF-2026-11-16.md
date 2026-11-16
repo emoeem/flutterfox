@@ -36,6 +36,9 @@ Linux 专属验证项（桌面 bundle 实跑/Xvfb 截图/niri/MPRIS 运行时）
 3. **cargo test 必带 `--features lx-player/build_libmpv`**：默认 feature 的 libmpv2 build.rs 不注入 MPV_SOURCE 搜索路径（CI Linux 用系统 libmpv-dev 无此问题）。
 4. **Perl 多行替换在 CRLF 文件上不可靠**（\n 不匹配 \r\n，本会话两次损坏后手工修复）；跨行编辑一律用 Read+Edit 工具，行级替换可用单行 sed/perl。
 5. **flutter_rust_bridge_codegen 未在本机验证**（Batch A-F 若需再生成，先 `cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked`，未执行过）。
+   → **2026-11-17 Batch F 增量**：已装机并打**本地路径补丁**（FRB 2.13 在 Windows 把 workspace 路径混入 `\\?\` 前缀 + 混合分隔符，`strip_prefix` 失配读不到 lib.rs；补丁只修路径计算，输出与 Linux CI 一致）。再生成已实跑过一次（Batch F FfiCommand +2）。
+6. **（Batch F 增量）测试 exe 需要 libmpv-2.dll 在 PATH**：`--features lx-player/build_libmpv` 构建的测试二进制运行时报 `STATUS_DLL_NOT_FOUND`（0xc0000135）——把 `toolchain-setup/mpv/libmpv-extract/libmpv-audio-x86_64-*/` 加入 PATH（此前口径只登记了构建期 MPV_SOURCE，本条补全运行时半边）。
+7. **（Batch F 增量）单包 cargo 命令同样必带 `--features lx-player/build_libmpv`**：`cargo test -p <pkg>` 不带该 flag 时 feature 指纹与 workspace 不同，重链时 libmpv2 build.rs 不注入 `-L` → `cannot find -lmpv`（链接期才暴露，易误判为环境抖动）。
 
 ## 三、Batch D 已实施内容（工作区未提交，勿重做）
 

@@ -458,7 +458,7 @@ void main() {
       expect(find.text('队列为空'), findsOneWidget);
     });
 
-    testWidgets('当前曲分组 + 待播列表渲染', (tester) async {
+    testWidgets('平面列表渲染：全部曲目在树 + 当前曲高亮（Batch F 拖拽形态）', (tester) async {
       final model = AppModel();
       model.debugSetQueue([
         _song('a', '第一首'),
@@ -474,10 +474,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('当前播放'), findsOneWidget);
-      expect(find.text('接下来播放 · 2 首'), findsOneWidget);
+      // Batch F P2-09 收口：整列 ReorderableListView（拖拽排序要求单一
+      // 平面列表），分组表头（当前播放/接下来播放）随之移除，当前曲以
+      // 行内均衡器图标 + 底色高亮表达。
+      expect(find.byType(ReorderableListView), findsOneWidget);
       expect(find.text('第一首'), findsOneWidget);
+      expect(find.text('第二首'), findsOneWidget);
       expect(find.text('第三首'), findsOneWidget);
+      expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
     });
 
     testWidgets('行菜单「移出队列」→ 真实 queueRemove 命令', (tester) async {
@@ -535,8 +539,8 @@ void main() {
       );
     });
 
-    testWidgets('后端缺失能力：拖动排序拖柄禁用；行菜单 立即播放/下一首播放 禁用并说明', (tester) async {
-      final model = AppModel();
+    testWidgets('拖动排序真实启用（P2-09 关闭）：拖柄在树 + 行菜单立即播放/下一首播放真实命令', (tester) async {
+      final model = _RecordingModel();
       model.debugSetQueue([
         _song('a', '第一首'),
         _song('b', '第二首'),
@@ -551,28 +555,32 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final handle = tester.widget<IconButton>(
-        find
-            .ancestor(
-              of: find.byIcon(Icons.drag_indicator),
-              matching: find.byType(IconButton),
-            )
-            .first,
-      );
-      expect(handle.onPressed, isNull);
+      // 拖柄在树（ReorderableDragStartListener 承接拖拽手势；拖拽命令语义
+      // = Rust queue.move_item，由其 +4 单测与 queue_interaction_test 锁定）。
+      expect(find.byType(ReorderableDragStartListener), findsWidgets);
 
-      await tester.tap(find.byTooltip('更多操作').first);
+      // 待播行（index 2，当前曲为 index 0）行菜单 → 立即播放。
+      await tester.tap(find.byTooltip('更多操作').at(2));
       await tester.pumpAndSettle();
-      final playNow = tester.widget<PopupMenuItem<String>>(
-        find.widgetWithText(PopupMenuItem<String>, '立即播放'),
-      );
-      final playNext = tester.widget<PopupMenuItem<String>>(
-        find.widgetWithText(PopupMenuItem<String>, '下一首播放'),
-      );
-      expect(playNow.enabled, isFalse);
-      expect(playNext.enabled, isFalse);
-      expect(find.text('后端暂无队列跳播命令'), findsOneWidget);
-      expect(find.text('后端暂无队列移动命令'), findsOneWidget);
+      await tester.tap(find.text('立即播放'));
+      await tester.pump();
+      final plays = model.commands
+          .whereType<bridge.FfiCommand_QueuePlayAt>()
+          .toList();
+      expect(plays, hasLength(1), reason: '立即播放 = 队内跳播（Batch F）');
+      expect(plays.single.index, 2);
+
+      // 同行菜单 → 下一首播放（移动到当前播放之后）。
+      await tester.tap(find.byTooltip('更多操作').at(2));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下一首播放'));
+      await tester.pump();
+      final moves = model.commands
+          .whereType<bridge.FfiCommand_QueueMove>()
+          .toList();
+      expect(moves, hasLength(1), reason: '下一首播放 = 移动到当前播放之后');
+      expect(moves.single.from, 2);
+      expect(moves.single.to, 1);
     });
   });
 }

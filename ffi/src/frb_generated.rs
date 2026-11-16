@@ -1427,15 +1427,27 @@ impl SseDecode for crate::FfiCommand {
                 return crate::FfiCommand::QueueRemove { index: var_index };
             }
             9 => {
-                return crate::FfiCommand::QueueClear;
+                let mut var_from = <u32>::sse_decode(deserializer);
+                let mut var_to = <u32>::sse_decode(deserializer);
+                return crate::FfiCommand::QueueMove {
+                    from: var_from,
+                    to: var_to,
+                };
             }
             10 => {
-                return crate::FfiCommand::Next;
+                let mut var_index = <u32>::sse_decode(deserializer);
+                return crate::FfiCommand::QueuePlayAt { index: var_index };
             }
             11 => {
-                return crate::FfiCommand::Previous;
+                return crate::FfiCommand::QueueClear;
             }
             12 => {
+                return crate::FfiCommand::Next;
+            }
+            13 => {
+                return crate::FfiCommand::Previous;
+            }
+            14 => {
                 let mut var_keyword = <String>::sse_decode(deserializer);
                 let mut var_source = <Option<String>>::sse_decode(deserializer);
                 return crate::FfiCommand::Search {
@@ -1443,7 +1455,7 @@ impl SseDecode for crate::FfiCommand {
                     source: var_source,
                 };
             }
-            13 => {
+            15 => {
                 let mut var_keyword = <String>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
                 let mut var_source = <Option<String>>::sse_decode(deserializer);
@@ -1453,41 +1465,41 @@ impl SseDecode for crate::FfiCommand {
                     source: var_source,
                 };
             }
-            14 => {
+            16 => {
                 return crate::FfiCommand::LibraryRefresh;
             }
-            15 => {
+            17 => {
                 let mut var_song = <crate::SongDto>::sse_decode(deserializer);
                 return crate::FfiCommand::FavoritesAdd { song: var_song };
             }
-            16 => {
+            18 => {
                 let mut var_song = <crate::SongDto>::sse_decode(deserializer);
                 return crate::FfiCommand::FavoritesRemove { song: var_song };
             }
-            17 => {
+            19 => {
                 let mut var_playlist = <crate::PlaylistDto>::sse_decode(deserializer);
                 return crate::FfiCommand::FavoritePlaylistAdd {
                     playlist: var_playlist,
                 };
             }
-            18 => {
+            20 => {
                 let mut var_playlist = <crate::PlaylistDto>::sse_decode(deserializer);
                 return crate::FfiCommand::FavoritePlaylistRemove {
                     playlist: var_playlist,
                 };
             }
-            19 => {
+            21 => {
                 let mut var_song = <crate::SongDto>::sse_decode(deserializer);
                 return crate::FfiCommand::HistoryRemove { song: var_song };
             }
-            20 => {
+            22 => {
                 return crate::FfiCommand::HistoryClear;
             }
-            21 => {
+            23 => {
                 let mut var_name = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::CustomPlaylistCreate { name: var_name };
             }
-            22 => {
+            24 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 let mut var_name = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::CustomPlaylistRename {
@@ -1495,11 +1507,11 @@ impl SseDecode for crate::FfiCommand {
                     name: var_name,
                 };
             }
-            23 => {
+            25 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::CustomPlaylistDelete { id: var_id };
             }
-            24 => {
+            26 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 let mut var_songs = <Vec<crate::SongDto>>::sse_decode(deserializer);
                 return crate::FfiCommand::CustomPlaylistAddSongs {
@@ -1507,7 +1519,7 @@ impl SseDecode for crate::FfiCommand {
                     songs: var_songs,
                 };
             }
-            25 => {
+            27 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 let mut var_song = <crate::SongDto>::sse_decode(deserializer);
                 return crate::FfiCommand::CustomPlaylistRemoveSong {
@@ -1515,45 +1527,45 @@ impl SseDecode for crate::FfiCommand {
                     song: var_song,
                 };
             }
-            26 => {
+            28 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::CustomPlaylistDetail { id: var_id };
             }
-            27 => {
+            29 => {
                 let mut var_song = <crate::SongDto>::sse_decode(deserializer);
                 return crate::FfiCommand::LoadLyrics { song: var_song };
             }
-            28 => {
+            30 => {
                 return crate::FfiCommand::ConfigGet;
             }
-            29 => {
+            31 => {
                 let mut var_config = <crate::ConfigDto>::sse_decode(deserializer);
                 return crate::FfiCommand::ConfigUpdate { config: var_config };
             }
-            30 => {
+            32 => {
                 let mut var_song = <crate::SongDto>::sse_decode(deserializer);
                 return crate::FfiCommand::DownloadEnqueue { song: var_song };
             }
-            31 => {
+            33 => {
                 let mut var_id = <u64>::sse_decode(deserializer);
                 return crate::FfiCommand::DownloadCancel { id: var_id };
             }
-            32 => {
+            34 => {
                 let mut var_id = <u64>::sse_decode(deserializer);
                 return crate::FfiCommand::DownloadPause { id: var_id };
             }
-            33 => {
+            35 => {
                 let mut var_id = <u64>::sse_decode(deserializer);
                 return crate::FfiCommand::DownloadResume { id: var_id };
             }
-            34 => {
+            36 => {
                 let mut var_id = <u64>::sse_decode(deserializer);
                 return crate::FfiCommand::DownloadDeleteFile { id: var_id };
             }
-            35 => {
+            37 => {
                 return crate::FfiCommand::DownloadClearFinished;
             }
-            36 => {
+            38 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_kind = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::QrLoginStart {
@@ -1561,10 +1573,10 @@ impl SseDecode for crate::FfiCommand {
                     kind: var_kind,
                 };
             }
-            37 => {
+            39 => {
                 return crate::FfiCommand::QrLoginCancel;
             }
-            38 => {
+            40 => {
                 let mut var_paths = <Vec<String>>::sse_decode(deserializer);
                 let mut var_maxDepth = <u32>::sse_decode(deserializer);
                 return crate::FfiCommand::LocalScan {
@@ -1572,18 +1584,18 @@ impl SseDecode for crate::FfiCommand {
                     max_depth: var_maxDepth,
                 };
             }
-            39 => {
+            41 => {
                 return crate::FfiCommand::LocalScanCancel;
             }
-            40 => {
+            42 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::AccountPlaylists { source: var_source };
             }
-            41 => {
+            43 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::AccountFavorites { source: var_source };
             }
-            42 => {
+            44 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_playlistId = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::AccountPlaylistDetail {
@@ -1591,22 +1603,22 @@ impl SseDecode for crate::FfiCommand {
                     playlist_id: var_playlistId,
                 };
             }
-            43 => {
+            45 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::SyncPreview { source: var_source };
             }
-            44 => {
+            46 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::SyncRun { source: var_source };
             }
-            45 => {
+            47 => {
                 return crate::FfiCommand::SyncCancel;
             }
-            46 => {
+            48 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::PushTargets { source: var_source };
             }
-            47 => {
+            49 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_name = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::PushCreateTarget {
@@ -1614,7 +1626,7 @@ impl SseDecode for crate::FfiCommand {
                     name: var_name,
                 };
             }
-            48 => {
+            50 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_localName = <String>::sse_decode(deserializer);
                 let mut var_localSongs = <Vec<crate::SongDto>>::sse_decode(deserializer);
@@ -1634,18 +1646,18 @@ impl SseDecode for crate::FfiCommand {
                     target_song_count: var_targetSongCount,
                 };
             }
-            49 => {
+            51 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::PushRun { source: var_source };
             }
-            50 => {
+            52 => {
                 return crate::FfiCommand::PushCancel;
             }
-            51 => {
+            53 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::PlaylistCategories { source: var_source };
             }
-            52 => {
+            54 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_category = <String>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
@@ -1655,7 +1667,7 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
-            53 => {
+            55 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_playlistId = <String>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
@@ -1665,11 +1677,11 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
-            54 => {
+            56 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 return crate::FfiCommand::LeaderboardBoards { source: var_source };
             }
-            55 => {
+            57 => {
                 let mut var_source = <String>::sse_decode(deserializer);
                 let mut var_boardId = <String>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
@@ -1679,7 +1691,7 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
-            56 => {
+            58 => {
                 let mut var_artist = <crate::ArtistDto>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
                 return crate::FfiCommand::ArtistSongs {
@@ -1687,7 +1699,7 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
-            57 => {
+            59 => {
                 let mut var_artist = <crate::ArtistDto>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
                 return crate::FfiCommand::ArtistAlbums {
@@ -1695,7 +1707,7 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
-            58 => {
+            60 => {
                 let mut var_album = <crate::AlbumDto>::sse_decode(deserializer);
                 let mut var_page = <u32>::sse_decode(deserializer);
                 return crate::FfiCommand::AlbumSongs {
@@ -1703,7 +1715,7 @@ impl SseDecode for crate::FfiCommand {
                     page: var_page,
                 };
             }
-            59 => {
+            61 => {
                 let mut var_songs = <Vec<crate::SongDto>>::sse_decode(deserializer);
                 let mut var_index = <u32>::sse_decode(deserializer);
                 return crate::FfiCommand::PlaySongs {
@@ -2878,11 +2890,20 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
             crate::FfiCommand::QueueRemove { index } => {
                 [8.into_dart(), index.into_into_dart().into_dart()].into_dart()
             }
-            crate::FfiCommand::QueueClear => [9.into_dart()].into_dart(),
-            crate::FfiCommand::Next => [10.into_dart()].into_dart(),
-            crate::FfiCommand::Previous => [11.into_dart()].into_dart(),
+            crate::FfiCommand::QueueMove { from, to } => [
+                9.into_dart(),
+                from.into_into_dart().into_dart(),
+                to.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::FfiCommand::QueuePlayAt { index } => {
+                [10.into_dart(), index.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::QueueClear => [11.into_dart()].into_dart(),
+            crate::FfiCommand::Next => [12.into_dart()].into_dart(),
+            crate::FfiCommand::Previous => [13.into_dart()].into_dart(),
             crate::FfiCommand::Search { keyword, source } => [
-                12.into_dart(),
+                14.into_dart(),
                 keyword.into_into_dart().into_dart(),
                 source.into_into_dart().into_dart(),
             ]
@@ -2892,120 +2913,120 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
                 page,
                 source,
             } => [
-                13.into_dart(),
+                15.into_dart(),
                 keyword.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
                 source.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::FfiCommand::LibraryRefresh => [14.into_dart()].into_dart(),
+            crate::FfiCommand::LibraryRefresh => [16.into_dart()].into_dart(),
             crate::FfiCommand::FavoritesAdd { song } => {
-                [15.into_dart(), song.into_into_dart().into_dart()].into_dart()
+                [17.into_dart(), song.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::FavoritesRemove { song } => {
-                [16.into_dart(), song.into_into_dart().into_dart()].into_dart()
+                [18.into_dart(), song.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::FavoritePlaylistAdd { playlist } => {
-                [17.into_dart(), playlist.into_into_dart().into_dart()].into_dart()
+                [19.into_dart(), playlist.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::FavoritePlaylistRemove { playlist } => {
-                [18.into_dart(), playlist.into_into_dart().into_dart()].into_dart()
+                [20.into_dart(), playlist.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::HistoryRemove { song } => {
-                [19.into_dart(), song.into_into_dart().into_dart()].into_dart()
+                [21.into_dart(), song.into_into_dart().into_dart()].into_dart()
             }
-            crate::FfiCommand::HistoryClear => [20.into_dart()].into_dart(),
+            crate::FfiCommand::HistoryClear => [22.into_dart()].into_dart(),
             crate::FfiCommand::CustomPlaylistCreate { name } => {
-                [21.into_dart(), name.into_into_dart().into_dart()].into_dart()
+                [23.into_dart(), name.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::CustomPlaylistRename { id, name } => [
-                22.into_dart(),
+                24.into_dart(),
                 id.into_into_dart().into_dart(),
                 name.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::CustomPlaylistDelete { id } => {
-                [23.into_dart(), id.into_into_dart().into_dart()].into_dart()
+                [25.into_dart(), id.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::CustomPlaylistAddSongs { id, songs } => [
-                24.into_dart(),
+                26.into_dart(),
                 id.into_into_dart().into_dart(),
                 songs.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::CustomPlaylistRemoveSong { id, song } => [
-                25.into_dart(),
+                27.into_dart(),
                 id.into_into_dart().into_dart(),
                 song.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::CustomPlaylistDetail { id } => {
-                [26.into_dart(), id.into_into_dart().into_dart()].into_dart()
+                [28.into_dart(), id.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::LoadLyrics { song } => {
-                [27.into_dart(), song.into_into_dart().into_dart()].into_dart()
+                [29.into_dart(), song.into_into_dart().into_dart()].into_dart()
             }
-            crate::FfiCommand::ConfigGet => [28.into_dart()].into_dart(),
+            crate::FfiCommand::ConfigGet => [30.into_dart()].into_dart(),
             crate::FfiCommand::ConfigUpdate { config } => {
-                [29.into_dart(), config.into_into_dart().into_dart()].into_dart()
+                [31.into_dart(), config.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::DownloadEnqueue { song } => {
-                [30.into_dart(), song.into_into_dart().into_dart()].into_dart()
+                [32.into_dart(), song.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::DownloadCancel { id } => {
-                [31.into_dart(), id.into_into_dart().into_dart()].into_dart()
-            }
-            crate::FfiCommand::DownloadPause { id } => {
-                [32.into_dart(), id.into_into_dart().into_dart()].into_dart()
-            }
-            crate::FfiCommand::DownloadResume { id } => {
                 [33.into_dart(), id.into_into_dart().into_dart()].into_dart()
             }
-            crate::FfiCommand::DownloadDeleteFile { id } => {
+            crate::FfiCommand::DownloadPause { id } => {
                 [34.into_dart(), id.into_into_dart().into_dart()].into_dart()
             }
-            crate::FfiCommand::DownloadClearFinished => [35.into_dart()].into_dart(),
+            crate::FfiCommand::DownloadResume { id } => {
+                [35.into_dart(), id.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::DownloadDeleteFile { id } => {
+                [36.into_dart(), id.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::DownloadClearFinished => [37.into_dart()].into_dart(),
             crate::FfiCommand::QrLoginStart { source, kind } => [
-                36.into_dart(),
+                38.into_dart(),
                 source.into_into_dart().into_dart(),
                 kind.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::FfiCommand::QrLoginCancel => [37.into_dart()].into_dart(),
+            crate::FfiCommand::QrLoginCancel => [39.into_dart()].into_dart(),
             crate::FfiCommand::LocalScan { paths, max_depth } => [
-                38.into_dart(),
+                40.into_dart(),
                 paths.into_into_dart().into_dart(),
                 max_depth.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::FfiCommand::LocalScanCancel => [39.into_dart()].into_dart(),
+            crate::FfiCommand::LocalScanCancel => [41.into_dart()].into_dart(),
             crate::FfiCommand::AccountPlaylists { source } => {
-                [40.into_dart(), source.into_into_dart().into_dart()].into_dart()
+                [42.into_dart(), source.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::AccountFavorites { source } => {
-                [41.into_dart(), source.into_into_dart().into_dart()].into_dart()
+                [43.into_dart(), source.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::AccountPlaylistDetail {
                 source,
                 playlist_id,
             } => [
-                42.into_dart(),
+                44.into_dart(),
                 source.into_into_dart().into_dart(),
                 playlist_id.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::SyncPreview { source } => {
-                [43.into_dart(), source.into_into_dart().into_dart()].into_dart()
+                [45.into_dart(), source.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::SyncRun { source } => {
-                [44.into_dart(), source.into_into_dart().into_dart()].into_dart()
-            }
-            crate::FfiCommand::SyncCancel => [45.into_dart()].into_dart(),
-            crate::FfiCommand::PushTargets { source } => {
                 [46.into_dart(), source.into_into_dart().into_dart()].into_dart()
             }
+            crate::FfiCommand::SyncCancel => [47.into_dart()].into_dart(),
+            crate::FfiCommand::PushTargets { source } => {
+                [48.into_dart(), source.into_into_dart().into_dart()].into_dart()
+            }
             crate::FfiCommand::PushCreateTarget { source, name } => [
-                47.into_dart(),
+                49.into_dart(),
                 source.into_into_dart().into_dart(),
                 name.into_into_dart().into_dart(),
             ]
@@ -3020,7 +3041,7 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
                 target_name,
                 target_song_count,
             } => [
-                48.into_dart(),
+                50.into_dart(),
                 source.into_into_dart().into_dart(),
                 local_name.into_into_dart().into_dart(),
                 local_songs.into_into_dart().into_dart(),
@@ -3032,18 +3053,18 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
             ]
             .into_dart(),
             crate::FfiCommand::PushRun { source } => {
-                [49.into_dart(), source.into_into_dart().into_dart()].into_dart()
-            }
-            crate::FfiCommand::PushCancel => [50.into_dart()].into_dart(),
-            crate::FfiCommand::PlaylistCategories { source } => {
                 [51.into_dart(), source.into_into_dart().into_dart()].into_dart()
+            }
+            crate::FfiCommand::PushCancel => [52.into_dart()].into_dart(),
+            crate::FfiCommand::PlaylistCategories { source } => {
+                [53.into_dart(), source.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::PlaylistList {
                 source,
                 category,
                 page,
             } => [
-                52.into_dart(),
+                54.into_dart(),
                 source.into_into_dart().into_dart(),
                 category.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
@@ -3054,46 +3075,46 @@ impl flutter_rust_bridge::IntoDart for crate::FfiCommand {
                 playlist_id,
                 page,
             } => [
-                53.into_dart(),
+                55.into_dart(),
                 source.into_into_dart().into_dart(),
                 playlist_id.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::LeaderboardBoards { source } => {
-                [54.into_dart(), source.into_into_dart().into_dart()].into_dart()
+                [56.into_dart(), source.into_into_dart().into_dart()].into_dart()
             }
             crate::FfiCommand::LeaderboardSongs {
                 source,
                 board_id,
                 page,
             } => [
-                55.into_dart(),
+                57.into_dart(),
                 source.into_into_dart().into_dart(),
                 board_id.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::ArtistSongs { artist, page } => [
-                56.into_dart(),
+                58.into_dart(),
                 artist.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::ArtistAlbums { artist, page } => [
-                57.into_dart(),
+                59.into_dart(),
                 artist.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::AlbumSongs { album, page } => [
-                58.into_dart(),
+                60.into_dart(),
                 album.into_into_dart().into_dart(),
                 page.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::FfiCommand::PlaySongs { songs, index } => [
-                59.into_dart(),
+                61.into_dart(),
                 songs.into_into_dart().into_dart(),
                 index.into_into_dart().into_dart(),
             ]
@@ -3844,17 +3865,26 @@ impl SseEncode for crate::FfiCommand {
                 <i32>::sse_encode(8, serializer);
                 <u32>::sse_encode(index, serializer);
             }
-            crate::FfiCommand::QueueClear => {
+            crate::FfiCommand::QueueMove { from, to } => {
                 <i32>::sse_encode(9, serializer);
+                <u32>::sse_encode(from, serializer);
+                <u32>::sse_encode(to, serializer);
             }
-            crate::FfiCommand::Next => {
+            crate::FfiCommand::QueuePlayAt { index } => {
                 <i32>::sse_encode(10, serializer);
+                <u32>::sse_encode(index, serializer);
             }
-            crate::FfiCommand::Previous => {
+            crate::FfiCommand::QueueClear => {
                 <i32>::sse_encode(11, serializer);
             }
-            crate::FfiCommand::Search { keyword, source } => {
+            crate::FfiCommand::Next => {
                 <i32>::sse_encode(12, serializer);
+            }
+            crate::FfiCommand::Previous => {
+                <i32>::sse_encode(13, serializer);
+            }
+            crate::FfiCommand::Search { keyword, source } => {
+                <i32>::sse_encode(14, serializer);
                 <String>::sse_encode(keyword, serializer);
                 <Option<String>>::sse_encode(source, serializer);
             }
@@ -3863,147 +3893,147 @@ impl SseEncode for crate::FfiCommand {
                 page,
                 source,
             } => {
-                <i32>::sse_encode(13, serializer);
+                <i32>::sse_encode(15, serializer);
                 <String>::sse_encode(keyword, serializer);
                 <u32>::sse_encode(page, serializer);
                 <Option<String>>::sse_encode(source, serializer);
             }
             crate::FfiCommand::LibraryRefresh => {
-                <i32>::sse_encode(14, serializer);
+                <i32>::sse_encode(16, serializer);
             }
             crate::FfiCommand::FavoritesAdd { song } => {
-                <i32>::sse_encode(15, serializer);
+                <i32>::sse_encode(17, serializer);
                 <crate::SongDto>::sse_encode(song, serializer);
             }
             crate::FfiCommand::FavoritesRemove { song } => {
-                <i32>::sse_encode(16, serializer);
+                <i32>::sse_encode(18, serializer);
                 <crate::SongDto>::sse_encode(song, serializer);
             }
             crate::FfiCommand::FavoritePlaylistAdd { playlist } => {
-                <i32>::sse_encode(17, serializer);
+                <i32>::sse_encode(19, serializer);
                 <crate::PlaylistDto>::sse_encode(playlist, serializer);
             }
             crate::FfiCommand::FavoritePlaylistRemove { playlist } => {
-                <i32>::sse_encode(18, serializer);
+                <i32>::sse_encode(20, serializer);
                 <crate::PlaylistDto>::sse_encode(playlist, serializer);
             }
             crate::FfiCommand::HistoryRemove { song } => {
-                <i32>::sse_encode(19, serializer);
+                <i32>::sse_encode(21, serializer);
                 <crate::SongDto>::sse_encode(song, serializer);
             }
             crate::FfiCommand::HistoryClear => {
-                <i32>::sse_encode(20, serializer);
+                <i32>::sse_encode(22, serializer);
             }
             crate::FfiCommand::CustomPlaylistCreate { name } => {
-                <i32>::sse_encode(21, serializer);
+                <i32>::sse_encode(23, serializer);
                 <String>::sse_encode(name, serializer);
             }
             crate::FfiCommand::CustomPlaylistRename { id, name } => {
-                <i32>::sse_encode(22, serializer);
+                <i32>::sse_encode(24, serializer);
                 <String>::sse_encode(id, serializer);
                 <String>::sse_encode(name, serializer);
             }
             crate::FfiCommand::CustomPlaylistDelete { id } => {
-                <i32>::sse_encode(23, serializer);
+                <i32>::sse_encode(25, serializer);
                 <String>::sse_encode(id, serializer);
             }
             crate::FfiCommand::CustomPlaylistAddSongs { id, songs } => {
-                <i32>::sse_encode(24, serializer);
+                <i32>::sse_encode(26, serializer);
                 <String>::sse_encode(id, serializer);
                 <Vec<crate::SongDto>>::sse_encode(songs, serializer);
             }
             crate::FfiCommand::CustomPlaylistRemoveSong { id, song } => {
-                <i32>::sse_encode(25, serializer);
+                <i32>::sse_encode(27, serializer);
                 <String>::sse_encode(id, serializer);
                 <crate::SongDto>::sse_encode(song, serializer);
             }
             crate::FfiCommand::CustomPlaylistDetail { id } => {
-                <i32>::sse_encode(26, serializer);
+                <i32>::sse_encode(28, serializer);
                 <String>::sse_encode(id, serializer);
             }
             crate::FfiCommand::LoadLyrics { song } => {
-                <i32>::sse_encode(27, serializer);
+                <i32>::sse_encode(29, serializer);
                 <crate::SongDto>::sse_encode(song, serializer);
             }
             crate::FfiCommand::ConfigGet => {
-                <i32>::sse_encode(28, serializer);
+                <i32>::sse_encode(30, serializer);
             }
             crate::FfiCommand::ConfigUpdate { config } => {
-                <i32>::sse_encode(29, serializer);
+                <i32>::sse_encode(31, serializer);
                 <crate::ConfigDto>::sse_encode(config, serializer);
             }
             crate::FfiCommand::DownloadEnqueue { song } => {
-                <i32>::sse_encode(30, serializer);
+                <i32>::sse_encode(32, serializer);
                 <crate::SongDto>::sse_encode(song, serializer);
             }
             crate::FfiCommand::DownloadCancel { id } => {
-                <i32>::sse_encode(31, serializer);
-                <u64>::sse_encode(id, serializer);
-            }
-            crate::FfiCommand::DownloadPause { id } => {
-                <i32>::sse_encode(32, serializer);
-                <u64>::sse_encode(id, serializer);
-            }
-            crate::FfiCommand::DownloadResume { id } => {
                 <i32>::sse_encode(33, serializer);
                 <u64>::sse_encode(id, serializer);
             }
-            crate::FfiCommand::DownloadDeleteFile { id } => {
+            crate::FfiCommand::DownloadPause { id } => {
                 <i32>::sse_encode(34, serializer);
                 <u64>::sse_encode(id, serializer);
             }
-            crate::FfiCommand::DownloadClearFinished => {
+            crate::FfiCommand::DownloadResume { id } => {
                 <i32>::sse_encode(35, serializer);
+                <u64>::sse_encode(id, serializer);
+            }
+            crate::FfiCommand::DownloadDeleteFile { id } => {
+                <i32>::sse_encode(36, serializer);
+                <u64>::sse_encode(id, serializer);
+            }
+            crate::FfiCommand::DownloadClearFinished => {
+                <i32>::sse_encode(37, serializer);
             }
             crate::FfiCommand::QrLoginStart { source, kind } => {
-                <i32>::sse_encode(36, serializer);
+                <i32>::sse_encode(38, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(kind, serializer);
             }
             crate::FfiCommand::QrLoginCancel => {
-                <i32>::sse_encode(37, serializer);
+                <i32>::sse_encode(39, serializer);
             }
             crate::FfiCommand::LocalScan { paths, max_depth } => {
-                <i32>::sse_encode(38, serializer);
+                <i32>::sse_encode(40, serializer);
                 <Vec<String>>::sse_encode(paths, serializer);
                 <u32>::sse_encode(max_depth, serializer);
             }
             crate::FfiCommand::LocalScanCancel => {
-                <i32>::sse_encode(39, serializer);
+                <i32>::sse_encode(41, serializer);
             }
             crate::FfiCommand::AccountPlaylists { source } => {
-                <i32>::sse_encode(40, serializer);
+                <i32>::sse_encode(42, serializer);
                 <String>::sse_encode(source, serializer);
             }
             crate::FfiCommand::AccountFavorites { source } => {
-                <i32>::sse_encode(41, serializer);
+                <i32>::sse_encode(43, serializer);
                 <String>::sse_encode(source, serializer);
             }
             crate::FfiCommand::AccountPlaylistDetail {
                 source,
                 playlist_id,
             } => {
-                <i32>::sse_encode(42, serializer);
+                <i32>::sse_encode(44, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(playlist_id, serializer);
             }
             crate::FfiCommand::SyncPreview { source } => {
-                <i32>::sse_encode(43, serializer);
+                <i32>::sse_encode(45, serializer);
                 <String>::sse_encode(source, serializer);
             }
             crate::FfiCommand::SyncRun { source } => {
-                <i32>::sse_encode(44, serializer);
-                <String>::sse_encode(source, serializer);
-            }
-            crate::FfiCommand::SyncCancel => {
-                <i32>::sse_encode(45, serializer);
-            }
-            crate::FfiCommand::PushTargets { source } => {
                 <i32>::sse_encode(46, serializer);
                 <String>::sse_encode(source, serializer);
             }
-            crate::FfiCommand::PushCreateTarget { source, name } => {
+            crate::FfiCommand::SyncCancel => {
                 <i32>::sse_encode(47, serializer);
+            }
+            crate::FfiCommand::PushTargets { source } => {
+                <i32>::sse_encode(48, serializer);
+                <String>::sse_encode(source, serializer);
+            }
+            crate::FfiCommand::PushCreateTarget { source, name } => {
+                <i32>::sse_encode(49, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(name, serializer);
             }
@@ -4017,7 +4047,7 @@ impl SseEncode for crate::FfiCommand {
                 target_name,
                 target_song_count,
             } => {
-                <i32>::sse_encode(48, serializer);
+                <i32>::sse_encode(50, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(local_name, serializer);
                 <Vec<crate::SongDto>>::sse_encode(local_songs, serializer);
@@ -4028,14 +4058,14 @@ impl SseEncode for crate::FfiCommand {
                 <u32>::sse_encode(target_song_count, serializer);
             }
             crate::FfiCommand::PushRun { source } => {
-                <i32>::sse_encode(49, serializer);
+                <i32>::sse_encode(51, serializer);
                 <String>::sse_encode(source, serializer);
             }
             crate::FfiCommand::PushCancel => {
-                <i32>::sse_encode(50, serializer);
+                <i32>::sse_encode(52, serializer);
             }
             crate::FfiCommand::PlaylistCategories { source } => {
-                <i32>::sse_encode(51, serializer);
+                <i32>::sse_encode(53, serializer);
                 <String>::sse_encode(source, serializer);
             }
             crate::FfiCommand::PlaylistList {
@@ -4043,7 +4073,7 @@ impl SseEncode for crate::FfiCommand {
                 category,
                 page,
             } => {
-                <i32>::sse_encode(52, serializer);
+                <i32>::sse_encode(54, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(category, serializer);
                 <u32>::sse_encode(page, serializer);
@@ -4053,13 +4083,13 @@ impl SseEncode for crate::FfiCommand {
                 playlist_id,
                 page,
             } => {
-                <i32>::sse_encode(53, serializer);
+                <i32>::sse_encode(55, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(playlist_id, serializer);
                 <u32>::sse_encode(page, serializer);
             }
             crate::FfiCommand::LeaderboardBoards { source } => {
-                <i32>::sse_encode(54, serializer);
+                <i32>::sse_encode(56, serializer);
                 <String>::sse_encode(source, serializer);
             }
             crate::FfiCommand::LeaderboardSongs {
@@ -4067,28 +4097,28 @@ impl SseEncode for crate::FfiCommand {
                 board_id,
                 page,
             } => {
-                <i32>::sse_encode(55, serializer);
+                <i32>::sse_encode(57, serializer);
                 <String>::sse_encode(source, serializer);
                 <String>::sse_encode(board_id, serializer);
                 <u32>::sse_encode(page, serializer);
             }
             crate::FfiCommand::ArtistSongs { artist, page } => {
-                <i32>::sse_encode(56, serializer);
+                <i32>::sse_encode(58, serializer);
                 <crate::ArtistDto>::sse_encode(artist, serializer);
                 <u32>::sse_encode(page, serializer);
             }
             crate::FfiCommand::ArtistAlbums { artist, page } => {
-                <i32>::sse_encode(57, serializer);
+                <i32>::sse_encode(59, serializer);
                 <crate::ArtistDto>::sse_encode(artist, serializer);
                 <u32>::sse_encode(page, serializer);
             }
             crate::FfiCommand::AlbumSongs { album, page } => {
-                <i32>::sse_encode(58, serializer);
+                <i32>::sse_encode(60, serializer);
                 <crate::AlbumDto>::sse_encode(album, serializer);
                 <u32>::sse_encode(page, serializer);
             }
             crate::FfiCommand::PlaySongs { songs, index } => {
-                <i32>::sse_encode(59, serializer);
+                <i32>::sse_encode(61, serializer);
                 <Vec<crate::SongDto>>::sse_encode(songs, serializer);
                 <u32>::sse_encode(index, serializer);
             }

@@ -28,4 +28,8 @@ pub use services::{
     PlaybackService, PlaylistService, QueueService, SearchService, resolve_cover_url,
 };
 
+/// Linux 桌面媒体会话桥（Batch F §9.3）：MPRIS 注册入口，桌面引导处调用。
+#[cfg(target_os = "linux")]
+pub use services::spawn_mpris_bridge;
+
 mod services;

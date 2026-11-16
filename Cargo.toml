@@ -5,6 +5,7 @@ members = [
     "player",
     "lyric",
     "application",
+    "media-session",
     "runtime",
     "download",
     "app",
@@ -108,3 +109,4 @@ libmpv2 = { version = "6.0.0", default-features = false }
 
 # Lyrics
 # lrc = "0.2"  # future: use lrc crate if compatible
+

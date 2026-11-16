@@ -307,11 +307,21 @@ impl ApplicationService {
     }
 
     /// 配置里的播放模式字符串（`none` / `list-loop` / `single-loop` / `random`）。
-    fn play_mode(&self) -> String {
+    pub(crate) fn play_mode(&self) -> String {
         self.config_store
             .as_ref()
             .map(|store| store.get().player.play_mode)
             .unwrap_or_else(|| "list-loop".to_string())
+    }
+
+    /// 桌面媒体会话桥的配置开关（Batch F §9.3）：Linux MPRIS，
+    /// 与 TUI `config.integration.mpris` 同源同义。
+    #[cfg(target_os = "linux")]
+    pub(crate) fn mpris_enabled(&self) -> bool {
+        self.config_store
+            .as_ref()
+            .map(|store| store.get().integration.mpris)
+            .unwrap_or(false)
     }
 
     pub fn playback(&self) -> PlaybackService {
@@ -397,6 +407,22 @@ impl ApplicationService {
                 self.queue.remove(index);
                 self.publish_queue();
                 Ok(())
+            }
+            ApplicationCommand::QueueMove { from, to } => {
+                // Batch F §9.1 P2-09：拖拽排序真实后端语义；越界/原地幂等。
+                if self.queue.move_item(from, to) {
+                    self.publish_queue();
+                }
+                Ok(())
+            }
+            ApplicationCommand::QueuePlayAt { index } => {
+                // Batch F §9.1：队内跳播——复用 play（内部 replace 队列索引 +
+                // 触发真实播放），越界返回与 Play 同款错误文案。
+                let (songs, _) = self.queue.snapshot();
+                if index >= songs.len() {
+                    return Err("播放索引超出队列范围".to_string());
+                }
+                self.play(songs, index).await
             }
             ApplicationCommand::QueueClear => {
                 self.queue.clear();

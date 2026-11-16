@@ -303,6 +303,10 @@ sealed class FfiCommand with _$FfiCommand {
   }) = FfiCommand_QueueAdd;
   const factory FfiCommand.queueRemove({required int index}) =
       FfiCommand_QueueRemove;
+  const factory FfiCommand.queueMove({required int from, required int to}) =
+      FfiCommand_QueueMove;
+  const factory FfiCommand.queuePlayAt({required int index}) =
+      FfiCommand_QueuePlayAt;
   const factory FfiCommand.queueClear() = FfiCommand_QueueClear;
   const factory FfiCommand.next() = FfiCommand_Next;
   const factory FfiCommand.previous() = FfiCommand_Previous;

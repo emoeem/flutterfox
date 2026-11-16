@@ -2126,6 +2126,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "media-session"
+version = "0.9.0"
+dependencies = [
+ "lx-core",
+ "souvlaki",
+ "tokio",
+ "tracing",
+ "zbus",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4302,6 +4313,7 @@ dependencies = [
  "lx-player",
  "lx-source",
  "md-5",
+ "media-session",
  "objc2",
  "objc2-app-kit",
  "objc2-core-foundation",
@@ -4343,6 +4355,7 @@ dependencies = [
  "lx-lyric",
  "lx-player",
  "lx-source",
+ "media-session",
  "rand 0.10.3",
  "serde",
  "serde_json",

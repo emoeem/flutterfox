@@ -1352,128 +1352,135 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 8:
         return FfiCommand_QueueRemove(index: dco_decode_u_32(raw[1]));
       case 9:
-        return FfiCommand_QueueClear();
+        return FfiCommand_QueueMove(
+          from: dco_decode_u_32(raw[1]),
+          to: dco_decode_u_32(raw[2]),
+        );
       case 10:
-        return FfiCommand_Next();
+        return FfiCommand_QueuePlayAt(index: dco_decode_u_32(raw[1]));
       case 11:
-        return FfiCommand_Previous();
+        return FfiCommand_QueueClear();
       case 12:
+        return FfiCommand_Next();
+      case 13:
+        return FfiCommand_Previous();
+      case 14:
         return FfiCommand_Search(
           keyword: dco_decode_String(raw[1]),
           source: dco_decode_opt_String(raw[2]),
         );
-      case 13:
+      case 15:
         return FfiCommand_SearchMore(
           keyword: dco_decode_String(raw[1]),
           page: dco_decode_u_32(raw[2]),
           source: dco_decode_opt_String(raw[3]),
         );
-      case 14:
+      case 16:
         return FfiCommand_LibraryRefresh();
-      case 15:
+      case 17:
         return FfiCommand_FavoritesAdd(
           song: dco_decode_box_autoadd_song_dto(raw[1]),
         );
-      case 16:
+      case 18:
         return FfiCommand_FavoritesRemove(
           song: dco_decode_box_autoadd_song_dto(raw[1]),
         );
-      case 17:
+      case 19:
         return FfiCommand_FavoritePlaylistAdd(
           playlist: dco_decode_box_autoadd_playlist_dto(raw[1]),
         );
-      case 18:
+      case 20:
         return FfiCommand_FavoritePlaylistRemove(
           playlist: dco_decode_box_autoadd_playlist_dto(raw[1]),
         );
-      case 19:
+      case 21:
         return FfiCommand_HistoryRemove(
           song: dco_decode_box_autoadd_song_dto(raw[1]),
         );
-      case 20:
-        return FfiCommand_HistoryClear();
-      case 21:
-        return FfiCommand_CustomPlaylistCreate(name: dco_decode_String(raw[1]));
       case 22:
+        return FfiCommand_HistoryClear();
+      case 23:
+        return FfiCommand_CustomPlaylistCreate(name: dco_decode_String(raw[1]));
+      case 24:
         return FfiCommand_CustomPlaylistRename(
           id: dco_decode_String(raw[1]),
           name: dco_decode_String(raw[2]),
         );
-      case 23:
+      case 25:
         return FfiCommand_CustomPlaylistDelete(id: dco_decode_String(raw[1]));
-      case 24:
+      case 26:
         return FfiCommand_CustomPlaylistAddSongs(
           id: dco_decode_String(raw[1]),
           songs: dco_decode_list_song_dto(raw[2]),
         );
-      case 25:
+      case 27:
         return FfiCommand_CustomPlaylistRemoveSong(
           id: dco_decode_String(raw[1]),
           song: dco_decode_box_autoadd_song_dto(raw[2]),
         );
-      case 26:
+      case 28:
         return FfiCommand_CustomPlaylistDetail(id: dco_decode_String(raw[1]));
-      case 27:
+      case 29:
         return FfiCommand_LoadLyrics(
           song: dco_decode_box_autoadd_song_dto(raw[1]),
         );
-      case 28:
+      case 30:
         return FfiCommand_ConfigGet();
-      case 29:
+      case 31:
         return FfiCommand_ConfigUpdate(
           config: dco_decode_box_autoadd_config_dto(raw[1]),
         );
-      case 30:
+      case 32:
         return FfiCommand_DownloadEnqueue(
           song: dco_decode_box_autoadd_song_dto(raw[1]),
         );
-      case 31:
-        return FfiCommand_DownloadCancel(id: dco_decode_u_64(raw[1]));
-      case 32:
-        return FfiCommand_DownloadPause(id: dco_decode_u_64(raw[1]));
       case 33:
-        return FfiCommand_DownloadResume(id: dco_decode_u_64(raw[1]));
+        return FfiCommand_DownloadCancel(id: dco_decode_u_64(raw[1]));
       case 34:
-        return FfiCommand_DownloadDeleteFile(id: dco_decode_u_64(raw[1]));
+        return FfiCommand_DownloadPause(id: dco_decode_u_64(raw[1]));
       case 35:
-        return FfiCommand_DownloadClearFinished();
+        return FfiCommand_DownloadResume(id: dco_decode_u_64(raw[1]));
       case 36:
+        return FfiCommand_DownloadDeleteFile(id: dco_decode_u_64(raw[1]));
+      case 37:
+        return FfiCommand_DownloadClearFinished();
+      case 38:
         return FfiCommand_QrLoginStart(
           source: dco_decode_String(raw[1]),
           kind: dco_decode_String(raw[2]),
         );
-      case 37:
+      case 39:
         return FfiCommand_QrLoginCancel();
-      case 38:
+      case 40:
         return FfiCommand_LocalScan(
           paths: dco_decode_list_String(raw[1]),
           maxDepth: dco_decode_u_32(raw[2]),
         );
-      case 39:
-        return FfiCommand_LocalScanCancel();
-      case 40:
-        return FfiCommand_AccountPlaylists(source: dco_decode_String(raw[1]));
       case 41:
-        return FfiCommand_AccountFavorites(source: dco_decode_String(raw[1]));
+        return FfiCommand_LocalScanCancel();
       case 42:
+        return FfiCommand_AccountPlaylists(source: dco_decode_String(raw[1]));
+      case 43:
+        return FfiCommand_AccountFavorites(source: dco_decode_String(raw[1]));
+      case 44:
         return FfiCommand_AccountPlaylistDetail(
           source: dco_decode_String(raw[1]),
           playlistId: dco_decode_String(raw[2]),
         );
-      case 43:
-        return FfiCommand_SyncPreview(source: dco_decode_String(raw[1]));
-      case 44:
-        return FfiCommand_SyncRun(source: dco_decode_String(raw[1]));
       case 45:
-        return FfiCommand_SyncCancel();
+        return FfiCommand_SyncPreview(source: dco_decode_String(raw[1]));
       case 46:
-        return FfiCommand_PushTargets(source: dco_decode_String(raw[1]));
+        return FfiCommand_SyncRun(source: dco_decode_String(raw[1]));
       case 47:
+        return FfiCommand_SyncCancel();
+      case 48:
+        return FfiCommand_PushTargets(source: dco_decode_String(raw[1]));
+      case 49:
         return FfiCommand_PushCreateTarget(
           source: dco_decode_String(raw[1]),
           name: dco_decode_String(raw[2]),
         );
-      case 48:
+      case 50:
         return FfiCommand_PushPlan(
           source: dco_decode_String(raw[1]),
           localName: dco_decode_String(raw[2]),
@@ -1484,48 +1491,48 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           targetName: dco_decode_String(raw[7]),
           targetSongCount: dco_decode_u_32(raw[8]),
         );
-      case 49:
-        return FfiCommand_PushRun(source: dco_decode_String(raw[1]));
-      case 50:
-        return FfiCommand_PushCancel();
       case 51:
-        return FfiCommand_PlaylistCategories(source: dco_decode_String(raw[1]));
+        return FfiCommand_PushRun(source: dco_decode_String(raw[1]));
       case 52:
+        return FfiCommand_PushCancel();
+      case 53:
+        return FfiCommand_PlaylistCategories(source: dco_decode_String(raw[1]));
+      case 54:
         return FfiCommand_PlaylistList(
           source: dco_decode_String(raw[1]),
           category: dco_decode_String(raw[2]),
           page: dco_decode_u_32(raw[3]),
         );
-      case 53:
+      case 55:
         return FfiCommand_PlaylistDetail(
           source: dco_decode_String(raw[1]),
           playlistId: dco_decode_String(raw[2]),
           page: dco_decode_u_32(raw[3]),
         );
-      case 54:
+      case 56:
         return FfiCommand_LeaderboardBoards(source: dco_decode_String(raw[1]));
-      case 55:
+      case 57:
         return FfiCommand_LeaderboardSongs(
           source: dco_decode_String(raw[1]),
           boardId: dco_decode_String(raw[2]),
           page: dco_decode_u_32(raw[3]),
         );
-      case 56:
+      case 58:
         return FfiCommand_ArtistSongs(
           artist: dco_decode_box_autoadd_artist_dto(raw[1]),
           page: dco_decode_u_32(raw[2]),
         );
-      case 57:
+      case 59:
         return FfiCommand_ArtistAlbums(
           artist: dco_decode_box_autoadd_artist_dto(raw[1]),
           page: dco_decode_u_32(raw[2]),
         );
-      case 58:
+      case 60:
         return FfiCommand_AlbumSongs(
           album: dco_decode_box_autoadd_album_dto(raw[1]),
           page: dco_decode_u_32(raw[2]),
         );
-      case 59:
+      case 61:
         return FfiCommand_PlaySongs(
           songs: dco_decode_list_song_dto(raw[1]),
           index: dco_decode_u_32(raw[2]),
@@ -2550,16 +2557,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_index = sse_decode_u_32(deserializer);
         return FfiCommand_QueueRemove(index: var_index);
       case 9:
-        return FfiCommand_QueueClear();
+        var var_from = sse_decode_u_32(deserializer);
+        var var_to = sse_decode_u_32(deserializer);
+        return FfiCommand_QueueMove(from: var_from, to: var_to);
       case 10:
-        return FfiCommand_Next();
+        var var_index = sse_decode_u_32(deserializer);
+        return FfiCommand_QueuePlayAt(index: var_index);
       case 11:
-        return FfiCommand_Previous();
+        return FfiCommand_QueueClear();
       case 12:
+        return FfiCommand_Next();
+      case 13:
+        return FfiCommand_Previous();
+      case 14:
         var var_keyword = sse_decode_String(deserializer);
         var var_source = sse_decode_opt_String(deserializer);
         return FfiCommand_Search(keyword: var_keyword, source: var_source);
-      case 13:
+      case 15:
         var var_keyword = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
         var var_source = sse_decode_opt_String(deserializer);
@@ -2568,112 +2582,112 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           page: var_page,
           source: var_source,
         );
-      case 14:
+      case 16:
         return FfiCommand_LibraryRefresh();
-      case 15:
+      case 17:
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_FavoritesAdd(song: var_song);
-      case 16:
+      case 18:
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_FavoritesRemove(song: var_song);
-      case 17:
+      case 19:
         var var_playlist = sse_decode_box_autoadd_playlist_dto(deserializer);
         return FfiCommand_FavoritePlaylistAdd(playlist: var_playlist);
-      case 18:
+      case 20:
         var var_playlist = sse_decode_box_autoadd_playlist_dto(deserializer);
         return FfiCommand_FavoritePlaylistRemove(playlist: var_playlist);
-      case 19:
+      case 21:
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_HistoryRemove(song: var_song);
-      case 20:
+      case 22:
         return FfiCommand_HistoryClear();
-      case 21:
+      case 23:
         var var_name = sse_decode_String(deserializer);
         return FfiCommand_CustomPlaylistCreate(name: var_name);
-      case 22:
+      case 24:
         var var_id = sse_decode_String(deserializer);
         var var_name = sse_decode_String(deserializer);
         return FfiCommand_CustomPlaylistRename(id: var_id, name: var_name);
-      case 23:
+      case 25:
         var var_id = sse_decode_String(deserializer);
         return FfiCommand_CustomPlaylistDelete(id: var_id);
-      case 24:
+      case 26:
         var var_id = sse_decode_String(deserializer);
         var var_songs = sse_decode_list_song_dto(deserializer);
         return FfiCommand_CustomPlaylistAddSongs(id: var_id, songs: var_songs);
-      case 25:
+      case 27:
         var var_id = sse_decode_String(deserializer);
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_CustomPlaylistRemoveSong(id: var_id, song: var_song);
-      case 26:
+      case 28:
         var var_id = sse_decode_String(deserializer);
         return FfiCommand_CustomPlaylistDetail(id: var_id);
-      case 27:
+      case 29:
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_LoadLyrics(song: var_song);
-      case 28:
+      case 30:
         return FfiCommand_ConfigGet();
-      case 29:
+      case 31:
         var var_config = sse_decode_box_autoadd_config_dto(deserializer);
         return FfiCommand_ConfigUpdate(config: var_config);
-      case 30:
+      case 32:
         var var_song = sse_decode_box_autoadd_song_dto(deserializer);
         return FfiCommand_DownloadEnqueue(song: var_song);
-      case 31:
-        var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadCancel(id: var_id);
-      case 32:
-        var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadPause(id: var_id);
       case 33:
         var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadResume(id: var_id);
+        return FfiCommand_DownloadCancel(id: var_id);
       case 34:
         var var_id = sse_decode_u_64(deserializer);
-        return FfiCommand_DownloadDeleteFile(id: var_id);
+        return FfiCommand_DownloadPause(id: var_id);
       case 35:
-        return FfiCommand_DownloadClearFinished();
+        var var_id = sse_decode_u_64(deserializer);
+        return FfiCommand_DownloadResume(id: var_id);
       case 36:
+        var var_id = sse_decode_u_64(deserializer);
+        return FfiCommand_DownloadDeleteFile(id: var_id);
+      case 37:
+        return FfiCommand_DownloadClearFinished();
+      case 38:
         var var_source = sse_decode_String(deserializer);
         var var_kind = sse_decode_String(deserializer);
         return FfiCommand_QrLoginStart(source: var_source, kind: var_kind);
-      case 37:
+      case 39:
         return FfiCommand_QrLoginCancel();
-      case 38:
+      case 40:
         var var_paths = sse_decode_list_String(deserializer);
         var var_maxDepth = sse_decode_u_32(deserializer);
         return FfiCommand_LocalScan(paths: var_paths, maxDepth: var_maxDepth);
-      case 39:
+      case 41:
         return FfiCommand_LocalScanCancel();
-      case 40:
+      case 42:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_AccountPlaylists(source: var_source);
-      case 41:
+      case 43:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_AccountFavorites(source: var_source);
-      case 42:
+      case 44:
         var var_source = sse_decode_String(deserializer);
         var var_playlistId = sse_decode_String(deserializer);
         return FfiCommand_AccountPlaylistDetail(
           source: var_source,
           playlistId: var_playlistId,
         );
-      case 43:
+      case 45:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_SyncPreview(source: var_source);
-      case 44:
-        var var_source = sse_decode_String(deserializer);
-        return FfiCommand_SyncRun(source: var_source);
-      case 45:
-        return FfiCommand_SyncCancel();
       case 46:
         var var_source = sse_decode_String(deserializer);
-        return FfiCommand_PushTargets(source: var_source);
+        return FfiCommand_SyncRun(source: var_source);
       case 47:
+        return FfiCommand_SyncCancel();
+      case 48:
+        var var_source = sse_decode_String(deserializer);
+        return FfiCommand_PushTargets(source: var_source);
+      case 49:
         var var_source = sse_decode_String(deserializer);
         var var_name = sse_decode_String(deserializer);
         return FfiCommand_PushCreateTarget(source: var_source, name: var_name);
-      case 48:
+      case 50:
         var var_source = sse_decode_String(deserializer);
         var var_localName = sse_decode_String(deserializer);
         var var_localSongs = sse_decode_list_song_dto(deserializer);
@@ -2692,15 +2706,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           targetName: var_targetName,
           targetSongCount: var_targetSongCount,
         );
-      case 49:
-        var var_source = sse_decode_String(deserializer);
-        return FfiCommand_PushRun(source: var_source);
-      case 50:
-        return FfiCommand_PushCancel();
       case 51:
         var var_source = sse_decode_String(deserializer);
-        return FfiCommand_PlaylistCategories(source: var_source);
+        return FfiCommand_PushRun(source: var_source);
       case 52:
+        return FfiCommand_PushCancel();
+      case 53:
+        var var_source = sse_decode_String(deserializer);
+        return FfiCommand_PlaylistCategories(source: var_source);
+      case 54:
         var var_source = sse_decode_String(deserializer);
         var var_category = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
@@ -2709,7 +2723,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           category: var_category,
           page: var_page,
         );
-      case 53:
+      case 55:
         var var_source = sse_decode_String(deserializer);
         var var_playlistId = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
@@ -2718,10 +2732,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           playlistId: var_playlistId,
           page: var_page,
         );
-      case 54:
+      case 56:
         var var_source = sse_decode_String(deserializer);
         return FfiCommand_LeaderboardBoards(source: var_source);
-      case 55:
+      case 57:
         var var_source = sse_decode_String(deserializer);
         var var_boardId = sse_decode_String(deserializer);
         var var_page = sse_decode_u_32(deserializer);
@@ -2730,19 +2744,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           boardId: var_boardId,
           page: var_page,
         );
-      case 56:
+      case 58:
         var var_artist = sse_decode_box_autoadd_artist_dto(deserializer);
         var var_page = sse_decode_u_32(deserializer);
         return FfiCommand_ArtistSongs(artist: var_artist, page: var_page);
-      case 57:
+      case 59:
         var var_artist = sse_decode_box_autoadd_artist_dto(deserializer);
         var var_page = sse_decode_u_32(deserializer);
         return FfiCommand_ArtistAlbums(artist: var_artist, page: var_page);
-      case 58:
+      case 60:
         var var_album = sse_decode_box_autoadd_album_dto(deserializer);
         var var_page = sse_decode_u_32(deserializer);
         return FfiCommand_AlbumSongs(album: var_album, page: var_page);
-      case 59:
+      case 61:
         var var_songs = sse_decode_list_song_dto(deserializer);
         var var_index = sse_decode_u_32(deserializer);
         return FfiCommand_PlaySongs(songs: var_songs, index: var_index);
@@ -4029,14 +4043,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case FfiCommand_QueueRemove(index: final index):
         sse_encode_i_32(8, serializer);
         sse_encode_u_32(index, serializer);
-      case FfiCommand_QueueClear():
+      case FfiCommand_QueueMove(from: final from, to: final to):
         sse_encode_i_32(9, serializer);
-      case FfiCommand_Next():
+        sse_encode_u_32(from, serializer);
+        sse_encode_u_32(to, serializer);
+      case FfiCommand_QueuePlayAt(index: final index):
         sse_encode_i_32(10, serializer);
-      case FfiCommand_Previous():
+        sse_encode_u_32(index, serializer);
+      case FfiCommand_QueueClear():
         sse_encode_i_32(11, serializer);
-      case FfiCommand_Search(keyword: final keyword, source: final source):
+      case FfiCommand_Next():
         sse_encode_i_32(12, serializer);
+      case FfiCommand_Previous():
+        sse_encode_i_32(13, serializer);
+      case FfiCommand_Search(keyword: final keyword, source: final source):
+        sse_encode_i_32(14, serializer);
         sse_encode_String(keyword, serializer);
         sse_encode_opt_String(source, serializer);
       case FfiCommand_SearchMore(
@@ -4044,113 +4065,113 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         page: final page,
         source: final source,
       ):
-        sse_encode_i_32(13, serializer);
+        sse_encode_i_32(15, serializer);
         sse_encode_String(keyword, serializer);
         sse_encode_u_32(page, serializer);
         sse_encode_opt_String(source, serializer);
       case FfiCommand_LibraryRefresh():
-        sse_encode_i_32(14, serializer);
+        sse_encode_i_32(16, serializer);
       case FfiCommand_FavoritesAdd(song: final song):
-        sse_encode_i_32(15, serializer);
+        sse_encode_i_32(17, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_FavoritesRemove(song: final song):
-        sse_encode_i_32(16, serializer);
+        sse_encode_i_32(18, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_FavoritePlaylistAdd(playlist: final playlist):
-        sse_encode_i_32(17, serializer);
+        sse_encode_i_32(19, serializer);
         sse_encode_box_autoadd_playlist_dto(playlist, serializer);
       case FfiCommand_FavoritePlaylistRemove(playlist: final playlist):
-        sse_encode_i_32(18, serializer);
+        sse_encode_i_32(20, serializer);
         sse_encode_box_autoadd_playlist_dto(playlist, serializer);
       case FfiCommand_HistoryRemove(song: final song):
-        sse_encode_i_32(19, serializer);
+        sse_encode_i_32(21, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_HistoryClear():
-        sse_encode_i_32(20, serializer);
+        sse_encode_i_32(22, serializer);
       case FfiCommand_CustomPlaylistCreate(name: final name):
-        sse_encode_i_32(21, serializer);
+        sse_encode_i_32(23, serializer);
         sse_encode_String(name, serializer);
       case FfiCommand_CustomPlaylistRename(id: final id, name: final name):
-        sse_encode_i_32(22, serializer);
+        sse_encode_i_32(24, serializer);
         sse_encode_String(id, serializer);
         sse_encode_String(name, serializer);
       case FfiCommand_CustomPlaylistDelete(id: final id):
-        sse_encode_i_32(23, serializer);
+        sse_encode_i_32(25, serializer);
         sse_encode_String(id, serializer);
       case FfiCommand_CustomPlaylistAddSongs(id: final id, songs: final songs):
-        sse_encode_i_32(24, serializer);
+        sse_encode_i_32(26, serializer);
         sse_encode_String(id, serializer);
         sse_encode_list_song_dto(songs, serializer);
       case FfiCommand_CustomPlaylistRemoveSong(id: final id, song: final song):
-        sse_encode_i_32(25, serializer);
+        sse_encode_i_32(27, serializer);
         sse_encode_String(id, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_CustomPlaylistDetail(id: final id):
-        sse_encode_i_32(26, serializer);
+        sse_encode_i_32(28, serializer);
         sse_encode_String(id, serializer);
       case FfiCommand_LoadLyrics(song: final song):
-        sse_encode_i_32(27, serializer);
+        sse_encode_i_32(29, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_ConfigGet():
-        sse_encode_i_32(28, serializer);
+        sse_encode_i_32(30, serializer);
       case FfiCommand_ConfigUpdate(config: final config):
-        sse_encode_i_32(29, serializer);
+        sse_encode_i_32(31, serializer);
         sse_encode_box_autoadd_config_dto(config, serializer);
       case FfiCommand_DownloadEnqueue(song: final song):
-        sse_encode_i_32(30, serializer);
+        sse_encode_i_32(32, serializer);
         sse_encode_box_autoadd_song_dto(song, serializer);
       case FfiCommand_DownloadCancel(id: final id):
-        sse_encode_i_32(31, serializer);
-        sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadPause(id: final id):
-        sse_encode_i_32(32, serializer);
-        sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadResume(id: final id):
         sse_encode_i_32(33, serializer);
         sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadDeleteFile(id: final id):
+      case FfiCommand_DownloadPause(id: final id):
         sse_encode_i_32(34, serializer);
         sse_encode_u_64(id, serializer);
-      case FfiCommand_DownloadClearFinished():
+      case FfiCommand_DownloadResume(id: final id):
         sse_encode_i_32(35, serializer);
-      case FfiCommand_QrLoginStart(source: final source, kind: final kind):
+        sse_encode_u_64(id, serializer);
+      case FfiCommand_DownloadDeleteFile(id: final id):
         sse_encode_i_32(36, serializer);
+        sse_encode_u_64(id, serializer);
+      case FfiCommand_DownloadClearFinished():
+        sse_encode_i_32(37, serializer);
+      case FfiCommand_QrLoginStart(source: final source, kind: final kind):
+        sse_encode_i_32(38, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(kind, serializer);
       case FfiCommand_QrLoginCancel():
-        sse_encode_i_32(37, serializer);
+        sse_encode_i_32(39, serializer);
       case FfiCommand_LocalScan(paths: final paths, maxDepth: final maxDepth):
-        sse_encode_i_32(38, serializer);
+        sse_encode_i_32(40, serializer);
         sse_encode_list_String(paths, serializer);
         sse_encode_u_32(maxDepth, serializer);
       case FfiCommand_LocalScanCancel():
-        sse_encode_i_32(39, serializer);
+        sse_encode_i_32(41, serializer);
       case FfiCommand_AccountPlaylists(source: final source):
-        sse_encode_i_32(40, serializer);
+        sse_encode_i_32(42, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_AccountFavorites(source: final source):
-        sse_encode_i_32(41, serializer);
+        sse_encode_i_32(43, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_AccountPlaylistDetail(
         source: final source,
         playlistId: final playlistId,
       ):
-        sse_encode_i_32(42, serializer);
+        sse_encode_i_32(44, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(playlistId, serializer);
       case FfiCommand_SyncPreview(source: final source):
-        sse_encode_i_32(43, serializer);
+        sse_encode_i_32(45, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_SyncRun(source: final source):
-        sse_encode_i_32(44, serializer);
-        sse_encode_String(source, serializer);
-      case FfiCommand_SyncCancel():
-        sse_encode_i_32(45, serializer);
-      case FfiCommand_PushTargets(source: final source):
         sse_encode_i_32(46, serializer);
         sse_encode_String(source, serializer);
-      case FfiCommand_PushCreateTarget(source: final source, name: final name):
+      case FfiCommand_SyncCancel():
         sse_encode_i_32(47, serializer);
+      case FfiCommand_PushTargets(source: final source):
+        sse_encode_i_32(48, serializer);
+        sse_encode_String(source, serializer);
+      case FfiCommand_PushCreateTarget(source: final source, name: final name):
+        sse_encode_i_32(49, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(name, serializer);
       case FfiCommand_PushPlan(
@@ -4163,7 +4184,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         targetName: final targetName,
         targetSongCount: final targetSongCount,
       ):
-        sse_encode_i_32(48, serializer);
+        sse_encode_i_32(50, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(localName, serializer);
         sse_encode_list_song_dto(localSongs, serializer);
@@ -4173,19 +4194,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(targetName, serializer);
         sse_encode_u_32(targetSongCount, serializer);
       case FfiCommand_PushRun(source: final source):
-        sse_encode_i_32(49, serializer);
+        sse_encode_i_32(51, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_PushCancel():
-        sse_encode_i_32(50, serializer);
+        sse_encode_i_32(52, serializer);
       case FfiCommand_PlaylistCategories(source: final source):
-        sse_encode_i_32(51, serializer);
+        sse_encode_i_32(53, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_PlaylistList(
         source: final source,
         category: final category,
         page: final page,
       ):
-        sse_encode_i_32(52, serializer);
+        sse_encode_i_32(54, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(category, serializer);
         sse_encode_u_32(page, serializer);
@@ -4194,36 +4215,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         playlistId: final playlistId,
         page: final page,
       ):
-        sse_encode_i_32(53, serializer);
+        sse_encode_i_32(55, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(playlistId, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_LeaderboardBoards(source: final source):
-        sse_encode_i_32(54, serializer);
+        sse_encode_i_32(56, serializer);
         sse_encode_String(source, serializer);
       case FfiCommand_LeaderboardSongs(
         source: final source,
         boardId: final boardId,
         page: final page,
       ):
-        sse_encode_i_32(55, serializer);
+        sse_encode_i_32(57, serializer);
         sse_encode_String(source, serializer);
         sse_encode_String(boardId, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_ArtistSongs(artist: final artist, page: final page):
-        sse_encode_i_32(56, serializer);
+        sse_encode_i_32(58, serializer);
         sse_encode_box_autoadd_artist_dto(artist, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_ArtistAlbums(artist: final artist, page: final page):
-        sse_encode_i_32(57, serializer);
+        sse_encode_i_32(59, serializer);
         sse_encode_box_autoadd_artist_dto(artist, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_AlbumSongs(album: final album, page: final page):
-        sse_encode_i_32(58, serializer);
+        sse_encode_i_32(60, serializer);
         sse_encode_box_autoadd_album_dto(album, serializer);
         sse_encode_u_32(page, serializer);
       case FfiCommand_PlaySongs(songs: final songs, index: final index):
-        sse_encode_i_32(59, serializer);
+        sse_encode_i_32(61, serializer);
         sse_encode_list_song_dto(songs, serializer);
         sse_encode_u_32(index, serializer);
     }
