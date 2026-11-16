@@ -1,5 +1,7 @@
 # 会话交接：第三轮工程演进（Batch C 全部收口 + Batch D 已实施，待门禁终验与提交）
 
+> **【已失效 → 请读 `SESSION-HANDOFF-2026-11-17.md`】** 本文的工具链陷阱已并入新交接 §二；Batch D-F-G 均已提交推送（HEAD `846bbfe`）。本文仅作历史存档。
+>
 > 状态：生效中 · 交接日期：2026-11-16 · 交接 HEAD：`566ed42`（feat/ui-redesign，已推送 GitHub，本地在其上另有 **Batch D 未提交改动**，见 §二） · 接收方：任意端执行 AI · 上游计划书：`docs/redesign/second-round/PLAN-rust-ffi-and-ui-evolution.md`（仓内副本）
 > 前序交接：`docs/SESSION-HANDOFF-2026-11-14.md`（其中「环境与命令」「Git 纪律」「开放项」各节继续有效，本文只写增量）
 
