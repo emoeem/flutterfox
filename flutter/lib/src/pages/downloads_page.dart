@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../design_system/components/desktop_content_constraint.dart';
 
@@ -437,15 +438,20 @@ class _TaskRow extends StatelessWidget {
     final total = task.total?.toInt() ?? 0;
     final downloaded = task.downloaded.toInt();
     final hasProgress = total > 0;
+    // P3-09 / §8.3：服务器声明总量小于已收字节 = 总量信息不一致——进度条
+    // 与百分比照常夹取（与 Rust ProgressSnapshot::ratio 同口径），原始字节
+    // 如实展示并在体积行附不一致说明（不篡改原始数据、不掩盖异常）。
+    final totalMismatch = hasProgress && downloaded > total;
     final failed = downloadTaskFailed(task);
     final completed = downloadTaskCompleted(task);
     final label = failed
         ? '失败 · ${downloadFailureText(task)}'
         : downloadStateLabel(task.state);
     // §5.11：行内体积（downloaded/total）与速度；有数据才显示。
+    // §8.3：总量未知（total==0）时显示「已下载 X」，不显示虚假总量。
     final sizeText = hasProgress
         ? '${downloadFormatBytes(downloaded)} / ${downloadFormatBytes(total)}'
-        : null;
+        : (downloaded > 0 ? '已下载 ${downloadFormatBytes(downloaded)}' : null);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,34 +459,63 @@ class _TaskRow extends StatelessWidget {
         Row(
           children: [
             Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: VxTypography.caption.copyWith(
-                  color: failed
-                      ? scheme.error
-                      : completed
-                      ? success
-                      : scheme.onSurfaceVariant,
+              // §8.3：失败任务行内文案可能被窄窗截断（P3-09）——点按展开
+              // 完整原因（对话框含复制），Tooltip 提示可达性。
+              child: Tooltip(
+                message: failed ? '查看失败详情' : '',
+                child: GestureDetector(
+                  onTap: failed ? () => _showFailureDetails(context) : null,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VxTypography.caption.copyWith(
+                      color: failed
+                          ? scheme.error
+                          : completed
+                          ? success
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               ),
             ),
             if (hasProgress && !completed && !failed) ...[
               const SizedBox(width: 8),
-              Text(
-                '${downloaded * 100 ~/ total}%',
-                style: VxTypography.mono.copyWith(
-                  color: scheme.onSurfaceVariant,
+              Flexible(
+                child: Text(
+                  '${((downloaded * 100) ~/ total).clamp(0, 100)}%',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VxTypography.mono.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
             if (speedText != null) ...[
               const SizedBox(width: 8),
-              Text(
-                speedText!,
-                style: VxTypography.mono.copyWith(
-                  color: scheme.onSurfaceVariant,
+              Flexible(
+                child: Text(
+                  speedText!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VxTypography.mono.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+            if (speedText != null) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  speedText!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VxTypography.mono.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -489,10 +524,11 @@ class _TaskRow extends StatelessWidget {
         if (sizeText != null) ...[
           const SizedBox(height: 2),
           Text(
-            sizeText,
+            totalMismatch ? '$sizeText（服务器总量信息不一致）' : sizeText,
+            softWrap: true,
             style: VxTypography.mono.copyWith(
               fontSize: 11,
-              color: scheme.onSurfaceVariant,
+              color: totalMismatch ? scheme.error : scheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -511,6 +547,40 @@ class _TaskRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// §8.3 / P3-09：失败原因完整展开（行内截断文案的详情出口），可复制。
+  Future<void> _showFailureDetails(BuildContext context) async {
+    final detail = task.error?.trim().isNotEmpty == true
+        ? task.error!.trim()
+        : downloadFailureText(task);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('失败详情'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: SingleChildScrollView(
+            child: SelectableText(detail, style: VxTypography.body),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: detail));
+              ScaffoldMessenger.maybeOf(
+                dialogContext,
+              )?.showSnackBar(const SnackBar(content: Text('已复制失败原因')));
+            },
+            child: const Text('复制'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
     );
   }
 
