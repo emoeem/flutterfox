@@ -177,8 +177,19 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
 
   final FocusNode _searchFocus = FocusNode();
 
+  /// Header 搜索框文本（SR-14：由 searchKeyword 单一状态流驱动，
+  /// 与搜索页输入双向同步；文本相同则跳过防循环）。
+  final TextEditingController _headerSearchController = TextEditingController();
+
   /// Header 搜索框提交的关键字（搜索页种子）。
   String _searchSeed = '';
+
+  void _onStreamKeywordChanged() {
+    final value = searchKeyword.value;
+    if (_headerSearchController.text != value) {
+      _headerSearchController.text = value;
+    }
+  }
 
   @override
   void initState() {
@@ -186,7 +197,12 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
     final initial = widget.initialDestination;
     if (initial != null) _current = initial;
     _searchSeed = widget.searchSeed;
+    if (searchKeyword.value != _searchSeed) {
+      searchKeyword.value = _searchSeed;
+    }
+    _headerSearchController.text = _searchSeed;
     navRequest.addListener(_onNavRequest);
+    searchKeyword.addListener(_onStreamKeywordChanged);
     nowPlayingRequest.addListener(_onNowPlayingRequest);
     _loadSidebarPrefs();
     final seed = widget.detailSeed;
@@ -320,8 +336,9 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
   @override
   void dispose() {
     navRequest.removeListener(_onNavRequest);
+    searchKeyword.removeListener(_onStreamKeywordChanged);
+    _headerSearchController.dispose();
     nowPlayingRequest.removeListener(_onNowPlayingRequest);
-    _searchFocus.dispose();
     _shellShortcutsFocus.dispose();
     super.dispose();
   }
@@ -396,6 +413,9 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
   void _onSearchSubmit(String keyword) {
     final trimmed = keyword.trim();
     if (trimmed.isNotEmpty) _searchSeed = trimmed;
+    if (searchKeyword.value != trimmed) {
+      searchKeyword.value = trimmed;
+    }
     if (_current != ShellDestination.search) {
       _navigate(ShellDestination.search);
     } else {
@@ -558,6 +578,7 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
                           canForward: _forward.isNotEmpty,
                           onBack: _goBack,
                           onForward: _goForward,
+                          searchController: _headerSearchController,
                           searchFocusNode: _searchFocus,
                           onSearchSubmit: _onSearchSubmit,
                           contextOpen: _contextOpen,
@@ -600,34 +621,38 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
           children: [
             // 侧栏（hidden 时不占位，由浮层承担）。宽度：未拖调走断点
             // 默认，拖调/折叠后记忆用户值（Phase 6 §7.2 最小语义）。
+            // SR-13（Batch D §7.3）：侧栏/中央内容/右栏各自成焦点漫游组，
+            // Tab 顺序 = 侧栏 → 内容 → 右栏（组内按阅读序）。
             if (metrics.sidebar != SidebarMode.hidden)
-              AnimatedContainer(
-                duration: VxMotion.panelExpand,
-                curve: VxMotion.standard,
-                // 折叠↔展开过渡期内容（240 全量态）会在动画中的窄容器里
-                // 短暂溢出，裁剪掉避免报错/闪破图（2026-11-13 widget 层实证）。
-                clipBehavior: Clip.hardEdge,
-                width: _effectiveCollapsed(metrics)
-                    ? ShellBreakpoints.sidebarCollapsedWidth
-                    : _effectiveSidebarWidth,
-                // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位。
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLow,
-                  border: Border(right: BorderSide(color: scheme.outline)),
-                ),
-                child: AppSidebar(
-                  model: widget.model,
-                  current: _current,
-                  onSelect: _navigate,
-                  collapsed: _effectiveCollapsed(metrics),
-                  width: _effectiveSidebarWidth,
-                  onWidthChanged: metrics.sidebar == SidebarMode.expanded
-                      ? _onSidebarWidthChanged
-                      : null,
-                  // 折叠开关只在展开档（≥1200）提供；960–1199 硬带无开关。
-                  onToggleCollapsed: metrics.sidebar == SidebarMode.expanded
-                      ? _toggleSidebarCollapsed
-                      : null,
+              FocusTraversalGroup(
+                child: AnimatedContainer(
+                  duration: VxMotion.panelExpand,
+                  curve: VxMotion.standard,
+                  // 折叠↔展开过渡期内容（240 全量态）会在动画中的窄容器里
+                  // 短暂溢出，裁剪掉避免报错/闪破图（2026-11-13 widget 层实证）。
+                  clipBehavior: Clip.hardEdge,
+                  width: _effectiveCollapsed(metrics)
+                      ? ShellBreakpoints.sidebarCollapsedWidth
+                      : _effectiveSidebarWidth,
+                  // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位。
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerLow,
+                    border: Border(right: BorderSide(color: scheme.outline)),
+                  ),
+                  child: AppSidebar(
+                    model: widget.model,
+                    current: _current,
+                    onSelect: _navigate,
+                    collapsed: _effectiveCollapsed(metrics),
+                    width: _effectiveSidebarWidth,
+                    onWidthChanged: metrics.sidebar == SidebarMode.expanded
+                        ? _onSidebarWidthChanged
+                        : null,
+                    // 折叠开关只在展开档（≥1200）提供；960–1199 硬带无开关。
+                    onToggleCollapsed: metrics.sidebar == SidebarMode.expanded
+                        ? _toggleSidebarCollapsed
+                        : null,
+                  ),
                 ),
               ),
             // 中央内容区。内嵌 Navigator 的基页 = IndexedStack 壳页
@@ -636,44 +661,49 @@ class _VoicefoxShellState extends State<VoicefoxShell> {
             // 让壳层 setState 的重建传导进基页（MaterialPage child 每次
             // build 更新，SDK _updateSettings→changedInternalState）。
             Expanded(
-              child: Padding(
-                padding: EdgeInsets.all(metrics.contentPadding),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(VxRadius.lg),
-                  child: Navigator(
-                    key: contentNavigatorKey,
-                    pages: [
-                      MaterialPage<void>(
-                        // 基页恒在（壳层 IndexedStack）：推入式详情页是
-                        // pageless 路由（imperative MaterialPageRoute），
-                        // pop 走 _RouteEntry.pop 不经本回调；基页自身的
-                        // popDisposition 为 bubble（isFirst），maybePop
-                        // 不会移除它（SDK navigator.dart:5611 bubble 直返
-                        // false），故这里无事可做。
-                        child: IndexedStack(
-                          index: kShellDestinationOrder.indexOf(_current),
-                          children: [
-                            for (final dest in kShellDestinationOrder)
-                              _pageFor(dest),
-                          ],
+              // SR-13：中央内容自成焦点漫游组。
+              child: FocusTraversalGroup(
+                child: Padding(
+                  padding: EdgeInsets.all(metrics.contentPadding),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(VxRadius.lg),
+                    child: Navigator(
+                      key: contentNavigatorKey,
+                      pages: [
+                        MaterialPage<void>(
+                          // 基页恒在（壳层 IndexedStack）：推入式详情页是
+                          // pageless 路由（imperative MaterialPageRoute），
+                          // pop 走 _RouteEntry.pop 不经本回调；基页自身的
+                          // popDisposition 为 bubble（isFirst），maybePop
+                          // 不会移除它（SDK navigator.dart:5611 bubble 直返
+                          // false），故这里无事可做。
+                          child: IndexedStack(
+                            index: kShellDestinationOrder.indexOf(_current),
+                            children: [
+                              for (final dest in kShellDestinationOrder)
+                                _pageFor(dest),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                    onDidRemovePage: (_) {},
+                      ],
+                      onDidRemovePage: (_) {},
+                    ),
                   ),
                 ),
               ),
             ),
             // ≥1440：右栏内嵌。
             if (metrics.context == ContextPanelMode.inline && _contextOpen)
-              ContextPanel(
-                key: const ValueKey('context-inline'),
-                model: widget.model,
-                tab: _contextTab,
-                onTabChanged: (tab) => setState(() => _contextTab = tab),
-                onClose: () => setState(() => _contextOpen = false),
-                width: _contextWidth,
-                onWidthChanged: (w) => setState(() => _contextWidth = w),
+              FocusTraversalGroup(
+                child: ContextPanel(
+                  key: const ValueKey('context-inline'),
+                  model: widget.model,
+                  tab: _contextTab,
+                  onTabChanged: (tab) => setState(() => _contextTab = tab),
+                  onClose: () => setState(() => _contextOpen = false),
+                  width: _contextWidth,
+                  onWidthChanged: (w) => setState(() => _contextWidth = w),
+                ),
               ),
           ],
         ),

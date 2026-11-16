@@ -12,6 +12,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../design_system/components/desktop_content_constraint.dart';
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/design_tokens.dart';
@@ -213,71 +215,73 @@ class _DownloadsPageState extends State<DownloadsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _model,
-      builder: (context, _) {
-        final tasks = _tasks;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                children: [
-                  Expanded(child: pageTitle(context, '下载')),
-                  Tooltip(
-                    message: _hasFinished ? '移除已完成/失败/取消的任务记录' : '暂无可清理的任务',
-                    child: TextButton(
-                      onPressed: _hasFinished
-                          ? () => _model.dispatch(
-                              const bridge.FfiCommand.downloadClearFinished(),
-                            )
-                          : null,
-                      child: const Text('清除已完成'),
+    return DesktopContentConstraint(
+      child: ListenableBuilder(
+        listenable: _model,
+        builder: (context, _) {
+          final tasks = _tasks;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(child: pageTitle(context, '下载')),
+                    Tooltip(
+                      message: _hasFinished ? '移除已完成/失败/取消的任务记录' : '暂无可清理的任务',
+                      child: TextButton(
+                        onPressed: _hasFinished
+                            ? () => _model.dispatch(
+                                const bridge.FfiCommand.downloadClearFinished(),
+                              )
+                            : null,
+                        child: const Text('清除已完成'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SegmentedButton<_Filter>(
-                      segments: [
-                        ButtonSegment(
-                          value: _Filter.all,
-                          label: Text('全部 ${tasks.length}'),
-                        ),
-                        ButtonSegment(
-                          value: _Filter.active,
-                          label: Text('进行中 ${_count(downloadTaskActive)}'),
-                        ),
-                        ButtonSegment(
-                          value: _Filter.completed,
-                          label: Text('已完成 ${_count(downloadTaskCompleted)}'),
-                        ),
-                        ButtonSegment(
-                          value: _Filter.failed,
-                          label: Text('失败 ${_count(downloadTaskFailed)}'),
-                        ),
-                      ],
-                      selected: {_filter},
-                      onSelectionChanged: (value) =>
-                          setState(() => _filter = value.first),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SegmentedButton<_Filter>(
+                        segments: [
+                          ButtonSegment(
+                            value: _Filter.all,
+                            label: Text('全部 ${tasks.length}'),
+                          ),
+                          ButtonSegment(
+                            value: _Filter.active,
+                            label: Text('进行中 ${_count(downloadTaskActive)}'),
+                          ),
+                          ButtonSegment(
+                            value: _Filter.completed,
+                            label: Text('已完成 ${_count(downloadTaskCompleted)}'),
+                          ),
+                          ButtonSegment(
+                            value: _Filter.failed,
+                            label: Text('失败 ${_count(downloadTaskFailed)}'),
+                          ),
+                        ],
+                        selected: {_filter},
+                        onSelectionChanged: (value) =>
+                            setState(() => _filter = value.first),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            _tableHeader(context),
-            const Divider(height: 1),
-            Expanded(child: _table(context)),
-          ],
-        );
-      },
+              const SizedBox(height: 4),
+              _tableHeader(context),
+              const Divider(height: 1),
+              Expanded(child: _table(context)),
+            ],
+          );
+        },
+      ),
     );
   }
 

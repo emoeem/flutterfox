@@ -22,6 +22,8 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../design_system/components/desktop_content_constraint.dart';
 import 'package:flutter/services.dart';
 
 import '../app_model.dart';
@@ -33,6 +35,7 @@ import '../design_system/components/vx_error_state.dart';
 import '../design_system/components/vx_loading_skeleton.dart';
 import '../design_system/components/vx_track_row.dart';
 import '../design_system/design_tokens.dart';
+import '../nav_bus.dart' as nav_bus;
 import '../design_system/components/vx_artwork.dart';
 import 'album_songs_page.dart';
 import 'artist_detail_page.dart';
@@ -76,9 +79,17 @@ class _SearchPageState extends State<SearchPage> {
     super.initState();
     _ctrl = SearchPageController(widget.model);
     _ctrl.attach();
+    // SR-14：搜索页为关键词单一状态流的权威写入方；种子到达时同步流。
+    nav_bus.searchKeyword.addListener(_onStreamKeywordChanged);
+    if (nav_bus.searchKeyword.value != _controller.text) {
+      nav_bus.searchKeyword.value = _controller.text;
+    }
     final seed = widget.seedKeyword.trim();
     if (seed.isNotEmpty) {
       _controller.text = seed;
+      if (nav_bus.searchKeyword.value != seed) {
+        nav_bus.searchKeyword.value = seed;
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _runSearch(record: true);
       });
@@ -99,6 +110,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    nav_bus.searchKeyword.removeListener(_onStreamKeywordChanged);
     _ctrl
       ..detach()
       ..dispose();
@@ -125,7 +137,23 @@ class _SearchPageState extends State<SearchPage> {
     _ctrl.runSearch(_controller.text, record: record);
   }
 
-  void _onSearchTextChanged(String text) => _ctrl.onSearchTextChanged(text);
+  // SR-14：页内输入为权威写入（流同步 Header 显示；文本相同则 ValueNotifier
+  // 不通知，天然防循环）。
+  void _onSearchTextChanged(String text) {
+    if (nav_bus.searchKeyword.value != text) {
+      nav_bus.searchKeyword.value = text;
+    }
+    _ctrl.onSearchTextChanged(text);
+  }
+
+  // Header 输入回流（外部写入流）：同步输入框并走同一防抖搜索链；
+  // 页内自己写入导致的回调（文本相同）在 ValueNotifier 层已被去重。
+  void _onStreamKeywordChanged() {
+    final value = nav_bus.searchKeyword.value;
+    if (_controller.text == value) return;
+    _controller.text = value;
+    _onSearchTextChanged(value);
+  }
 
   // ── 选择 ──
 
@@ -178,56 +206,58 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      // 只挂控制器：request_id 守卫（§8.1）在控制器通知层——直接挂模型会让
-      // 过期快照（requestId 回退）未经守卫刷进树（提炼前页面语义不变）。
-      listenable: _ctrl,
-      builder: (context, _) {
-        return Column(
-          children: [
-            // 搜索框固定顶部（§4.3），页面滚动时保持可访问。
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                VxSpacing.lg,
-                VxSpacing.sm,
-                VxSpacing.lg,
-                0,
+    return DesktopContentConstraint(
+      child: ListenableBuilder(
+        // 只挂控制器：request_id 守卫（§8.1）在控制器通知层——直接挂模型会让
+        // 过期快照（requestId 回退）未经守卫刷进树（提炼前页面语义不变）。
+        listenable: _ctrl,
+        builder: (context, _) {
+          return Column(
+            children: [
+              // 搜索框固定顶部（§4.3），页面滚动时保持可访问。
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  VxSpacing.lg,
+                  VxSpacing.sm,
+                  VxSpacing.lg,
+                  0,
+                ),
+                child: _searchField(context),
               ),
-              child: _searchField(context),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                VxSpacing.lg,
-                VxSpacing.sm,
-                VxSpacing.lg,
-                0,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  VxSpacing.lg,
+                  VxSpacing.sm,
+                  VxSpacing.lg,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _typeSegment(context),
+                    const SizedBox(height: VxSpacing.sm),
+                    _sourceChips(context),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _typeSegment(context),
-                  const SizedBox(height: VxSpacing.sm),
-                  _sourceChips(context),
-                ],
-              ),
-            ),
-            const SizedBox(height: VxSpacing.sm),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: VxSpacing.lg),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _ctrl.countLine(),
-                  style: VxTypography.caption.copyWith(
-                    color: scheme.onSurfaceVariant,
+              const SizedBox(height: VxSpacing.sm),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: VxSpacing.lg),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _ctrl.countLine(),
+                    style: VxTypography.caption.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(child: _resultArea(context)),
-          ],
-        );
-      },
+              Expanded(child: _resultArea(context)),
+            ],
+          );
+        },
+      ),
     );
   }
 

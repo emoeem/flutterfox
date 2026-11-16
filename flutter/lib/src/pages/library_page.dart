@@ -10,6 +10,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../design_system/components/desktop_content_constraint.dart';
+
 import '../shell/android_insets.dart' show mobileListBottomPadding;
 
 import '../app_model.dart';
@@ -72,19 +74,21 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _model,
-      builder: (context, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _header(context),
-            if (_tab == LibraryTab.songs) _favoriteViewSwitch(context),
-            _sourceChips(context),
-            Expanded(child: _body(context)),
-          ],
-        );
-      },
+    return DesktopContentConstraint(
+      child: ListenableBuilder(
+        listenable: _model,
+        builder: (context, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header(context),
+              if (_tab == LibraryTab.songs) _favoriteViewSwitch(context),
+              _sourceChips(context),
+              Expanded(child: _body(context)),
+            ],
+          );
+        },
+      ),
     );
   }
 

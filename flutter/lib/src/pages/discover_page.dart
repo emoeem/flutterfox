@@ -15,6 +15,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../design_system/components/desktop_content_constraint.dart';
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_empty_state.dart';
@@ -91,28 +93,30 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([widget.model, _ctrl]),
-      builder: (context, _) {
-        final sources = _model.state.sources;
-        if (sources.isEmpty) {
-          return const VxEmptyState(
-            icon: Icons.explore_off,
-            title: '没有可用的音源',
-            message: '请先在设置中启用至少一个在线音源，再回到发现页。',
+    return DesktopContentConstraint(
+      child: ListenableBuilder(
+        listenable: Listenable.merge([widget.model, _ctrl]),
+        builder: (context, _) {
+          final sources = _model.state.sources;
+          if (sources.isEmpty) {
+            return const VxEmptyState(
+              icon: Icons.explore_off,
+              title: '没有可用的音源',
+              message: '请先在设置中启用至少一个在线音源，再回到发现页。',
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _pageHead(context),
+              const SizedBox(height: VxSpacing.md),
+              _tabBar(context, sources),
+              const SizedBox(height: VxSpacing.md),
+              Expanded(child: _body(context)),
+            ],
           );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _pageHead(context),
-            const SizedBox(height: VxSpacing.md),
-            _tabBar(context, sources),
-            const SizedBox(height: VxSpacing.md),
-            Expanded(child: _body(context)),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 

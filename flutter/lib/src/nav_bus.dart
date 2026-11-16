@@ -7,6 +7,11 @@ import 'package:flutter/widgets.dart';
 /// 请求切换到的导航索引；shell 消费后置回 null。
 final ValueNotifier<int?> navRequest = ValueNotifier(null);
 
+// Header 搜索与搜索页的单一状态流（SR-14，Batch D §7.4）：搜索页为
+// 权威写入方（onChanged/submit），Header 为对等视图（双向可达但同一
+// 出处，两端均以「文本相同则跳过」防循环）。空串 = 无活动关键词。
+final ValueNotifier<String> searchKeyword = ValueNotifier('');
+
 /// 请求打开全屏播放页（Phase 3 NowPlayingPage）；shell 消费后置回 false。
 /// 页面（如首页「正在播放」Hero）经此请求，避免反向 import shell。
 final ValueNotifier<bool> nowPlayingRequest = ValueNotifier(false);

@@ -11,6 +11,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../design_system/components/desktop_content_constraint.dart';
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../config_ext.dart';
@@ -82,41 +84,43 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 640;
-        if (wide) {
-          return Row(
+    return DesktopContentConstraint(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 640;
+          if (wide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(width: 208, child: _nav(context)),
+                const VerticalDivider(width: 1),
+                Expanded(child: _content(context)),
+              ],
+            );
+          }
+          // 窄窗降级：分类变横向胶囊行。
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(width: 208, child: _nav(context)),
-              const VerticalDivider(width: 1),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: VxSpacing.lg,
+                  vertical: VxSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    for (final section in SettingsSection.values)
+                      _navChip(context, section),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
               Expanded(child: _content(context)),
             ],
           );
-        }
-        // 窄窗降级：分类变横向胶囊行。
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: VxSpacing.lg,
-                vertical: VxSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  for (final section in SettingsSection.values)
-                    _navChip(context, section),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(child: _content(context)),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 
