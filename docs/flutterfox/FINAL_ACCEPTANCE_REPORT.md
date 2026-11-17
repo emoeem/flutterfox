@@ -89,7 +89,24 @@
 - 稳定性:P0-W1 已登记+规避(根因开放);P0-01 开放(审计+被动观察);**按合同 §14 末款,本轮状态如实标记为「功能批次已完成,稳定性门禁仍未完全满足」**。
 - CI:目标分支最新修复 SHA 全 job SUCCESS ✅;只推送 feat/ui-redesign ✅;未合并 main/未动他人工作 ✅。
 
-## 8. 移交清单(下一会话)
+## 8. 外观修复追加批(2026-11-18,验收截图排查驱动)
+
+七页屏幕真值截图(evidence/appearance/CUR-*.png,1280×720)排查出两处外观缺陷并修复:
+
+1. **首页 Hero「继续收听」卡右侧 ~450px 空梯度**(最显眼半成品观感):VxHero 新增可选
+   `backgroundArt` 层——同一封面 URL 的更大尺寸实例(640)经 ImageFiltered blur(σ30) 铺满
+   整卡,渐变/高光层降透明度(0.74)叠加,文案可读性由深色渐变保证;解析失败回落
+   VxCoverFallback 渐变,模糊后视觉等效纯渐变,无新增失败形态。背景 art 走同一解析管线
+   (P1-15 UA/Referer 头族),未引入裸 Image.network。
+2. **最近播放横滑书架右缘生硬裁切**:RecentShelf 加 ShaderMask(dstIn) 尾部 40px 线性渐隐,
+   给出「可继续滑动」暗示;滚动到底尾卡右缘轻微淡出为通用书架形态既有代价。
+
+验证:home_appearance_fix_test.dart 3/3(背景层存在+降透明度/引导形态零变化/遮罩恰一且可视
+卡片渲染)+ 既有 home_page_test 9/9 回归 + analyze 0;真机 before/after:
+appearance/CUR-home.png(修复前)vs FIX-home-1280x720.png(修复后,空洞消除+渐隐生效)。
+其余五页(发现/搜索/曲库/下载/设置/帮助)截图巡检无溢出/遮挡/裁切缺陷,观感良好。
+
+## 9. 移交清单(下一会话)
 
 1. 新 CUA 会话恢复后补齐:RT-02 余项/RT-07/RT-12 UI 计数/RT-14 主题/RT-20 交互式 soak/SMTC 媒体键注入(RT-05 已证明命令链通,媒体键走 media-session→bridge→dispatch 全链,预期可用)。
 2. P0-W1 engine 层根因调查(素材:本报告 §3 取证链 + crash.log + Event Viewer;重启 VM 后观察是否自愈可区分「VM 会话态」vs「持久环境漂移」)。

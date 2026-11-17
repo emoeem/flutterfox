@@ -146,6 +146,20 @@ class _ContinueHero extends StatelessWidget {
         icon: Icons.music_note_outlined,
         allowRetry: false,
       ),
+      // 背景模糊封面（2026-11-18 外观修复：宽卡右侧空梯度收口）。
+      // 同一 URL 的更大尺寸实例，走同一解析管线（UA/Referer 头与
+      // P1-15 修复族一致）；解析失败回落 VxCoverFallback 渐变，模糊后
+      // 视觉等效纯渐变，无新增失败形态。
+      backgroundArt: VxArtwork(
+        url: song.coverUrl,
+        source: song.source,
+        entityType: 'song',
+        entityId: song.id,
+        entityName: song.name,
+        size: 640,
+        radius: 0,
+        allowRetry: false,
+      ),
       fallbackSeed: song.name,
     );
   }
