@@ -249,6 +249,18 @@ class AppHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(VxRadius.md),
                 borderSide: BorderSide.none,
               ),
+              // 2026-11-18 外观精修：聚焦态主色描边（此前所有态无边线，
+              // 焦点位置不可见）。
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(VxRadius.md),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(VxRadius.md),
+                borderSide: BorderSide(
+                  color: scheme.primary.withValues(alpha: 0.45),
+                ),
+              ),
             ),
           ),
         ),

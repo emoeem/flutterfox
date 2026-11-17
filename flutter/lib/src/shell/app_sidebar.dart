@@ -283,6 +283,8 @@ class _CollapsedSidebar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: InkWell(
           borderRadius: BorderRadius.circular(VxRadius.sm),
+          // 2026-11-18 外观精修：hover 反馈（折叠态此前仅 splash）。
+          hoverColor: scheme.onSurface.withValues(alpha: 0.05),
           onTap: () => onSelect(dest),
           child: Tooltip(
             message: tooltip,
@@ -290,7 +292,8 @@ class _CollapsedSidebar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: active ? scheme.surfaceContainerHighest : null,
+                // 选中态主色 tint（外观精修：灰底 → 主色 16% 叠加）。
+                color: active ? scheme.primary.withValues(alpha: 0.16) : null,
                 borderRadius: BorderRadius.circular(VxRadius.sm),
               ),
               child: Icon(
@@ -407,10 +410,15 @@ class _NavRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: active ? scheme.surfaceContainerHighest : Colors.transparent,
+        // 2026-11-18 外观精修：选中态主色 tint（灰底 → 主色 16% 叠加，
+        // 与折叠态同源）；hover 走 InkWell hoverColor 反馈。
+        color: active
+            ? scheme.primary.withValues(alpha: 0.16)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(9),
         child: InkWell(
           borderRadius: BorderRadius.circular(9),
+          hoverColor: scheme.onSurface.withValues(alpha: 0.05),
           onTap: onTap,
           child: Container(
             height: 44,
