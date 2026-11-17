@@ -247,6 +247,16 @@ Future<void> main() async {
       windowManager.waitUntilReadyToShow(windowOptions, () async {
         if (startPos != null) await windowManager.setPosition(startPos);
         await windowManager.show();
+        // Windows 冷启动首帧呈现自愈(04 矩阵 P0-W1 实证):QXL/ANGLE 环境
+        // 下初始尺寸的首个 GL 帧可能不呈现(窗口持续白屏),任何一次真实
+        // WM_SIZE 都能恢复呈现;1px 往返触发表面重建后立即回到目标尺寸。
+        // 根因在引擎/环境层(846bbfe 同样复现,非业务代码回归),此为应用
+        // 侧确定性规避;非 Windows 平台零变化(见 04 矩阵登记)。
+        if (Platform.isWindows) {
+          final size = await windowManager.getSize();
+          await windowManager.setSize(size + const Offset(0, 1));
+          await windowManager.setSize(size);
+        }
       }),
     );
   }
