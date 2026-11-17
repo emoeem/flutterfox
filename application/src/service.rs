@@ -314,13 +314,23 @@ impl ApplicationService {
             .unwrap_or_else(|| "list-loop".to_string())
     }
 
-    /// 桌面媒体会话桥的配置开关（Batch F §9.3）：Linux MPRIS，
-    /// 与 TUI `config.integration.mpris` 同源同义。
-    #[cfg(target_os = "linux")]
-    pub(crate) fn mpris_enabled(&self) -> bool {
+    /// 桌面媒体会话桥的配置开关(Batch F §9.3 引入;SMTC 接入泛化):
+    /// Linux 读 `integration.mpris`、Windows 读 `integration.smtc`,与 TUI
+    /// `start_media_controls` 的开关选择同源同义(macOS Now Playing 未接入)。
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    pub(crate) fn media_session_enabled(&self) -> bool {
         self.config_store
             .as_ref()
-            .map(|store| store.get().integration.mpris)
+            .map(|store| {
+                #[cfg(target_os = "linux")]
+                {
+                    store.get().integration.mpris
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    store.get().integration.smtc
+                }
+            })
             .unwrap_or(false)
     }
 

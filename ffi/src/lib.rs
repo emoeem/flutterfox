@@ -1152,10 +1152,10 @@ impl VoicefoxController {
         let runtime = voicefox_runtime::ApplicationRuntime::desktop(config, path)
             .map_err(|e| e.to_string())?;
         let application = runtime.application();
-        // Batch F §9.3：Linux 桌面注册 MPRIS（配置开关内含；独立线程装配，
-        // 启动失败只记日志不影响应用）。Windows 无会话总线，桥不编译。
-        #[cfg(target_os = "linux")]
-        voicefox_application::spawn_mpris_bridge(application.clone());
+        // Batch F §9.3：Linux 桌面注册 MPRIS；SMTC 接入泛化后 Windows 同路
+        // （配置开关内含；独立线程装配，启动失败只记日志不影响应用）。
+        #[cfg(any(target_os = "linux", target_os = "windows"))]
+        voicefox_application::spawn_media_session_bridge(application.clone());
         Ok(Self::from_application(application).with_config_base(Arc::clone(&runtime.config)))
     }
 

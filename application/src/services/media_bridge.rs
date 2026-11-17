@@ -1,14 +1,16 @@
-//! GUI 桌面媒体会话桥（Batch F §9.3）。
+//! GUI 桌面媒体会话桥（Batch F §9.3 引入 Linux MPRIS；Batch SMTC 接入
+//! 泛化为跨平台）。
 //!
 //! 把 [`ApplicationService`] 的播放态构建 [`MediaSnapshot`] 推给平台媒体
-//! 后端（Linux MPRIS），把桌面控件的 [`MediaCommand`] 翻译回
-//! [`ApplicationCommand`] 走既有 dispatch 链——与 TUI 的
+//! 后端（Linux MPRIS / Windows SMTC），把桌面控件的 [`MediaCommand`]
+//! 翻译回 [`ApplicationCommand`] 走既有 dispatch 链——与 TUI 的
 //! `app/src/media_controls.rs` 同源语义，快照/命令数据结构经
 //! media-session crate 共享（§9.2 提取），不再各写一套。
 //!
 //! 纯映射逻辑（播放模式映射 / 快照构建 / 命令翻译 / 跳转纪元）跨平台
-//! 编译并单测；D-Bus 运行时接线仅 Linux 编译（Windows 无会话总线，
-//! 运行时验收留 Linux 会话，见交接文档开放项）。
+//! 编译并单测；运行时接线按平台编译（Linux MPRIS 走 zbus，Windows SMTC
+//! 走 souvlaki 隐藏窗口，后端在 media-session crate 内）。运行时验收：
+//! MPRIS 留 Linux 会话，SMTC 以媒体键/系统浮层实机操作为准。
 
 use std::time::{Duration, Instant};
 
@@ -17,16 +19,15 @@ use lx_core::model::source::PlayerState;
 use crate::event::ApplicationCommand;
 use crate::state::{ApplicationState, PlaybackSnapshot};
 use media_session::media_session::{MediaCommand, MediaLoopStatus, MediaSnapshot};
-// 仅运行时接线消费（Linux）；测试构建下 is_snapshot_relevant 不编译，
-// 顶层导入会报 unused，故随 cfg 下沉。
-#[cfg(target_os = "linux")]
+// 仅运行时接线消费；测试构建下 is_snapshot_relevant 不编译，顶层导入会报
+// unused，故随 cfg 下沉。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use crate::event::ApplicationEvent;
-// 同上：ApplicationService 仅被 Linux 运行时段消费；Windows/测试构建不导入
-// （Batch CI-Fix 修复：该导入缺失使 cfg(linux) 段在 Linux CI 上 E0425 ×5——
-// 本文件从未在 Linux 编译过，交接文档「cfg-linux 编译验证留 Linux CI」欠账）。
-#[cfg(target_os = "linux")]
+// ApplicationService 仅被运行时接线段消费；不接线的平台（测试构建/macOS）
+// 不导入，避免 unused 报错（Batch CI-Fix 曾因该导入缺失在 Linux CI E0425 ×5）。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use crate::service::ApplicationService;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use media_session::media_session::MediaHandle;
 
 // ── 平台无关纯逻辑 ─────────────────────────────────────────────────────
@@ -173,27 +174,27 @@ impl BridgeEpoch {
     }
 }
 
-// ── Linux 运行时接线 ──────────────────────────────────────────────────
+// ── 运行时接线（Linux MPRIS / Windows SMTC）──────────────────────────
 
-/// Linux 桌面引导处调用：注册 MPRIS 桥（配置关闭则静默不启动）。
+/// 桌面引导处调用:注册媒体会话桥(平台对应配置开关关闭则静默不启动)。
 ///
-/// 独立线程 + 专用 tokio 运行时（与 FFI-R07 看门狗同构的自足装配），
-/// 不依赖 FRB 的运行时内部；D-Bus 不可用 / 服务启动失败只记日志，
-/// 不影响应用启动——桌面控件降级为不可用。
-#[cfg(target_os = "linux")]
-pub fn spawn_mpris_bridge(application: ApplicationService) {
-    if !application.mpris_enabled() {
+/// 独立线程 + 专用 tokio 运行时(与 FFI-R07 看门狗同构的自足装配),
+/// 不依赖 FRB 的运行时内部;后端启动失败只记日志,不影响应用启动——
+/// 桌面控件降级为不可用。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+pub fn spawn_media_session_bridge(application: ApplicationService) {
+    if !application.media_session_enabled() {
         return;
     }
     let spawned = std::thread::Builder::new()
-        .name("mpris-bridge".to_string())
+        .name("media-session-bridge".to_string())
         .spawn(move || run_bridge(application));
     if let Err(error) = spawned {
-        tracing::warn!("mpris bridge thread failed to start: {error}");
+        tracing::warn!("media session bridge thread failed to start: {error}");
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn run_bridge(application: ApplicationService) {
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
@@ -202,36 +203,53 @@ fn run_bridge(application: ApplicationService) {
     {
         Ok(runtime) => runtime,
         Err(error) => {
-            tracing::warn!("mpris bridge runtime failed: {error}");
+            tracing::warn!("media session bridge runtime failed: {error}");
             return;
         }
     };
-    let (handle, commands) = match runtime.block_on(media_session::mpris::start()) {
+    let (handle, commands) = match runtime.block_on(start_backend()) {
         Ok(parts) => parts,
         Err(error) => {
-            tracing::warn!("MPRIS unavailable: {error:#}");
+            tracing::warn!("media session backend unavailable: {error:#}");
             return;
         }
     };
     runtime.spawn(run_command_loop(application.clone(), commands));
-    // 快照循环驻留在本线程的 block_on 里；事件源关闭（应用退出）时收束，
-    // 运行时随函数返回 drop，命令循环任务一并终止。
+    // 快照循环驻留在本线程的 block_on 里;事件源关闭(应用退出)时收束,
+    // 运行时随函数返回 drop,命令循环任务一并终止。
     if let Err(error) = runtime.block_on(run_snapshot_loop(application, handle)) {
-        tracing::warn!("mpris snapshot loop stopped: {error}");
+        tracing::warn!("media session snapshot loop stopped: {error}");
     }
 }
 
-/// 快照生产循环：订阅应用事件，相关事件触发全量重建。
-/// 快照逐字段差异比对在 MPRIS 层完成（`apply_snapshot`），重复快照
-/// 不会产生多余的 D-Bus 信号。
-#[cfg(target_os = "linux")]
+/// 按平台启动媒体后端:Linux 走 MPRIS(zbus,async),Windows 走 SMTC
+/// (souvlaki,同步;内部自开专属线程泵窗口消息)。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+async fn start_backend() -> anyhow::Result<(
+    MediaHandle,
+    tokio::sync::mpsc::UnboundedReceiver<MediaCommand>,
+)> {
+    #[cfg(target_os = "linux")]
+    {
+        media_session::mpris::start().await
+    }
+    #[cfg(target_os = "windows")]
+    {
+        media_session::smtc::start()
+    }
+}
+
+/// 快照生产循环:订阅应用事件,相关事件触发全量重建。
+/// 快照逐字段差异比对在后端层完成(mpris 的 apply_snapshot / smtc 的
+/// applied 缓存),重复快照不会产生多余的桌面信号。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 async fn run_snapshot_loop(
     application: ApplicationService,
     handle: MediaHandle,
 ) -> Result<(), crate::service::ApplicationEventStreamError> {
     let mut events = application.subscribe();
     let mut epoch = BridgeEpoch::default();
-    // 初始快照：桌面控件连上即可见当前状态，不等下一次事件。
+    // 初始快照:桌面控件连上即可见当前状态,不等下一次事件。
     push_snapshot(&application, &handle, &mut epoch);
     loop {
         match events.recv().await {
@@ -246,12 +264,12 @@ async fn run_snapshot_loop(
                     push_snapshot(&application, &handle, &mut epoch);
                 }
             }
-            // Lagged：丢事件不可修复，重建全量快照对齐当前态后继续。
+            // Lagged:丢事件不可修复,重建全量快照对齐当前态后继续。
             Err(crate::service::ApplicationEventStreamError::Lagged(count)) => {
-                tracing::warn!("mpris snapshot loop lagged by {count} events; rebuilding");
+                tracing::warn!("media session snapshot loop lagged by {count} events; rebuilding");
                 push_snapshot(&application, &handle, &mut epoch);
             }
-            // Closed：应用在退出，收束循环（返回 Err 仅为形式统一）。
+            // Closed:应用在退出,收束循环(返回 Err 仅为形式统一)。
             Err(error @ crate::service::ApplicationEventStreamError::Closed) => {
                 return Err(error);
             }
@@ -259,8 +277,8 @@ async fn run_snapshot_loop(
     }
 }
 
-/// 影响快照内容的事件全集；搜索/歌词/下载等高频无关事件不触发重建。
-#[cfg(target_os = "linux")]
+/// 影响快照内容的事件全集;搜索/歌词/下载等高频无关事件不触发重建。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn is_snapshot_relevant(event: &ApplicationEvent) -> bool {
     matches!(
         event,
@@ -277,7 +295,7 @@ fn is_snapshot_relevant(event: &ApplicationEvent) -> bool {
     )
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn push_snapshot(application: &ApplicationService, handle: &MediaHandle, epoch: &mut BridgeEpoch) {
     let state = application.state();
     let mut snapshot = build_snapshot(&state, &application.play_mode(), 0);
@@ -285,27 +303,24 @@ fn push_snapshot(application: &ApplicationService, handle: &MediaHandle, epoch: 
     handle.update(snapshot);
 }
 
-/// 命令消费循环：桌面控件 → [`translate_command`] → 既有 dispatch 链。
-/// 单条命令失败只记日志，循环不中断（媒体键不因一次解析失败失灵）。
-#[cfg(target_os = "linux")]
+/// 命令消费循环:桌面控件 → [`translate_command`] → 既有 dispatch 链。
+/// 单条命令失败只记日志,循环不中断(媒体键不因一次解析失败失灵)。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 async fn run_command_loop(
     application: ApplicationService,
     mut commands: tokio::sync::mpsc::UnboundedReceiver<MediaCommand>,
 ) {
     while let Some(command) = commands.recv().await {
         if matches!(command, MediaCommand::Quit) {
-            tracing::info!("mpris quit ignored (GUI window lifecycle is host-owned)");
+            tracing::info!("media session quit ignored (GUI window lifecycle is host-owned)");
             continue;
         }
         let playback = application.state().playback;
-        match translate_command(&command, &playback) {
-            Some(application_command) => {
-                if let Err(error) = application.dispatch(application_command).await {
-                    tracing::warn!("mpris command {command:?} failed: {error}");
-                }
-            }
-            // 当前态无需动作（如已在播放收到 Play）；如实跳过。
-            None => {}
+        // None = 当前态无需动作(如已在播放收到 Play);如实跳过。
+        if let Some(application_command) = translate_command(&command, &playback)
+            && let Err(error) = application.dispatch(application_command).await
+        {
+            tracing::warn!("media session command {command:?} failed: {error}");
         }
     }
 }
