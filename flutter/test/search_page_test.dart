@@ -514,10 +514,25 @@ void main() {
       isTrue,
       reason: 'song.coverUrl 必须传入行封面（此前永远渲染 VxCoverFallback）',
     );
+    // P1-08 调用点契约（2026-11-18 断言形态更新）：行内不得在 VxArtwork
+    // 之外直接挂 VxCoverFallback。VxArtwork 自身的占位/失败态自本日起
+    // 合法渲染渐变首字母（外观批：VxArtwork 占位/失败回归 VxCoverFallback
+    // 渐变，替代契约禁止的单调灰块）——类型缺席断言已失去代理效力，
+    // 改为断言树中每个 VxCoverFallback 都是 VxArtwork 子树的一部分。
+    final totalFallbacks = find.byType(VxCoverFallback).evaluate().length;
+    final fallbacksInsideArtwork = find
+        .descendant(
+          of: find.byType(VxArtwork),
+          matching: find.byType(VxCoverFallback),
+        )
+        .evaluate()
+        .length;
     expect(
-      find.byType(VxCoverFallback),
-      findsNothing,
-      reason: '歌曲行不再缺省渲染渐变首字母占位',
+      fallbacksInsideArtwork,
+      totalFallbacks,
+      reason:
+          '歌曲行的渐变占位只能来自 VxArtwork 管道内部，'
+          '调用点不得直接渲染 VxCoverFallback',
     );
   });
 
