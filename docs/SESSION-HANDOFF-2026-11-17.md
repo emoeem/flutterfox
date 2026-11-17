@@ -114,3 +114,17 @@ cd flutter && flutter build windows --debug && cd ../  # exe 目录补 libmpv-2.
 - **新增 `docs/flutterfox/`**：OWNERSHIP_AND_BOUNDARIES / AUTONOMOUS_EXECUTION_STATUS / KNOWN_LIMITATIONS
   （自主执行合同 §12 交付物，F0 基线冻结产物）。
 
+## 九、2026-11-18 轮次收口（唯一开工入口更新）
+
+- **本轮交付链（全部已推送，CI 全绿）**：`829c3d1`→`1429c74`→`8f59048`→`c31c275`→`147f15d`→`74abcb7`→`d8a6c44`→`42ac321`。
+- **开工入口改为 `docs/flutterfox/FINAL_ACCEPTANCE_REPORT.md`**（§8 移交清单 = 下一会话任务清单）：
+  RT-02 余项/RT-07/RT-12 UI 计数/RT-14/RT-20 交互式 soak/SMTC 媒体键注入待补（原因 = 本会话 CUA
+  被执行者 stop() 误终止 + engine a11y/输入管线环境性退化，见报告 §6）；P0-W1 engine 根因调查。
+- **新增开放缺陷 P0-W1**（Windows 冷启动首帧白屏）：规避已入库（main.dart 1px 尺寸往返），
+  engine 层根因未定位；素材链见 04 矩阵 2026-11-18 行 + FINAL_ACCEPTANCE_REPORT §3。
+- **P2-19 已关闭**（tracksFitted + 真机实证）；**GUI Windows SMTC 已接入**（媒体键运行时验证留待
+  新 CUA 会话）；**FRB 再生成口径 = `RUSTC_BOOTSTRAP=1 flutter_rust_bridge_codegen generate && cargo fmt --all`**。
+- 测试 profile 恢复：%APPDATA%/voicefox/config/config.toml 已还原至本轮前备份
+  （`$TEMP/config.toml.bak-h1`）；library10k 注入路径已移除；合成媒体留在
+  `%TEMP%/flutterfox-test-media/`（TEMP 生命周期，可重生成：脚本思路见报告 §8/§4）。
+
