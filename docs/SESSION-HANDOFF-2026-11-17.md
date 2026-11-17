@@ -96,3 +96,21 @@ cargo test -p voicefox-application --lib lyrics --features lx-player/build_libmp
 cargo build -p voicefox-ffi --features voicefox-runtime/build-libmpv && cp target/debug/voicefox_ffi.dll flutter/build/windows/x64/runner/Debug/
 cd flutter && flutter build windows --debug && cd ../  # exe 目录补 libmpv-2.dll（已存在则跳过）
 ```
+
+## 八、2026-11-18 自主执行会话增量（CI 修复批次，覆盖 §一 开工路径）
+
+- **工作区已迁移**：本轮在 `/c/Users/emo/.zcode/workspace/draft-979e508e-b821-4fe4-a04a-14e8efb1f4c7/flutterfox`
+  重新检出（feat/ui-redesign @ `1e0ea54` 起）。draft-449e2e92 旧检出核实干净、与 origin 同步后**保持只读**；
+  新会话应以 `git log --oneline -1` 对照各 draft-* 目录取最新检出，不再假设 449e2e92 有效。
+- **§二.5 FRB codegen 机制修正**：FRB 2.13 把 `cargo expand` 当**硬依赖**——cargo-expand 存在但 expand
+  失败时 generate 直接 `Error: cargo expand returned empty output` 退出（binary 完全缺失才是 WARN 降级）。
+  expand 需要 `-Zunpretty`（nightly-only），官方 stable 逃逸 = **`RUSTC_BOOTSTRAP=1`**（本机实测 exit 0）。
+  再生成完整口径：`export RUSTC_BOOTSTRAP=1 flutter_rust_bridge_codegen generate && cargo fmt --all`。
+  CI codegen job 已同步此路径（cargo-expand 1.0.127 + 环境变量，不装 nightly）。本轮曾装
+  nightly 1.102.0 仅作排查，未用于任何门禁。
+- **CI 两根因已修**（详见 `docs/reports/WORK_REPORT_2026-11-18_batch-ci-fix.md`）：
+  media-session Cargo.toml 补 `anyhow.workspace = true`（cfg(linux) 遮蔽问题，Windows 本机门禁看不到它）；
+  codegen job 装 cargo-expand + RUSTC_BOOTSTRAP=1 + 删重复一致性检查步骤。
+- **新增 `docs/flutterfox/`**：OWNERSHIP_AND_BOUNDARIES / AUTONOMOUS_EXECUTION_STATUS / KNOWN_LIMITATIONS
+  （自主执行合同 §12 交付物，F0 基线冻结产物）。
+

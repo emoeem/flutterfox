@@ -62,7 +62,16 @@ jobs:
       - name: Install flutter_rust_bridge_codegen
         run: cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
 
+      # FRB generate 内部调用 `cargo expand`(-Zunpretty 仅 nightly 接受;
+      # 2026-11-16 起 codegen job 因缺 cargo-expand 失败)。与本地再生成
+      # 同路径:cargo-expand + RUSTC_BOOTSTRAP=1 逃逸(其官方记载的 stable
+      # 用法),不引入 nightly 工具链漂移。
+      - name: Install cargo-expand
+        run: cargo install cargo-expand --version 1.0.127 --locked
+
       - name: Regenerate bindings
+        env:
+          RUSTC_BOOTSTRAP: "1"
         run: flutter_rust_bridge_codegen generate
 
       # 仓内约定：生成文件提交前经 cargo fmt（use 导入会被重排）。
@@ -70,16 +79,6 @@ jobs:
       # 格式差异误报为不同步（2026-11-14 首轮 CI 失败根因）。
       - name: Format generated Rust code
         run: cargo fmt --all
-
-      - name: Check generated files are up to date
-        run: |
-          if [ -n "$(git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge)" ]; then
-            git status --porcelain ffi/src/frb_generated.rs flutter/lib/src/bridge
-            git diff --stat -- ffi/src/frb_generated.rs flutter/lib/src/bridge
-            git diff -- ffi/src/frb_generated.rs | head -80
-            echo "::error::生成文件与手写 API 不同步：本地运行 flutter_rust_bridge_codegen generate 并提交结果"
-            exit 1
-          fi
 
       - name: Check generated files are up to date
         run: |
