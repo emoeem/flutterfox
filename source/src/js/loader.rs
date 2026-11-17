@@ -139,7 +139,7 @@ fn integrity_path(path: &Path) -> PathBuf {
 
 fn sha256_hex(code: &[u8]) -> String {
     use sha2::Digest;
-    format!("{:x}", sha2::Sha256::digest(code))
+    hex::encode(sha2::Sha256::digest(code))
 }
 
 fn write_integrity(path: &Path, code: &[u8]) -> Result<(), String> {
