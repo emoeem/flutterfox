@@ -21,6 +21,11 @@ use media_session::media_session::{MediaCommand, MediaLoopStatus, MediaSnapshot}
 // 顶层导入会报 unused，故随 cfg 下沉。
 #[cfg(target_os = "linux")]
 use crate::event::ApplicationEvent;
+// 同上：ApplicationService 仅被 Linux 运行时段消费；Windows/测试构建不导入
+// （Batch CI-Fix 修复：该导入缺失使 cfg(linux) 段在 Linux CI 上 E0425 ×5——
+// 本文件从未在 Linux 编译过，交接文档「cfg-linux 编译验证留 Linux CI」欠账）。
+#[cfg(target_os = "linux")]
+use crate::service::ApplicationService;
 #[cfg(target_os = "linux")]
 use media_session::media_session::MediaHandle;
 
