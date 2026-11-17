@@ -30,6 +30,16 @@ impl Default for NullPlayer {
 }
 
 impl NullPlayer {
+    /// 测试注入：直接推位置/时长/状态到 watcher（模拟 mpv 事件循环的
+    /// property change；泵应据此节流广播 PlaybackProgress）。
+    pub fn push_position(&self, position: std::time::Duration) {
+        let _ = self.position.send(position);
+    }
+
+    pub fn push_duration(&self, duration: std::time::Duration) {
+        let _ = self.duration.send(duration);
+    }
+
     pub fn new() -> Self {
         let (state, _) = watch::channel(PlayerState::Idle);
         let (position, _) = watch::channel(Duration::ZERO);
@@ -118,5 +128,10 @@ impl PlaybackEffects for NullEffects {
 
 /// 便捷构造：带空播放器的 Arc。
 pub fn null_player() -> Arc<dyn PlayerBackend> {
+    Arc::new(NullPlayer::new())
+}
+
+/// 可注入 watcher 的测试播放器（泵/进度回归用）。
+pub fn manual_player() -> Arc<NullPlayer> {
     Arc::new(NullPlayer::new())
 }

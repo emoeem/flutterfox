@@ -42,16 +42,12 @@ class EmptyState extends StatelessWidget {
             Text(
               subtitle!,
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: scheme.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
-          if (action != null) ...[
-            const SizedBox(height: 12),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(height: 12), action!],
         ],
       ),
     );
@@ -60,12 +56,11 @@ class EmptyState extends StatelessWidget {
 
 /// FlClash 式页面大标题（左上，headlineSmall w600）。
 Widget pageTitle(BuildContext context, String text) => Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
-      child: Text(
-        text,
-        style: Theme.of(context)
-            .textTheme
-            .headlineSmall
-            ?.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
+  padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+  child: Text(
+    text,
+    style: Theme.of(
+      context,
+    ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+  ),
+);

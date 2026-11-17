@@ -91,14 +91,7 @@ pub struct PlaybackStateDto {
 impl From<&PlaybackSnapshot> for PlaybackStateDto {
     fn from(value: &PlaybackSnapshot) -> Self {
         Self {
-            state: match value.state {
-                PlayerState::Idle => "idle",
-                PlayerState::Loading => "loading",
-                PlayerState::Playing => "playing",
-                PlayerState::Paused => "paused",
-                PlayerState::Stopped => "stopped",
-            }
-            .to_string(),
+            state: value.state.as_protocol_str().to_string(),
             position_ms: value.position.as_millis() as u64,
             duration_ms: value.duration.as_millis() as u64,
             volume: value.volume,

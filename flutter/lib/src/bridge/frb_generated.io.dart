@@ -125,6 +125,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   QrLoginSessionDto dco_decode_box_autoadd_qr_login_session_dto(dynamic raw);
 
   @protected
+  ScanStatsDto dco_decode_box_autoadd_scan_stats_dto(dynamic raw);
+
+  @protected
   SongDto dco_decode_box_autoadd_song_dto(dynamic raw);
 
   @protected
@@ -239,6 +242,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ScanStatsDto? dco_decode_opt_box_autoadd_scan_stats_dto(dynamic raw);
+
+  @protected
   SongDto? dco_decode_opt_box_autoadd_song_dto(dynamic raw);
 
   @protected
@@ -270,6 +276,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   QrLoginSessionDto dco_decode_qr_login_session_dto(dynamic raw);
+
+  @protected
+  ScanStatsDto dco_decode_scan_stats_dto(dynamic raw);
 
   @protected
   SearchDto dco_decode_search_dto(dynamic raw);
@@ -411,6 +420,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   QrLoginSessionDto sse_decode_box_autoadd_qr_login_session_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ScanStatsDto sse_decode_box_autoadd_scan_stats_dto(
     SseDeserializer deserializer,
   );
 
@@ -559,6 +573,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ScanStatsDto? sse_decode_opt_box_autoadd_scan_stats_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SongDto? sse_decode_opt_box_autoadd_song_dto(SseDeserializer deserializer);
 
   @protected
@@ -598,6 +617,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   QrLoginSessionDto sse_decode_qr_login_session_dto(
     SseDeserializer deserializer,
   );
+
+  @protected
+  ScanStatsDto sse_decode_scan_stats_dto(SseDeserializer deserializer);
 
   @protected
   SearchDto sse_decode_search_dto(SseDeserializer deserializer);
@@ -769,6 +791,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_qr_login_session_dto(
     QrLoginSessionDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_scan_stats_dto(
+    ScanStatsDto self,
     SseSerializer serializer,
   );
 
@@ -950,6 +978,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_scan_stats_dto(
+    ScanStatsDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_song_dto(
     SongDto? self,
     SseSerializer serializer,
@@ -999,6 +1033,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     QrLoginSessionDto self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_scan_stats_dto(ScanStatsDto self, SseSerializer serializer);
 
   @protected
   void sse_encode_search_dto(SearchDto self, SseSerializer serializer);

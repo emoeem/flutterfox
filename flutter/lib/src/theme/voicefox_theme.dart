@@ -1,11 +1,21 @@
 /// voicefox 主题构建：注册表项 → Material 3 ThemeData。
 ///
+/// **运行时产源**（B1 升格）：P2-02 曾把本文件锁为预览专用（运行时唯一
+/// 真源 = myune/theme/theme_provider.dart 的 fromSeed 主题）。B1 统一主题
+/// 构建器落地后，`theme/app_theme.dart` 复用本文件的机制与组件规格
+/// （flclash 分层 / FlexThemeData / GappedSliderTrackShape）作为运行时
+/// 主题链路的一环；buildVoicefoxTheme 本体仍服务设置页主题色卡的**逐卡
+/// 预览**（settings_page.dart `_ThemeCard`）与 myune_preview.dart / 测试。
+/// design_system/voicefox_theme.dart（Vx 预览构建器）仍不得进运行时——
+/// 由 test/theme_source_guard_test.dart 锁定。
+///
 /// 规则见 docs/flutter_ui_spec.md §2/§5/§6 与 FlClash 源码规范：
 /// - seed 类主题（TUI 同源 16 套 + FlClash 定制）：flclash_scheme 的 HCT 中性
 ///   分层（页面底/卡面/块面三级，accent tone clamp）；
-/// - flex 扩展主题：flex_color_scheme 内置方案配色，表面由其自管；
+/// - flex 扩展主题：flex_color_scheme 内置方案配色，表面由其自管，跟随
+///   传入亮度（registry 对 flex 记的 dark:true 是占位值）；
 /// - 动态色（Android 12+）由 AppModel 决定是否使用（dynamic_color 包）；
-/// - 亮度不匹配的主题强制按自身明暗构建（如 dark 主题配 light 模式时）；
+/// - 亮度不匹配的 seed 主题强制按自身明暗构建（如 dark 主题配 light 模式时）；
 /// - 字体回退链按平台注入（typography.dart）；
 /// - 滑块 = FlClash M3 规格（厚 gapped 轨 + 小主色 thumb）。
 library;
@@ -28,8 +38,11 @@ SeedTheme seedThemeOf(String key) {
 
 /// 构建明/暗两套 ThemeData。dynamicScheme 非 null 时以其 primary 为种子，
 /// 表面仍按命名主题 bg 分层（保持主题个性）。
-ThemeData buildVoicefoxTheme(String themeKey, Brightness brightness,
-    {ColorScheme? dynamicScheme}) {
+ThemeData buildVoicefoxTheme(
+  String themeKey,
+  Brightness brightness, {
+  ColorScheme? dynamicScheme,
+}) {
   final entry = themeEntryOf(themeKey);
   final ThemeData base;
 
@@ -43,8 +56,10 @@ ThemeData buildVoicefoxTheme(String themeKey, Brightness brightness,
       ),
     );
   } else if (entry.flex != null) {
-    // flex 主题按自身明暗构建，主题个性优先于当前模式。
-    base = entry.dark
+    // flex 主题跟随传入亮度构建。registry.dart 对 flex 统一记 dark:true 是
+    // 占位值（FlexScheme 本身无天然明暗），旧实现据此全按 dark 构建，导致
+    // 浅色请求得到深色 flex 主题（B1 亮度 bug 修复）。
+    base = brightness == Brightness.dark
         ? FlexThemeData.dark(scheme: entry.flex)
         : FlexThemeData.light(scheme: entry.flex);
   } else {
@@ -72,8 +87,7 @@ ThemeData _voicefoxComponents(ThemeData base) {
   return withFonts.copyWith(
     // spec §2：深色卡片=surfaceContainer、浅色卡片=surface（更浅）；
     // 页面底浅色时用 surfaceContainer。
-    scaffoldBackgroundColor:
-        dark ? scheme.surface : scheme.surfaceContainer,
+    scaffoldBackgroundColor: dark ? scheme.surface : scheme.surfaceContainer,
     cardTheme: CardThemeData(
       elevation: 0,
       color: dark ? scheme.surfaceContainer : scheme.surface,
@@ -150,7 +164,8 @@ class GappedSliderTrackShape extends RoundedRectSliderTrackShape {
     final activePaint = Paint()
       ..color = sliderTheme.activeTrackColor ?? const Color(0xFF2196F3);
     final inactivePaint = Paint()
-      ..color = sliderTheme.inactiveTrackColor ??
+      ..color =
+          sliderTheme.inactiveTrackColor ??
           activePaint.color.withValues(alpha: 0.24);
 
     void drawSegment(double left, double right, Paint paint) {

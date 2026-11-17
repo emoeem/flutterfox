@@ -1,0 +1,6 @@
+[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+The Dart VM service is listening on http://127.0.0.1:52335/gWoiaLH31P4=/
+voicefox: 同步引导路径无 ambient tokio，已创建进程级 multi-thread runtime
+voicefox: playback pump started
+voicefox error(raw): 请先在设置页面登录哔哩哔哩
+dynamic_color: Accent color detected.

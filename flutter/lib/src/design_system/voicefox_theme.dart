@@ -1,8 +1,13 @@
-/// Voicefox 运行时 ThemeData 真源（Phase 1）。
+/// Design-system 预览 ThemeData（Phase 1；P2-02 收口后**非运行时真源**）。
 ///
-/// 由 `design_tokens.dart` 生成深 / 浅两套 ThemeData，目标是收敛
-/// `theme/voicefox_theme.dart`（旧预览路径）与 `myune/theme/theme_provider.dart`
-/// 的双真源不一致（Phase 0 F4）。接入 Shell 后运行时应只走本构建器。
+/// 由 `design_tokens.dart` 生成深 / 浅两套 ThemeData。Phase 0 F4 曾计划把
+/// 本构建器接入 Shell 收敛双真源，实际收敛结果相反：运行时唯一真源 =
+/// `myune/theme/theme_provider.dart`（ColorScheme.fromSeed + MiSans，
+/// main.dart MaterialApp 消费）。本文件现仅服务 Gallery 预览页
+/// （gallery_page.dart）与 design_system 测试；`vxMonoStyle` 仍被
+/// vx 组件族引用（等宽数字样式，与 ThemeData 无关）。
+/// 运行时入口不得引入本构建器——由 test/theme_source_guard_test.dart
+/// 锁定（P2-02）。
 ///
 /// 规则：
 /// - Token 是唯一颜色来源，页面不得自行硬编码颜色；
@@ -13,6 +18,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart' show VxPalette;
 import '../theme/typography.dart' show kMonoFamily;
 import 'design_tokens.dart';
 
@@ -23,12 +29,8 @@ ThemeData buildDarkTheme() => _buildTheme(_darkScheme(), _darkTextTheme());
 ThemeData buildLightTheme() => _buildTheme(_lightScheme(), _lightTextTheme());
 
 /// 等宽数字样式：tabular figures + JetBrainsMono（assets/fonts，OFL）。
-TextStyle vxMonoStyle(Color? color, {double? fontSize}) =>
-    VxTypography.mono.copyWith(
-      fontFamily: kMonoFamily,
-      color: color,
-      fontSize: fontSize,
-    );
+TextStyle vxMonoStyle(Color? color, {double? fontSize}) => VxTypography.mono
+    .copyWith(fontFamily: kMonoFamily, color: color, fontSize: fontSize);
 
 ColorScheme _darkScheme() => const ColorScheme.dark(
   primary: VxColors.accent,
@@ -113,6 +115,9 @@ ThemeData _buildTheme(ColorScheme scheme, TextTheme textTheme) {
     useMaterial3: true,
     colorScheme: scheme,
     textTheme: textTheme,
+    // B3：vx 组件族（hero/seek/onPlayIcon）改读 VxPalette 扩展；预览构建器
+    // 注入同源常量默认值，Gallery 深/浅预览像素与改前一致。
+    extensions: [dark ? VxPalette.darkDefaults : VxPalette.lightDefaults],
     scaffoldBackgroundColor: scheme.surface,
     canvasColor: scheme.surface,
     hoverColor: scheme.onSurface.withValues(alpha: 0.04),

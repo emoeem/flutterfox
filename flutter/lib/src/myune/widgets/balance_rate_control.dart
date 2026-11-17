@@ -520,9 +520,7 @@ class BalanceRateControl extends StatelessWidget {
                         if (result?.path == null) {
                           return;
                         }
-                        await notifier.setArnndnModelPath(
-                          result!.path!,
-                        );
+                        await notifier.setArnndnModelPath(result!.path!);
                       }
                     }
                     await notifier.toggleEffect(id, enabled);

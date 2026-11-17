@@ -12,17 +12,17 @@ import 'package:voicefox_flutter/src/pages/artist_detail_page.dart';
 import 'package:voicefox_flutter/src/pages/playlist_detail_page.dart';
 
 bridge.SourceCapabilitiesDto _caps() => const bridge.SourceCapabilitiesDto(
-      id: 'kw',
-      name: 'KW',
-      playlists: true,
-      playlistCategories: false,
-      playlistSearch: true,
-      album: true,
-      artist: true,
-      leaderboard: true,
-      login: false,
-      qrLogin: false,
-    );
+  id: 'kw',
+  name: 'KW',
+  playlists: true,
+  playlistCategories: false,
+  playlistSearch: true,
+  album: true,
+  artist: true,
+  leaderboard: true,
+  login: false,
+  qrLogin: false,
+);
 
 bridge.SongDto _song(String id, String name, {String album = '专辑'}) =>
     bridge.SongDto(
@@ -91,8 +91,7 @@ void main() {
 
     testWidgets('长专辑名两行省略，不撑破布局', (tester) async {
       final model = AppModel();
-      const longName =
-          '一个非常非常非常非常非常非常非常非常非常非常非常非常非常长的专辑名称会在此处被省略';
+      const longName = '一个非常非常非常非常非常非常非常非常非常非常非常非常非常长的专辑名称会在此处被省略';
       final album = bridge.AlbumDto(
         id: 'a1',
         name: longName,
@@ -148,10 +147,12 @@ void main() {
 
       // 收藏歌手禁用（后端无命令）。
       final favButton = tester.widget<OutlinedButton>(
-        find.ancestor(
-          of: find.text('收藏歌手'),
-          matching: find.byType(OutlinedButton),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('收藏歌手'),
+              matching: find.byType(OutlinedButton),
+            )
+            .first,
       );
       expect(favButton.onPressed, isNull);
     });
@@ -246,10 +247,12 @@ void main() {
       expect(find.text('用于验收的描述'), findsOneWidget);
       // 收藏按钮（命令存在）可用。
       final fav = tester.widget<OutlinedButton>(
-        find.ancestor(
-          of: find.text('收藏'),
-          matching: find.byType(OutlinedButton),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('收藏'),
+              matching: find.byType(OutlinedButton),
+            )
+            .first,
       );
       expect(fav.onPressed, isNotNull);
     });

@@ -18,6 +18,7 @@ import 'package:voicefox_flutter/src/bridge/lib.dart' as bridge;
 import 'package:voicefox_flutter/src/myune/page/setting/settings_provider.dart';
 import 'package:voicefox_flutter/src/myune/services/notification_service.dart';
 import 'package:voicefox_flutter/src/player/now_playing_page.dart';
+import 'package:voicefox_flutter/src/player/lyrics_panel.dart';
 import 'package:voicefox_flutter/src/player/player_bar.dart';
 import 'package:voicefox_flutter/src/player/queue_panel.dart';
 import 'package:voicefox_flutter/src/shell/app_shell.dart';
@@ -33,45 +34,42 @@ class _RecordingModel extends AppModel {
 }
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'netease',
-      name: name,
-      singer: '测试歌手',
-      albumName: '测试专辑',
-      durationMs: BigInt.from(244000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'netease',
+  name: name,
+  singer: '测试歌手',
+  albumName: '测试专辑',
+  durationMs: BigInt.from(244000),
+  coverUrl: null,
+);
 
 bridge.LyricsDto _lyrics() => bridge.LyricsDto(
-      currentLine: 0,
-      positionMs: BigInt.zero,
-      isEmpty: false,
-      lines: [
-        bridge.LyricLineDto(
-          timestampMs: BigInt.zero,
-          durationMs: BigInt.from(10000),
-          text: '第一句歌词',
-        ),
-        bridge.LyricLineDto(
-          timestampMs: BigInt.from(10000),
-          durationMs: BigInt.from(10000),
-          text: '第二句歌词',
-        ),
-        bridge.LyricLineDto(
-          timestampMs: BigInt.from(20000),
-          durationMs: BigInt.from(10000),
-          text: '第三句歌词',
-        ),
-      ],
-    );
+  currentLine: 0,
+  positionMs: BigInt.zero,
+  isEmpty: false,
+  lines: [
+    bridge.LyricLineDto(
+      timestampMs: BigInt.zero,
+      durationMs: BigInt.from(10000),
+      text: '第一句歌词',
+    ),
+    bridge.LyricLineDto(
+      timestampMs: BigInt.from(10000),
+      durationMs: BigInt.from(10000),
+      text: '第二句歌词',
+    ),
+    bridge.LyricLineDto(
+      timestampMs: BigInt.from(20000),
+      durationMs: BigInt.from(10000),
+      text: '第三句歌词',
+    ),
+  ],
+);
 
 Widget _pageHarness(AppModel model, {VoidCallback? onClose}) {
   return MaterialApp(
     home: Scaffold(
-      body: NowPlayingPage(
-        model: model,
-        onClose: onClose ?? () {},
-      ),
+      body: NowPlayingPage(model: model, onClose: onClose ?? () {}),
     ),
   );
 }
@@ -171,8 +169,7 @@ void main() {
   });
 
   group('Shell 集成：全屏进出与 PlayerBar 隐藏', () {
-    testWidgets('点播放栏封面进全屏：PlayerBar 从树中移除；Esc 返回后恢复',
-        (tester) async {
+    testWidgets('点播放栏封面进全屏：PlayerBar 从树中移除；Esc 返回后恢复', (tester) async {
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -195,10 +192,12 @@ void main() {
 
       // 点播放栏封面 → 全屏播放页；PlayerBar 不进树（§5.1 防双重控制）。
       await tester.tap(
-        find.descendant(
-          of: find.byType(PlayerBar),
-          matching: find.byType(ClipRRect),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(PlayerBar),
+              matching: find.byType(ClipRRect),
+            )
+            .first,
       );
       await tester.pumpAndSettle();
       expect(find.byType(NowPlayingPage), findsOneWidget);
@@ -258,13 +257,14 @@ void main() {
       await tester.tap(find.text('第三句歌词'));
       await tester.pumpAndSettle();
 
-      final seeks = model.commands.whereType<bridge.FfiCommand_SeekMs>().toList();
+      final seeks = model.commands
+          .whereType<bridge.FfiCommand_SeekMs>()
+          .toList();
       expect(seeks, hasLength(1));
       expect(seeks.first.field0, BigInt.from(20000));
     });
 
-    testWidgets('无歌词：空态如实说明（后端无重取命令，不伪造重试按钮）',
-        (tester) async {
+    testWidgets('无歌词：单列布局（无 LyricsPanel），重取入口保持可达', (tester) async {
       final model = AppModel();
       model.debugSetPlaybackSong(
         id: 's1',
@@ -284,8 +284,162 @@ void main() {
       await tester.pumpWidget(_pageHarness(model));
       await tester.pumpAndSettle();
 
-      expect(find.text('暂无歌词'), findsOneWidget);
-      expect(find.text('重试'), findsNothing);
+      // P2-18：无歌词回退单列布局，右列空面板不再渲染。
+      expect(find.byType(LyricsPanel), findsNothing);
+      expect(find.text('暂无歌词'), findsNothing);
+      // P2-17×P2-18 交叉：重取入口留在单列内，不随面板一起消失。
+      expect(find.text('重新获取歌词'), findsOneWidget);
+    });
+
+    testWidgets('有歌词：双列布局渲染 LyricsPanel，重取入口不再显示', (tester) async {
+      final model = AppModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+      );
+      model.debugSetLyrics(_lyrics());
+      await tester.pumpWidget(_pageHarness(model));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LyricsPanel), findsOneWidget);
+      expect(find.text('第一句歌词'), findsOneWidget);
+      expect(find.text('重新获取歌词'), findsNothing);
+    });
+
+    testWidgets('重取：点按发 LoadLyrics 真实命令，在途禁用防重复', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+      );
+      await tester.pumpWidget(_pageHarness(model));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('重新获取歌词'));
+      await tester.pump(); // 在途态有转圈动画，不能 pumpAndSettle
+
+      expect(
+        model.commands.whereType<bridge.FfiCommand_LoadLyrics>(),
+        hasLength(1),
+      );
+      expect(find.text('获取中…'), findsOneWidget);
+      expect(find.text('重新获取歌词'), findsNothing);
+      // 在途按钮禁用：连点不产生第二条命令。
+      final inflight = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, '获取中…'),
+      );
+      expect(inflight.onPressed, isNull);
+      // 12s 超时兜底复位（后端无事件返回也不永久卡死），并清掉 pending timer。
+      await tester.pump(const Duration(seconds: 12));
+      expect(find.text('获取中…'), findsNothing);
+      expect(find.text('重新获取歌词'), findsOneWidget);
+      expect(find.text('暂未取到歌词，可再次尝试'), findsOneWidget);
+      expect(
+        model.commands.whereType<bridge.FfiCommand_LoadLyrics>(),
+        hasLength(1),
+      );
+    });
+
+    testWidgets('重取成功：歌词回填 → 双列恢复，重取入口随单列退出', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+      );
+      await tester.pumpWidget(_pageHarness(model));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('重新获取歌词'));
+      await tester.pump();
+      model.debugSetLyrics(_lyrics()); // 模拟 LyricsChanged → state 快照刷新
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LyricsPanel), findsOneWidget);
+      expect(find.text('第一句歌词'), findsOneWidget);
+      expect(find.text('获取中…'), findsNothing);
+      expect(find.text('重新获取歌词'), findsNothing);
+    });
+
+    testWidgets('重取失败：「歌词加载失败」通知 → 复位为可重试', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+      );
+      await tester.pumpWidget(_pageHarness(model));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('重新获取歌词'));
+      await tester.pump();
+      // 模拟后端 Notification「歌词加载失败」+ state 刷新（真实链路在
+      // _handleEvent 尾部统一 notifyListeners）。
+      model.lastNotification = '歌词加载失败: 来源无响应';
+      model.debugSetLyrics(
+        bridge.LyricsDto(
+          currentLine: 0,
+          positionMs: BigInt.zero,
+          lines: const [],
+          isEmpty: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('重新获取歌词'), findsOneWidget);
+      expect(find.text('获取中…'), findsNothing);
+      expect(find.text('暂未取到歌词，可再次尝试'), findsOneWidget);
+      // 复位后可再次发起。
+      await tester.tap(find.text('重新获取歌词'));
+      await tester.pump();
+      expect(
+        model.commands.whereType<bridge.FfiCommand_LoadLyrics>(),
+        hasLength(2),
+      );
+      await tester.pump(const Duration(seconds: 12)); // 清 pending timer
+    });
+
+    testWidgets('切歌复位：在途态下切换歌曲 → 按钮回空闲且无失败误报', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetPlaybackSong(
+        id: 's1',
+        source: 'netease',
+        name: '夜航',
+        singer: '测试歌手',
+        state: 'paused',
+      );
+      await tester.pumpWidget(_pageHarness(model));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('重新获取歌词'));
+      await tester.pump();
+      expect(find.text('获取中…'), findsOneWidget);
+
+      model.debugSetPlaybackSong(
+        id: 's2',
+        source: 'netease',
+        name: '换一首',
+        singer: '测试歌手',
+        state: 'paused',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('获取中…'), findsNothing);
+      expect(find.text('重新获取歌词'), findsOneWidget);
+      expect(find.text('暂未取到歌词，可再次尝试'), findsNothing);
+      expect(
+        model.commands.whereType<bridge.FfiCommand_LoadLyrics>(),
+        hasLength(1),
+      );
     });
   });
 
@@ -304,12 +458,13 @@ void main() {
       expect(find.text('队列为空'), findsOneWidget);
     });
 
-    testWidgets('当前曲分组 + 待播列表渲染', (tester) async {
+    testWidgets('平面列表渲染：全部曲目在树 + 当前曲高亮（Batch F 拖拽形态）', (tester) async {
       final model = AppModel();
-      model.debugSetQueue(
-        [_song('a', '第一首'), _song('b', '第二首'), _song('c', '第三首')],
-        index: 0,
-      );
+      model.debugSetQueue([
+        _song('a', '第一首'),
+        _song('b', '第二首'),
+        _song('c', '第三首'),
+      ], index: 0);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -319,18 +474,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('当前播放'), findsOneWidget);
-      expect(find.text('接下来播放 · 2 首'), findsOneWidget);
+      // Batch F P2-09 收口：整列 ReorderableListView（拖拽排序要求单一
+      // 平面列表），分组表头（当前播放/接下来播放）随之移除，当前曲以
+      // 行内均衡器图标 + 底色高亮表达。
+      expect(find.byType(ReorderableListView), findsOneWidget);
       expect(find.text('第一首'), findsOneWidget);
+      expect(find.text('第二首'), findsOneWidget);
       expect(find.text('第三首'), findsOneWidget);
+      expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
     });
 
     testWidgets('行菜单「移出队列」→ 真实 queueRemove 命令', (tester) async {
       final model = _RecordingModel();
-      model.debugSetQueue(
-        [_song('a', '第一首'), _song('b', '第二首'), _song('c', '第三首')],
-        index: 0,
-      );
+      model.debugSetQueue([
+        _song('a', '第一首'),
+        _song('b', '第二首'),
+        _song('c', '第三首'),
+      ], index: 0);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -346,8 +506,9 @@ void main() {
       await tester.tap(find.text('移出队列'));
       await tester.pumpAndSettle();
 
-      final removes =
-          model.commands.whereType<bridge.FfiCommand_QueueRemove>().toList();
+      final removes = model.commands
+          .whereType<bridge.FfiCommand_QueueRemove>()
+          .toList();
       expect(removes, hasLength(1));
       expect(removes.first.index, 1);
     });
@@ -378,13 +539,13 @@ void main() {
       );
     });
 
-    testWidgets('后端缺失能力：拖动排序拖柄禁用；行菜单 立即播放/下一首播放 禁用并说明',
-        (tester) async {
-      final model = AppModel();
-      model.debugSetQueue(
-        [_song('a', '第一首'), _song('b', '第二首'), _song('c', '第三首')],
-        index: 0,
-      );
+    testWidgets('拖动排序真实启用（P2-09 关闭）：拖柄在树 + 行菜单立即播放/下一首播放真实命令', (tester) async {
+      final model = _RecordingModel();
+      model.debugSetQueue([
+        _song('a', '第一首'),
+        _song('b', '第二首'),
+        _song('c', '第三首'),
+      ], index: 0);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -394,26 +555,32 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final handle = tester.widget<IconButton>(
-        find.ancestor(
-          of: find.byIcon(Icons.drag_indicator),
-          matching: find.byType(IconButton),
-        ).first,
-      );
-      expect(handle.onPressed, isNull);
+      // 拖柄在树（ReorderableDragStartListener 承接拖拽手势；拖拽命令语义
+      // = Rust queue.move_item，由其 +4 单测与 queue_interaction_test 锁定）。
+      expect(find.byType(ReorderableDragStartListener), findsWidgets);
 
-      await tester.tap(find.byTooltip('更多操作').first);
+      // 待播行（index 2，当前曲为 index 0）行菜单 → 立即播放。
+      await tester.tap(find.byTooltip('更多操作').at(2));
       await tester.pumpAndSettle();
-      final playNow = tester.widget<PopupMenuItem<String>>(
-        find.widgetWithText(PopupMenuItem<String>, '立即播放'),
-      );
-      final playNext = tester.widget<PopupMenuItem<String>>(
-        find.widgetWithText(PopupMenuItem<String>, '下一首播放'),
-      );
-      expect(playNow.enabled, isFalse);
-      expect(playNext.enabled, isFalse);
-      expect(find.text('后端暂无队列跳播命令'), findsOneWidget);
-      expect(find.text('后端暂无队列移动命令'), findsOneWidget);
+      await tester.tap(find.text('立即播放'));
+      await tester.pump();
+      final plays = model.commands
+          .whereType<bridge.FfiCommand_QueuePlayAt>()
+          .toList();
+      expect(plays, hasLength(1), reason: '立即播放 = 队内跳播（Batch F）');
+      expect(plays.single.index, 2);
+
+      // 同行菜单 → 下一首播放（移动到当前播放之后）。
+      await tester.tap(find.byTooltip('更多操作').at(2));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下一首播放'));
+      await tester.pump();
+      final moves = model.commands
+          .whereType<bridge.FfiCommand_QueueMove>()
+          .toList();
+      expect(moves, hasLength(1), reason: '下一首播放 = 移动到当前播放之后');
+      expect(moves.single.from, 2);
+      expect(moves.single.to, 1);
     });
   });
 }

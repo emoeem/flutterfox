@@ -12,8 +12,12 @@ class LivePlayback extends StatefulWidget {
   final bool playing;
 
   /// (position, duration) 快照，由调用方决定渲染形态（进度条 / 滑条 / 时间）。
-  final Widget Function(BuildContext context, Duration position,
-      Duration duration) builder;
+  final Widget Function(
+    BuildContext context,
+    Duration position,
+    Duration duration,
+  )
+  builder;
 
   const LivePlayback({
     super.key,

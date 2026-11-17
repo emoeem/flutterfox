@@ -23,10 +23,7 @@ class ThemeSelectionScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '更改主题配色',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('更改主题配色', style: Theme.of(context).textTheme.titleMedium),
               ElevatedButton.icon(
                 onPressed: () =>
                     _showModernColorPickerDialog(context, themeProvider),
@@ -258,10 +255,10 @@ class ThemeSelectionScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                // 如果当前启用了动态颜色，先关闭它
+                // 如果当前启用了封面主色提取，先关闭它
                 final settings = context.read<SettingsProvider>();
-                if (settings.useDynamicColor) {
-                  settings.setUseDynamicColor(false);
+                if (settings.useCoverDynamicColor) {
+                  settings.setUseCoverDynamicColor(false);
                 }
 
                 // 还原为完整的 Color 对象

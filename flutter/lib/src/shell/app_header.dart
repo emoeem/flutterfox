@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/legacy.dart';
 
 import '../app_model.dart';
+import '../nav_bus.dart' as nav_bus;
 import '../design_system/design_tokens.dart';
 import '../myune/page/setting/settings_provider.dart';
 import 'context_panel.dart';
@@ -33,6 +34,7 @@ class AppHeader extends StatelessWidget {
     required this.canForward,
     required this.onBack,
     required this.onForward,
+    required this.searchController,
     required this.searchFocusNode,
     required this.onSearchSubmit,
     required this.contextOpen,
@@ -52,6 +54,9 @@ class AppHeader extends StatelessWidget {
   final VoidCallback onForward;
 
   /// Ctrl+K 聚焦目标（Shell 持有，Header 只挂到输入框）。
+  // SR-14：Header 搜索框由壳层持有的 controller 驱动（文本来自
+  // nav_bus.searchKeyword 单一状态流，与搜索页双向同步）。
+  final TextEditingController searchController;
   final FocusNode searchFocusNode;
 
   /// 提交搜索关键字（Shell 负责切到搜索页并填充）。
@@ -68,11 +73,14 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: ShellBreakpoints.headerHeight,
-      decoration: const BoxDecoration(
-        color: VxColors.surface1,
-        border: Border(bottom: BorderSide(color: VxColors.divider)),
+      // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位
+      //（buildAppTheme 显式映射，浅色 = VxLightColors 等值）。
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(bottom: BorderSide(color: scheme.outline)),
       ),
       child: Stack(
         children: [
@@ -121,10 +129,11 @@ class AppHeader extends StatelessWidget {
           width: 26,
           height: 26,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            // B3：品牌渐变随主题（primary/secondary = Vx accent/accentDeep）。
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [VxColors.accent, VxColors.accentDeep],
+              colors: [scheme.primary, scheme.secondary],
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -134,7 +143,7 @@ class AppHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: VxColors.onAccent,
+              color: scheme.onPrimary,
               height: 1,
             ),
           ),
@@ -177,7 +186,9 @@ class AppHeader extends StatelessWidget {
           icon: Icon(
             Icons.arrow_back_ios_new,
             size: 17,
-            color: canBack ? scheme.onSurfaceVariant : scheme.onSurface.withValues(alpha: 0.25),
+            color: canBack
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface.withValues(alpha: 0.25),
           ),
         ),
         const SizedBox(width: 2),
@@ -187,7 +198,9 @@ class AppHeader extends StatelessWidget {
           icon: Icon(
             Icons.arrow_forward_ios,
             size: 17,
-            color: canForward ? scheme.onSurfaceVariant : scheme.onSurface.withValues(alpha: 0.25),
+            color: canForward
+                ? scheme.onSurfaceVariant
+                : scheme.onSurface.withValues(alpha: 0.25),
           ),
         ),
       ],
@@ -203,9 +216,16 @@ class AppHeader extends StatelessWidget {
         child: SizedBox(
           height: 36,
           child: TextField(
+            controller: searchController,
             focusNode: searchFocusNode,
             textInputAction: TextInputAction.search,
             onSubmitted: onSearchSubmit,
+            onChanged: (value) {
+              // SR-14：Header 输入写入单一状态流（搜索页监听回流）。
+              if (nav_bus.searchKeyword.value != value) {
+                nav_bus.searchKeyword.value = value;
+              }
+            },
             style: TextStyle(fontSize: 13, color: scheme.onSurface),
             decoration: InputDecoration(
               hintText: '搜索歌曲、专辑、歌手或歌单',
@@ -213,7 +233,11 @@ class AppHeader extends StatelessWidget {
                 fontSize: 13,
                 color: scheme.onSurfaceVariant,
               ),
-              prefixIcon: Icon(Icons.search, size: 18, color: scheme.onSurfaceVariant),
+              prefixIcon: Icon(
+                Icons.search,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
               prefixIconConstraints: const BoxConstraints(minWidth: 36),
               suffixIcon: _KbdChip(),
               suffixIconConstraints: const BoxConstraints(minWidth: 0),
@@ -224,6 +248,18 @@ class AppHeader extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(VxRadius.md),
                 borderSide: BorderSide.none,
+              ),
+              // 2026-11-18 外观精修：聚焦态主色描边（此前所有态无边线，
+              // 焦点位置不可见）。
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(VxRadius.md),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(VxRadius.md),
+                borderSide: BorderSide(
+                  color: scheme.primary.withValues(alpha: 0.45),
+                ),
               ),
             ),
           ),

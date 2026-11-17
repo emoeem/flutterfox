@@ -303,6 +303,10 @@ sealed class FfiCommand with _$FfiCommand {
   }) = FfiCommand_QueueAdd;
   const factory FfiCommand.queueRemove({required int index}) =
       FfiCommand_QueueRemove;
+  const factory FfiCommand.queueMove({required int from, required int to}) =
+      FfiCommand_QueueMove;
+  const factory FfiCommand.queuePlayAt({required int index}) =
+      FfiCommand_QueuePlayAt;
   const factory FfiCommand.queueClear() = FfiCommand_QueueClear;
   const factory FfiCommand.next() = FfiCommand_Next;
   const factory FfiCommand.previous() = FfiCommand_Previous;
@@ -315,6 +319,10 @@ sealed class FfiCommand with _$FfiCommand {
   const factory FfiCommand.searchMore({
     required String keyword,
     required int page,
+
+    /// 可选音源过滤；None 为聚合搜索（Rust 侧 append 时兜底沿用本次查询
+    /// 建立时的过滤，见 ApplicationService::start_search）。
+    String? source,
   }) = FfiCommand_SearchMore;
   const factory FfiCommand.libraryRefresh() = FfiCommand_LibraryRefresh;
   const factory FfiCommand.favoritesAdd({required SongDto song}) =
@@ -348,6 +356,10 @@ sealed class FfiCommand with _$FfiCommand {
   }) = FfiCommand_CustomPlaylistRemoveSong;
   const factory FfiCommand.customPlaylistDetail({required String id}) =
       FfiCommand_CustomPlaylistDetail;
+
+  /// P2-17：手动重新获取当前歌曲歌词（自动获取失败/为空时的兜底入口）。
+  const factory FfiCommand.loadLyrics({required SongDto song}) =
+      FfiCommand_LoadLyrics;
   const factory FfiCommand.configGet() = FfiCommand_ConfigGet;
   const factory FfiCommand.configUpdate({required ConfigDto config}) =
       FfiCommand_ConfigUpdate;
@@ -355,6 +367,12 @@ sealed class FfiCommand with _$FfiCommand {
       FfiCommand_DownloadEnqueue;
   const factory FfiCommand.downloadCancel({required BigInt id}) =
       FfiCommand_DownloadCancel;
+  const factory FfiCommand.downloadPause({required BigInt id}) =
+      FfiCommand_DownloadPause;
+  const factory FfiCommand.downloadResume({required BigInt id}) =
+      FfiCommand_DownloadResume;
+  const factory FfiCommand.downloadDeleteFile({required BigInt id}) =
+      FfiCommand_DownloadDeleteFile;
   const factory FfiCommand.downloadClearFinished() =
       FfiCommand_DownloadClearFinished;
   const factory FfiCommand.qrLoginStart({
@@ -366,6 +384,7 @@ sealed class FfiCommand with _$FfiCommand {
     required List<String> paths,
     required int maxDepth,
   }) = FfiCommand_LocalScan;
+  const factory FfiCommand.localScanCancel() = FfiCommand_LocalScanCancel;
   const factory FfiCommand.accountPlaylists({required String source}) =
       FfiCommand_AccountPlaylists;
   const factory FfiCommand.accountFavorites({required String source}) =
@@ -466,19 +485,39 @@ sealed class HostPlayerCommandDto with _$HostPlayerCommandDto {
     required String url,
     required BigInt generation,
     required List<HostHeaderDto> headers,
+    required BigInt commandId,
   }) = HostPlayerCommandDto_Play;
-  const factory HostPlayerCommandDto.pause() = HostPlayerCommandDto_Pause;
-  const factory HostPlayerCommandDto.resume() = HostPlayerCommandDto_Resume;
-  const factory HostPlayerCommandDto.stop() = HostPlayerCommandDto_Stop;
-  const factory HostPlayerCommandDto.toggle() = HostPlayerCommandDto_Toggle;
+  const factory HostPlayerCommandDto.pause({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Pause;
+  const factory HostPlayerCommandDto.resume({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Resume;
+  const factory HostPlayerCommandDto.stop({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Stop;
+  const factory HostPlayerCommandDto.toggle({
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Toggle;
 
   /// 定位到绝对位置（毫秒）。
-  const factory HostPlayerCommandDto.seek({required BigInt positionMs}) =
-      HostPlayerCommandDto_Seek;
-  const factory HostPlayerCommandDto.setVolume({required int volume}) =
-      HostPlayerCommandDto_SetVolume;
-  const factory HostPlayerCommandDto.setSpeed({required double speed}) =
-      HostPlayerCommandDto_SetSpeed;
+  const factory HostPlayerCommandDto.seek({
+    required BigInt positionMs,
+    required BigInt commandId,
+    required BigInt generation,
+  }) = HostPlayerCommandDto_Seek;
+  const factory HostPlayerCommandDto.setVolume({
+    required int volume,
+    required BigInt commandId,
+  }) = HostPlayerCommandDto_SetVolume;
+  const factory HostPlayerCommandDto.setSpeed({
+    required double speed,
+    required BigInt commandId,
+  }) = HostPlayerCommandDto_SetSpeed;
 }
 
 class LeaderboardDto {
@@ -836,6 +875,57 @@ class QrLoginSessionDto {
           expiresIn == other.expiresIn;
 }
 
+/// 本地扫描统计（§5.10 流程 5：新增/复用/失败/跳过/移除）。
+class ScanStatsDto {
+  /// 本次发现的全部音频/CUE 文件数。
+  final int discovered;
+
+  /// 指纹命中直接复用的歌曲数（未重新解析标签）。
+  final int reused;
+
+  /// 本次实际解析入库的歌曲数（新增）。
+  final int parsed;
+
+  /// 解析失败的文件数（重扫即重试，失败不回滚其余结果）。
+  final int failed;
+
+  /// 已消失文件的记录数。
+  final int removed;
+
+  /// 扩展名不属于音频/CUE 而被跳过的文件数（「无音频文件」）。
+  final int skipped;
+
+  const ScanStatsDto({
+    required this.discovered,
+    required this.reused,
+    required this.parsed,
+    required this.failed,
+    required this.removed,
+    required this.skipped,
+  });
+
+  @override
+  int get hashCode =>
+      discovered.hashCode ^
+      reused.hashCode ^
+      parsed.hashCode ^
+      failed.hashCode ^
+      removed.hashCode ^
+      skipped.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ScanStatsDto &&
+          runtimeType == other.runtimeType &&
+          discovered == other.discovered &&
+          reused == other.reused &&
+          parsed == other.parsed &&
+          failed == other.failed &&
+          removed == other.removed &&
+          skipped == other.skipped;
+}
+
 class SearchDto {
   final String keyword;
   final int page;
@@ -1160,6 +1250,12 @@ class VoicefoxEvent {
   final String? status;
   final String? userName;
   final List<String> warnings;
+
+  /// 本地扫描统计（kind == "local_music" 且未取消时携带）。
+  final ScanStatsDto? scanStats;
+
+  /// 本地扫描是否被用户取消（取消的扫描不提交，stats 为空）。
+  final bool scanCancelled;
   final ConfigDto? config;
   final String? browseKind;
   final String? source;
@@ -1196,6 +1292,8 @@ class VoicefoxEvent {
     this.status,
     this.userName,
     required this.warnings,
+    this.scanStats,
+    required this.scanCancelled,
     this.config,
     this.browseKind,
     this.source,
@@ -1234,6 +1332,8 @@ class VoicefoxEvent {
       status.hashCode ^
       userName.hashCode ^
       warnings.hashCode ^
+      scanStats.hashCode ^
+      scanCancelled.hashCode ^
       config.hashCode ^
       browseKind.hashCode ^
       source.hashCode ^
@@ -1274,6 +1374,8 @@ class VoicefoxEvent {
           status == other.status &&
           userName == other.userName &&
           warnings == other.warnings &&
+          scanStats == other.scanStats &&
+          scanCancelled == other.scanCancelled &&
           config == other.config &&
           browseKind == other.browseKind &&
           source == other.source &&

@@ -109,11 +109,12 @@ fn run_windows_worker(rx: std::sync::mpsc::Receiver<Notification>) {
                 }
             }
         }
-        if let Some(value) = notifier.as_mut() {
-            if let Err(error) = value.show(&notification) {
-                tracing::warn!("desktop notification failed: {error}");
-                notifier = None;
-            }
+        // clippy 1.100 collapsible_if：嵌套 if let 折叠为 let-chain（零行为变化）。
+        if let Some(value) = notifier.as_mut()
+            && let Err(error) = value.show(&notification)
+        {
+            tracing::warn!("desktop notification failed: {error}");
+            notifier = None;
         }
     }
 }

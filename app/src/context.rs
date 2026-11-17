@@ -168,7 +168,7 @@ impl AppContext {
         player.set_equalizer_bands(&config.player.equalizer_bands);
 
         // 创建音源管理器（JS 音源在 TUI 启动后异步加载）
-        let source_manager = Arc::new(SourceManager::new(
+        let source_manager = Arc::new(SourceManager::with_persistent_local(
             config.source.default,
             &config.source.enabled,
         ));

@@ -14,14 +14,14 @@ const _playlist = bridge.PlaylistDto(
 );
 
 bridge.SongDto _song(String id, String name) => bridge.SongDto(
-      id: id,
-      source: 'kw',
-      name: name,
-      singer: '歌手',
-      albumName: '专辑',
-      durationMs: BigInt.from(180000),
-      coverUrl: null,
-    );
+  id: id,
+  source: 'kw',
+  name: name,
+  singer: '歌手',
+  albumName: '专辑',
+  durationMs: BigInt.from(180000),
+  coverUrl: null,
+);
 
 void main() {
   testWidgets('加载中 → 加载完成显示曲目与播放全部', (tester) async {
@@ -55,11 +55,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(home: PlaylistDetailPage(model, _playlist)),
     );
-    model.debugBrowseLoaded(
-      kind: 'playlist_detail',
-      source: 'kw',
-      id: 'p1',
-    );
+    model.debugBrowseLoaded(kind: 'playlist_detail', source: 'kw', id: 'p1');
     await tester.pump();
 
     expect(find.text('歌单暂无曲目'), findsOneWidget);

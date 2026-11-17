@@ -217,6 +217,31 @@ impl DownloadRecords {
         }
     }
 
+    /// 回收一首歌的下载记录与去重索引（UI「删除」已下载文件时调用）。
+    ///
+    /// 只移除指向被删文件（`rel_path` 匹配）的记录：同一首歌如果还有别的
+    /// 副本记录（理论上去重索引不会出现，但历史数据可能），保持不动。
+    /// 文件不存在对应记录（例如按文件名跳过的旧数据）时也清一遍同键去重，
+    /// 保证删除后 `existing_download` 不再命中。
+    pub fn remove_for_song(&self, singer: &str, name: &str, rel_path: Option<&str>) {
+        let key = Self::song_key(singer, name);
+        let records = {
+            let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+            state.records.retain(|record| {
+                let same_song = Self::song_key(&record.singer, &record.name) == key;
+                let same_file = match (record.rel_path.as_deref(), rel_path) {
+                    (Some(record_path), Some(target)) => record_path == target,
+                    (None, None) => true,
+                    _ => false,
+                };
+                !(same_song && same_file)
+            });
+            state.dedup = build_dedup(&state.records);
+            state.records.clone()
+        };
+        self.persist(&records);
+    }
+
     fn persist(&self, records: &[DownloadRecord]) {
         let file = RecordsFile {
             version: 1,
@@ -467,5 +492,53 @@ mod tests {
         let file = dir.join("album").join("a.mp3");
         assert_eq!(relative_path(&dir, &file).as_deref(), Some("album/a.mp3"));
         assert!(relative_path(&dir, Path::new("/elsewhere/a.mp3")).is_none());
+    }
+
+    #[test]
+    fn remove_for_song_reclaims_record_and_dedup_for_the_deleted_file() {
+        let dir = temp_dir("records-remove");
+        let path = dir.join("downloads.json");
+        let store = DownloadRecords::at_path(path.clone());
+        // 去重命中要求文件真实存在：先落两个空文件。
+        std::fs::write(dir.join("周杰伦 - 晴天.flac"), b"x").unwrap();
+        std::fs::write(dir.join("周杰伦 - 七里香.flac"), b"x").unwrap();
+        let song = SongInfo::new("id-1".into(), SourceId::Kw, "晴天".into(), "周杰伦".into());
+        let other = SongInfo::new(
+            "id-2".into(),
+            SourceId::Kw,
+            "七里香".into(),
+            "周杰伦".into(),
+        );
+
+        store.record(DownloadRecord::new(
+            &song,
+            DownloadStatus::Done,
+            Some("周杰伦 - 晴天.flac".into()),
+            None,
+        ));
+        store.record(DownloadRecord::new(
+            &other,
+            DownloadStatus::Done,
+            Some("周杰伦 - 七里香.flac".into()),
+            None,
+        ));
+        assert_eq!(store.len(), 2);
+
+        // 删除晴天文件：仅回收该曲记录与去重索引，别的歌不受影响。
+        store.remove_for_song("周杰伦", "晴天", Some("周杰伦 - 晴天.flac"));
+        assert_eq!(store.len(), 1);
+        assert!(store.existing_download(&song, &dir).is_none());
+        assert!(store.existing_download(&other, &dir).is_some());
+
+        // 重新下载同一首歌不再被旧记录挡住（去重索引已随删除回收）。
+        store.record(DownloadRecord::new(
+            &song,
+            DownloadStatus::Done,
+            Some("周杰伦 - 晴天.flac".into()),
+            None,
+        ));
+        assert_eq!(store.len(), 2);
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 }

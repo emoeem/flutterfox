@@ -14,6 +14,8 @@ class VxCoverFallback extends StatelessWidget {
     super.key,
     required this.title,
     this.radius = VxRadius.sm,
+    this.icon = Icons.music_note,
+    this.iconSize = 16,
   });
 
   /// 用作取色与首字母来源的文本（标题 / 歌手名）。
@@ -21,6 +23,13 @@ class VxCoverFallback extends StatelessWidget {
 
   /// 圆角；圆形封面传 `radius = null` 之外的更大值或用 ClipOval 包裹。
   final double radius;
+
+  /// 空标题（无实体名）路径的音符图标（2026-11-18：VxArtwork 占位透传
+  /// 调用方 icon，Outlined 变体不丢）。
+  final IconData icon;
+
+  /// 空标题路径的图标尺寸（调用方可按占位盒尺寸放大）。
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +45,7 @@ class VxCoverFallback extends StatelessWidget {
   Widget _label() {
     final trimmed = title.trim();
     if (trimmed.isEmpty) {
-      return const Icon(
-        Icons.music_note,
-        size: 16,
-        color: Color(0xCCFFFFFF),
-      );
+      return Icon(icon, size: iconSize, color: const Color(0xCCFFFFFF));
     }
     final first = String.fromCharCode(trimmed.runes.first).toUpperCase();
     return Text(

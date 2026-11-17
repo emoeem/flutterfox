@@ -6,10 +6,10 @@ import 'package:voicefox_flutter/src/pages/player_page.dart';
 import 'package:voicefox_flutter/src/widgets/lyrics_view.dart';
 
 bridge.LyricLineDto _line(int ms, String text) => bridge.LyricLineDto(
-      timestampMs: BigInt.from(ms),
-      durationMs: BigInt.from(5000),
-      text: text,
-    );
+  timestampMs: BigInt.from(ms),
+  durationMs: BigInt.from(5000),
+  text: text,
+);
 
 void main() {
   group('lyricIndexAt', () {

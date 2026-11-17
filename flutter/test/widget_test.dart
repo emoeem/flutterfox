@@ -6,8 +6,7 @@ import 'package:voicefox_flutter/src/theme/seed_colors.dart';
 import 'package:voicefox_flutter/src/theme/voicefox_theme.dart';
 
 void main() {
-  testWidgets('主题注册表：TUI 同源 16 套完整，全量 key 构建 ThemeData 不抛异常',
-      (tester) async {
+  testWidgets('主题注册表：TUI 同源 16 套完整，全量 key 构建 ThemeData 不抛异常', (tester) async {
     expect(kSeedThemes.length, 16);
     // 同源 key 全部在注册表中（铁律：seed_colors.dart 是唯一来源）
     for (final seed in kSeedThemes) {

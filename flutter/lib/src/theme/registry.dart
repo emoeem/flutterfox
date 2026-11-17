@@ -34,12 +34,12 @@ class ThemeEntry {
   });
 
   factory ThemeEntry.fromSeed(SeedTheme seed) => ThemeEntry._(
-        seed.key,
-        seed.label,
-        seed.dark,
-        bgHex: seed.bg,
-        accentHex: seed.accent,
-      );
+    seed.key,
+    seed.label,
+    seed.dark,
+    bgHex: seed.bg,
+    accentHex: seed.accent,
+  );
 }
 
 /// 与 TUI 同源的 16 套（顺序与 seed_colors.dart 一致）。
@@ -78,12 +78,7 @@ final List<ThemeEntry> kBuiltinThemes = [
     (FlexScheme.espresso, 'Espresso'),
     (FlexScheme.flutterDash, 'Flutter Dash'),
   ])
-    ThemeEntry._(
-      'flex:${scheme.$1.name}',
-      scheme.$2,
-      true,
-      flex: scheme.$1,
-    ),
+    ThemeEntry._('flex:${scheme.$1.name}', scheme.$2, true, flex: scheme.$1),
 ];
 
 /// FlClash 定制方案：对齐参考截图的紫红 accent + 近纯黑底。

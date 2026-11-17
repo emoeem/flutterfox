@@ -231,8 +231,10 @@ class _MainViewState extends State<_MainView> {
                   opacity: animation,
                   child: ScaleTransition(
                     // 轻微缩放配合淡入，比纯 fade 有层次。
-                    scale: Tween<double>(begin: 0.985, end: 1)
-                        .animate(animation),
+                    scale: Tween<double>(
+                      begin: 0.985,
+                      end: 1,
+                    ).animate(animation),
                     child: child,
                   ),
                 ),
@@ -297,9 +299,7 @@ class VoicefoxWindowTitleBar extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(
-            child: DragToMoveArea(child: const SizedBox.expand()),
-          ),
+          Expanded(child: DragToMoveArea(child: const SizedBox.expand())),
           Align(
             alignment: Alignment.centerRight,
             child: Row(
@@ -316,7 +316,10 @@ class VoicefoxWindowTitleBar extends StatelessWidget {
                   },
                 ),
                 const SizedBox(width: 2),
-                _WindowButton(icon: Icons.close, onPressed: windowManager.close),
+                _WindowButton(
+                  icon: Icons.close,
+                  onPressed: windowManager.close,
+                ),
               ],
             ),
           ),

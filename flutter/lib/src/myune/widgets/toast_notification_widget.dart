@@ -2,6 +2,11 @@
 // License: Apache-2.0 (see /home/emo/code/myune_music-reference/LICENSE)
 // Upstream logic kept as-is unless the seam (AudioService/adapters) requires it.
 //
+// Local adaptation (voicefox Phase 1, 2026-11-10，QA P1：错误 toast 无高度上限
+// 遮挡页面)：文本 maxLines=4 + 省略号、容器 max-height 160——上游对消息文本
+// 不限行数，多行原始异常会把 toast 撑到整页高。原始异常已在 AppModel 源头
+// 净化写日志（sanitizeUserFacingMessage），此处为兜底限高。
+//
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/notification_service.dart';
@@ -61,7 +66,7 @@ class ToastNotificationWidget extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(top: 6),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: const BoxConstraints(maxWidth: 400, maxHeight: 160),
               child: IntrinsicWidth(
                 child: Material(
                   color: Colors.transparent,
@@ -95,6 +100,9 @@ class ToastNotificationWidget extends StatelessWidget {
                               color: foregroundColor,
                               fontSize: 13,
                             ),
+                            // Local adaptation：限 4 行 + 省略，防整页高 toast。
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
 

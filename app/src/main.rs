@@ -13,8 +13,6 @@ mod instance_lock;
 mod listenbrainz;
 mod media_controls;
 mod media_session;
-#[cfg(target_os = "linux")]
-mod mpris;
 mod notification;
 #[cfg(target_os = "macos")]
 mod nowplaying;

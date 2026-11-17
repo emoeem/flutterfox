@@ -19,14 +19,23 @@ use lx_core::events::Notification;
 use tokio::sync::mpsc;
 #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
 pub(crate) fn current_media_snapshot(ctx: &AppContext) -> media_session::MediaSnapshot {
+    use media_session::MediaLoopStatus;
     let song = ctx.current_song.read().unwrap_or_else(|e| e.into_inner());
+    // TUI PlayMode → crate MediaLoopStatus/shuffle 解耦映射（Batch F §9.2）。
+    let (loop_status, shuffle) = match ctx.playlist.mode() {
+        crate::playlist::mode::PlayMode::SingleLoop => (MediaLoopStatus::Track, false),
+        crate::playlist::mode::PlayMode::ListLoop => (MediaLoopStatus::Playlist, false),
+        crate::playlist::mode::PlayMode::Random => (MediaLoopStatus::None, true),
+        _ => (MediaLoopStatus::None, false),
+    };
     media_session::MediaSnapshot::new(
         *ctx.player_state.borrow(),
         song.as_ref(),
         *ctx.position.borrow(),
         *ctx.duration.borrow(),
         ctx.player.volume(),
-        ctx.playlist.mode(),
+        loop_status,
+        shuffle,
         ctx.playlist.len(),
         ctx.position_epoch(),
     )
@@ -68,7 +77,11 @@ pub(crate) fn start_media_controls(
     let result = {
         #[cfg(target_os = "linux")]
         {
-            rt.block_on(crate::mpris::start())
+            // `::media_session` 显式外部 crate 路径：本文件顶部
+            // `use crate::media_session;` 已占用同名本地名，裸路径会解析进
+            // shim（其无 mpris 子模块）；application crate 的同名调用在
+            // Linux CI 上已被编译验证，保持同款直连形态。
+            rt.block_on(::media_session::mpris::start())
         }
         #[cfg(target_os = "windows")]
         {

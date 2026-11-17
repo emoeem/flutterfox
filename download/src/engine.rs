@@ -42,6 +42,12 @@ pub struct DownloadRequest {
     /// googlevideo（YouTube Music）这类 CDN 会拒绝 HEAD、plain GET 与超上限的
     /// Range，只能按不超过该值的有界 Range 分片抓取。
     pub max_chunk_size: u64,
+    /// 断点续传起点（字节）。`> 0` 时引擎会检查同目录 staged 临时文件长度
+    /// 是否一致，一致则带 `Range: bytes={n}-` 续传；源返回 200 / 416 或
+    /// Content-Range 总长对不上时回退整体重下（删旧前缀、不带 Range 重来）。
+    /// 只对单连接顺序写入的文件有效；分片并发写出的文件不是完整前缀，
+    /// 引擎在分片路径暂停时会直接清掉临时文件，恢复时自然整体重下。
+    pub resume_from: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -87,6 +93,8 @@ impl DownloadOptions {
 pub enum DownloadError {
     #[error("下载已取消")]
     Cancelled,
+    #[error("下载已暂停")]
+    Paused,
     #[error("音源不支持 Range 分片")]
     RangesUnsupported,
     #[error("网络错误: {0}")]
@@ -109,9 +117,10 @@ impl DownloadError {
             // 分片不可用属于「换个策略重试」：由调用方回退到单连接下载。
             DownloadError::RangesUnsupported => true,
             DownloadError::Http { status } => *status >= 500 || *status == 408 || *status == 429,
-            DownloadError::Cancelled | DownloadError::Integrity(_) | DownloadError::Other(_) => {
-                false
-            }
+            DownloadError::Cancelled
+            | DownloadError::Paused
+            | DownloadError::Integrity(_)
+            | DownloadError::Other(_) => false,
         }
     }
 }
@@ -122,6 +131,7 @@ pub struct DownloadProgress {
     downloaded: AtomicU64,
     total: AtomicU64,
     cancel: AtomicBool,
+    pause: AtomicBool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,6 +139,7 @@ pub struct ProgressSnapshot {
     pub downloaded: u64,
     pub total: u64,
     pub cancelled: bool,
+    pub paused: bool,
 }
 
 impl ProgressSnapshot {
@@ -176,8 +187,8 @@ impl DownloadProgress {
         self.total.store(total, Ordering::Relaxed);
     }
 
-    /// 换候选地址前把已计入的字节清零。
-    fn reset(&self) {
+    /// 换候选地址或放弃旧前缀前把已计入的字节清零。
+    pub(crate) fn reset(&self) {
         self.downloaded.store(0, Ordering::Relaxed);
         self.total.store(0, Ordering::Relaxed);
     }
@@ -187,6 +198,7 @@ impl DownloadProgress {
             downloaded: self.downloaded.load(Ordering::Relaxed),
             total: self.total.load(Ordering::Relaxed),
             cancelled: self.cancel.load(Ordering::Relaxed),
+            paused: self.pause.load(Ordering::Relaxed),
         }
     }
 
@@ -202,6 +214,30 @@ impl DownloadProgress {
     fn check_cancelled(&self) -> Result<(), DownloadError> {
         if self.is_cancelled() {
             Err(DownloadError::Cancelled)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// 请求暂停：下载循环在下一个检查点返回 [`DownloadError::Paused`]，
+    /// 已写入的 staged 前缀保留在磁盘上供续传（分片路径除外：分片并发
+    /// 写出的文件不是完整前缀，暂停时整体清掉）。
+    pub fn pause(&self) {
+        self.pause.store(true, Ordering::Relaxed);
+    }
+
+    /// 清除暂停标志（恢复下载前调用）。
+    pub fn unpause(&self) {
+        self.pause.store(false, Ordering::Relaxed);
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.pause.load(Ordering::Relaxed)
+    }
+
+    fn check_paused(&self) -> Result<(), DownloadError> {
+        if self.is_paused() {
+            Err(DownloadError::Paused)
         } else {
             Ok(())
         }
@@ -291,6 +327,10 @@ impl DownloadEngine {
 
     /// 下载到 `req.dest`。先写同目录临时文件，成功后原子改名，
     /// 避免中断时留下半截文件冒充成品。
+    ///
+    /// 暂停语义（[`DownloadError::Paused`]）：单连接顺序写入的前缀文件保留
+    /// 在磁盘上（`resume_from` 续传用），分片并发写出的临时文件直接清掉；
+    /// 两种情况下都不再尝试后续候选地址，由调用方（任务管理器）决定恢复。
     pub async fn download(
         &self,
         req: &DownloadRequest,
@@ -298,6 +338,9 @@ impl DownloadEngine {
     ) -> Result<u64, DownloadError> {
         if req.url.trim().is_empty() {
             return Err(DownloadError::Other("缺少下载地址".to_string()));
+        }
+        if progress.is_paused() {
+            return Err(DownloadError::Paused);
         }
         if let Some(parent) = req.dest.parent() {
             tokio::fs::create_dir_all(parent)
@@ -367,8 +410,16 @@ impl DownloadEngine {
                     return Ok(written);
                 }
                 Err(error) => {
-                    let _ = tokio::fs::remove_file(&part_path).await;
+                    // 暂停保留 staged 前缀（分片路径已在内部清掉无效文件），
+                    // 其余失败照旧清理；暂停也不再换候选地址。
+                    let paused = matches!(error, DownloadError::Paused);
+                    if !paused {
+                        let _ = tokio::fs::remove_file(&part_path).await;
+                    }
                     last_error = error;
+                    if paused {
+                        break;
+                    }
                 }
             }
         }
@@ -401,10 +452,16 @@ impl DownloadEngine {
                     );
                     let _ = tokio::fs::remove_file(dest).await;
                 }
+                // 分片写出的文件不是完整前缀，暂停时清掉临时文件再上抛，
+                // 恢复时走整体重下。
+                Err(error @ DownloadError::Paused) => {
+                    let _ = tokio::fs::remove_file(dest).await;
+                    return Err(error);
+                }
                 Err(error) => return Err(error),
             }
         }
-        self.download_single(req, url, dest, progress).await
+        self.download_single(req, url, dest, total, progress).await
     }
 
     /// 探测源能力：优先 HEAD，失败再用 `Range: bytes=0-0` 兜底。
@@ -457,6 +514,7 @@ impl DownloadEngine {
         req: &DownloadRequest,
         url: &str,
         dest: &Path,
+        total: Option<u64>,
         progress: &Arc<DownloadProgress>,
     ) -> Result<u64, DownloadError> {
         let attempts = self.options.max_retries.max(1);
@@ -466,7 +524,8 @@ impl DownloadEngine {
                 sleep_before_retry(attempt).await;
             }
             progress.check_cancelled()?;
-            match self.single_attempt(req, url, dest, progress).await {
+            progress.check_paused()?;
+            match self.single_attempt(req, url, dest, total, progress).await {
                 Ok(written) => return Ok(written),
                 Err(error) if error.is_retryable() && attempt + 1 < attempts => {
                     tracing::debug!(
@@ -490,32 +549,92 @@ impl DownloadEngine {
         req: &DownloadRequest,
         url: &str,
         dest: &Path,
+        total: Option<u64>,
         progress: &Arc<DownloadProgress>,
     ) -> Result<u64, DownloadError> {
+        // 断点续传协商：staged 前缀与请求起点一致时带 Range 续传。
+        let staged = std::fs::metadata(dest).map(|meta| meta.len()).unwrap_or(0);
+        let resume_from =
+            (req.resume_from > 0 && staged == req.resume_from).then_some(req.resume_from);
+        let mut request = apply_headers(self.client.get(url), &req.headers);
+        if let Some(offset) = resume_from {
+            request = request.header(RANGE, format!("bytes={offset}-"));
+        }
         // 响应头等待受 request_timeout 约束；字节流本体不设整体超时（大文件
         // 下载总时长不可预估），改用逐 chunk 停滞检测：超过 request_timeout
         // 没有新数据才算失败。
-        let mut response = tokio::time::timeout(
-            self.request_timeout,
-            apply_headers(self.client.get(url), &req.headers).send(),
-        )
-        .await
-        .map_err(|_| DownloadError::Network("等待下载响应超时".to_string()))?
-        .map_err(|error| DownloadError::Network(error.to_string()))?;
+        let mut response = tokio::time::timeout(self.request_timeout, request.send())
+            .await
+            .map_err(|_| DownloadError::Network("等待下载响应超时".to_string()))?
+            .map_err(|error| DownloadError::Network(error.to_string()))?;
         let status = response.status();
         if !status.is_success() {
+            // 续传请求被拒（416 / 5xx / 403 等）：回退整体重下——删掉旧
+            // 前缀，不带 Range 重发一次。只回退一层，避免失败循环。
+            if resume_from.is_some() {
+                tracing::debug!(
+                    "resume request for {} rejected ({}), restarting from scratch",
+                    dest.display(),
+                    status.as_u16()
+                );
+                let _ = tokio::fs::remove_file(dest).await;
+                progress.sub(staged);
+                return Box::pin(self.single_attempt(req, url, dest, total, progress)).await;
+            }
             return Err(DownloadError::Http {
                 status: status.as_u16(),
             });
         }
+        if resume_from.is_some() && status.as_u16() != 206 {
+            // 请求了 Range 却收到 200：源忽略 Range，旧前缀作废，整体重下。
+            tracing::debug!(
+                "resume for {} ignored by server ({}), restarting from scratch",
+                dest.display(),
+                status.as_u16()
+            );
+            let _ = tokio::fs::remove_file(dest).await;
+            progress.sub(staged);
+            return Box::pin(self.single_attempt(req, url, dest, total, progress)).await;
+        }
+        if resume_from.is_some() {
+            // Content-Range 总长一致性校验：跨节点 / 变长资源续传会字节错位，
+            // 总长对不上时放弃旧前缀整体重下。
+            let remote_total = response
+                .headers()
+                .get(CONTENT_RANGE)
+                .and_then(|value| value.to_str().ok())
+                .and_then(parse_content_range_total);
+            if let (Some(remote), Some(expected)) = (remote_total, total)
+                && remote != expected
+            {
+                tracing::debug!(
+                    "resume for {} total mismatch (remote {remote} != expected {expected}), restarting from scratch",
+                    dest.display()
+                );
+                let _ = tokio::fs::remove_file(dest).await;
+                progress.sub(staged);
+                return Box::pin(self.single_attempt(req, url, dest, total, progress)).await;
+            }
+        }
         let declared_length =
             content_length(response.headers()).or_else(|| response.content_length());
-        let mut file = tokio::fs::File::create(dest)
-            .await
-            .map_err(|error| DownloadError::Io(error.to_string()))?;
-        let mut written: u64 = 0;
+        let mut file = if resume_from.is_some() {
+            // 续传：追加写入已有前缀，不截断。
+            tokio::fs::OpenOptions::new()
+                .append(true)
+                .open(dest)
+                .await
+                .map_err(|error| DownloadError::Io(error.to_string()))?
+        } else {
+            tokio::fs::File::create(dest)
+                .await
+                .map_err(|error| DownloadError::Io(error.to_string()))?
+        };
+        let resumed_offset = resume_from.unwrap_or(0);
+        let mut written: u64 = resumed_offset;
         loop {
             progress.check_cancelled()?;
+            progress.check_paused()?;
             let chunk = match tokio::time::timeout(self.request_timeout, response.chunk()).await {
                 Ok(result) => result.map_err(|error| DownloadError::Network(error.to_string()))?,
                 Err(_) => {
@@ -540,7 +659,13 @@ impl DownloadEngine {
         if self.options.verify_size
             && let Some(declared) = declared_length
         {
-            verify_size(declared, written, req.size_is_advisory)?;
+            // 续传时 declared 是剩余长度：按「最终文件大小」校验。
+            let expected_final = if resumed_offset > 0 {
+                resumed_offset.saturating_add(declared)
+            } else {
+                declared
+            };
+            verify_size(expected_final, written, req.size_is_advisory)?;
         }
         if let Some(expected_md5) = &req.md5 {
             verify_md5(dest, expected_md5).await?;
@@ -558,7 +683,9 @@ impl DownloadEngine {
     ) -> Result<u64, DownloadError> {
         let parts = plan_ranges(total, self.options.concurrency);
         if parts.len() <= 1 {
-            return self.download_single(req, url, dest, progress).await;
+            return self
+                .download_single(req, url, dest, Some(total), progress)
+                .await;
         }
         self.download_ranges(req, url, parts, total, dest, progress)
             .await
@@ -636,6 +763,11 @@ impl DownloadEngine {
             }
         }
         if let Some(error) = first_error {
+            // 分片文件按总长预分配、按偏移乱序写入：不是完整前缀，暂停时
+            // 必须清掉，否则下次续传会拿一个有洞的文件当合法前缀。
+            if matches!(error, DownloadError::Paused) {
+                let _ = tokio::fs::remove_file(dest).await;
+            }
             return Err(error);
         }
         drop(file);
@@ -723,7 +855,11 @@ async fn part_attempt(
     let mut offset = start;
     let mut part_written: u64 = 0;
     let result = loop {
-        if let Err(error) = progress.check_cancelled() {
+        // 暂停与取消共用分片终止语义：本分片已写入的字节照常回退。
+        if let Err(error) = progress
+            .check_cancelled()
+            .and_then(|()| progress.check_paused())
+        {
             break Err(error);
         }
         let chunk = match tokio::time::timeout(request_timeout, response.chunk()).await {
@@ -965,7 +1101,7 @@ pub fn rewrite_netease_host(url: &str) -> String {
     }
 }
 
-fn staging_path(dest: &Path) -> PathBuf {
+pub(crate) fn staging_path(dest: &Path) -> PathBuf {
     let name = dest
         .file_name()
         .map(|name| name.to_string_lossy().to_string())
@@ -1185,6 +1321,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 0,
+            resume_from: 0,
         };
 
         let written = engine.download(&request, &progress).await.unwrap();
@@ -1216,6 +1353,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 0,
+            resume_from: 0,
         };
 
         let written = engine.download(&request, &progress).await.unwrap();
@@ -1257,6 +1395,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 0,
+            resume_from: 0,
         };
 
         let written = engine.download(&request, &progress).await.unwrap();
@@ -1287,6 +1426,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 0,
+            resume_from: 0,
         };
 
         let error = engine.download(&request, &progress).await.unwrap_err();
@@ -1318,6 +1458,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: cap as u64,
+            resume_from: 0,
         };
 
         // 服务端拒绝 HEAD 与不带 Range 的 GET，只有严格有界分片能拿到内容。
@@ -1349,6 +1490,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 64 * 1024,
+            resume_from: 0,
         };
 
         let error = engine.download(&request, &progress).await.unwrap_err();
@@ -1381,6 +1523,7 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 1024 * 1024,
+            resume_from: 0,
         };
 
         let error = engine.download(&request, &progress).await.unwrap_err();
@@ -1414,6 +1557,7 @@ mod tests {
             md5: None,
             candidate_urls: vec![server.audio_url.clone()],
             max_chunk_size: 0,
+            resume_from: 0,
         };
 
         let written = engine.download(&request, &progress).await.unwrap();
@@ -1444,12 +1588,171 @@ mod tests {
             md5: None,
             candidate_urls: Vec::new(),
             max_chunk_size: 0,
+            resume_from: 0,
         };
 
         let error = engine.download(&request, &progress).await.unwrap_err();
 
         assert!(matches!(error, DownloadError::Cancelled));
         assert!(!dest.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn resume_continues_from_staged_prefix_with_range() {
+        let body = fake_audio(512 * 1024);
+        let Some(server) = spawn_test_server(body.clone(), None, RangeMode::Supported).await else {
+            return;
+        };
+        let dir = temp_dir("resume-ok");
+        let dest = dir.join("song.flac");
+        let part = staging_path(&dest);
+        // 模拟暂停留下的 staged 前缀（单连接顺序写入是完整前缀）。
+        let prefix = body.len() / 2;
+        std::fs::write(&part, &body[..prefix]).unwrap();
+
+        let engine = DownloadEngine::new("", 30, DownloadOptions::default());
+        let progress = DownloadProgress::new();
+        progress.add(prefix as u64); // 前一次会话已计入的字节
+        let request = DownloadRequest {
+            url: server.audio_url,
+            headers: Vec::new(),
+            dest: dest.clone(),
+            expected_size: Some(body.len() as u64),
+            size_is_advisory: false,
+            md5: None,
+            candidate_urls: Vec::new(),
+            max_chunk_size: 0,
+            resume_from: prefix as u64,
+        };
+
+        let written = engine.download(&request, &progress).await.unwrap();
+        assert_eq!(written as usize, body.len(), "续传后返回完整文件大小");
+        assert_eq!(std::fs::read(&dest).unwrap(), body, "续传结果与全量一致");
+        assert!(!part.exists(), "完成后临时文件改名");
+        assert_eq!(
+            progress.snapshot().downloaded as usize,
+            body.len(),
+            "进度 = 暂停时前缀 + 本次增量"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn resume_falls_back_to_full_download_when_range_unsupported() {
+        let body = fake_audio(256 * 1024);
+        let Some(server) = spawn_test_server(body.clone(), None, RangeMode::Unsupported).await
+        else {
+            return;
+        };
+        let dir = temp_dir("resume-fallback");
+        let dest = dir.join("song.flac");
+        let part = staging_path(&dest);
+        let prefix = body.len() / 3;
+        std::fs::write(&part, &body[..prefix]).unwrap();
+
+        let engine = DownloadEngine::new("", 30, DownloadOptions::default());
+        let progress = DownloadProgress::new();
+        progress.add(prefix as u64);
+        let request = DownloadRequest {
+            url: server.audio_url,
+            headers: Vec::new(),
+            dest: dest.clone(),
+            expected_size: Some(body.len() as u64),
+            size_is_advisory: false,
+            md5: None,
+            candidate_urls: Vec::new(),
+            max_chunk_size: 0,
+            resume_from: prefix as u64,
+        };
+
+        let written = engine.download(&request, &progress).await.unwrap();
+        assert_eq!(written as usize, body.len());
+        // 不支持 Range → 回退整体重下，最终内容仍完整正确。
+        assert_eq!(std::fs::read(&dest).unwrap(), body);
+        assert!(!part.exists());
+        // 旧前缀作废后进度计数不得虚高。
+        assert_eq!(progress.snapshot().downloaded as usize, body.len());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn pause_keeps_staged_prefix_for_single_connection() {
+        let body = fake_audio(256 * 1024);
+        let Some(server) = spawn_test_server(body.clone(), None, RangeMode::Supported).await else {
+            return;
+        };
+        let dir = temp_dir("pause-keep");
+        let dest = dir.join("song.flac");
+        let part = staging_path(&dest);
+        let prefix = body.len() / 2;
+        std::fs::write(&part, &body[..prefix]).unwrap();
+
+        let engine = DownloadEngine::new("", 30, DownloadOptions::default());
+        let progress = DownloadProgress::new();
+        progress.add(prefix as u64);
+        progress.pause();
+        let request = DownloadRequest {
+            url: server.audio_url,
+            headers: Vec::new(),
+            dest: dest.clone(),
+            expected_size: Some(body.len() as u64),
+            size_is_advisory: false,
+            md5: None,
+            candidate_urls: Vec::new(),
+            max_chunk_size: 0,
+            resume_from: prefix as u64,
+        };
+
+        let error = engine.download(&request, &progress).await.unwrap_err();
+        assert!(matches!(error, DownloadError::Paused), "实际: {error:?}");
+        // 暂停保留 staged 前缀（续传地基），且不再换候选地址。
+        assert!(part.exists(), "暂停必须保留已写入的临时文件");
+        assert_eq!(std::fs::read(&part).unwrap().len(), prefix);
+        assert!(progress.snapshot().paused);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn pause_clears_sparse_multipart_temp_file() {
+        let body = fake_audio(3 * 1024 * 1024);
+        let Some(server) = spawn_test_server(body.clone(), None, RangeMode::Supported).await else {
+            return;
+        };
+        let dir = temp_dir("pause-multipart");
+        let dest = dir.join("song.flac");
+        let part = staging_path(&dest);
+
+        let engine = DownloadEngine::new(
+            "",
+            30,
+            DownloadOptions {
+                concurrency: 4,
+                multipart: true,
+                multipart_min_size: 1024,
+                max_retries: 2,
+                verify_size: true,
+            },
+        );
+        let progress = DownloadProgress::new();
+        progress.pause();
+        let request = DownloadRequest {
+            url: server.audio_url,
+            headers: Vec::new(),
+            dest: dest.clone(),
+            expected_size: Some(body.len() as u64),
+            size_is_advisory: false,
+            md5: None,
+            candidate_urls: Vec::new(),
+            max_chunk_size: 0,
+            resume_from: 0,
+        };
+
+        let error = engine.download(&request, &progress).await.unwrap_err();
+        assert!(matches!(error, DownloadError::Paused));
+        // 分片文件按总长预分配、乱序写入：不是完整前缀，暂停必须清掉，
+        // 否则续传会拿有洞的文件当合法前缀。
+        assert!(!part.exists(), "分片路径暂停后临时文件必须清理");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -24,6 +24,7 @@ class VxCardShell extends StatelessWidget {
     this.centered = false,
     this.onTap,
     this.onPlay,
+    this.onSecondaryTapUp,
   });
 
   /// 标题，最多 2 行。
@@ -53,93 +54,118 @@ class VxCardShell extends StatelessWidget {
   /// hover 浮现的播放钮回调；null 则不浮现播放钮。
   final VoidCallback? onPlay;
 
+  /// 右键回调（SR-11 残余收口：卡面右键菜单；null 则不响应右键）。
+  final GestureTapUpCallback? onSecondaryTapUp;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final shadowColor = dark ? const Color(0x25000000) : const Color(0x1A000000);
-    final crossAxis = centered ? CrossAxisAlignment.center : CrossAxisAlignment.start;
+    final shadowColor = dark
+        ? const Color(0x25000000)
+        : const Color(0x1A000000);
+    final crossAxis = centered
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start;
 
     return SizedBox(
       width: width,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: crossAxis,
-        children: [
-          VxHoverBuilder(
-            onTap: onTap,
-            builder: (context, hovering) => AspectRatio(
-              aspectRatio: 1,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _cover(shadowColor),
-                  if (onPlay != null)
-                    AnimatedOpacity(
-                      opacity: hovering ? 1 : 0,
-                      duration: VxMotion.hoverFade,
-                      curve: VxMotion.standard,
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0x00000000), Color(0x73000000)],
-                          ),
-                        ),
-                        child: Center(
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: scheme.primary,
-                              shape: BoxShape.circle,
+      // SR-11/15（Batch D）：整卡可点——此前仅封面区挂手势，标题/副标题
+      // 是死区（用户点标题无响应，widget 测试实锤）。外层 GestureDetector
+      // opaque 承接整卡；封面内 VxHoverBuilder 保留 hover 视觉与手型光标，
+      // 命中竞态由手势竞技场就近解析（单次触发，不重复回调）。
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        onSecondaryTapUp: onSecondaryTapUp,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: crossAxis,
+          children: [
+            VxHoverBuilder(
+              onTap: onTap,
+              onSecondaryTapUp: onSecondaryTapUp,
+              builder: (context, hovering) => AspectRatio(
+                aspectRatio: 1,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _cover(shadowColor),
+                    if (onPlay != null)
+                      AnimatedOpacity(
+                        opacity: hovering ? 1 : 0,
+                        duration: VxMotion.hoverFade,
+                        curve: VxMotion.standard,
+                        child: DecoratedBox(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0x00000000), Color(0x73000000)],
                             ),
-                            child: Icon(
-                              Icons.play_arrow,
-                              size: 22,
-                              color: scheme.onPrimary,
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: scheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.play_arrow,
+                                size: 22,
+                                color: scheme.onPrimary,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 9),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: centered ? TextAlign.center : TextAlign.start,
-            style: VxTypography.titleSm.copyWith(color: scheme.onSurface),
-          ),
-          if (subtitle != null)
+            const SizedBox(height: 9),
             Text(
-              subtitle!,
-              maxLines: 1,
+              title,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: centered ? TextAlign.center : TextAlign.start,
-              style: VxTypography.caption.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: VxTypography.titleSm.copyWith(color: scheme.onSurface),
             ),
-        ],
+            if (subtitle != null)
+              Text(
+                subtitle!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: centered ? TextAlign.center : TextAlign.start,
+                style: VxTypography.caption.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _cover(Color shadowColor) {
-    final inner = cover ??
-        VxCoverFallback(title: fallbackSeed ?? title, radius: circle ? 0 : VxRadius.lg);
+    final inner =
+        cover ??
+        VxCoverFallback(
+          title: fallbackSeed ?? title,
+          radius: circle ? 0 : VxRadius.lg,
+        );
     if (circle) {
       return DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow(color: shadowColor, blurRadius: 16, offset: const Offset(0, 6)),
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: ClipOval(child: inner),
@@ -149,7 +175,11 @@ class VxCardShell extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(VxRadius.lg),
         boxShadow: [
-          BoxShadow(color: shadowColor, blurRadius: 16, offset: const Offset(0, 6)),
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: ClipRRect(

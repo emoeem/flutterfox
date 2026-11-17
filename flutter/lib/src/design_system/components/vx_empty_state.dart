@@ -42,62 +42,71 @@ class VxEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: VxSpacing.xl,
-          vertical: VxSpacing.xl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHigh,
-                shape: BoxShape.circle,
+    // 槽位比内容矮（如曲库来源 chips 行挤压下方分区）时不溢出而是可滚动
+    // （标准「居中 + 矮槽滚动」结构），避免 RenderFlex overflow。
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: VxSpacing.xl,
+                vertical: VxSpacing.xl,
               ),
-              child: Icon(icon, size: 28, color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: VxSpacing.lg),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: VxTypography.title.copyWith(color: scheme.onSurface),
-            ),
-            const SizedBox(height: VxSpacing.sm),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Text(
-                message,
-                textAlign: TextAlign.center,
-                style: VxTypography.body.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            if (actionLabel != null || secondaryLabel != null) ...[
-              const SizedBox(height: VxSpacing.xl),
-              Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (actionLabel != null)
-                    FilledButton(
-                      onPressed: onAction,
-                      child: Text(actionLabel!),
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHigh,
+                      shape: BoxShape.circle,
                     ),
-                  if (actionLabel != null && secondaryLabel != null)
-                    const SizedBox(width: VxSpacing.sm),
-                  if (secondaryLabel != null)
-                    TextButton(
-                      onPressed: onSecondaryAction,
-                      child: Text(secondaryLabel!),
+                    child: Icon(icon, size: 28, color: scheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: VxSpacing.lg),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: VxTypography.title.copyWith(color: scheme.onSurface),
+                  ),
+                  const SizedBox(height: VxSpacing.sm),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: VxTypography.body.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
+                  ),
+                  if (actionLabel != null || secondaryLabel != null) ...[
+                    const SizedBox(height: VxSpacing.xl),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (actionLabel != null)
+                          FilledButton(
+                            onPressed: onAction,
+                            child: Text(actionLabel!),
+                          ),
+                        if (actionLabel != null && secondaryLabel != null)
+                          const SizedBox(width: VxSpacing.sm),
+                        if (secondaryLabel != null)
+                          TextButton(
+                            onPressed: onSecondaryAction,
+                            child: Text(secondaryLabel!),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );

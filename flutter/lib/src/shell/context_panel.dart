@@ -57,8 +57,9 @@ class _ContextPanelState extends State<ContextPanel> {
     };
     return Container(
       width: widget.width,
+      // P1-09 → B3：面板底色统一走 ColorScheme 槽位（左边线保持 scheme token）。
       decoration: BoxDecoration(
-        color: VxColors.surface1,
+        color: scheme.surfaceContainerLow,
         border: Border(
           left: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
         ),
@@ -71,6 +72,7 @@ class _ContextPanelState extends State<ContextPanel> {
             Align(
               alignment: Alignment.centerLeft,
               child: _ResizeHandle(
+                key: const ValueKey('context-resize-handle'),
                 width: widget.width,
                 onWidthChanged: widget.onWidthChanged!,
               ),
@@ -82,9 +84,7 @@ class _ContextPanelState extends State<ContextPanel> {
                 Expanded(
                   child: Text(
                     titles,
-                    style: VxTypography.title.copyWith(
-                      color: scheme.onSurface,
-                    ),
+                    style: VxTypography.title.copyWith(color: scheme.onSurface),
                   ),
                 ),
                 IconButton(
@@ -115,14 +115,22 @@ class _ContextPanelState extends State<ContextPanel> {
               ],
             ),
           ),
-          Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+          Divider(
+            height: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.4),
+          ),
           Expanded(
             child: switch (widget.tab) {
               ContextTab.nowPlaying => _NowPlayingTab(model: widget.model),
-              ContextTab.lyrics =>
-                LyricsPanel(key: ValueKey(widget.tab), model: widget.model, compact: true),
-              ContextTab.queue =>
-                QueuePanel(key: ValueKey(widget.tab), model: widget.model),
+              ContextTab.lyrics => LyricsPanel(
+                key: ValueKey(widget.tab),
+                model: widget.model,
+                compact: true,
+              ),
+              ContextTab.queue => QueuePanel(
+                key: ValueKey(widget.tab),
+                model: widget.model,
+              ),
             },
           ),
         ],
@@ -131,9 +139,13 @@ class _ContextPanelState extends State<ContextPanel> {
   }
 }
 
-/// 左缘拖动把手：280–420px。
+/// 左缘拖动把手：300–420px（§7.4，Phase 6 由 280–420 对齐）。
 class _ResizeHandle extends StatelessWidget {
-  const _ResizeHandle({required this.width, required this.onWidthChanged});
+  const _ResizeHandle({
+    super.key,
+    required this.width,
+    required this.onWidthChanged,
+  });
 
   final double width;
   final ValueChanged<double> onWidthChanged;
@@ -152,10 +164,7 @@ class _ResizeHandle extends StatelessWidget {
             ),
           );
         },
-        child: SizedBox(
-          width: 8,
-          height: ShellBreakpoints.headerHeight,
-        ),
+        child: SizedBox(width: 8, height: ShellBreakpoints.headerHeight),
       ),
     );
   }
@@ -271,12 +280,15 @@ class _NowPlayingTab extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    tooltip: favorite ? '取消收藏' : '收藏',
+                    // §8.5：说明写入本地曲库，不假装远端账号红心。
+                    tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
                     onPressed: () => model.toggleFavorite(song),
                     icon: Icon(
                       favorite ? Icons.favorite : Icons.favorite_border,
                       size: 20,
-                      color: favorite ? scheme.primary : scheme.onSurfaceVariant,
+                      color: favorite
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
                     ),
                   ),
                   Text(

@@ -50,10 +50,10 @@ class _CustomBackgroundSettingsState extends State<CustomBackgroundSettings> {
       final dominant = colors.first;
       final color = Color.fromRGBO(dominant.r, dominant.g, dominant.b, 1.0);
 
-      // 动态主题配色会持续用歌曲封面覆盖种子色，先关闭它
+      // 封面主色提取会持续用歌曲封面覆盖种子色，先关闭它
       final settings = context.read<SettingsProvider>();
-      if (settings.useDynamicColor) {
-        settings.setUseDynamicColor(false);
+      if (settings.useCoverDynamicColor) {
+        settings.setUseCoverDynamicColor(false);
       }
 
       await context.read<ThemeProvider>().setSeedColor(color, isManual: true);

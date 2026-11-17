@@ -239,7 +239,9 @@ class _PushDialogState extends State<_PushDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('已推送到「${report.targetName}」'),
-            Text('新增 ${report.added} · 已存在 ${report.alreadyPresent} · 未匹配 ${report.unmatched}'),
+            Text(
+              '新增 ${report.added} · 已存在 ${report.alreadyPresent} · 未匹配 ${report.unmatched}',
+            ),
             if (report.failed.isNotEmpty) ...[
               const SizedBox(height: 8),
               for (final failure in report.failed.take(8))
@@ -261,10 +263,7 @@ class _PushDialogState extends State<_PushDialog> {
       case 'preview':
         return [
           TextButton(onPressed: _close, child: const Text('取消')),
-          FilledButton(
-            onPressed: _model.runPush,
-            child: const Text('确认推送'),
-          ),
+          FilledButton(onPressed: _model.runPush, child: const Text('确认推送')),
         ];
       case 'running':
         return [

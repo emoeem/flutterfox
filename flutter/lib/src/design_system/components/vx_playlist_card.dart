@@ -17,6 +17,7 @@ class VxPlaylistCard extends StatelessWidget {
     this.width = 156,
     this.onTap,
     this.onPlay,
+    this.onSecondaryTapUp,
   });
 
   /// 歌单名（最多 2 行）。
@@ -43,6 +44,9 @@ class VxPlaylistCard extends StatelessWidget {
   /// hover 播放钮回调。
   final VoidCallback? onPlay;
 
+  /// 右键回调（SR-11 残余收口）；null 不响应。
+  final GestureTapUpCallback? onSecondaryTapUp;
+
   @override
   Widget build(BuildContext context) {
     var sub = subtitle;
@@ -60,6 +64,7 @@ class VxPlaylistCard extends StatelessWidget {
       width: width,
       onTap: onTap,
       onPlay: onPlay,
+      onSecondaryTapUp: onSecondaryTapUp,
     );
   }
 }

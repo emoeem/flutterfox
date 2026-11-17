@@ -1,0 +1,1354 @@
+# Voicefox 全平台 UI/UX 重构与质量验收执行指导书
+
+> 文档类型：AI Agent 执行规范（Implementation Contract）
+> 项目：`/home/emo/code/voicefox-gui`
+> 目标平台：Android / iOS（如现有构建链支持）/ Linux / Windows / macOS
+> 状态：待执行
+> 优先级：本文件高于旧 UI 草案；但不得覆盖既有数据、安全、许可证和用户明确约束。
+> 核心原则：先审计与复现，再复用成熟开源实现；先修数据正确性，再完成 UI；桌面与手机独立布局，共用领域逻辑。
+
+---
+
+## 0. 给执行 AI 的最高优先级指令
+
+你不是来写一份建议，也不是只做视觉 mockup。你需要按照本文件直接完成 Voicefox 项目重构，逐阶段实现、运行、测试、截图、检查并修复，直到达到验收标准。
+
+### 0.1 执行要求
+
+1. 开始前完整阅读本文件、`README.md`、`CONTRIBUTING.md`、`docs/flutter_ui_spec.md`、`docs/UI_AUDIT_2026-11-04.md`、`docs/UI_AUDIT_DESKTOP.md`、`docs/FLUTTER_UI_PROGRESS.md`、`docs/FLUTTER_MIGRATION_PROGRESS.md`（文件存在时）。
+2. 以当前代码为准重新审计。旧报告中的问题可能已经修复，禁止不验证就重复修改。
+3. 先检查 Git 状态并保留当前分支；未经明确授权，不创建分支、不切换分支、不创建 worktree。不得覆盖用户未提交改动。
+4. 未经明确授权，不执行 `git reset`、`checkout`、`clean`、`stash`、`rebase`、强制推送、提交或推送。不要为了“保持干净”删除任何文件。
+5. 不得删减现有音源、播放能力、Rust 核心、FFI API 或用户数据来换取 UI 进度。
+6. 不得用静态假数据、固定歌单、硬编码封面、假按钮、假播放进度或 mock 成功状态冒充真实功能。
+7. 不得把所有页面强行做成响应式同一套布局。桌面、平板、手机使用不同 Shell 和信息架构，共用领域模型、服务和设计 token。
+8. 不得为了使用新框架而全量重写状态管理。先分析现有 `AppModel`、FFI 命令/事件/快照和 myune 投影，最小化迁移。
+9. 复用第三方代码前必须核对仓库、具体 commit、许可证、依赖许可证、资源授权和修改范围；保留版权声明及 NOTICE。
+10. 每个阶段都必须执行本文件定义的静态检查、测试、运行验证和截图回归。不能以“代码看起来没问题”作为验收。
+11. 遇到环境或设备缺失，明确记录“未验证”和阻塞原因，不得写成通过。
+12. 发现额外 P0/P1 缺陷时，先登记、判断影响并修复；不能为了按计划推进而绕过。
+13. 完成一个阶段后更新本文件末尾的执行记录和缺陷矩阵，给出命令、退出码、测试数量、截图路径和未解决事项。
+14. 不主动提交、推送或发布。所有变更保留在工作分支，等待用户决定后续 Git 操作。
+
+### 0.2 完成定义（Definition of Done）
+
+只有同时满足以下条件，项目才算完成：
+
+- 视觉布局符合本文件的桌面/平板/手机页面规格。
+- 页面数据来自真实业务状态，导航、按钮、手势均有真实行为。
+- 封面、歌单、播放队列、播放进度、导入、下载数据正确。
+- 所有 Loading / Empty / Error / Success 状态可用。
+- Flutter Analyze、Flutter 测试、Rust 测试和目标平台构建通过。
+- Android 真机/模拟器完成系统栏、导入、播放、后台播放和媒体控制验证。
+- 桌面完成窗口尺寸、导航、队列、媒体控制和播放验证。
+- 目标视口截图完成，无明显溢出、遮挡、截断、错位或空白异常。
+- 无未解释的 P0/P1 缺陷；未完成项必须有明确原因、影响和后续方案。
+- 文档、截图、测试结果和变更记录完整。
+
+---
+
+## 1. 项目基线与不可破坏的既有资产
+
+当前仓库已包含 Rust workspace、Flutter 前端、FFI 桥接、音源、下载、歌词、播放器和 myune UI 基础。实际目录必须在执行时重新确认。
+
+重点目录（以实际仓库为准）：
+
+- `flutter/lib/src/`：Flutter 页面、Shell、组件、AppModel、设计系统。
+- `flutter/lib/src/myune/`：上游 vendored myune 代码。
+- `flutter/lib/src/myune_shell/`：Voicefox 对 myune 的适配和投影。
+- `ffi/`：Rust ↔ Dart 桥接。
+- `application/`：应用服务、状态和事件。
+- `player/`：播放引擎。
+- `source/`：在线和本地音源。
+- `runtime/`：运行时、存储和封面能力。
+- `download/`：下载任务。
+- `lyric/`：歌词。
+- `docs/`：既有规格、审计、截图和迁移报告。
+
+### 1.1 必须先确认的现状
+
+逐项检查并写入 `docs/redesign/00-baseline.md`：
+
+- 当前 Git branch、HEAD、工作区状态、与 upstream 的差异。
+- Flutter / Dart / Rust / Android Gradle / JDK 版本。
+- 当前 Flutter 路由与 Shell 结构。
+- 当前桌面、平板、手机断点及其真实行为。
+- 当前 AppModel 状态字段、FFI commands/events/snapshot。
+- 当前歌曲、专辑、歌手、歌单 DTO 的字段和唯一标识。
+- 播放状态、进度、时长、队列、播放模式的真实数据链。
+- 封面 URL 的来源、缓存、刷新、失败处理。
+- 本地文件选择、目录授权、扫描、数据库更新。
+- 音源列表、能力、登录态、搜索和歌单分页。
+- 当前测试命令、CI 覆盖范围、可用设备和模拟器。
+- 现有截图与实际运行页面之间的差异。
+
+### 1.2 既有 UI 规范的处理
+
+`docs/flutter_ui_spec.md` 描述了 myune 视觉基底、Material 3 token 和部分页面规格。保留可复用的设计 token、字体、动效、无障碍要求和已验证组件。
+
+本指导书新增的桌面/平板/手机信息架构、断点、页面布局和质量门禁作为本次重构的执行标准。若与旧文档冲突：
+
+1. 先确认是否存在用户明确的既有决定。
+2. 保留已经验证且不冲突的实现。
+3. 对确实需要替换的旧规范，更新对应文档并记录迁移原因。
+4. 不得让两套互相冲突的 Shell 或 ThemeData 同时成为运行时真源。
+
+---
+
+## 2. 开源项目研究与代码复用规范（Phase 0）
+
+### 2.1 研究目标
+
+本项目不应凭空重造成熟播放器的交互。研究以下项目的最新可用版本、代码组织和真实 UI：
+
+| 项目 | 重点研究 | 复用边界 |
+|---|---|---|
+| Spotify | 桌面三栏、移动底栏、迷你播放器、全屏播放、歌单和曲库交互 | 仅作为产品体验与视觉参照，不复制专有代码/资源 |
+| Finamp | Flutter 页面结构、移动端播放、曲库、歌单、后台播放、下载 | 先核验当前仓库、分支、许可证及具体模块 |
+| AetherTune | Flutter 跨平台页面、播放器、曲库、封面、状态管理 | 先核验维护状态、Alpha 成熟度和模块许可证 |
+| Nuclear | 搜索、音源呈现、队列、歌单、桌面交互 | AGPL 等许可证边界审查后再决定是否移植 |
+| Feishin | 桌面三栏、上下文面板、专辑/歌单、队列 | GPL 边界审查；优先参考交互，不直接复制不兼容代码 |
+| Harmonoid | Flutter 桌面/移动 UI、封面、媒体体验 | PolyForm 条款下默认只做设计研究，未经许可不复制代码 |
+| myune_music（仓库内） | 现有播放页、主题、组件、动效和布局 | 当前项目已 vendored 的代码优先复用；先区分冻结上游和本地适配层 |
+
+项目地址（执行时核对是否迁移/改名）：
+
+- Finamp: https://github.com/finamp-app/finamp
+- AetherTune: https://github.com/Yunushan/aethertune
+- Nuclear: https://github.com/nukeop/nuclear
+- Feishin: https://github.com/jeffvli/feishin
+- Harmonoid: https://github.com/harmonoid/harmonoid
+
+### 2.2 必须产出的研究报告
+
+创建：
+
+- `docs/redesign/01-reference-projects.md`
+- `docs/redesign/02-license-and-reuse-audit.md`
+- `docs/redesign/03-component-reuse-map.md`
+
+每个参考项目必须记录：
+
+- 仓库 URL、默认分支、研究日期、精确 commit SHA。
+- 根许可证及 UI 子目录、图片、字体、图标和依赖许可证。
+- 实际使用的 UI 框架、状态管理和导航方案。
+- 页面截图或运行证据；不能仅凭 README 宣称功能存在。
+- 值得复用的具体文件/组件和它们的依赖关系。
+- 与 Voicefox 多音源架构的差异。
+- 复用方式：直接移植 / 小幅改造 / 仅参考交互 / 不采用。
+- 移植后的版权声明、NOTICE 和许可证履行方式。
+
+**禁止**只看项目名称、Stars、宣传截图就决定移植。必须打开源码验证组件是否真实存在、是否仍维护、是否依赖其专有后端。
+
+### 2.3 代码复用优先级
+
+1. 仓库内已经 vendored 且许可证允许的 myune 组件。
+2. 许可证兼容、技术栈匹配、维护状态良好的 Flutter 组件。
+3. 可独立抽离且依赖边界清楚的通用交互组件。
+4. 自行实现 Voicefox 特有的多音源业务逻辑。
+
+不允许复制整个应用后再试图把 Voicefox 后端塞进去。复用必须以组件为单位，明确输入、输出、状态、生命周期和依赖。
+
+---
+
+## 3. 产品设计原则与视觉系统
+
+### 3.1 产品定位
+
+Voicefox 是多音源音乐播放器，不是音乐数据仪表盘，也不是一组拼接的工具页面。
+
+首要体验：
+
+1. 打开应用后能立即找到音乐并播放。
+2. 曲库、歌单、专辑、歌手有清晰的浏览关系。
+3. 播放器始终可达，播放状态跨页面保持。
+4. 本地音乐导入是一级能力，不藏在设置或多级菜单。
+5. 在线音源、本地音乐和下载内容的来源清楚。
+6. 页面视觉围绕封面、歌曲、专辑和播放操作组织。
+
+### 3.2 视觉方向
+
+- 以 Spotify 的信息层级和成熟音乐产品交互为主参考。
+- 保留 Voicefox 自己的紫色品牌识别，不照搬 Spotify 品牌标志。
+- 深色主题为默认基线；浅色主题也必须完整支持。
+- 保留现有 myune / Material 3 设计 token 中经过验证的部分。
+- 不使用大面积空白仪表盘、无意义统计卡、过多边框卡片。
+- 不把每个按钮都做成胶囊；主操作、次操作、图标操作应有层级。
+- 不使用硬编码页面颜色；全部从 Theme/ColorScheme token 获取。
+- 不在页面内临时创建第二套 ThemeData。
+- 动效简洁、可关闭、尊重系统减少动态效果设置。
+
+### 3.3 基础设计 token
+
+以现有设计系统为基础，统一以下 token（先盘点后落地，不要在多个文件重复定义）：
+
+| Token | 目标值 / 规则 |
+|---|---|
+| 页面背景 | theme.surface / surfaceContainerLowest |
+| 一级容器 | surfaceContainerLow |
+| 二级容器 | surfaceContainer |
+| 主色 | 品牌紫色 seed 生成的 primary |
+| 次级文字 | onSurfaceVariant |
+| 页面左右边距 | 手机 20dp；平板 24dp；桌面 24dp |
+| 卡片圆角 | 12–16dp；大 Hero 20–24dp |
+| 网格封面 | 1:1 |
+| 歌曲列表封面 | 48–56dp |
+| 手机主触控目标 | 至少 48×48dp |
+| 桌面按钮触控区 | 至少 40×40dp |
+| 页面标题 | 24–32sp，按层级变化 |
+| 区块标题 | 18–22sp |
+| 歌曲标题 | 14–16sp |
+| 辅助信息 | 12–13sp |
+| 动画 | 常规 150–250ms；全屏过渡 250–350ms |
+| 长文本宽度 | 正文阅读最大约 720dp；列表不强制限宽 |
+
+以上数值是初始目标，不得为了机械满足数值牺牲真实设备可用性。最终 token 统一放在设计系统中并通过 Gallery/截图测试验证。
+
+### 3.4 全局组件
+
+建立或统一这些可复用组件：
+
+- `VxArtwork`：唯一封面展示入口，处理缓存、错误、占位、圆角、语义标签。
+- `VxSongTile`：歌曲行，支持播放、选中、喜欢、更多操作。
+- `VxAlbumCard`：专辑卡。
+- `VxArtistCard`：歌手卡。
+- `VxPlaylistCard`：歌单卡，明确来源和数量。
+- `VxSectionHeader`：区块标题 + 可选“查看全部”。
+- `VxEmptyState`：空状态和可执行 CTA。
+- `VxErrorState`：错误描述、重试、错误详情。
+- `VxLoadingState`：骨架屏/进度，不用永久 spinner。
+- `VxSourceBadge`：音源标识。
+- `VxMiniPlayer`：迷你播放栏。
+- `VxNowPlayingControls`：统一播放控制。
+- `VxQueuePanel`：播放队列。
+- `VxContextPanel`：桌面上下文面板。
+- `VxImportEntry`：本地导入入口。
+- `VxResponsiveScaffold`：仅负责断点和 Shell 选择，不包含业务状态。
+
+组件必须使用真实 DTO/回调；不能在组件内部访问全局单例或发起不透明的网络请求。
+
+---
+
+## 4. 响应式信息架构与断点
+
+### 4.1 断点
+
+根据 Flutter 逻辑像素（dp），不是设备物理分辨率：
+
+| 可用宽度 | 形态 | Shell |
+|---:|---|---|
+| < 600dp | Phone | MobileShell |
+| 600–839dp | Compact Tablet | TabletShell（窄 rail） |
+| 840–1199dp | Expanded Tablet | TabletShell（展开 rail） |
+| ≥ 1200dp | Desktop | DesktopShell（三栏） |
+
+断点必须依据 LayoutBuilder 的可用宽度，不依赖设备型号。分屏、窗口缩放和横屏时必须重新计算。
+
+### 4.2 导航目的地（统一语义）
+
+统一 destination ID，不允许每个 Shell 自己维护不同 index 对应关系：
+
+- Home：首页
+- Discover：发现
+- Search：搜索
+- Library：我的音乐
+- Downloads：下载
+- Settings：设置
+- Help：帮助
+
+本地音乐、历史、收藏歌曲、收藏歌单、在线歌单、排行榜可作为 Library 或 Discover 下的二级目的地，但必须能从主导航或页面内一级操作快速进入。
+
+禁止把播放队列当作主导航目的地。队列是全局播放上下文。
+
+### 4.3 状态与导航规则
+
+- 切换主目的地不销毁播放器。
+- 页面滚动位置应在合理范围内保留。
+- 当前 destination 与页面内容必须始终一致。
+- 从窄屏切换到宽屏再切回时，不得发生 index clamp 后高亮错误。
+- 全屏播放器关闭后回到原页面和原滚动位置。
+- Android Back：先关闭弹层/抽屉/全屏播放器，再按导航历史返回；最后才允许退出。
+- 桌面 Esc：关闭最上层弹层/上下文面板/全屏页面；不得意外停止播放。
+- 导航项、按钮和图标必须有 tooltip 或语义标签。
+
+---
+
+## 5. 手机 UI：逐页布局与交互规范
+
+手机端必须独立实现 MobileShell，不能将桌面侧栏缩窄后使用。截图目标至少包含 360×800、390×844、430×932 dp（实际设备比例可能不同）。
+
+### 5.1 MobileShell 全局结构
+
+纵向结构：
+
+```
+┌──────────────────────────────┐
+│ Android Status Bar / SafeArea│  系统负责 inset
+├──────────────────────────────┤
+│ App Header                   │  56–64dp
+│ [Voicefox Logo]       [Menu] │
+├──────────────────────────────┤
+│                              │
+│ Current Page                 │  独立滚动
+│                              │
+│                              │
+├──────────────────────────────┤
+│ Mini Player（有歌曲时）      │  60–68dp
+├──────────────────────────────┤
+│ Bottom Navigation            │  72–80dp + bottom inset
+│ Home Discover Search Library │
+│ Downloads                    │
+└──────────────────────────────┘
+```
+
+实现要求：
+
+- 顶部系统状态栏不属于 App Header，不能重复绘制状态栏高度。
+- Scaffold body 正确处理系统 inset；选择 edge-to-edge 时，必须明确哪些背景延伸到系统栏、哪些内容受 SafeArea 约束。
+- Bottom Navigation 不覆盖滚动内容；滚动区底部 padding 必须考虑迷你播放器、导航栏和系统底部 inset。
+- App Header 高度 56–64dp，左侧品牌图标与名称，右侧菜单/搜索等页面相关操作。
+- 底部导航固定五个入口：首页、发现、搜索、我的音乐、下载。
+- 设置、帮助、音源管理从抽屉或个人/更多入口进入。
+- 有播放歌曲时，Mini Player 固定在 Bottom Navigation 上方；无歌曲时不保留空白高度。
+- 手机不显示桌面右侧上下文栏；队列、歌词、正在播放通过全屏页或底部 Sheet 呈现。
+
+### 5.2 手机首页
+
+布局顺序：
+
+1. App Header：Voicefox 标识 + 菜单按钮。
+2. 问候区：动态问候语 + 日期（不应占据过高空间）。
+3. 新用户/空曲库 Hero（仅在确实没有可用曲目时显示）。
+4. 最近播放：横向卡片，封面 64–76dp。
+5. 快捷入口：本地音乐、喜欢的歌曲、下载。
+6. 为你推荐：歌单/专辑横向卡片。
+7. 排行榜/发现内容。
+8. 最近添加或最近播放列表。
+
+空库 Hero 规格：
+
+- 容器左右边距 20dp，圆角 20–24dp。
+- 封面或品牌插画居中，优先 1:1，不要无意义的大空白。
+- 标题：“音乐库还是空的”或适合实际状态的文案。
+- 说明：“导入本地音乐，或搜索在线音乐开始收听。”
+- 两个明确 CTA：主按钮“搜索音乐”，次按钮“导入本地音乐”。
+- 点击导入必须直接触发文件/目录选择，不得只跳转到没有操作的介绍页。
+- 一旦有歌曲，空库 Hero 消失，改为真实内容。
+- 不得用虚构推荐填充空库；没有真实数据时显示合理空状态。
+
+### 5.3 手机发现页
+
+- 顶部标题“发现”。
+- 音源选择 chips 横向滚动；当前选中状态明确。
+- 分类入口：排行榜、歌单分类、推荐、专题等，必须来自后端能力。
+- 主要内容为真实歌单/榜单卡片网格或横向书架。
+- 卡片封面 1:1，标题最多两行，来源/曲目数作为次级信息。
+- 切换音源时必须重新加载数据并显示 loading/error。
+- 空音源或未登录时提供可执行说明和入口。
+- 不得显示音源不支持的功能入口。
+
+### 5.4 手机搜索页
+
+- 搜索框置于页面顶部，清除按钮、搜索历史和取消行为明确。
+- 输入防抖建议 250–350ms；提交搜索立即执行。
+- 搜索类型：综合、歌曲、专辑、歌手、歌单（后端支持什么就展示什么）。
+- 音源筛选 chips 横向滚动，提供“全部”。
+- 结果区分组或 tab 展示，歌曲行封面 48dp。
+- 分页有 in-flight 锁；触底不重复发请求。
+- 搜索 Loading、无结果、网络错误和部分音源失败必须区分。
+- 搜索历史支持单项删除和清空确认。
+- 点击歌曲真实播放；点击专辑/歌手/歌单进入对应详情页。
+- 不允许搜索结果点击后统一打开同一个详情或复用错误 ID。
+
+### 5.5 手机我的音乐（Library）
+
+顶部：
+
+- 标题“我的音乐”。
+- 搜索当前曲库入口。
+- 排序/视图切换按钮。
+
+快捷卡片：
+
+- 最近播放。
+- 本地音乐。
+- 喜欢的歌曲。
+- 下载内容（可按产品语义放在 Download tab，但入口可出现）。
+
+分类 chips：
+
+- 歌曲
+- 专辑
+- 歌手
+- 歌单
+
+内容区：
+
+- 歌曲列表：封面 48–52dp；标题、歌手、来源；右侧喜欢/更多。
+- 专辑网格：2 列（窄屏）或 3 列（宽手机）；封面 1:1。
+- 歌手网格：头像/封面 1:1 或圆形，名称最多两行。
+- 歌单网格：2 列；显示真实封面、名称、曲目数、来源。
+- 本地/在线来源筛选不能混淆；来源过滤后标题和计数同步变化。
+- 空状态说明用户如何添加第一首音乐，并给出导入 CTA。
+
+**歌单数据要求：** 每个歌单卡片必须传递完整唯一键，至少包含 source + id + type。点击时用该键打开详情，不允许只传歌单名称或列表 index。
+
+### 5.6 手机歌单详情页
+
+布局顺序：
+
+1. 顶部透明/沉浸式返回栏：返回、更多。
+2. Hero：封面 160–220dp（随宽度变化），歌单名、来源 badge、创建者/描述、曲目数。
+3. 主操作：播放全部（主按钮）、随机播放（次按钮）。
+4. 次级操作：收藏、下载/缓存（能力支持时）、更多。
+5. 曲目列表：编号/封面、标题、歌手、时长；右侧更多。
+6. 触底分页加载；下拉刷新。
+
+交互：
+
+- 播放全部按当前歌单顺序播放。
+- 随机播放必须使用该歌单已载入的曲目或明确先加载全部；不能只随机首屏后伪称随机整单。
+- 收藏/取消收藏即时显示 pending 状态，失败回滚并提示。
+- 详情切换到另一个歌单时必须显示新歌单的 loading，不能短暂展示上一个歌单曲目。
+- 加载错误显示重试，不把错误显示为空歌单。
+- 不同来源的相同 ID 必须视为不同歌单。
+- 账号歌单和公开歌单必须使用不同 type/key namespace。
+
+### 5.7 手机全屏播放器
+
+入口：点击 Mini Player 任意非控制区域；或从歌曲播放操作进入。
+
+布局：
+
+```
+┌──────────────────────────────┐
+│ SafeArea                     │
+│ [Down]      正在播放    [...]│
+│                              │
+│                              │
+│       Album Artwork          │
+│        280–340dp             │
+│                              │
+│                              │
+│ Song Title          [Like]   │
+│ Artist / Album               │
+│ ━━━━━━━━━━━●━━━━━━━━━━━━     │
+│ 01:23                  04:15 │
+│                              │
+│ Shuffle  Prev Play Next Loop │
+│                              │
+│ [Lyrics]             [Queue] │
+└──────────────────────────────┘
+```
+
+规格：
+
+- 封面正方形，宽度取 min(屏幕宽度 - 48dp, 可用高度的合理比例)。
+- 小屏设备允许压缩封面，但歌曲信息和播放控制不能被挤出可视区域。
+- 封面下方显示歌曲名、歌手和专辑。
+- 进度条可拖动，显示当前时间/总时长。
+- 控制顺序：播放模式、上一首、播放/暂停、下一首、循环/更多（根据真实支持能力）。
+- 喜欢按钮有明确选中态。
+- 歌词和队列通过底部 sheet 或独立二级页面打开。
+- 封面加载失败显示统一占位；不得显示黑色大矩形。
+- 背景可从封面提取颜色，但必须保证文字对比度。
+- 页面切换时播放状态持续更新，不创建第二个播放器实例。
+
+手势：
+
+- 横向滑动封面：上一首/下一首（必须有视觉反馈，不能与系统返回手势冲突）。
+- 上滑：进入歌词；下滑：关闭全屏播放器。
+- 歌词行点击：跳转到对应时间（仅当歌词时间戳存在）。
+- 队列拖动排序：仅在队列 UI 中执行。
+- 手势必须有自动化测试，并在真机验证边缘手势冲突。
+
+### 5.8 手机迷你播放器
+
+- 位于底部导航上方，高 60–68dp。
+- 左侧封面 44–48dp。
+- 中间歌曲名/歌手，单行省略；可有细进度条。
+- 右侧播放/暂停和队列/下一首（按空间决定）。
+- 点击主体打开全屏播放器；点击控制只执行控制，不触发页面跳转。
+- 不能遮挡底部导航，不能覆盖系统导航栏。
+- 播放状态变化有即时反馈，播放结束后按后端状态更新。
+
+### 5.9 手机导航抽屉
+
+抽屉只作为次级入口，不复制桌面完整侧栏。
+
+项目：
+
+- Voicefox 品牌和当前账号/音源状态。
+- 首页、发现、搜索、我的音乐。
+- 本地音乐、在线歌单、排行榜。
+- 下载、音源管理、设置、帮助。
+- 底部版本信息。
+
+规格：
+
+- 宽度不超过屏幕宽度的 88%，最大约 360dp。
+- 使用 Material Drawer/Modal Navigation Drawer 或经验证的等价实现。
+- 当前目的地高亮。
+- 触控目标至少 48dp。
+- 点击目的地后自动关闭。
+- 抽屉不能覆盖 Android 状态栏内容或系统返回区域。
+
+### 5.10 手机本地音乐导入
+
+入口必须至少出现在：
+
+- 首页空库 Hero。
+- 我的音乐快捷入口。
+- 本地音乐页面顶部主按钮。
+
+流程：
+
+1. 点击“导入本地音乐”。
+2. 展示“选择文件”与“选择文件夹/目录”两个明确选项（平台能力允许时）。
+3. 使用系统 picker；Android 需要正确处理 SAF URI/持久授权，不假定拿到普通文件路径。
+4. 用户授权后显示扫描进度、已发现数量和可取消操作。
+5. 扫描完成展示新增、重复、无法读取、无音频文件等统计。
+6. 失败项可重试；部分失败不能导致全部回滚。
+7. 成功后刷新本地曲库和首页内容。
+8. 重启应用后数据仍在，不能只保存在内存中。
+
+不得要求用户手输绝对路径作为唯一导入方法。
+
+### 5.11 手机下载页
+
+- 顶部标题“下载”。
+- 分为进行中、已完成、失败/待重试。
+- 每项显示封面、歌曲、来源、进度、速度/大小（有数据时）。
+- 支持暂停、继续、取消、重试、删除本地文件（必须二次确认）。
+- 已下载歌曲可离线播放。
+- 下载失败显示可理解原因。
+- 空状态提供“去发现音乐”或“管理下载目录”入口。
+
+---
+
+## 6. 平板 UI 规格
+
+平板不是简单放大的手机页面，也不是强行使用完整桌面三栏。
+
+### 6.1 600–839dp
+
+- 左侧 NavigationRail：约 72–80dp。
+- 中央内容区填充剩余宽度，内边距 16–20dp。
+- 页面网格 2–3 列。
+- Mini Player 可固定底部。
+- 右侧上下文内容使用 Modal/Overlay，不永久占据内容区。
+
+### 6.2 840–1199dp
+
+- 左侧可展开导航 rail：宽约 200dp。
+- 中央内容区自适应。
+- 专辑/歌单网格 3–4 列。
+- 右侧队列/歌词以 overlay 或 end panel 呈现。
+- 横屏全屏播放器使用更大的封面和双栏信息布局。
+
+### 6.3 平板验收
+
+- 600、720、840、1024、1199dp 逐个截图。
+- 不出现桌面侧栏压缩导致文字竖排。
+- 不出现手机底部导航和桌面 rail 同时重复。
+- 右侧面板打开后中央内容仍可操作且不溢出。
+
+---
+
+## 7. 桌面 UI：Spotify 式三栏布局
+
+桌面是独立 DesktopShell，最小目标窗口 1024×640；理想体验 1440×900 及以上。
+
+### 7.1 桌面整体布局
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│ Window Title Bar / Native or Custom Title Bar                  │
+├──────────────┬──────────────────────────────┬─────────────────┤
+│ LEFT SIDEBAR │ MAIN CONTENT                 │ RIGHT CONTEXT   │
+│ 240–300px    │ flex                         │ 300–360px       │
+│              │                              │                 │
+│ Voicefox     │ Home / Search / Library      │ Now Playing     │
+│ Home         │ Playlist Detail              │ Queue           │
+│ Discover     │ Album / Artist               │ Lyrics          │
+│ Search       │ Local Music                  │                 │
+│ Your Library │ Downloads                    │                 │
+│              │                              │                 │
+│ Your Playlists                              │                 │
+│ + Create     │                              │                 │
+├──────────────┴──────────────────────────────┴─────────────────┤
+│ GLOBAL PLAYER BAR (72–84px)                                    │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 左侧 Sidebar
+
+宽度：
+
+- 默认 260dp。
+- 最小 220dp。
+- 最大 320dp。
+- 可折叠为 72dp icon rail。
+- 用户调整宽度后记忆设置（合理限制范围）。
+
+内容：
+
+1. 顶部 Voicefox logo + 名称。
+2. 主导航：首页、发现、搜索。
+3. “你的音乐库”标题 + 新建歌单按钮。
+4. 我的音乐、本地音乐、喜欢的歌曲、最近播放。
+5. 用户自建歌单列表。
+6. 下载、设置、帮助置于底部或次级区。
+
+交互：
+
+- 当前页面高亮。
+- 歌单支持拖拽排序（只有确实实现持久化后才显示拖拽 affordance）。
+- 右键菜单：播放、加入队列、重命名、删除、复制链接（能力存在时）。
+- 新建歌单打开真实表单。
+- 删除前确认；不得仅从 UI 移除而不更新持久化数据。
+- 长列表独立滚动，不带动主内容和底部播放器。
+
+### 7.3 中央 Main Content
+
+- 独立滚动。
+- 页面左右内边距 24dp，顶部 20–28dp。
+- 内容最大宽度可按页面类型设置；歌单列表不强制窄栏。
+- 首页卡片网格按宽度动态列数。
+- 页面切换保留必要状态。
+- 页面头部与内容滚动行为一致，不出现多重滚动条。
+- 所有列表使用 builder/虚拟化，不能一次性创建超大 Widget 列表。
+
+桌面首页顺序：
+
+1. 问候标题与日期。
+2. 最近播放/快捷播放（最多 6 个紧凑卡片）。
+3. 推荐歌单（横向卡片或网格）。
+4. 最近添加。
+5. 排行榜/发现推荐。
+6. 本地音乐/下载快捷入口（根据实际数据）。
+
+桌面首页不能复刻旧版 8 张统计卡仪表盘。统计数字只能作为辅助，不得占据主要视觉。
+
+### 7.4 右侧 Context Panel
+
+默认宽度 340dp，允许在 300–420dp 之间调整；支持隐藏。
+
+顶部 tab/切换：
+
+- 正在播放
+- 队列
+- 歌词（歌词数据存在时）
+
+正在播放内容：
+
+- 大封面 100–140dp。
+- 歌曲、歌手、专辑。
+- 收藏、更多。
+- 可选专辑/歌手快捷跳转。
+
+队列内容：
+
+- 当前播放歌曲置顶或明确高亮。
+- 接下来播放列表。
+- 拖拽排序。
+- 单曲移除。
+- 清空队列前确认。
+- 点击歌曲跳转播放。
+- 当前播放索引必须和后端 queue state 一致。
+
+歌词内容：
+
+- 当前行高亮。
+- 自动滚动。
+- 时间戳缺失时显示普通歌词，不伪造同步。
+- 翻译/原文切换只在数据存在时出现。
+
+面板隐藏时不销毁播放状态。窄窗口下使用 overlay，不挤压中央内容到不可用。
+
+### 7.5 底部 Global Player Bar
+
+高度 76–84dp，横跨内容区（是否覆盖侧栏由统一 Shell 设计决定，但必须保持对齐）。
+
+左侧：
+
+- 封面 52–56dp。
+- 歌曲名、歌手。
+- 喜欢、更多。
+
+中间：
+
+- 随机/播放模式。
+- 上一首。
+- 播放/暂停主按钮。
+- 下一首。
+- 循环模式。
+- 进度条与当前时间/总时长。
+
+右侧：
+
+- 当前播放设备/音量（平台支持时）。
+- 队列开关。
+- 歌词/上下文面板开关。
+- 全屏播放器。
+
+规则：
+
+- 无歌曲时显示合理空播放器状态，不保留不可点击的假控件。
+- 播放状态必须来自真实 AppModel。
+- 进度每次更新不能导致整个页面高频 rebuild；把播放进度隔离到小组件。
+- 播放器在页面切换、搜索、歌单详情和设置中持续存在。
+- 音量控件必须接入真实后端能力；不支持时隐藏或明确禁用。
+
+### 7.6 桌面歌单详情
+
+- Hero 左侧封面 180–240dp。
+- 右侧显示类型 badge、歌单名、描述、来源、曲目数/时长。
+- 主操作播放全部；次操作随机播放、收藏、下载（能力支持时）。
+- 下方歌曲表格列：序号/封面、标题、专辑（有数据时）、添加者/来源（有数据时）、日期（有数据时）、时长。
+- 行高默认 56–64dp，支持紧凑/舒适密度。
+- Hover 显示操作按钮；键盘焦点可操作。
+- 双击播放；单击只选中或按产品既有约定播放，行为必须一致。
+- 右键菜单支持播放、下一首播放、加入队列、喜欢、下载、详情。
+- 分页和加载状态真实。
+- 不允许不同歌单复用同一曲目列表。
+
+### 7.7 桌面全屏播放
+
+- 大封面与歌词双栏或封面居中。
+- 背景从封面取色但不降低对比度。
+- 播放控制保持一致。
+- Esc 关闭全屏，不停止播放。
+- 窗口缩放时布局平滑切换。
+- 歌词滚动与播放时间同步。
+
+---
+
+## 8. 核心数据正确性：必须先于视觉收尾
+
+### 8.1 歌单唯一键和缓存隔离
+
+排查并统一歌单详情键。建议抽象：
+
+```dart
+PlaylistKey(
+  source: sourceId,
+  id: playlistId,
+  type: playlistType,
+)
+```
+
+具体字段命名按现有 DTO 实现，不要为了照抄示例强行更改 FFI。
+
+必须保证：
+
+- source + id + type 构成隔离命名空间。
+- 账号歌单和公开歌单不冲突。
+- 缓存 key、请求 key、事件 key、UI key 使用同一语义。
+- 异步请求完成时校验请求 key，过期响应不能覆盖当前页面。
+- 页面切换先显示对应 loading，不闪现旧歌单歌曲。
+- 分页响应只能合并到同一 PlaylistKey。
+- 错误属于对应歌单，不能显示在另一个歌单详情中。
+- 相同 ID、不同 source 的歌单互不污染。
+
+测试序列：
+
+1. 打开歌单 A，等待加载。
+2. 打开歌单 B，确认 B 不显示 A 的歌曲。
+3. A 请求延迟返回晚于 B，确认 A 响应不覆盖 B。
+4. 打开 source X / id 123。
+5. 打开 source Y / id 123，确认缓存隔离。
+6. 打开公开歌单和账号歌单相同 ID，确认隔离。
+7. 对 A 触底加载下一页，再快速切到 B，确认分页不串数据。
+8. 返回 A，确认只恢复 A 的数据。
+
+### 8.2 封面系统 ArtworkResolver
+
+建立唯一封面解析与缓存服务，不允许页面散落不同的 URL fallback 逻辑。
+
+建议领域模型：
+
+```dart
+ArtworkRequest {
+  entityType, entityId, sourceId,
+  primaryUrl, fallbackUrls,
+  cacheKey, expectedAspectRatio
+}
+
+ArtworkResult {
+  resolvedUrl / localFile,
+  cacheStatus,
+  source,
+  failureReason
+}
+```
+
+按现有项目语言/层次选择 Dart 或 Rust 实现，避免两边重复缓存。
+
+解析优先级：
+
+1. DTO 当前实体的有效封面。
+2. 同实体已缓存的有效封面。
+3. 音源提供的专辑/歌手/歌单补全接口。
+4. 本地音乐 metadata / embedded artwork。
+5. 经过可靠实体匹配的封面补全来源。
+6. 统一占位图。
+
+规则：
+
+- 不允许仅凭模糊歌曲名把不相关封面配上。
+- 缓存 key 必须包含来源和实体类型/ID，避免不同来源同 ID 冲突。
+- 处理 404、403、超时、空 URL、非法 URL、证书失败。
+- 限制并发下载，支持取消过期请求。
+- 使用合理内存/磁盘缓存上限和 TTL。
+- URL 过期后重新解析；失败不能无限重试。
+- 同一 URL 并发只下载一次（single-flight）。
+- 图片解码限制尺寸，列表缩略图不得解码超大原图。
+- 封面加载失败不得造成布局跳动。
+- 封面语义标签包含实体名称。
+- 本地封面和在线封面统一组件展示。
+
+测试：
+
+- 空 URL。
+- 非法 URL。
+- 404。
+- 403。
+- 超时。
+- 服务器返回非图片。
+- 超大图片。
+- 相同 URL 并发。
+- 同 ID 不同 source。
+- 缓存命中。
+- 缓存过期。
+- 离线状态。
+- 本地 embedded artwork。
+- Widget 首次加载/失败/重试截图。
+
+### 8.3 播放状态与事件流
+
+审计 Rust Player → Application watcher/event → FFI snapshot/event → AppModel → UI 完整链路。
+
+至少验证：
+
+- 当前歌曲。
+- playing / paused / buffering / stopped / error。
+- position。
+- duration。
+- seek。
+- volume（后端支持时）。
+- queue 和 queue index。
+- repeat/shuffle。
+- Ended 自动下一首。
+- 错误事件可见。
+- 事件流 lag 后重拉 snapshot，避免 UI 永久过期。
+- 进度更新只刷新相关组件。
+- 播放器单实例，切换页面不创建新的播放引擎。
+
+禁止在 UI 自己用 Timer 伪造真实播放进度。插值只用于平滑显示，真源必须来自后端 position/duration。
+
+### 8.4 本地音乐数据
+
+- Android SAF URI 与权限生命周期必须正确。
+- Desktop 文件路径处理符号链接、权限、文件移动和删除。
+- 扫描支持增量、取消、错误统计和重复检测。
+- 读取音频标签、专辑、艺术家、时长和内嵌封面。
+- 文件缺失时标记不可用，不静默删除用户数据。
+- 数据持久化，重启后可恢复。
+- 文件夹重新扫描不应重复创建歌曲记录。
+- 不扫描无关大目录或系统目录，避免卡死。
+
+### 8.5 收藏和歌单
+
+明确区分：
+
+- 本地喜欢的歌曲。
+- 远端账号收藏镜像。
+- 本地自建歌单。
+- 在线公开歌单。
+- 账号远端歌单镜像。
+
+每一种都要有稳定类型和来源字段。收藏操作必须说明写入的是本地还是远端；未登录或远端不支持时不能假装成功。
+
+---
+
+## 9. 交互状态与错误处理标准
+
+所有数据页面必须覆盖四态：
+
+| 状态 | UI 要求 |
+|---|---|
+| Loading | 骨架屏/局部进度，保留已有内容时显示轻量刷新态 |
+| Empty | 说明为什么为空 + 一个主要可执行操作 |
+| Error | 可读错误 + 重试 + 必要时查看详情 |
+| Success | 显示真实数据，支持刷新/分页 |
+
+规则：
+
+- 加载中按钮防重复提交。
+- 网络失败不能被转成空列表。
+- 部分音源失败要显示部分成功和失败音源。
+- 错误消息对用户可读，原始异常写入日志，不把 token、cookie、隐私路径暴露到 UI。
+- 操作失败必须回滚乐观 UI 状态。
+- 删除、清空、覆盖等破坏性操作需要确认。
+- 所有按钮必须有真实回调；不支持的能力不显示或明确禁用。
+- 所有异步操作在页面 dispose 后不得 setState。
+- 页面切换取消不再需要的请求，或通过 request token 忽略过期响应。
+
+---
+
+## 10. Android 系统集成和状态栏专项
+
+### 10.1 状态栏/应用栏分层
+
+用户反馈“应用栏和手机状态栏合在一起”，必须专项解决。
+
+- 检查 Android targetSdk、Flutter edge-to-edge 行为和当前 Activity Theme。
+- 明确 status bar 的颜色、图标亮暗、透明度和导航栏策略。
+- 不允许在 Flutter 页面里手工再加一份状态栏高度，同时 Scaffold 又自动处理 inset。
+- 若背景延伸到状态栏，背景可以绘制到系统区域，但标题/按钮必须位于 top safe inset 之后。
+- Light/Dark theme 切换时状态栏图标颜色同步更新。
+- 横屏、刘海、打孔屏、手势导航、三键导航都要验证。
+- 键盘弹出时搜索框不被遮挡。
+- Bottom Navigation + Mini Player + navigation bar inset 不得重叠。
+
+### 10.2 Android 音频与媒体
+
+验证：
+
+- audio_service notification。
+- 锁屏媒体控制。
+- Android Auto（如果项目目标支持）。
+- 耳机线控。
+- 蓝牙播放/暂停/切歌。
+- 音频焦点：电话/其他播放器抢占与恢复。
+- 后台播放和进程生命周期。
+- 通知权限拒绝时的降级行为。
+- 歌曲切换时通知封面和标题同步。
+- 播放服务不能依赖 Activity 页面存活。
+
+---
+
+## 11. 性能、稳定性和无障碍要求
+
+### 11.1 性能
+
+- 长列表必须使用 ListView.builder / SliverList / GridView.builder。
+- 封面缩略图按展示尺寸解码。
+- 页面切换不重复请求相同数据。
+- 防抖搜索，分页 in-flight 锁。
+- 播放 position 更新不触发整个 Shell rebuild。
+- 图片并发请求有上限。
+- 主题切换不在每个卡片 build 中重建完整 ThemeData。
+- 避免无边界动画和常驻 Timer。
+- 释放 StreamSubscription、AnimationController、ScrollController、FocusNode。
+- 大型曲库（至少 10k 条模拟/真实条目）滚动和搜索可用。
+
+性能记录至少包括：
+
+- 冷启动到首屏可交互时间。
+- 页面切换耗时。
+- 10k 曲目列表滚动帧率/卡顿。
+- 封面缓存命中率和失败率。
+- 连续切换 50 个歌单后的内存趋势。
+- 播放 30 分钟后的内存和后台状态。
+- CPU 空闲时无不合理高频重建。
+
+不得编造性能数字；必须用 profiler/devtools 或可复现脚本采集。
+
+### 11.2 无障碍
+
+- 手机主要触控目标 ≥48dp。
+- 图标按钮提供 tooltip/semanticLabel。
+- 正文对比度至少 4.5:1；大字至少 3:1。
+- 选中状态不能只依赖颜色。
+- 支持系统字体缩放，关键页面不溢出。
+- 支持键盘 Tab/Enter/Space/方向键（桌面）。
+- 焦点顺序符合视觉顺序。
+- 尊重 MediaQuery.disableAnimations。
+- 读屏能读出歌曲名、歌手、播放状态和按钮行为。
+- 不把装饰图片加入无意义读屏焦点。
+
+---
+
+## 12. 测试和质量门禁（每个阶段必须执行）
+
+### 12.1 静态检查
+
+在仓库实际工具链路径下执行：
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
+
+cd flutter
+dart format --output=none --set-exit-if-changed lib test
+flutter analyze --fatal-infos
+flutter test
+```
+
+如果 workspace 某 crate 或 feature 有既有已知问题，必须记录具体命令、错误和是否为基线问题；不得悄悄跳过。必要时按 crate/feature 拆分，并给出原因。
+
+### 12.2 Flutter 测试层级
+
+1. Unit tests：DTO key、状态映射、ArtworkResolver、排序/过滤、分页 token。
+2. Widget tests：页面布局、空/错/载/成功、按钮回调、导航。
+3. Golden tests：核心页面视觉基线。
+4. Integration tests：导入、播放、歌单切换、下载、媒体状态。
+5. Device tests：Android 系统栏、SAF、后台播放、耳机/蓝牙。
+
+### 12.3 必须新增的 Widget 测试
+
+- MobileShellTest：所有主导航、Mini Player、Back 行为。
+- MobileHomePageTest：空库导入、非空首页。
+- MobileLibraryPageTest：歌单/专辑/歌手网格和筛选。
+- PlaylistDetailIsolationTest：不同 playlist key 数据隔离。
+- ArtworkWidgetTest：加载、失败、重试、缓存。
+- MobileNowPlayingLayoutTest：360/390/430 宽度。
+- AndroidInsetsLayoutTest：top/bottom inset。
+- LocalMusicImportTest：文件选择、授权、扫描进度和错误。
+- MiniPlayerInteractionTest：点击主体和控制按钮互不误触。
+- DesktopThreeColumnLayoutTest：右侧栏开关和窗口缩放。
+- QueueInteractionTest：排序、删除、当前播放高亮。
+- SearchPaginationTest：防重复分页和过期请求。
+
+### 12.4 Golden / Screenshot 视口矩阵
+
+至少生成：
+
+**手机：**
+- 360×800
+- 390×844
+- 430×932
+- 390×844（系统字体 1.3x）
+- 390×844（有播放中 Mini Player）
+- 390×844（状态栏/底部系统 inset）
+
+**平板：**
+- 600×900
+- 768×1024
+- 840×900
+- 1024×768
+- 1199×900
+
+**桌面：**
+- 1024×640
+- 1150×720
+- 1280×800
+- 1440×900
+- 1920×1080
+
+每个主要页面至少有：
+- Home
+- Discover
+- Search（有结果/无结果）
+- Library（歌曲/专辑/歌单）
+- Playlist Detail
+- Local Music
+- Downloads
+- Now Playing
+- Queue
+- Settings
+
+### 12.5 截图质量检测
+
+每张截图必须检查：
+
+- 页面是否正确加载，而不是白屏/黑屏。
+- 状态栏是否侵入标题。
+- 底部导航是否遮挡内容。
+- 是否出现 RenderFlex overflow。
+- 标题是否竖排、截断或异常换行。
+- 封面是否黑块、错图、拉伸或比例错误。
+- 歌单标题和曲目是否属于同一歌单。
+- 卡片是否被屏幕边界裁切。
+- 列表是否有过大空白。
+- 字体、图标、圆角、间距是否一致。
+- Mini Player 是否遮挡导航。
+- 深色/浅色主题对比度是否达标。
+- 触控热区是否足够。
+
+保存路径：
+
+- `docs/redesign/screenshots/baseline/`
+- `docs/redesign/screenshots/phase-1-mobile/`
+- `docs/redesign/screenshots/phase-2-library/`
+- `docs/redesign/screenshots/phase-3-player/`
+- `docs/redesign/screenshots/phase-6-desktop/`
+- `docs/redesign/screenshots/final/`
+
+截图命名格式：`<platform>-<page>-<viewport>-<state>.png`。
+
+每轮截图生成后建立对照图和差异图。Golden 差异不能盲目全部更新；先检查差异是否为预期设计变更。
+
+### 12.6 真实设备测试
+
+Android 至少验证：
+
+1. 首次启动。
+2. 首页导入本地音乐。
+3. 文件授权拒绝与重新授权。
+4. 本地扫描进度。
+5. 在线搜索和播放。
+6. 不同歌单连续切换。
+7. 封面加载和缓存。
+8. Mini Player / 全屏播放器。
+9. 锁屏与通知栏。
+10. 后台播放 10 分钟。
+11. 耳机/蓝牙控制（设备可用时）。
+12. 系统返回、横屏、字体放大。
+13. 进程被系统回收后的恢复。
+
+桌面至少验证：
+
+1. 窗口最小尺寸和最大尺寸。
+2. 三栏布局开关。
+3. Sidebar 折叠和宽度记忆。
+4. 歌单拖拽和右键菜单。
+5. 播放队列排序。
+6. 全局播放栏。
+7. 键盘快捷键。
+8. MPRIS/系统媒体控制（Linux）。
+9. 高 DPI 与浅/深主题。
+10. 关闭页面/切换页面播放不停止。
+
+### 12.7 质量门禁
+
+- P0：数据错乱、播放不可用、导入丢数据、系统崩溃、安全/权限问题。任何 P0 未关闭，不得进入下一阶段。
+- P1：核心操作无法完成、关键页面遮挡/溢出、歌单串数据、封面普遍缺失、后台播放中断。任何 P1 未关闭，不得宣称完成。
+- P2：视觉细节、次要动画、非核心信息密度。可登记，但不得影响主流程。
+- P3：可选体验增强。
+
+---
+
+## 13. 分阶段执行计划和退出条件
+
+### Phase 0 — 基线审计、参考研究、许可证检查
+
+工作：
+
+- 阅读现有文档和代码。
+- 建立问题矩阵。
+- 在目标设备运行现有版本并截图。
+- 研究参考项目源代码。
+- 建立代码复用和许可证报告。
+- 形成最终页面组件映射。
+
+交付：
+
+- `docs/redesign/00-baseline.md`
+- `docs/redesign/01-reference-projects.md`
+- `docs/redesign/02-license-and-reuse-audit.md`
+- `docs/redesign/03-component-reuse-map.md`
+- `docs/redesign/04-defect-matrix.md`
+
+退出条件：每个参考项目有精确 commit/许可证；每个核心页面有现状截图和目标规格；P0/P1 缺陷有复现步骤。
+
+### Phase 1 — 数据链路和 P0 修复
+
+先处理：
+
+- 播放状态、进度、duration、seek 和 Ended 事件。
+- 播放队列和播放模式。
+- 歌单数据隔离。
+- 封面数据传递与 ArtworkResolver。
+- 错误事件可见性。
+- 本地音乐导入链路。
+- Android inset / 状态栏问题。
+
+退出条件：核心数据测试通过；歌单隔离测试通过；封面错误态通过；手机系统栏无重叠；本地音乐真实导入并播放。
+
+### Phase 2 — MobileShell 和手机首页
+
+工作：
+
+- 重建 MobileShell。
+- 重建底部导航和抽屉。
+- 完成 SafeArea / Edge-to-Edge。
+- 首页 Hero、最近播放、推荐书架。
+- Mini Player 固定布局。
+- 手机各视口截图回归。
+
+退出条件：360/390/430 三种视口无溢出；状态栏、导航栏不重叠；导入入口可用；Mini Player 不遮挡导航。
+
+### Phase 3 — 手机 Library、搜索、发现和详情
+
+工作：
+
+- 重建 Library。
+- 重建歌曲/专辑/歌手/歌单卡片。
+- 搜索筛选、分页和状态。
+- 发现页音源与分类。
+- 歌单/专辑/歌手详情。
+- 收藏、排序、更多菜单。
+
+退出条件：每个详情对应正确数据；不同歌单切换测试全通过；空/错/载/成功四态齐全。
+
+### Phase 4 — 播放器和移动端系统媒体体验
+
+工作：
+
+- Mini Player 完成。
+- Now Playing 全屏页面。
+- 歌词和队列。
+- 手势和动画。
+- Android 后台服务、通知、锁屏、耳机/蓝牙。
+- 播放生命周期测试。
+
+退出条件：后台播放、切歌、进度、歌词同步、锁屏媒体控制通过；页面切换不重置播放。
+
+### Phase 5 — 本地音乐、下载和离线体验
+
+工作：
+
+- 文件/目录导入。
+- Android SAF 权限。
+- 扫描、去重、元数据和封面。
+- 下载管理。
+- 离线播放。
+- 本地音乐大库性能测试。
+
+退出条件：导入结果持久化；重启后可播放；重复扫描不重复入库；失败可重试。
+
+### Phase 6 — DesktopShell 三栏重构
+
+工作：
+
+- 左侧 Sidebar。
+- 中央内容区。
+- 右侧 Context Panel。
+- 全局底部 Player Bar。
+- 桌面歌单表格、右键、拖拽。
+- 全屏播放。
+- MPRIS/SMTC 等平台媒体集成核验。
+
+退出条件：1024/1150/1280/1440/1920 视口无布局缺陷；三栏可折叠；播放器跨页面保持。
+
+### Phase 7 — 全平台质量收敛
+
+工作：
+
+- 全部测试和截图回归。
+- 性能 profiling。
+- 无障碍检查。
+- 浅色/深色主题。
+- CI 和构建。
+- 文档和最终报告。
+
+退出条件：P0/P1 为 0；质量门禁全部通过；每个目标平台有构建与运行证据；未验证项明确披露。
+
+---
+
+## 14. 每个阶段的固定工作流
+
+每阶段必须按以下顺序执行：
+
+1. **Inspect**：查看现有实现、调用链、依赖和 Git diff。
+2. **Reproduce**：复现问题，保存基准截图或测试。
+3. **Research**：必要时查参考项目源码和官方文档。
+4. **Plan**：列出最小改动文件、数据流、风险和测试。
+5. **Implement**：按组件/模块实施，不进行无关重构。
+6. **Format**：Dart/Rust 格式化。
+7. **Static Check**：Analyze、Clippy。
+8. **Unit/Widget Test**：运行新增和相关回归测试。
+9. **Integration Test**：运行实际业务链路。
+10. **Build**：构建目标平台。
+11. **Run**：在模拟器/真机/桌面运行。
+12. **Screenshot**：按视口矩阵截图。
+13. **Visual QA**：对照目标规格逐项检查。
+14. **Regression**：检查其他平台和既有功能。
+15. **Report**：更新阶段报告、缺陷矩阵和执行记录。
+
+每个阶段报告模板：
+
+```md
+# Phase N Report
+
+## 范围
+## 修改文件
+## 关键设计决策
+## 数据流/交互变化
+## 执行命令与退出码
+## 测试结果（通过/失败/跳过）
+## 构建结果
+## 设备和视口
+## 截图路径
+## 视觉 QA 结果
+## 新增/关闭缺陷
+## 未解决问题和原因
+## 下一阶段进入条件
+```
+
+---
+
+## 15. 禁止事项
+
+- 禁止为了“像 Spotify”而复制 Spotify 专有资源或代码。
+- 禁止未审许可证就复制第三方源码。
+- 禁止通过删除功能、音源或测试让构建变绿。
+- 禁止在页面里塞硬编码假数据。
+- 禁止用静态图片代替真实可交互页面。
+- 禁止把本地导入藏在设置深处。
+- 禁止把桌面侧栏原样缩成手机抽屉。
+- 禁止多个播放器实例并存。
+- 禁止不同歌单共享错误的结果缓存。
+- 禁止把网络错误当成空列表。
+- 禁止无条件显示不支持的功能按钮。
+- 禁止忽略 Android SAF、系统 inset 和后台生命周期。
+- 禁止只在一个屏幕宽度上验证。
+- 禁止只跑 Analyze 不跑测试和构建。
+- 禁止把未运行的测试写成通过。
+- 禁止自动提交、推送、rebase、reset 或清理用户文件。
+
+---
+
+## 16. 最终交付物
+
+最终必须提供：
+
+1. 完整实现代码。
+2. `docs/redesign/00-baseline.md`。
+3. `docs/redesign/01-reference-projects.md`。
+4. `docs/redesign/02-license-and-reuse-audit.md`。
+5. `docs/redesign/03-component-reuse-map.md`。
+6. `docs/redesign/04-defect-matrix.md`。
+7. 各 Phase 报告。
+8. 桌面、平板、手机最终截图。
+9. 自动化测试和质量检测结果。
+10. Android 和桌面构建产物/构建日志。
+11. 未解决问题和风险清单。
+12. 更新后的项目用户文档和 UI 规范。
+
+最终总结必须明确：
+
+- 哪些功能已经完成。
+- 哪些功能经过真实设备验证。
+- 哪些只经过自动化测试。
+- 哪些尚未验证。
+- P0/P1/P2 缺陷数量。
+- 测试命令、退出码和测试数量。
+- 各平台构建状态。
+- 是否存在许可证或第三方代码合规风险。
+
+---
+
+## 17. 执行追踪表（AI 必须持续更新）
+
+状态仅允许：`未开始` / `进行中` / `阻塞` / `已完成` / `未验证`。
+
+| 阶段 | 状态 | 报告 | 验收证据 |
+|---|---|---|---|
+| Phase 0 基线与开源研究 | 已完成（2026-11-11 第二轮全量复审修订） | 00-04 + phase-0-report.md | 6 参考项目 pinned SHA + 根/依赖许可证（三轮核验口径：研究记录第一手 + 2026-11-10 汇总轮 /tmp 克隆复核 SHA×6、LICENSE×6 一致 + 11-11 修订轮 /tmp 克隆已清理该复核无法复跑，如实登记；01/02 修订轮；harmonoid=PolyForm Strict 禁复制）；缺陷矩阵第二轮重写：P0×2 + P1×7 = 9 条 P0/P1（复现步骤齐备；本轮新开 P1-08/P1-09）+ P2×9 + P3×7，其中 P0-02/P1-03/P1-04/P1-07 已关闭（Phase 1 修复 + 第二轮实机/代码复核）；门禁基线（2026-11-11 报告员全套复跑）：dart-format 0（237 files 0 changed；00-baseline §3 旧记 229 系第一轮数字）/ analyze 0 / flutter-test 229 全过 / cargo-fmt 0 / cargo-test 816 全过 0 failed / clippy 降级命令 30 条 unique 告警（lx-core 28 + application 2）（**gate 原样 `--all-features -D warnings` 命令 exit 101：MPV_SOURCE 未设 → libmpv2 build.rs panic，报告员本轮实测复现，非「0 告警」**）；`flutter build linux --release` exit 0（第二轮审计会话，/tmp/vx-baseline2/build-linux.log）；基线截图 21 张：本轮 Xvfb :2 受控 1440x900 ×13（含 NowPlaying/队列/浅色主题/P0-02 走带三连，第一轮被 P0-01 阻断的截图已补齐）+ 第一轮 niri 1656x817 ×8（历史对照）；**未验证**：Android 全链与 §12.6 真机 13 项（无 JDK/无设备/无模拟器；用户明确搁置：禁止 APK/Gradle 构建与 AVD 创建）、本地音乐真实导入端到端（本机无媒体文件，Phase 5 项）、搜索分页实机多页触底交互（本轮会话未做；search_pagination_test 4 项锁定 in-flight 锁与 source 透传）、歌单隔离 §8.1 八步序列实机走查（playlist_detail_isolation_test 7 项仅 widget 层映射）、平板三态断点实机（无触屏设备）、P0-01 本轮约 8 分钟 Xvfb 全流程交互未复现（第一轮 3/5 复现记录保留；根因未定位，不构成修复证据） |
+| Phase 1 数据与 P0 | 已完成（2026-11-11 复验轮收口；P0-01 定位与 Android 环境项跨阶段遗留，见证据列备注） | phase-1-report.md | 2026-11-10 实施批次 + QA 第 1~4 轮 + 2026-11-11 复验轮（详见报告）：P0-02 关闭（进程级 owned runtime + 4Hz 泵实机走带三连 + Ended 自动切歌）；P1-03 关闭（VxArtwork/ArtworkResolver，13 项测试）；P1-04 关闭（SearchMore 带 source + 先读后写兜底，4 项测试）；P3-03 落地（PlaylistKey + appendArmed，隔离测试 9 项，含 §8.1 序列 7：A 触底分页在途切 B 迟到页 2 只落 A 槽）；P1-07 关闭（toast 净化 + 限高，error_toast_test 9 项）；P1-11 关闭（搜索页渲染前净化 + `_applyBrowseEvent` 源头单点收口 app_model.dart:485/:516，覆盖 discover/playlist/leaderboard/library/custom_playlists 全部消费面；实机复验错误框 `[URL]` 占位 + stderr 原始日志两端核实）；P1-08 关闭（search_page 行封面 `cover: VxArtwork` + search_page_test「P1-08 回归」）；P1-09 关闭（VxChrome design_tokens.dart:148-157 亮度双源 + chrome_theme_test 5 项；浅色实机整页走查归 Phase 2/7）；P1-10 关闭（repeatSingle 三档 + repeat_mode_test 4 项 + 激活态实机截图 repeat-singleloop-active.png）；门禁（2026-11-11 报告员全套复跑）：analyze 0 / flutter-test 246 全过 / dart-format 0（239 files 0 changed）/ cargo-fmt 0 / cargo-test 72+40（Rust 零改动，git diff runtime/application/ffi/source/core 为空）/ flutter build linux --release exit 0（bundle 含 libvoicefox_ffi.so；cargo 须在 PATH，否则 CMake 钩子静默缺 FFI 库）；实机复验：离线 netns 真实失败 → 重试闭环 259 结果恢复、歌单 A/B 隔离三连重截（重进 vs 首进 AE=0，A vs B AE=26830）、截图 28 文件（6 PNG + README 04:26 重截，repeat 4 张 03:17-03:57，其余 17 张 02:43 沿用上轮像素级结论）。**遗留/未验证（不阻塞 Phase 2）**：P0-01 概率性卡死与 ButtonPress 间歇失效未复现未定位（长会话验收前必须定位）；P1-05 同域跟进；P1-06 Android 全链与真机 13 项零覆盖（无 JDK，用户搁置，widget 契约层已覆盖）；本地音乐导入端到端归 Phase 5；cargo clippy 30 条基线本轮未复跑；proxy_url 死代理 Rust 侧行为未复验 |
+| Phase 2 MobileShell/Home | 已完成（2026-11-11 缺陷复验轮收口 + 2026-11-12 全屏播放页封面带追加批次；Android 真机项 P1-06 环境阻断维持未验证） | phase-2-report.md | 前批次：MobileShell 重建 + 手机首页 + Mini Player 固定布局（偏差 D1-D6 登记 04 矩阵），定向 9 文件 65 项全绿。缺陷复验轮：P1-12 关闭（曲库 430 视口「我的音乐」折行；library_page.dart:78-117 `_header` 改 LayoutBuilder，<512 标题独占一行 + compact 工具行，title maxLines:1，≥512 桌面零变化）+ P1-13 关闭（空库 Hero CTA 折行；mobile_home_page.dart:152-167 竖排全宽两按钮 ~280-310px）；新增两条 P1 回归测试（mobile_home_page_test.dart:176-208、mobile_shell_test.dart:173 遍历 430/390/360 三视口，补上一轮「窄视口曲库布局无测试覆盖」缺口）；报告员实跑定向 7 文件 51 项全绿（`00:05 +51: All tests passed!`）；`flutter build linux --release` exit 0（RUSTUP_TOOLCHAIN=1.99.0；bundle 06:33 + libvoicefox_ffi.so 在位佐证）；golden 覆盖重截 fluttertest-library-430x932-dark-default.png（430x932 dpr=1.0，临时测试用后即删零残留；报告员目检：标题单行/搜索条+工具条换行/筛选/源选择/空态/底栏高亮完好）；fluttertest-home 3 张（360/390）沿用。**未验证**：Android 真机 MobileShell/首页/Mini Player 运行时（P1-06 无 JDK/设备，用户搁置）；Mini Player 60-68dp 与底栏叠序仅 widget/golden 层证据；桌面窗口 MobileShell 被平台隔离阻止（mobile_shell.dart:110-122 desktop→SizedBox.shrink()）；浅色主题实机走查未做（P1-09 仍代码+测试锁定，归 Phase 7）；全量 flutter test / cargo test 未由报告员复跑（外部门禁统一执行，本轮已知事实「门禁全绿」；上轮工作报告登记的 cargo test exit 101 门禁阻塞据此解除，报告员未独立复核）；遗留 minor 仅 P2-10/P3-08。**2026-11-12 追加批次（全屏播放页封面带修复轮）**：P2-12 登记并关闭（封面原 `(height-330).clamp(160,320)` 恒 320 封顶，改落 §5.7:446-447 280-340dp 自适应带：`max(min(min(height-330,width-40),340),min(160,widthCap))`，mobile_now_playing_page.dart:337-348，<560 极矮回退 240）+ P2-06 关闭（`_SwipeableCover` 封面横滑切歌，速度阈值 500px/s + 方向提示层，只绑封面区避开 LiveSeekRow 横拖与屏幕缘返回手势）+ 队列改 §5.7:452 底部 sheet（DragHandle 下滑/点遮罩关闭，拖拽排序仍如实禁用）+ 歌词点击门槛（§5.7:461 无时间戳不挂 seek）+ audio_session 中断处理与通知 artUri 守卫（voicefox_audio_handler.dart ±34，无专项单测如实登记）；报告员实跑定向 4 文件 **39 项全绿**（`00:08 +39: All tests passed!` exit 0）与 3 文件 --no-pub **32 项全绿**（`00:08 +32` exit 0）；nowplaying 三视口 golden 新增（360x800/390x844/430x932，02:05）并逐张目检 + magick 像素实测封面 **320/340/340** 与公式及测试「三视口封面落在目标带 [280,340]」逐视口一致；上轮 library/emptyhero 复截件（61983B/100843B，01:53）复核维持关闭；release bundle 未重建（golden/测试同源编译，平台隔离 mobile_shell.dart:107-119 下桌面证据面不变，上轮 bundle 结论不失效）。**未验证维持**：Android 真机/模拟器（P1-06）、横滑手势真机边缘冲突（§5.7:463）、audio_handler 真机音频输出/通知、全屏页桌面窗口呈现（平台隔离阻止，仅 widget+golden）、浅色主题（归 Phase 7） |
+| Phase 3 Mobile Library/Search | 已完成（2026-11-11 收口轮：实施轮代码收口 + 定向 10 文件 72 项全绿（报告员复跑）+ release 实跑 Xvfb 四视口真实后端截图逐张 QA 通过 + P2-03 关闭；Android 项本批不适用（P1-06 维持）） | phase-3-report.md | 实施轮（前轮已登记）：搜索音源 chips 化（§5.4:355 裁决）+ 搜索历史持久化、曲库来源筛选 chips（favorites+history+localSongs 派生）、三详情页下拉刷新（page1 响应/错误落槽判据 + 15s 兜底）、收藏 pending 双击忽略/失败回滚（isolation_test :480/:522）、P2-10 关闭、P2-03 代码修复（analyze 0 + dart-format 0 + golden 重截 1 张用后即删）；收口轮（报告员实跑）：`flutter test` 定向 10 文件（mobile_library/phase5_library/discover/search/search_pagination/playlist_detail_isolation/playlist_detail/artist_album/custom_playlist/push_and_favorites）**`00:09 +72: All tests passed!`** exit 0 + isolation 单独 **13/13**；`flutter build linux --release` exit 0（bundle 07:54 在位，报告员 ls 佐证）+ Xvfb :99 `env -u WAYLAND_DISPLAY LIBGL_ALWAYS_SOFTWARE=1` 实跑**真实 Rust 数据源**（~/.config/voicefox/config.toml，kw/酷狗/酷我真实联网非 mock）→ `import -window`+magick 精确视口 4 张：library 390x844（空态 Icons.music_off_outlined 正常渲染 + 文案逐字一致 library_page.dart:569）、search 390x844（217 结果 + 四态 + 网易云 chip 右缘横滑设计行为 search_page.dart:443-444）、playlist 390x844（104 首·总时长 400 分钟·酷我，标题绑定 playlist_detail_page.dart:234-241,253-258，返回条全标题完整）、discover 360x800（按源分组真实封面 + P2-03 右 padding discover_page.dart:530-535）；跨页一致（discover 古风戏腔 104首·酷我 ↔ playlist 详情同封面同来源）+ 数据抽查 3 处代码行核实；main.dart:163 minimumSize 临时改 300,400 已精确还原（git diff 空）。**未验证/不适用（如实披露）**：Android 真机/模拟器（P1-06 环境阻断，本批 linux 截图不适用；以 72 项 widget 测试 + 桌面移动视口为证据）；交互式运行时手操（防抖 250-350ms 毫秒计时/触底分页/下拉刷新手势/切源即时重载/收藏回滚手操）未逐一演练，由针对性测试锁定（用例名核对）；浅色主题（本批 4 张全深色，归 Phase 7）；「总时长 400 分钟」仅验证计算路径未逐曲重算；golden 基线比对未跑；全量 flutter test/cargo test 外部门禁执行（已知事实「门禁全绿」，报告员未复跑全量）；2026-11-12 复验轮（实施者实跑）：定向 10 文件基线复跑 `00:11 +72` exit 0 → search_page_test 新增防抖窗口紧界 fake-time 用例（250ms 未派发/300ms 恰好一次/350ms 无二次派发，锁定 search_page.dart:60 `debounceMs=300` 硬编码耦合）后复跑 `00:11 +73` 全绿 exit 0（expanded 单跑逐名核对）；dart format 1 文件规范化 + dart analyze 0（`No issues found!`）；phase-3-report.md:103 防抖未做项口径改写（fake-time 锁常量 ≠ 实机毫秒计时，归 Phase 7 手操维持未做）；2026-11-12 Phase3-QA1 修复轮：P0 四态证据缺口补 6 条 widget 断言（曲库本地收藏空态 mobile_library_page_test +1、红心镜像载入/错误+重试 push_and_favorites_test +2、发现页骨架/歌单错误+重试 discover_page_test +2、专辑页错误+重试 artist_album_page_test +1）定向 10 文件复跑 `00:12 +79` 全绿 exit 0 + dart format 4 文件（1 changed）+ dart analyze 0，§13 退出条件「四态齐全」证据面扩展至曲库/发现/专辑；同轮登记 4 张 Phase 3 证据截图于复验轮被重截（mtime stat 实测 03:23:45-03:25:31，同管道同状态仅真实数据漂移：搜索 love/256、快捷卡 22/0/0；对照 04 矩阵 04:107 先例非质量劣化判 P1 登记即关闭），phase-3-report.md 勘误节 + 四处口径同步（逐张 Read 目检通过）；2026-11-12 QA 复查轮（修复验证与重截）：P0/P1 复查双关闭确认（P0：6 条四态断言在位 + 定向 10 文件 79 项全绿双实跑 QA 独立 `00:10 +79`/报告员 `00:14 +79` exit 0 + 4 改动文件 24 项双实跑逐名核对，§13「四态齐全」证据面扩展至曲库/发现/专辑；P1：勘误节 + 四处口径同步在案）+ release 重建 exit 0（bundle 03:52:19，lib/ 零改动内容等价重建）+ Xvfb :99 受影响视口（曲库/发现/专辑）重截 3 张逐张 Read 目检通过（library 03:52:44/discover 03:53:09/album 03:56:16 新增；数据全真实 专辑 20/歌手 17/最近播放 22、酷我/酷狗真实分类封面；search/playlist 03:24 未动；专辑为真实错误态+重试实拍 §9 符合）；**新增未验证如实披露**：专辑详情成功态（曲目列表）实机未取得（种子路径 5 尝试均未成功：kw not found ×2、wy 落汽水音乐不支持专辑 ×1，保留真实错误态为证）、VOICEFOX_START_SOURCE 专辑种子疑似未生效（kw→千千音乐/wy→汽水音乐徽标，仅观察未判缺陷未修）、残留 minor 4 条（第 5 张截图上轮未登记本轮补登记/勘误 mtime 对 2 张过期/not found 可读性/bottom inset 未断言）；Android/浅色/手操/golden 维持未验证 |
+| Phase 4 Player/System Media | 已完成（2026-11-12 收口轮：全屏播放页大封面 403 根因修复 P1-15 登记即关闭 + debug 重建 + Xvfb 真实在线播放重截逐张目检通过 + §13 退出条件套件层全绿；Android 真机项 P1-06 维持未验证） | phase-4-report.md | 本轮修复：cover_image.dart +35（coverUserAgent='voicefox' :17 + coverReferer 按音源映射 :21-33 逐条镜像 Rust cover_referer source.rs:166-174 + CachedNetworkImage.httpHeaders 下发 :87），根因=网易系 CDN 封杀 Dart 默认 UA 致全屏播放页大封面 403 灰占位；根因双向实锤（QA 实跑 + 报告员独立复跑同结果：同一封面 URL p2.music.126.net/…/109951173908998514.jpg，Dart UA 403 text/html 146B、voicefox UA 200 image/jpg 602586B JPEG 3000x3000）；重建 flutter build linux --debug exit 0（含 cargo libvoicefox_ffi.so，bundle 06:22 在位，报告员 ls 佐证）；运行/重截：Xvfb :101 600x900 私有显示（:99 被并行 actor 1200x1600 实例占用，pgrep 复测在位）+ GDK_BACKEND=x11 + VOICEFOX_START_SIZE 启动重建后真实 app，kw/wy 真实在线播放 Love CNBLUE（wy=原缺陷触发源），xdotool+import+magick 重截受影响视口 3 张（560x844 playing/lyrics-unavailable、560x800 playing）逐张 Read 目检通过（大封面真实 BLUE LOVE 渲染、进度 00:25/00:41/00:10 与滑块一致、无溢出/遮挡、DEBUG 横幅为 debug 固有），queue-open 保留原截（未受影响项，QA 记 minor）；定向测试（报告员实跑 exit 0）：5 文件 **56 项全绿**（`00:08 +56: All tests passed!`，cover_image_headers 12+voicefox_audio_handler 8+mobile_now_playing 14+mobile_shell 9+now_playing 13 逐文件吻合）+ 2 文件修复验证 **26 项全绿**（`00:04 +26`）；新增 voicefox_audio_handler_test 8 项（焦点中断 4 态 + Phase 4 pause 守卫 _pausingForInterruption 区分自动让焦暂停与用户手动暂停，voicefox_audio_handler.dart +29/-5）+ mobile_now_playing LiveSeekRow seek 契约 2 项 + mobile_shell PopScope 全屏返回 1 项；§13 退出条件五项（后台播放/切歌/进度/歌词同步/页面切换不重置）随套件复跑全绿（widget/单测层）。**未验证维持/新增（如实披露）**：锁屏媒体控制真机侧（无 JDK/模拟器，P1-06）；390×844/360×800 桌面被 main.dart:163 minimumSize(560,480) 钳到 560 宽，移动视口仅 widget 层；MobileShell 移动端全屏页运行时（isTouchPlatform=false 恒走 desktop 壳 responsive_shell.dart:87-95，仅 widget 测试可达）；歌词行点击 seek 运行时为真实暂无歌词错误态无法实证；移动端队列 sheet 桌面为侧板；403 修复未抓包核对请求头（curl 双向对照 + 12 项单测锁定）；release bundle 未随修复轮重建（上轮 03:52:19 不含本修复）；队列面板未重开复核（保留上轮结论 queue_panel.dart:265-270）；浅色主题归 Phase 7 |
+| Phase 5 Local/Downloads | 已完成（2026-11-13 收口轮：导入/下载/增量扫描/持久化/性能收口，运行时验证 + 独立 QA P0=0/P1=0/minor=3 无阻塞可收口；缺陷 D1/D2（P1×2）与 D3/D4/D5 登记开放，Android 真机项 P1-06 维持未验证） | phase-5-report.md | §5.10 导入全链（双选项 bottom sheet + picker seam + PlatformException 回退手输，实跑入库 6 首元数据/时长正确、损坏文件计「无法读取 1」）+ §5.11 下载三态分组/计数/空组区分文案/暂停/取消/删除二次确认（记录+本地文件同删）/失败组重试真实重新入队 + 指纹缓存增量扫描（复用 10006/4894/20006 多轮）+ 持久化跨 3 次重启（10012→14900→30012）+ 性能（10k 解析+入库 ≈2.5s、15112 新增 ≈12s、30k 拖拽滚动流畅、启动 ≈30-40s）+ 真实下载 5.5MB m4a/2.6MB mp3+lrc 落盘 ffprobe 342s；门禁全绿，定向 3 文件 **31 项全绿**（报告员实跑 `00:04 +31: All tests passed!` exit 0；local_music_import 7 + phase5_downloads 18 + phase5_local_music 6）；`flutter build linux --debug` exit 0（bundle 2026-11-13 00:37:47 + libvoicefox_ffi.so 287203584B，报告员 ls/stat 佐证）；Xvfb :105 GDK_BACKEND=x11 真实启动（390x844 请求被 main.dart:163 minimumSize(560,480) 钳到 560×844，如实登记）+ xdotool 驱动 + import/magick 截图 4 张（docs/redesign/screenshots/final/，报告员逐张 Read 目检：导入中态/三态分组/已完成真实封面 3.3·2.3·5.3MB/失败态「失败 · 音频…」且 D5 的 1.4MB/475.7KB 在图可见）+ 独立 QA 四条退出条件全部有实跑测试支撑；**新增登记缺陷（全部开放）**：D1=P1-16 导入 bottom sheet 运行时 `_dependents.isEmpty` 断言红屏 UI 死亡（framework.dart:6281，3 会话复现，widget 测试全绿但主导入入口坏）/D2=P1-17 扫描取消后 14900 首部分入库违反「取消→结果未提交」契约（不能排除点击与扫描结束竞态）/D3=P2-13 重试后损坏文件计「复用」而非重新解析/D4=P2-14 解析阶段暂停 3 次均打成失败/D5=P3-09 进行中下载行 560 宽 debug overflow 23px + 已收字节（1.4MB）大于声明总量（475.7KB）；偏差 E1-E6 登记 04 矩阵（SAF seam 诚实降级/`.part` 孤儿最小语义/重试=重扫语义/下载跨会话恢复不做/wire 状态词汇表 code() 根因修复/「最近添加」不做但 first_seen 地基已备）；环境注记：10k/20k 目录因 D1 崩溃改关 app 后外部编辑 config.toml 加路径（测试后已还原 phase1 单路径，报告员 cat 核实），测试文件留 /tmp/p5music-*，扫描入库 30012 首留本地曲库 DB；**未验证如实披露**：Android 真机全部（SAF content:// 翻译 seam 实装/SAF 持久授权/系统 picker 真机行为/后台服务，无 JDK/模拟器 P1-06）、Xvfb 系统 picker 本身不可用（xdg-desktop-portal 缺失，实跑 PlatformException 回退手输路径）、离线播放严格断网隔离（unshare -n Operation not permitted；仅验证文件磁盘有效 ffprobe+删除契约文案，未验证播放器离线优先本地文件）、暂停→已暂停→继续运行时链路（D4 阻断+下载阶段 <1.5s 无暂停窗口）、下载失败原因完整文案展开（UI 截断「失败 · 音频…」）、全量 flutter test/cargo test 与 cargo release 构建（外部门禁统一执行，报告员未复跑）、浅色主题与手操清理（归 Phase 7）、30k 启动 ≈30-40s 未 profiling 归因 |
+| Phase 6 DesktopShell | 已完成（2026-11-13 收口轮 + Phase6-QA1 修复轮 + QA 复查轮收口：三栏规格对齐/交互补齐，P1-14/P2-11/P1-18 关闭，四项退出条件全部成立；P2-05 MPRIS 维持开放，Android 真机项 P1-06 维持未验证） | phase-6-report.md | 收口轮（报告员实跑）：定向 7 文件 78 项全绿（`+78` exit 0）+ analyze 0 + debug 重建 + Xvfb 真实后端 5 视口（1024x640/1150x720/1280x800/1440x900/1920x1080）实拍逐张目检 + MPRIS `busctl --user list` 零命中；QA1 修复轮（登记在案）：P1-18 内容区内嵌 Navigator（nav_bus.dart:22 contentNavigatorKey + app_shell.dart:642-662，推入式详情页只占中央内容列，壳层兄弟子树经同 key 显式落内嵌，Esc 链补内容区档）+ 焦点回落缺陷修复（FocusNode 显式 + 转场帧后收回 primary），定向 7 文件 81 项（78+shell_test 新增 group「推入式详情页播放器跨页面保持」3 条）+ 壳系 3 文件 22 项 + 全量 flutter test 375 项全绿 + analyze 0 + dart format 5；QA 复查轮（报告员实跑佐证）：重建 debug bundle（kernel_blob.bin 05:06:57 + libvoicefox_ffi.so 05:06:53 286283424B，报告员 stat）→ Xvfb :61 + GDK_BACKEND=x11 重跑修复版 bundle（窗口内容=外框减 264px 阴影边精确裁切）→ 受影响视口重截 2 张（≤3）逐张 Read 目检通过：desktop-library-1024x640-minwindow.png（05:11:38 替换：本地音乐详情页壳内渲染，折叠 72 侧栏+AppHeader+PlayerBar 空态在位，行贴底缘缺陷消失）、desktop-library-1280x800-playing.png（05:12:17：双击第 3 行实跑 0 次 Unhandled Exception，修复前会话 1 双击 12 次+会话 2 播放全部 1 次；行 3 均衡器高亮、PlayerBar 真实播放态 P5测试曲1/P5艺术家·local、⏸ 主钮、进度 00:00/00:01 前进、last=progress 事件流动、歌词失败 toast 为本地曲预期非致命）；未受影响视口 3 张（1280 threecolumn/panelhidden、1920 threecolumn，均我的音乐页非推入详情页）维持 04:07 原截；回归护栏 tablet_shell_test.dart 8/8（报告员本轮独立复跑 `00:05 +8: All tests passed!` exit 0）；四项退出条件：五视口无布局缺陷/三栏可折叠/右面板 overlay 不挤压（上轮已核）/播放器跨页面保持（本轮闭环）；残留 minor 4 条非阻塞（计数头滚动态碰撞 open/DEBUG 横幅/30012 陈旧条目建议立矩阵项/30013±1 未归因）；偏差 G1-G9 登记 04 矩阵 Phase 6 节。**未验证如实披露**：MPRIS 未修复（busctl grep voicefox→none，仅 TUI run_app app/src/main.rs:1646 接线，Flutter 桌面 FFI 路径无 media_controls，本轮修复未触碰 app/src 与 ffi/src，git diff --stat 仅 shell 侧 12 文件报告员实测）；键盘焦点移动未通过（ArrowDown×3 无焦点指示，仅 mouse hover 跟随）；真实出声无法验证（无头 pipewire client.conf 加载失败，仅 progress 事件）；平板两档 rail 桌面运行时不可达（responsive_shell.dart:95-100 isTouch=false 恒 desktop，仅 widget 层 8/8 绿）；1 秒测试曲时长限制长程播放/自动切歌无法演示；报告员侧 7 文件 81 项+全量 375 项+analyze 0 本轮未复跑（修复轮登记在案）；浅色主题/golden harness 裁决归 Phase 7 |
+| Phase 7 Final QA | 已完成（2026-11-13 报告员独立复跑轮收口：全部门禁实跑 + final 截图逐张目检与 7 张证据修正 + 最终质量报告；「P0/P1 为 0」字面未满足如实判定，Linux 桌面目标可收口、Android 目标环境阻断维持未验证） | phase-7-report.md | 报告员实跑（2026-11-13）：dart format 首跑 exit 1（执行批次 main.dart 未格式化 → 机械化 format 语义零变化 → 复跑 exit 0，251 files 0 changed）/ flutter analyze --fatal-infos 0 issue / 全量 flutter test **375 项全绿** exit 0（00:25）/ cargo fmt --check 0 / 全量 cargo test --workspace **826 passed 0 failed** exit 0 / clippy 原样门禁 exit 101（libmpv2 6.0.0 build.rs MPV_SOURCE panic，Phase 0 基线复现；降级 lx-core 28 条告警与基线吻合）/ flutter build linux --release exit 0（bundle 07:33:34 + FFI so 24475344B）；debug bundle（执行批次 5 次构建，kernel_blob 06:33:23）承载 uiOnly 运行时重截。final/ 13 张截图逐张 identify+Read 目检：desktop-discover/library/settings + tablet×3 执行批次原件通过；**P1-19 登记即关闭**（desktop-home-1024 实为 1280×720 默认窗左上裁切 + 6 张 phone 标注 360/390/430 实为 560 宽；根因 = uiOnly 分支不应用 VOICEFOX_START_SIZE，main.dart:143-175 属真实分支、uiOnly :106-116 提前 return，xdotool getwindowgeometry 实测 1280×720；真 1024×640 重截折叠 rail + PlayerBar 与 Phase 6 QA 一致证明应用无回归；7 张以真实视口重截件替换，尺寸全部对齐标注）+ **P2-15 新增开放**（真 360 重截目检：曲库入口卡「喜欢的歌曲」标签 ellipsis 截断，P2-10 测试仅锁 4 字标签）+ **P3-10 新增开放**（uiOnly 无 START_SIZE，截图管线缺陷）；设置页两档为 uiOnly 永久「配置加载中…」态如实登记；**无 Android 真机验证（全程）**：ANDROID_HOME=/opt/android-sdk 目录不存在、adb 缺失、无设备/模拟器（JDK 21 在位）+ 用户搁置指令（禁止 APK/Gradle 构建与 AVD 创建），Android 构建状态 = 全程未构建（P1-06 维持）；性能 profiling 与无障碍专项未执行如实登记；浅色主题运行时走查/golden harness（G5）维持未采证；许可证合规结论 = 无阻塞项（引用 02 审计：MIT 根 + harmonoid PolyForm Strict/feishin GPL/nuclear AGPL 零复制 + myune vendored 110/110 义务履行 + NOTICE 待办非阻塞）；最终开放计数 P0×1/P1×4/P2×8/P3×8（04 矩阵同步）；不执行 git commit/push |
+| 清尾 L1（Phase 7 后开放缺陷清理批次） | 已完成（2026-11-14 报告员验证轮收口：七项关闭 P1-16/P1-17/P2-02/P2-13/P2-14/P2-15/P3-10 + P1-05/P2-08 取证面补齐维持开放；最终开放计数 P0×1/P1×2/P2×4/P3×7） | phase-7-report.md「清尾 L1」小节 | 报告员实跑（2026-11-14）：dart analyze 0 / dart format 253 files 0 changed / **全量 flutter test 380 项全绿** exit 0（`00:42 +380`，基线 375+5 新增）/ cargo fmt --check 0 / cargo 定向 3 crate 全绿（voicefox-ffi crash_log 2、lx-source --lib local:: 30 passed 含 P1-17/P2-13 新测试、voicefox-download pause 1）/ uiOnly debug bundle 重建 exit 0（RUSTUP_TOOLCHAIN=1.99.0 --dart-define=VOICEFOX_UI_ONLY=true，so 286350280B 00:35:21 含 ffi crash_log）+ Xvfb :117 运行时验证：**P3-10** START_SIZE=360x800 → getwindowgeometry 360×800 精确生效（无 1280×720 默认无 560 钳制）+ **P2-15** 360×800 曲库「喜欢的歌曲」标签完整无省略号（final/phone-library-360x800-uionly-recheck.png 入树）；**P1-16 运行时复走未达成如实登记**（uiOnly <960 降级壳入口卡 tap 未推入，同页分段 tap 正常、widget 推入链路 phase5_library_test:219-222 全量绿锁定，不归因本轮 diff；首页 Hero「导入本地」实为导航接线 home_page.dart:118，D6 口径过期如实登记）；P1-05/P2-08 接 crash.log panic/Flutter 异常取证面（ffi/src/crash_log.rs 新建 + main.dart installCrashLogHandlers），引擎级 GL abort 无 unwind 仍无取证维持开放；clippy 原样门禁与全量 cargo test 本轮未复跑（基线在案，如实登记）；不执行 git commit/push |
+
+**当前执行状态：Phase 0 已完成（2026-11-11 第二轮全量复审修订，报告 `docs/redesign/phase-0-report.md`）。Phase 1 已完成（2026-11-11 复验轮收口，报告 `docs/redesign/phase-1-report.md`）：P0-02 与全部 P1（P1-03/04/07/08/09/10/11）关闭并经测试/实机复核；P0-01 维持开放（概率性未复现未定位，ButtonPress 间歇失效同域观察在案；长会话验收前必须定位，不阻塞 Phase 2）；P1-05 同域跟进；Android 全链与真机 13 项在环境补齐且用户解除搁置前保持「未验证」状态（P1-06；禁止 APK/Gradle 构建与 AVD 创建）；本地音乐导入端到端归 Phase 5。Phase 2 已完成（2026-11-11 缺陷复验轮收口，报告 `docs/redesign/phase-2-report.md`）：MobileShell/手机首页/Mini Player 布局收口，P1-12/P1-13 关闭（QA 复查通过，当前无 P0/P1；遗留 minor 仅 P2-10/P3-08）；浅色主题实机整页走查未做（P1-09 收口仍为代码 + 测试锁定，归 Phase 7）；Mini Player 60-68dp 与底栏叠序仅 widget/golden 层证据；桌面窗口 MobileShell 运行时呈现被平台隔离设计阻止（desktop→SizedBox.shrink()）。Phase 3 已完成（2026-11-11 收口轮，报告 `docs/redesign/phase-3-report.md`）：实施轮完成搜索音源筛选按 §5.4:355 裁决改 chips 行（原下拉引 §4.3 属误引）+ 搜索历史本地持久化（容错降级、记录点=回车/历史项/Shell 种子）；曲库来源筛选 chips 从 favorites+history+localSongs 实际派生（组合规则登记于代码注释与 mobile_library_page_test）；歌单/专辑/歌手详情下拉刷新（完成判据 = page1 响应或错误落槽，preset 页不接，15s 超时兜底）+ 收藏 pending 乐观态（成功确认走 `library` 事件真实快照、失败 dispatchWithError 回滚、在途忽略再击、错误仅全局 toast 一处）；P2-10 关闭（入口卡两行卡 + vx_track_row 窄视口 hover 预留宽 + vx_empty_state 矮槽滚动两处同域修复）。收口轮：P2-03 关闭（代码 diff discover_page.dart:530-535 + 实机 linux-discover-360x800-default.png 复验 + QA 逐张复核；横滑末态未单独手势演练，由末尾 padding 语义结构性保证，如实登记）；定向 10 文件 72 项全绿（报告员实跑 `00:09 +72: All tests passed!` exit 0）+ playlist_detail_isolation_test 单独 13/13；release 构建（bundle 07:54 在位）+ Xvfb :99 实跑真实 Rust 数据源（config.toml kw/酷狗/酷我联网非 mock）四视口截图 4 张逐张 QA 通过（跨页一致 discover↔playlist、数据抽查 3 处、无白屏/overflow/遮挡/封面错图；main.dart:163 临时 minimumSize 300,400 已精确还原 git diff 空）；Android 真机项 P1-06 维持未验证（本批 linux 截图不适用）、交互式运行时手操/浅色主题（归 Phase 7）/golden 基线比对未做（如实披露）、全量门禁外执行（已知事实「门禁全绿」）。2026-11-12 QA 复查轮（修复验证与重截）：QA1 轮 P0/P1 登记复查双关闭（P0：6 条四态断言在位 + 定向 10 文件 79 项全绿双实跑 QA 独立 `00:10 +79`/报告员 `00:14 +79` exit 0 + 4 改动文件 24 项双实跑逐名核对，§13「四态齐全」证据面扩展至曲库/发现/专辑；P1：勘误节 + 四处口径同步在案）；release 重建 exit 0（bundle 03:52:19，lib/ 零改动内容等价重建）+ Xvfb :99 受影响视口（曲库/发现/专辑）重截 3 张逐张目检通过（专辑为真实错误态+重试实拍 §9 符合，search/playlist 未动）；新增未验证如实披露：专辑详情成功态实机未取得（种子路径 kw not found ×2/wy 落汽水音乐不支持专辑 ×1，保留真实错误态为证）、VOICEFOX_START_SOURCE 专辑种子疑似未生效（仅观察未判缺陷未修）、残留 minor 4 条（第 5 张截图未登记已补登记/勘误 mtime 对 2 张过期/not found 可读性/bottom inset 未断言）。Phase 4 已完成（2026-11-12 收口轮，报告 `docs/redesign/phase-4-report.md`）：全屏播放页大封面 403 灰占位根因修复（P1-15 登记即关闭：cover_image.dart +35 voicefox UA + 按音源 Referer 镜像 Rust cover_referer + httpHeaders 下发；根因 curl 双向实锤 Dart UA 403 text/html / voicefox UA 200 image/jpg，QA 实跑 + 报告员独立复跑同结果）；debug 重建 exit 0（bundle 06:22）+ Xvfb :101 真实 kw/wy 在线播放重截 3 张逐张目检通过 + queue-open 保留原截（minor）；定向 5 文件 56 项 + 2 文件 26 项全绿（报告员实跑 exit 0）；§13 退出条件五项套件层全绿；锁屏媒体控制真机侧/移动视口钳制（main.dart:163 minimumSize 560）/移动端全屏页运行时（isTouchPlatform 隔离）/歌词 seek 运行时/队列 sheet/抓包核对/release 重建维持未验证如实披露；Android 真机项 P1-06 维持。Phase 5 已完成（2026-11-13 收口轮，报告 `docs/redesign/phase-5-report.md`）：§5.10 导入全链（双选项 bottom sheet + 系统 picker seam + PlatformException 回退手输，实跑入库 6 首）、§5.11 下载三态分组/暂停/取消/删除二次确认/失败重试、指纹缓存增量扫描（复用 10006/4894/20006 多轮）、持久化跨 3 次重启（10012→14900→30012）、10k/20k/30k 性能与真实下载落盘 ffprobe 验证收口；定向 3 文件 31 项全绿（报告员实跑 `00:04 +31` exit 0）+ debug bundle 00:37:47（libvoicefox_ffi.so 287203584B 在位）+ Xvfb :105 真实启动 4 张截图逐张目检通过 + 独立 QA P0=0/P1=0/minor=3、四条退出条件全部有实跑测试支撑可收口；**新增登记缺陷 D1=P1-16（导入方式 bottom sheet 运行时 `_dependents.isEmpty` 断言红屏 UI 死亡，3 会话复现，widget 测试全绿但运行时主导入入口坏）/D2=P1-17（扫描取消后 14900 首部分入库违反「取消→结果未提交」契约，竞态未排除）/D3=P2-13（重试后损坏文件计「复用」）/D4=P2-14（解析阶段暂停 3 次均打成失败）/D5=P3-09（560 宽 overflow 23px + 已收 1.4MB 大于声明总量 475.7KB）全部开放**，建议随 Phase 6/7 修复批次收口；偏差 E1-E6 登记 04 矩阵；Android 真机项（SAF seam 实装/SAF 持久授权/系统 picker/后台服务）、Xvfb 系统 picker（无 portal，实跑回退手输）、离线严格断网验证（unshare -n 环境阻断）、暂停→已暂停→继续运行时链路、全量门禁与 release 重建维持未验证如实披露；10k/20k 目录因 D1 改外部编辑 config.toml 加路径（测试后已还原 phase1 单路径，报告员核实）。Phase 6 已完成（2026-11-13 收口轮 + Phase6-QA1 修复轮 + QA 复查轮收口，报告 `docs/redesign/phase-6-report.md`）：桌面三栏规格对齐与交互补齐（常量对齐 §7.1/§7.4/§7.5、侧栏拖调/折叠/持久化、Esc 链、平板 840-1199 end panel 内嵌、触点分档），P1-14（播放栏右簇贴右缘）/P2-11（空态假控件）收口轮关闭，P1-18（推入式详情页整页覆盖壳层）登记即关闭且三重证据齐（运行时实拍 2 张重截报告员逐张目检通过 + 代码 nav_bus.dart:22 contentNavigatorKey/app_shell.dart:642-662 内容区内嵌 Navigator + shell_test 推入路由 group 3 条；QA 复查定向 4 文件 49 项全绿 + 回归护栏 tablet_shell_test 8/8 报告员独立复跑全绿）；四项退出条件（五视口无布局缺陷/三栏可折叠/右面板 overlay 不挤压/播放器跨页面保持）全部成立，Phase 7 可进入；P2-05 MPRIS 维持开放（Flutter 桌面 FFI 路径无 media_controls，仅 TUI 接线），键盘焦点移动/真实出声/平板运行时/1 秒测试曲长程播放维持未验证如实披露；偏差 G1-G9 登记 04 矩阵。**
+Phase 7 已完成（2026-11-13 报告员独立复跑轮收口，报告 `docs/redesign/phase-7-report.md`）：全部门禁报告员实跑（format 1→0 / analyze 0 / flutter test 375 全绿 / cargo test 826 全绿 / cargo fmt 0 / clippy 原样 exit 101 基线复现 / release 构建 exit 0）+ final 13 张截图逐张目检（P1-19 七张证据失实登记即关闭并以真实视口重截件替换，应用本体经真 1024×640 重截证明无回归）+ P2-15/P3-10 新增开放 + 许可证合规无阻塞（02 审计口径）+ 性能 profiling/无障碍专项/浅色运行时走查/golden harness 如实未执行。**最终收口判定：Linux 桌面目标可收口；Android 目标全程未构建未验证（P1-06 环境阻断 + 用户搁置维持）；「P0/P1 为 0」字面未满足（开放 P0×1=P0-01 未复现未定位、P1×4=P1-05/06/16/17），遗留修复批次建议 P1-16 → P1-17 → P0-01/P1-05 → P2 尾项。最终开放计数：P0×1 / P1×4 / P2×8 / P3×8（04 矩阵为准）。**
+清尾 L1 已完成（2026-11-14 报告员验证轮收口，记录 `docs/redesign/phase-7-report.md`「清尾 L1」小节）：Phase 7 后开放缺陷清理批次，**七项关闭**（P1-16 导入流重入门禁 / P1-17 提交段前取消检查点 / P2-02 单一真源护栏 / P2-13 失败清单非空强制重扫 / P2-14 确定性测试锁定（生产行为 57db10b 已在树）/ P2-15 FittedBox scaleDown + 运行时目检 / P3-10 uiOnly START_SIZE + 运行时几何实核）+ **P1-05/P2-08 crash.log 取证面补齐维持开放**（引擎级 GL abort 无 unwind 仍无取证）；报告员实跑 analyze 0 / format 0 / 全量 flutter test 380 全绿 / cargo fmt 0 / cargo 定向 3 crate 全绿 / uiOnly bundle 重建 exit 0 + Xvfb :117 运行时验证（P3-10 360×800 几何实核 + P2-15 标签完整目检）；P1-16 运行时复走未达成如实登记（uiOnly <960 降级壳入口卡 tap 未推入，widget 推入链路绿、不归因本轮 diff；首页 Hero「导入本地」实为导航接线 home_page.dart:118，D6 口径过期如实登记）；clippy 原样门禁与全量 cargo test 未复跑（基线在案）。**清尾 L1 后最终开放计数：P0×1 / P1×2 / P2×4 / P3×7（04 矩阵为准）；后续批次建议 P0-01/P1-05 定位（profiler/watchdog）→ P2-05 MPRIS（后端批次）→ P3 尾项。**

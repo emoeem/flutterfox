@@ -29,7 +29,17 @@ class CustomPlaylistsSection extends StatelessWidget {
   /// 名称过滤关键词；null / 空串不过滤。
   final String? query;
 
-  const CustomPlaylistsSection(this.model, {super.key, this.query});
+  /// 来源筛选（曲库来源 chips）：自建歌单是本地数据、无音源字段，仅在
+  /// 未选来源或所选为本地（source == 'local'）时展示；其余来源如实过滤
+  /// 为空（§5.5 来源过滤后标题和计数同步变化）。
+  final String? source;
+
+  const CustomPlaylistsSection(
+    this.model, {
+    super.key,
+    this.query,
+    this.source,
+  });
 
   Future<void> _create(BuildContext context) async {
     final name = await promptCustomPlaylistName(context);
@@ -49,11 +59,14 @@ class CustomPlaylistsSection extends StatelessWidget {
       listenable: model,
       builder: (context, _) {
         final keyword = query?.trim().toLowerCase() ?? '';
-        final playlists = keyword.isEmpty
+        final sourceOk = source == null || source == 'local';
+        final playlists = !sourceOk
+            ? const []
+            : keyword.isEmpty
             ? model.state.customPlaylists
             : model.state.customPlaylists
-                .where((p) => p.name.toLowerCase().contains(keyword))
-                .toList();
+                  .where((p) => p.name.toLowerCase().contains(keyword))
+                  .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -83,10 +96,12 @@ class CustomPlaylistsSection extends StatelessWidget {
               child: playlists.isEmpty
                   ? EmptyState(
                       icon: Icons.playlist_add,
-                      title: keyword.isEmpty
+                      title: sourceOk && keyword.isEmpty
                           ? '还没有自建歌单'
                           : '没有匹配的歌单',
-                      subtitle: keyword.isEmpty
+                      subtitle: !sourceOk
+                          ? '自建歌单是本地数据，选「全部来源」或「本地音乐」时展示'
+                          : keyword.isEmpty
                           ? '点「新建歌单」，或在歌曲菜单里选择「加入歌单」'
                           : '换个关键词试试',
                     )
@@ -103,6 +118,78 @@ class CustomPlaylistsSection extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// 自建歌单卡面右键/长按菜单（SR-11 残余收口，Batch D §7.2）：与行内
+/// PopupMenu 同一动作集（打开详情/重命名/删除），复用同一对话框与命令
+/// 链，不另建菜单体系。锚定 [position]（右键坐标；null 用默认位）。
+/// 专辑/歌手/远端歌单卡面无对应域动作（唯一动作=左键进详情），如实
+/// 不加右键入口（§7.2.7 不展示假入口）。
+Future<void> showCustomPlaylistCardMenu(
+  BuildContext context,
+  AppModel model,
+  bridge.CustomPlaylistSummaryDto playlist, {
+  Offset? position,
+}) async {
+  final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+  if (overlay == null) return;
+  final anchor = position ?? const Offset(120, 120);
+  final scheme = Theme.of(context).colorScheme;
+  final action = await showMenu<String>(
+    context: context,
+    position: RelativeRect.fromRect(
+      Rect.fromPoints(anchor, anchor.translate(1, 1)),
+      Offset.zero & overlay.size,
+    ),
+    color: scheme.surfaceContainerHigh,
+    items: const [
+      PopupMenuItem(value: 'open', child: Text('打开详情')),
+      PopupMenuItem(value: 'rename', child: Text('重命名')),
+      PopupMenuItem(value: 'delete', child: Text('删除')),
+    ],
+  );
+  if (action == null || !context.mounted) return;
+  switch (action) {
+    case 'open':
+      if (!context.mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CustomPlaylistDetailPage(model, playlist),
+        ),
+      );
+    case 'rename':
+      final name = await promptCustomPlaylistName(
+        context,
+        title: '重命名歌单',
+        initialName: playlist.name,
+      );
+      if (name == null || name == playlist.name || !context.mounted) return;
+      await model.renameCustomPlaylist(playlist.id, name);
+    case 'delete':
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('删除歌单'),
+          content: Text('确定删除「${playlist.name}」？此操作不可撤销。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+      await model.deleteCustomPlaylist(playlist.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(
+        context,
+      )?.showSnackBar(SnackBar(content: Text('已删除「${playlist.name}」')));
   }
 }
 
@@ -148,37 +235,47 @@ class _PlaylistTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        leading: CoverImage(
-          url: playlist.coverUrl,
-          size: 48,
-          icon: Icons.queue_music,
-        ),
-        title: Text(
-          playlist.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        subtitle: Text('${playlist.songCount} 首 · 本地'),
-        trailing: PopupMenuButton<String>(
-          tooltip: '更多',
-          icon: const Icon(Icons.more_vert, size: 20),
-          onSelected: (action) {
-            if (action == 'rename') _rename(context);
-            if (action == 'delete') _delete(context);
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'rename', child: Text('重命名')),
-            PopupMenuItem(value: 'delete', child: Text('删除')),
-          ],
-        ),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => CustomPlaylistDetailPage(model, playlist),
+    // SR-11 残余收口：行面右键 = 同一动作集菜单（桌面语义；ListTile 无
+    // onSecondaryTapUp 参数，经 GestureDetector 承接）。
+    return GestureDetector(
+      onSecondaryTapUp: (details) => showCustomPlaylistCardMenu(
+        context,
+        model,
+        playlist,
+        position: details.globalPosition,
+      ),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 6),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: CoverImage(
+            url: playlist.coverUrl,
+            size: 48,
+            icon: Icons.queue_music,
+          ),
+          title: Text(
+            playlist.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          subtitle: Text('${playlist.songCount} 首 · 本地'),
+          trailing: PopupMenuButton<String>(
+            tooltip: '更多',
+            icon: const Icon(Icons.more_vert, size: 20),
+            onSelected: (action) {
+              if (action == 'rename') _rename(context);
+              if (action == 'delete') _delete(context);
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'rename', child: Text('重命名')),
+              PopupMenuItem(value: 'delete', child: Text('删除')),
+            ],
+          ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => CustomPlaylistDetailPage(model, playlist),
+            ),
           ),
         ),
       ),

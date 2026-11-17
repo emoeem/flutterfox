@@ -39,6 +39,9 @@ Future<VoicefoxAudioHandler> configureAudioService({
   session.becomingNoisyEventStream.listen((_) {
     unawaited(handler.pause());
   });
+  // 音频焦点中断（§10.2：被抢占→暂停；end 且 shouldResume 且抢占前在播
+  // →恢复）：订阅生命周期同上（进程级），恢复守卫在 handler 内。
+  session.interruptionEventStream.listen(handler.onInterruptionEvent);
   return AudioService.init(
     builder: () => handler,
     config: const AudioServiceConfig(
@@ -72,8 +75,22 @@ class VoicefoxAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> play() => _player.resume();
 
+  /// 抢占让焦自动暂停在途标记：区分 [onInterruptionEvent] 发起的自动暂停
+  /// 与用户手动暂停（见 [pause]）。
+  bool _pausingForInterruption = false;
+
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() {
+    // 非自动发起的暂停（通知栏/锁屏/耳机按键/助手）= 用户意图：清空恢复
+    // 守卫，end 事件不得覆盖抢占期间的手动暂停；begin 的自动让焦暂停经
+    // [onInterruptionEvent] 置位绕过本清空（否则 end 永不恢复）。应用内
+    // dispatch 暂停不经 handler（host_player_bridge 直达 MobileAudioPlayer），
+    // 其快照回声与本自动暂停回声不可区分——该路径登记为已知限制（Phase 4）。
+    if (!_pausingForInterruption) {
+      _playingBeforeInterruption = false;
+    }
+    return _player.pause();
+  }
 
   @override
   Future<void> stop() => _player.stop();
@@ -115,6 +132,13 @@ class VoicefoxAudioHandler extends BaseAudioHandler with SeekHandler {
   void _syncMediaItem() {
     final song = model.state.playback.song;
     final durationMs = song?.durationMs.toInt() ?? 0;
+    // 封面 artUri：null/空串不进通知（Uri.tryParse('') 返回非 null 空 Uri，
+    // 会伪造出无图封面 URL，故照 now_playing_page.dart 的 null||isEmpty
+    // 守卫惯例先行拦截）；解析失败同样不伪造。
+    final coverUrl = song?.coverUrl;
+    final artUri = (coverUrl == null || coverUrl.isEmpty)
+        ? null
+        : Uri.tryParse(coverUrl);
     mediaItem.add(
       MediaItem(
         id: song?.id ?? 'voicefox-now-playing',
@@ -122,8 +146,37 @@ class VoicefoxAudioHandler extends BaseAudioHandler with SeekHandler {
         title: song?.name ?? 'voicefox',
         artist: (song?.singer.isNotEmpty ?? false) ? song!.singer : null,
         duration: durationMs > 0 ? Duration(milliseconds: durationMs) : null,
+        artUri: artUri,
       ),
     );
+  }
+
+  /// 音频焦点被抢占前是否在播（快照镜像）：end 事件只有「抢占前确实在播」
+  /// 才恢复——抢占期间用户经通知栏/耳机的手动暂停（[pause] 清守卫）不能
+  /// 被系统恢复事件覆盖用户意图。
+  bool _playingBeforeInterruption = false;
+
+  /// audio_session 中断事件（§10.2 音频焦点）：begin → 记录在播快照并
+  /// 暂停让出焦点；end 且抢占前在播 → 恢复。注意：audio_session 0.2.4 的
+  /// [AudioInterruptionEvent] 只有 begin/type，无 shouldResume 信号（计划
+  /// 文本按新版 API 写就，此处按实际版本如实收敛）；duck 类型本轮不做
+  /// 压低音量（无对应命令），统一按暂停处理。
+  Future<void> onInterruptionEvent(AudioInterruptionEvent event) async {
+    if (event.begin) {
+      _playingBeforeInterruption = playbackState.value.playing;
+      _pausingForInterruption = true;
+      try {
+        await pause();
+      } finally {
+        _pausingForInterruption = false;
+      }
+    } else {
+      final wasPlaying = _playingBeforeInterruption;
+      _playingBeforeInterruption = false;
+      if (wasPlaying) {
+        unawaited(play());
+      }
+    }
   }
 
   @override

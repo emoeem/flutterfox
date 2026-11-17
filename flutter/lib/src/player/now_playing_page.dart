@@ -33,11 +33,7 @@ import 'queue_panel.dart';
 
 /// 全屏播放页。
 class NowPlayingPage extends StatefulWidget {
-  const NowPlayingPage({
-    super.key,
-    required this.model,
-    required this.onClose,
-  });
+  const NowPlayingPage({super.key, required this.model, required this.onClose});
 
   final AppModel model;
 
@@ -102,8 +98,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                                 child: VxEmptyState(
                                   icon: Icons.album_outlined,
                                   title: '未在播放',
-                                  message:
-                                      '从搜索、曲库或歌单挑一首开始播放，这里会显示封面与歌词。',
+                                  message: '从搜索、曲库或歌单挑一首开始播放，这里会显示封面与歌词。',
                                   actionLabel: '返回应用',
                                   onAction: widget.onClose,
                                 ),
@@ -210,7 +205,11 @@ class _CoverPalette {
 /// 封面 URL 变化时自动重取主色（Phase 7 提取公开；取色实现
 /// _CoverPalette 保持私有，失败回退 null 由背景走主题色）。
 class NowPlayingAutoPalette extends StatefulWidget {
-  const NowPlayingAutoPalette({super.key, required this.url, required this.onColor});
+  const NowPlayingAutoPalette({
+    super.key,
+    required this.url,
+    required this.onColor,
+  });
 
   final String? url;
   final ValueChanged<Color?> onColor;
@@ -344,6 +343,11 @@ class _NowPlayingBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disable = MediaQuery.disableAnimationsOf(context);
+    final lyrics = model.state.lyrics;
+    // P2-18（§7.7「大封面与歌词双栏或封面居中」）：歌词缺位时右列只剩
+    // 「暂无歌词」空态，右半区大面积空置——回退为封面居中的单列布局；
+    // 歌词可用时才进入双栏。歌词异步回填后自动切换，布局平滑过渡。
+    final hasLyrics = !lyrics.isEmpty && lyrics.lines.isNotEmpty;
     return Stack(
       children: [
         Center(
@@ -352,6 +356,18 @@ class _NowPlayingBody extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final bodyH = constraints.maxHeight;
+                if (!hasLyrics) {
+                  // 无歌词：单列居中，封面边长按可用高度自适应（320–500）。
+                  final byHeight = (bodyH - 372).clamp(320.0, 500.0);
+                  return _LeftColumn(
+                    model: model,
+                    song: song,
+                    bodyHeight: bodyH,
+                    coverSize: byHeight,
+                    narrow: constraints.maxWidth < 1080,
+                    onToggleQueue: onToggleQueue,
+                  );
+                }
                 final leftWidth = (constraints.maxWidth - 48) * 0.46;
                 // 封面边长按可用高度自适应（320–500）；高度不足时左列滚动。
                 final byHeight = (bodyH - 372).clamp(320.0, 500.0);
@@ -459,16 +475,18 @@ class _LeftColumn extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               NowPlayingActionRow(model: model, song: song),
+              // P2-17×P2-18 交叉：无歌词时回退单列布局，LyricsPanel 不渲染，
+              // 重取入口必须留在单列内，不能只挂在歌词面板空态里。
+              if (model.state.lyrics.isEmpty ||
+                  model.state.lyrics.lines.isEmpty) ...[
+                const SizedBox(height: 10),
+                LyricsRetryButton(model: model, song: song),
+              ],
               const SizedBox(height: 20),
               RepaintBoundary(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: LiveSeekRow(
-                    model: model,
-                    positionMs: playback.positionMs,
-                    durationMs: playback.durationMs,
-                    playing: playing,
-                  ),
+                  child: LiveSeekRow(model: model, playing: playing),
                 ),
               ),
               const SizedBox(height: 12),
@@ -476,6 +494,8 @@ class _LeftColumn extends StatelessWidget {
                 isPlaying: playing,
                 shuffleOn: mode == 'random',
                 repeatOn: mode == 'list-loop' || mode == 'single-loop',
+                // §8.3：单曲循环档独立视觉态（repeat_one 图标 + tooltip）。
+                repeatSingle: mode == 'single-loop',
                 enabled: true,
                 gap: 22,
                 onShuffle: configReady
@@ -567,7 +587,11 @@ class CrossfadeCover extends StatelessWidget {
 /// 操作行：收藏 / 添加到歌单 / 下载 / 更多（Phase 7 提取公开；全部真实
 /// 命令，窄宽自动换行）。
 class NowPlayingActionRow extends StatelessWidget {
-  const NowPlayingActionRow({super.key, required this.model, required this.song});
+  const NowPlayingActionRow({
+    super.key,
+    required this.model,
+    required this.song,
+  });
 
   final AppModel model;
   final bridge.SongDto song;
@@ -586,7 +610,8 @@ class NowPlayingActionRow extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             IconButton(
-              tooltip: favorite ? '取消收藏' : '收藏',
+              // §8.5：说明写入本地曲库，不假装远端账号红心。
+              tooltip: favorite ? '取消收藏（本地曲库）' : '收藏（本地曲库）',
               onPressed: () => model.toggleFavorite(song),
               icon: Icon(
                 favorite ? Icons.favorite : Icons.favorite_border,
@@ -596,13 +621,22 @@ class NowPlayingActionRow extends StatelessWidget {
             ),
             IconButton(
               tooltip: '添加到歌单',
-              onPressed: () => showAddToCustomPlaylistSheet(context, model, [song]),
-              icon: Icon(Icons.playlist_add, size: 22, color: scheme.onSurfaceVariant),
+              onPressed: () =>
+                  showAddToCustomPlaylistSheet(context, model, [song]),
+              icon: Icon(
+                Icons.playlist_add,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
             IconButton(
               tooltip: '下载',
               onPressed: () => model.download(song),
-              icon: Icon(Icons.download_outlined, size: 22, color: scheme.onSurfaceVariant),
+              icon: Icon(
+                Icons.download_outlined,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
             PopupMenuButton<String>(
               tooltip: '更多',
@@ -618,7 +652,11 @@ class NowPlayingActionRow extends StatelessWidget {
                   model.dispatch(const bridge.FfiCommand.stop());
                 }
               },
-              icon: Icon(Icons.more_horiz, size: 22, color: scheme.onSurfaceVariant),
+              icon: Icon(
+                Icons.more_horiz,
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ],
         );
@@ -670,10 +708,12 @@ class _BottomRow extends StatelessWidget {
                     child: SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 3,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 5),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 10),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 5,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 10,
+                        ),
                       ),
                       child: Slider(
                         value: (volume / 100).clamp(0.0, 1.0),
@@ -708,12 +748,20 @@ class _BottomRow extends StatelessWidget {
               child: Text('由系统管理（后端未提供设备枚举）'),
             ),
           ],
-          icon: Icon(Icons.speaker_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.speaker_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         IconButton(
           tooltip: '队列面板',
           onPressed: onToggleQueue,
-          icon: Icon(Icons.queue_music_outlined, size: 20, color: scheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.queue_music_outlined,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

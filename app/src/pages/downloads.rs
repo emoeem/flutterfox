@@ -384,6 +384,12 @@ fn format_progress_detail(task: &DownloadTaskView) -> String {
         DownloadState::Resolving => "正在解析播放地址（失败会自动换源）".to_string(),
         DownloadState::Tagging => format!("{size} · 写入标签与歌词"),
         DownloadState::Cancelled => "已取消".to_string(),
+        DownloadState::Paused => format!(
+            "{size} · 已暂停 {}",
+            task.progress
+                .ratio()
+                .map_or_else(String::new, |ratio| format!("{:>3.0}%", ratio * 100.0))
+        ),
         DownloadState::Failed => "失败".to_string(),
         DownloadState::Downloading => format!("{size} · {} · {}", elapsed, task.quality.label()),
     }
@@ -397,6 +403,7 @@ fn state_color(task: &DownloadTaskView, ctx: &AppContext) -> ratatui::style::Col
         DownloadState::Failed => crate::theme::red(ctx),
         DownloadState::Queued => crate::theme::overlay1(ctx),
         DownloadState::Resolving | DownloadState::Tagging => crate::theme::sapphire(ctx),
+        DownloadState::Paused => crate::theme::yellow(ctx),
         DownloadState::Downloading => crate::theme::accent(ctx),
     }
 }
@@ -446,6 +453,7 @@ mod tests {
                 downloaded,
                 total,
                 cancelled: false,
+                paused: false,
             },
             elapsed: std::time::Duration::from_secs(3),
             bytes: 0,

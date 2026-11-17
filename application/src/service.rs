@@ -168,8 +168,20 @@ impl ApplicationService {
     /// 宿主（runtime/FFI 或移动端）应在 tokio 上下文里调用一次。
     pub fn start_playback_pump(&self) {
         let Ok(handle) = tokio::runtime::Handle::try_current() else {
+            // 静默 return 会让「进度/时长恒 0、Ended 自动切歌失效、播放错误
+            // 不可见」变成不可排查的故障（P0-02 根因即此处）。GUI 路径没有
+            // tracing subscriber，必须 eprintln 才能出现在 stdout/stderr。
+            tracing::warn!(
+                "start_playback_pump: 当前线程无 tokio 上下文，播放泵未启动；\
+                 进度/时长/Ended/播放错误将停更。宿主应在 tokio 上下文调用本函数。"
+            );
+            eprintln!(
+                "voicefox: start_playback_pump 失败——当前线程无 tokio 上下文，\
+                 播放泵未启动（进度/时长/Ended/播放错误将停更）"
+            );
             return;
         };
+        eprintln!("voicefox: playback pump started");
         let service = self.clone();
         let player = self.playback.player();
         let mut state_rx = player.state_watcher();
@@ -295,11 +307,31 @@ impl ApplicationService {
     }
 
     /// 配置里的播放模式字符串（`none` / `list-loop` / `single-loop` / `random`）。
-    fn play_mode(&self) -> String {
+    pub(crate) fn play_mode(&self) -> String {
         self.config_store
             .as_ref()
             .map(|store| store.get().player.play_mode)
             .unwrap_or_else(|| "list-loop".to_string())
+    }
+
+    /// 桌面媒体会话桥的配置开关(Batch F §9.3 引入;SMTC 接入泛化):
+    /// Linux 读 `integration.mpris`、Windows 读 `integration.smtc`,与 TUI
+    /// `start_media_controls` 的开关选择同源同义(macOS Now Playing 未接入)。
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    pub(crate) fn media_session_enabled(&self) -> bool {
+        self.config_store
+            .as_ref()
+            .map(|store| {
+                #[cfg(target_os = "linux")]
+                {
+                    store.get().integration.mpris
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    store.get().integration.smtc
+                }
+            })
+            .unwrap_or(false)
     }
 
     pub fn playback(&self) -> PlaybackService {
@@ -386,6 +418,22 @@ impl ApplicationService {
                 self.publish_queue();
                 Ok(())
             }
+            ApplicationCommand::QueueMove { from, to } => {
+                // Batch F §9.1 P2-09：拖拽排序真实后端语义；越界/原地幂等。
+                if self.queue.move_item(from, to) {
+                    self.publish_queue();
+                }
+                Ok(())
+            }
+            ApplicationCommand::QueuePlayAt { index } => {
+                // Batch F §9.1：队内跳播——复用 play（内部 replace 队列索引 +
+                // 触发真实播放），越界返回与 Play 同款错误文案。
+                let (songs, _) = self.queue.snapshot();
+                if index >= songs.len() {
+                    return Err("播放索引超出队列范围".to_string());
+                }
+                self.play(songs, index).await
+            }
             ApplicationCommand::QueueClear => {
                 self.queue.clear();
                 self.publish_queue();
@@ -447,12 +495,14 @@ impl ApplicationService {
                 self.play_with_restore(songs, index, position, paused).await
             }
             ApplicationCommand::LoadLyrics { song } => {
-                let generation = self.state().playback.generation;
                 let lyrics = self.lyrics.clone();
                 let events = self.events.clone();
                 let state = Arc::clone(&self.state);
+                // P2-17：同 play 路径——令牌必须来自 LyricService 自身的代次，
+                // 传 playback generation 会被 load_at 过期校验丢弃。
+                let lyric_generation = lyrics.prepare();
                 spawn_reported(events.clone(), "歌词加载", async move {
-                    match lyrics.load(&song, generation).await {
+                    match lyrics.load(&song, lyric_generation).await {
                         Ok(value) => {
                             state.write().unwrap_or_else(|e| e.into_inner()).lyrics = Some(value);
                             let _ =
@@ -652,6 +702,32 @@ impl ApplicationService {
                 }
                 Ok(())
             }
+            ApplicationCommand::DownloadPause { id } => {
+                if let Some(engine) = self.downloads.as_ref() {
+                    engine.pause(id);
+                    self.publish_downloads(engine.snapshot());
+                }
+                Ok(())
+            }
+            ApplicationCommand::DownloadResume { id } => {
+                if let Some(engine) = self.downloads.as_ref() {
+                    let sources = Arc::clone(&self.sources);
+                    engine.resume(id, &sources);
+                    self.publish_downloads(engine.snapshot());
+                }
+                Ok(())
+            }
+            ApplicationCommand::DownloadDeleteFile { id } => {
+                if let Some(engine) = self.downloads.as_ref() {
+                    if !engine.delete_file(id) {
+                        self.emit(ApplicationEvent::Notification {
+                            message: "该任务没有可删除的本地文件".to_string(),
+                        });
+                    }
+                    self.publish_downloads(engine.snapshot());
+                }
+                Ok(())
+            }
             ApplicationCommand::DownloadClearFinished => {
                 if let Some(engine) = self.downloads.as_ref() {
                     engine.clear_finished();
@@ -672,11 +748,33 @@ impl ApplicationService {
                 let events = self.events.clone();
                 spawn_reported(events.clone(), "本地扫描", async move {
                     let local = sources.local_source();
-                    let result = tokio::task::spawn_blocking(move || local.scan(&paths, max_depth))
-                        .await
-                        .unwrap_or_default();
-                    let _ = events.send(ApplicationEvent::LocalScanCompleted { warnings: result });
+                    let scan_local = Arc::clone(&local);
+                    let result =
+                        tokio::task::spawn_blocking(move || scan_local.scan(&paths, max_depth))
+                            .await
+                            .unwrap_or_default();
+                    // 取消的扫描不提交：stats 若照抄 scan_stats 会拿到上一次
+                    // 扫描的旧值，所以取消事件带 cancelled=true、stats=None。
+                    let cancelled = local.last_scan_was_cancelled();
+                    let raw = local.scan_stats();
+                    let stats = (!cancelled).then_some(crate::event::LocalScanStatsInfo {
+                        discovered: raw.discovered,
+                        reused: raw.reused,
+                        parsed: raw.parsed,
+                        failed: raw.failed,
+                        removed: raw.removed,
+                        skipped: raw.skipped,
+                    });
+                    let _ = events.send(ApplicationEvent::LocalScanCompleted {
+                        warnings: result,
+                        stats,
+                        cancelled,
+                    });
                 });
+                Ok(())
+            }
+            ApplicationCommand::LocalScanCancel => {
+                self.sources.local_source().cancel_scan();
                 Ok(())
             }
             ApplicationCommand::AccountPlaylists { source } => {
@@ -1432,7 +1530,7 @@ impl ApplicationService {
             .ok_or_else(|| "本地存储不可用".to_string())
     }
 
-    /// 刷新收藏/历史/自定义歌单快照并广播 LibraryChanged + StateChanged。
+    /// 刷新收藏/历史/自定义歌单快照并广播 LibraryChanged（A-2 起不再尾随 StateChanged，数据经 state() 恢复）。
     fn publish_library(&self) {
         let Some(store) = self.library.as_ref() else {
             return;
@@ -1455,10 +1553,24 @@ impl ApplicationService {
         append: bool,
     ) -> Result<(), String> {
         let request_id = self.request_id.fetch_add(1, Ordering::SeqCst) + 1;
+        // SearchMore 兜底必须在覆盖 state.search.source 之前读：append 且调用方
+        // 未带 source（旧客户端/聚合路径之外的兜底）时沿用本次查询建立时的
+        // 音源过滤；若先写 None 再读就永远是 None（P1-04 陷阱）。
+        let effective_source = if append {
+            source.or_else(|| {
+                self.state
+                    .read()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .search
+                    .source
+            })
+        } else {
+            source
+        };
         {
             let mut state = self.state.write().unwrap_or_else(|e| e.into_inner());
             state.search.keyword = keyword.clone();
-            state.search.source = source;
+            state.search.source = effective_source;
             state.search.page = page;
             state.search.request_id = request_id;
             state.search.loading = true;
@@ -1476,7 +1588,7 @@ impl ApplicationService {
         let events = self.events.clone();
         let state = Arc::clone(&self.state);
         spawn_reported(events.clone(), "搜索", async move {
-            match search.search(&keyword, page, source).await {
+            match search.search(&keyword, page, effective_source).await {
                 Ok((items, has_more)) => {
                     let mut current = state.write().unwrap_or_else(|e| e.into_inner());
                     if current.search.request_id != request_id {
@@ -1573,6 +1685,11 @@ impl ApplicationService {
                 state.playback.song = Some(resolved_song.clone());
                 state.playback.generation = generation;
                 state.playback.volume = self.playback.volume();
+                // Batch G（P2-17 场景 5 运行时实锤）：换曲即清空歌词态——
+                // 旧歌词属于旧曲，保留会让新歌（尤其歌词加载失败的曲目）
+                // 显示上一首的词并遮蔽重取入口。失败路径「不写错误结果进
+                // state」语义不变（见 load_lyrics_failure 测试）。
+                state.lyrics = None;
                 drop(state);
                 self.emit(ApplicationEvent::PlaybackStarted {
                     request_id,
@@ -1629,6 +1746,8 @@ impl ApplicationService {
                     state.playback.song = Some(resolved_song.clone());
                     state.playback.generation = generation;
                     state.playback.volume = self.playback.volume();
+                    // Batch G：同上——换曲清空歌词态（play_with_restore 同款）。
+                    state.lyrics = None;
                 }
                 self.emit(ApplicationEvent::PlaybackStarted {
                     request_id,
@@ -1639,8 +1758,13 @@ impl ApplicationService {
                 let lyrics = self.lyrics.clone();
                 let events = self.events.clone();
                 let state = Arc::clone(&self.state);
+                // P2-17：歌词过期令牌必须用 LyricService 自己的 prepare() 代次
+                // ——传入 playback generation 会与 LyricService 内部计数（生产
+                // 路径无人 bump，恒 0）永不相等，fetch 完成后被 load_at 的过期
+                // 校验整单丢弃，所有音源歌词恒「暂无」。
+                let lyric_generation = lyrics.prepare();
                 spawn_reported(events.clone(), "歌词加载", async move {
-                    match lyrics.load(&resolved_song, generation).await {
+                    match lyrics.load(&resolved_song, lyric_generation).await {
                         Ok(value) => {
                             state.write().unwrap_or_else(|e| e.into_inner()).lyrics = Some(value);
                             let _ = events.send(ApplicationEvent::LyricsChanged {
@@ -1688,14 +1812,13 @@ impl ApplicationService {
     }
 
     fn emit(&self, event: ApplicationEvent) {
-        let is_state = matches!(event, ApplicationEvent::StateChanged(_));
+        // FFI-R09（A-2）：不再为每个事件尾随广播全量 StateChanged 快照。
+        // 旧实现每次 emit 都克隆整份 ApplicationState（含 search.items/
+        // queue/history），而 Dart 侧 _handleEvent 没有 state_changed 分支，
+        // 快照在 FFI 边界被整体丢弃，纯浪费。数据恢复统一走 Dart 的
+        // _refreshState 拉取（已带单飞+追尾合并）；StateChanged 变体保留
+        // （pub API），语义降级为「显式携带快照的事件」，当前无发送方。
         let _ = self.events.send(event);
-        if !is_state {
-            let snapshot = self.state();
-            let _ = self
-                .events
-                .send(ApplicationEvent::StateChanged(Box::new(snapshot)));
-        }
     }
 }
 
@@ -1944,6 +2067,62 @@ mod tests {
         ApplicationService::new(player, sources, lyrics, effects, None, None, None)
     }
 
+    /// P0-02 回归：泵启动（tokio 上下文内）→ position/duration watcher 变化
+    /// → PlaybackProgress 事件按 4Hz 节流广播。运行环境无 tokio 上下文时泵
+    /// 静默不启动（修复前的桌面路径），本测试因收不到事件而失败。
+    #[tokio::test]
+    async fn playback_pump_broadcasts_progress_for_watch_changes() {
+        let player = crate::services::test_support::manual_player();
+        let sources = Arc::new(SourceManager::new(
+            lx_core::model::source::SourceId::Kw,
+            &[lx_core::model::source::SourceId::Kw],
+        ));
+        let lyrics = Arc::new(LyricService::new(Arc::new(
+            lx_lyric::fetcher::SourceLyricFetcher::new(Arc::clone(&sources)),
+        )));
+        let effects: Arc<dyn crate::services::PlaybackEffects> =
+            Arc::new(crate::services::test_support::NullEffects);
+        let service = ApplicationService::new(
+            Arc::clone(&player) as Arc<dyn PlayerBackend>,
+            Arc::clone(&sources),
+            lyrics,
+            effects,
+            None,
+            None,
+            None,
+        );
+        let mut receiver = service.subscribe();
+
+        service.start_playback_pump();
+        player.push_duration(Duration::from_secs(200));
+        player.push_position(Duration::from_millis(1500));
+
+        // 泵以 250ms 节流；首推在节流窗口内可能被抑制，等窗口过后再推一次。
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        player.push_position(Duration::from_millis(1800));
+
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        let mut progress_seen = None;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(Duration::from_millis(300), receiver.recv()).await {
+                Ok(Ok(ApplicationEvent::PlaybackProgress { position, .. })) => {
+                    progress_seen = Some(position);
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        let position =
+            progress_seen.expect("P0-02：泵应把 position watcher 变化广播为 PlaybackProgress");
+        // 250ms 节流窗口内首推可能先于窗口过期而即时广播（state/首次变更语义），
+        // 因此只断言「事件携带的是推送后的真实位置」，不断言具体哪一次推送。
+        assert!(
+            position >= Duration::from_millis(1500),
+            "广播的位置应来自推送的 watcher 值，实际 {position:?}"
+        );
+    }
+
     #[tokio::test]
     async fn favorites_add_and_remove_flow_through_the_port() {
         let (service, mut receiver) = service_with_library();
@@ -2092,5 +2271,332 @@ mod tests {
         assert_eq!(mapped[0].name, "通勤");
         assert_eq!(mapped[0].song_count, 2);
         assert_eq!(mapped[0].source, SourceId::Wy);
+    }
+
+    /// P2-17 歌词重取链测试用 mock 获取器：lyric 为 None 时返回 NotFound。
+    struct MockLyricFetcher {
+        lyric: Option<String>,
+    }
+
+    #[async_trait::async_trait]
+    impl lx_core::traits::lyric_fetcher::LyricFetcher for MockLyricFetcher {
+        async fn fetch(
+            &self,
+            _song: &SongInfo,
+        ) -> Result<lx_core::model::lyric::LyricData, lx_core::traits::lyric_fetcher::LyricFetchError>
+        {
+            match &self.lyric {
+                Some(text) => Ok(lx_core::model::lyric::LyricData {
+                    lyric: text.clone(),
+                    ..Default::default()
+                }),
+                None => Err(lx_core::traits::lyric_fetcher::LyricFetchError::NotFound),
+            }
+        }
+    }
+
+    fn service_with_lyric_fetcher(
+        fetcher: impl lx_core::traits::lyric_fetcher::LyricFetcher + 'static,
+    ) -> (ApplicationService, ApplicationEventStream) {
+        let player: Arc<dyn PlayerBackend> = crate::services::test_support::null_player();
+        let sources = Arc::new(SourceManager::new(
+            lx_core::model::source::SourceId::Kw,
+            &[lx_core::model::source::SourceId::Kw],
+        ));
+        let lyrics = Arc::new(LyricService::new(Arc::new(fetcher)));
+        let effects: Arc<dyn crate::services::PlaybackEffects> =
+            Arc::new(crate::services::test_support::NullEffects);
+        let service = ApplicationService::new(
+            Arc::clone(&player) as Arc<dyn PlayerBackend>,
+            Arc::clone(&sources),
+            lyrics,
+            effects,
+            None,
+            None,
+            None,
+        );
+        let receiver = service.subscribe();
+        (service, receiver)
+    }
+
+    /// P2-17 回归：LoadLyrics 成功路径——prepare() 代次令牌传给
+    /// LyricService（WIP 批次修复点：传 playback generation 会被 load_at
+    /// 过期校验整单丢弃），state.lyrics 回填并广播 LyricsChanged。
+    #[tokio::test]
+    async fn load_lyrics_success_updates_state_and_emits_lyrics_changed() {
+        let (service, mut receiver) = service_with_lyric_fetcher(MockLyricFetcher {
+            lyric: Some("[00:01.000]第一句\n[00:02.000]第二句".to_string()),
+        });
+
+        service
+            .dispatch(ApplicationCommand::LoadLyrics {
+                song: song("lyr-1"),
+            })
+            .await
+            .expect("LoadLyrics dispatch 应成功");
+
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let mut changed = false;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(std::time::Duration::from_millis(300), receiver.recv()).await
+            {
+                Ok(Ok(ApplicationEvent::LyricsChanged { song_id })) => {
+                    assert_eq!(song_id, "lyr-1");
+                    changed = true;
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        assert!(changed, "LoadLyrics 成功应广播 LyricsChanged");
+        assert!(
+            service
+                .state
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .lyrics
+                .is_some(),
+            "成功后 state.lyrics 应回填"
+        );
+    }
+
+    /// P2-17 回归：LoadLyrics 失败路径——发「歌词加载失败」Notification
+    /// 且不改 state.lyrics（旧歌词不被清掉、也不被错误结果污染）。
+    #[tokio::test]
+    async fn load_lyrics_failure_emits_notification_and_keeps_state() {
+        let (service, mut receiver) = service_with_lyric_fetcher(MockLyricFetcher { lyric: None });
+
+        service
+            .dispatch(ApplicationCommand::LoadLyrics {
+                song: song("lyr-2"),
+            })
+            .await
+            .expect("LoadLyrics dispatch 应成功");
+
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let mut notified = false;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(std::time::Duration::from_millis(300), receiver.recv()).await
+            {
+                Ok(Ok(ApplicationEvent::Notification { message })) => {
+                    assert!(
+                        message.contains("歌词加载失败"),
+                        "失败通知应带「歌词加载失败」前缀，实际 {message}"
+                    );
+                    notified = true;
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        assert!(notified, "LoadLyrics 失败应广播 Notification");
+        assert!(
+            service
+                .state
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .lyrics
+                .is_none(),
+            "失败不得写入 state.lyrics"
+        );
+    }
+
+    /// Batch G 按曲返回歌词的 mock：仅 `with-lyr` 有词，其余 NotFound。
+    struct PerSongLyricFetcher;
+
+    #[async_trait::async_trait]
+    impl lx_core::traits::lyric_fetcher::LyricFetcher for PerSongLyricFetcher {
+        async fn fetch(
+            &self,
+            song: &SongInfo,
+        ) -> Result<lx_core::model::lyric::LyricData, lx_core::traits::lyric_fetcher::LyricFetchError>
+        {
+            if song.id == "with-lyr" {
+                Ok(lx_core::model::lyric::LyricData {
+                    lyric: "[00:01.000]旧歌歌词".to_string(),
+                    ..Default::default()
+                })
+            } else {
+                Err(lx_core::traits::lyric_fetcher::LyricFetchError::NotFound)
+            }
+        }
+    }
+
+    /// Batch G 测试桩：接受任意播放请求的播放器（NullPlayer 恒拒，
+    /// 仅供需要 play 成功路径的回归用）。
+    struct AcceptingPlayer(crate::services::test_support::NullPlayer);
+
+    impl lx_core::traits::player::PlayerBackend for AcceptingPlayer {
+        fn prepare(&self) -> u64 {
+            self.0.prepare()
+        }
+        fn play(&self, _url: &str, _generation: u64) -> bool {
+            true
+        }
+        fn pause(&self) {
+            self.0.pause()
+        }
+        fn resume(&self) {
+            self.0.resume()
+        }
+        fn stop(&self) {
+            self.0.stop()
+        }
+        fn toggle(&self) {
+            self.0.toggle()
+        }
+        fn seek(&self, position: Duration) {
+            self.0.seek(position)
+        }
+        fn state_watcher(&self) -> tokio::sync::watch::Receiver<PlayerState> {
+            self.0.state_watcher()
+        }
+        fn position_watcher(&self) -> tokio::sync::watch::Receiver<Duration> {
+            self.0.position_watcher()
+        }
+        fn duration_watcher(&self) -> tokio::sync::watch::Receiver<Duration> {
+            self.0.duration_watcher()
+        }
+        fn take_event_receiver(
+            &self,
+        ) -> Option<tokio::sync::mpsc::UnboundedReceiver<lx_core::traits::player::PlayerEvent>>
+        {
+            self.0.take_event_receiver()
+        }
+        fn volume(&self) -> u32 {
+            self.0.volume()
+        }
+        fn set_volume(&self, vol: u32) {
+            self.0.set_volume(vol)
+        }
+        fn volume_up(&self, _delta: u32) {}
+        fn volume_down(&self, _delta: u32) {}
+    }
+
+    /// Batch G 测试桩：对 `no-lyr` 报已有下载（play 免网络解析），
+    /// 其余歌曲无下载。
+    struct LocalDownloadEffects;
+    #[async_trait::async_trait]
+    impl crate::services::PlaybackEffects for LocalDownloadEffects {
+        fn existing_download(&self, song: &SongInfo) -> Option<std::path::PathBuf> {
+            (song.id == "no-lyr").then(|| std::path::PathBuf::from("/tmp/no-lyr.mp3"))
+        }
+        fn record_history(&self, _song: &SongInfo) {}
+        fn prepare_cover(&self, _song: &SongInfo, _show_cover: bool) -> Option<String> {
+            None
+        }
+        async fn load_cover(&self, _url: Option<String>) -> Result<(), String> {
+            Ok(())
+        }
+        async fn cache_cover(&self, _url: Option<String>) -> Option<String> {
+            None
+        }
+        fn cover_url_is_usable(&self, _url: &str) -> bool {
+            false
+        }
+        fn album_cover_notification(&self) -> bool {
+            false
+        }
+        fn track_change_notification(&self) -> bool {
+            false
+        }
+        fn fade_in_ms(&self) -> u64 {
+            0
+        }
+        fn quality(&self) -> lx_core::model::source::Quality {
+            lx_core::model::source::Quality::Low128
+        }
+        fn auto_toggle(&self) -> bool {
+            false
+        }
+    }
+
+    /// Batch G（P2-17 场景 5 运行时实锤）：换曲必须清空歌词态——
+    /// 旧歌词属于旧曲，保留会让歌词加载失败的新曲显示上一首的词并
+    /// 遮蔽重取入口（Windows 运行时复现：kw 有词曲 → 5sing 无词曲，
+    /// 后者歌词 not found 后前者歌词仍挂屏）。
+    #[tokio::test]
+    async fn switching_song_clears_stale_lyrics_and_failure_does_not_restore_them() {
+        let player: Arc<dyn PlayerBackend> = Arc::new(AcceptingPlayer(
+            crate::services::test_support::NullPlayer::new(),
+        ));
+        let sources = Arc::new(SourceManager::new(
+            lx_core::model::source::SourceId::Kw,
+            &[lx_core::model::source::SourceId::Kw],
+        ));
+        let lyrics = Arc::new(LyricService::new(Arc::new(PerSongLyricFetcher)));
+        let effects: Arc<dyn crate::services::PlaybackEffects> = Arc::new(LocalDownloadEffects);
+        let service = ApplicationService::new(
+            Arc::clone(&player) as Arc<dyn PlayerBackend>,
+            Arc::clone(&sources),
+            lyrics,
+            effects,
+            None,
+            None,
+            None,
+        );
+        let mut receiver = service.subscribe();
+
+        // 旧曲歌词加载成功：state.lyrics 回填。
+        service
+            .dispatch(ApplicationCommand::LoadLyrics {
+                song: song("with-lyr"),
+            })
+            .await
+            .expect("LoadLyrics dispatch 应成功");
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let mut loaded = false;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(std::time::Duration::from_millis(300), receiver.recv()).await
+            {
+                Ok(Ok(ApplicationEvent::LyricsChanged { .. })) => {
+                    loaded = true;
+                    break;
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        assert!(loaded, "旧曲歌词加载应广播 LyricsChanged");
+
+        // 换曲播放：play 提交新曲时清空歌词态；随后 PlaybackStarted 触发
+        // 的自动加载对新曲 NotFound——失败不回填旧词。
+        service
+            .dispatch(ApplicationCommand::Play {
+                songs: vec![song("no-lyr")],
+                index: 0,
+            })
+            .await
+            .expect("Play dispatch 应成功");
+
+        // 以「新曲歌词加载失败」通知为收敛信号：通知到达即说明自动加载
+        // 已终态，state.lyrics 此刻必然不再变化。
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let mut notified = false;
+        while tokio::time::Instant::now() < deadline {
+            match tokio::time::timeout(std::time::Duration::from_millis(300), receiver.recv()).await
+            {
+                Ok(Ok(ApplicationEvent::Notification { message })) => {
+                    if message.contains("歌词加载失败") {
+                        notified = true;
+                        break;
+                    }
+                }
+                Ok(Ok(_)) => continue,
+                Ok(Err(_)) | Err(_) => break,
+            }
+        }
+        assert!(notified, "换曲后的自动歌词加载应失败并通知");
+        assert!(
+            service
+                .state
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .lyrics
+                .is_none(),
+            "换曲后旧歌词必须清空，失败路径不得回填旧词"
+        );
     }
 }

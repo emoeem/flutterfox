@@ -2,6 +2,11 @@
 ///
 /// TUI 的 help.rs 是键位说明页；GUI 侧键位少，这里改为
 /// 「能做什么 + 怎么操作」的入口页，并作为设置页的收尾分区。
+///
+/// 手机形态（Batch C-07，指南 §6.3「按移动端能力过滤」）：[showDesktopShortcuts]
+/// 为 false 时不展示桌面键盘快捷键段（触屏无键盘，空格/方向键/Esc 均不
+/// 适用），替换为真实触屏操作说明（长按菜单/下拉刷新/横滑切歌/抽屉，
+/// 均为已上线能力）；app_shell help 槽按壳形态分叉传参。
 library;
 
 import 'package:flutter/material.dart';
@@ -10,19 +15,39 @@ import 'package:flutter/material.dart';
 const appVersion = '0.8.1';
 
 class HelpPage extends StatelessWidget {
-  const HelpPage({super.key});
+  /// true（缺省，桌面/平板）= 展示播放页键盘快捷键段；
+  /// false（手机壳 help 槽）= 以触屏操作段替代。
+  final bool showDesktopShortcuts;
+
+  const HelpPage({super.key, this.showDesktopShortcuts = true});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-      children: const [
-        _Section(
-          icon: Icons.keyboard_outlined,
-          title: '播放页快捷键',
-          rows: [('空格', '播放 / 暂停'), ('← / →', '快退 / 快进 5 秒'), ('Esc', '收起播放页')],
-        ),
-        _Section(
+      children: [
+        if (showDesktopShortcuts)
+          const _Section(
+            icon: Icons.keyboard_outlined,
+            title: '播放页快捷键',
+            rows: [
+              ('空格', '播放 / 暂停'),
+              ('← / →', '快退 / 快进 5 秒'),
+              ('Esc', '收起播放页'),
+            ],
+          )
+        else
+          const _Section(
+            icon: Icons.touch_app_outlined,
+            title: '触屏操作',
+            rows: [
+              ('长按歌曲行', '更多操作：播放、下一首播、加入队列、收藏与歌单'),
+              ('下拉刷新', '发现、搜索、歌单详情等列表页支持下拉刷新'),
+              ('横滑封面', '全屏播放页左右滑动封面切上一首 / 下一首'),
+              ('抽屉', '顶栏「更多」进入设置、帮助与音源管理'),
+            ],
+          ),
+        const _Section(
           icon: Icons.map_outlined,
           title: '功能地图',
           rows: [
@@ -34,7 +59,7 @@ class HelpPage extends StatelessWidget {
             ('设置', '主题、动态取色、歌词、音量、播放模式、扫码登录'),
           ],
         ),
-        _Section(
+        const _Section(
           icon: Icons.playlist_add_outlined,
           title: '自建歌单',
           rows: [
@@ -43,7 +68,7 @@ class HelpPage extends StatelessWidget {
             ('管理', '歌单行的菜单支持重命名、删除；详情页可移除单曲'),
           ],
         ),
-        _Section(
+        const _Section(
           icon: Icons.info_outline,
           title: '关于',
           rows: [

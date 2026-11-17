@@ -44,10 +44,7 @@ class VxArtistBanner extends StatelessWidget {
       borderRadius: BorderRadius.circular(VxRadius.xl),
       child: Container(
         height: height,
-        constraints: BoxConstraints(
-          minHeight: 220,
-          maxHeight: 260,
-        ),
+        constraints: BoxConstraints(minHeight: 220, maxHeight: 260),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -129,9 +126,7 @@ class VxArtistBanner extends StatelessWidget {
   /// 渐变背景：与缺封面占位同一色板，按歌手名稳定取色。
   Widget _gradientBackground(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: VxCoverGradients.forSeed(name),
-      ),
+      decoration: BoxDecoration(gradient: VxCoverGradients.forSeed(name)),
     );
   }
 
