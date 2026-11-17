@@ -54,6 +54,24 @@
 | 文档已更新 | PASS | 本目录 3 文档 |
 | 是否允许进入下一阶段 | **YES** | 基线冻结完成,CI 根因已定位待修 |
 
+## 4. 最终门禁表(F8,2026-11-18 收口)
+
+| 检查项 | 结果 | 证据 |
+| --- | --- | --- |
+| 阶段范围完成(F0–F8) | PASS(部分子项 BLOCKED 如实标注) | FINAL_ACCEPTANCE_REPORT.md §1 |
+| 代码所有权确认 | PASS | OWNERSHIP_AND_BOUNDARIES.md(VoiceFox 只读边界全程遵守) |
+| 代码变更审查 | PASS | 7 commits 全部为 FlutterFox 自有层/构建链/文档;diff 逐批在提交信息登记 |
+| 格式检查 | PASS | cargo fmt 0 / dart format 0 changed |
+| 静态分析/Clippy | PASS | clippy CI 同款 exit 0(Windows)/ CI Linux Lint job SUCCESS |
+| 单元测试 | PASS | 定向 103(cargo)+ 5/5 + 75/75(flutter);workspace 全量 Linux 侧由 CI 证明(Build Linux SUCCESS) |
+| Widget/集成测试 | PASS | 同上 |
+| Windows 本机构建 | PASS | flutter build windows --debug exit 0 ×3 + voicefox-ffi exit 0 |
+| Windows 真机 GUI 测试 | PASS/PARTIAL | RT-01/03/05/06/15/19 + F4 五尺寸 PASS;RT-07/14/20 交互式部分 BLOCKED(CUA 会话终止,执行者 stop() 误操作,如实登记) |
+| 长会话/性能 | PARTIAL | 30 分钟被动观察(10k 曲库加载态);交互式 soak BLOCKED |
+| GitHub Actions | **PASS(全绿)** | run 44138779964(147f15d)与 44147067501(74abcb7)全部 job SUCCESS;最终 docs SHA run 见 §1 |
+| 文档已更新 | PASS | 本目录 6 文档 + 04 矩阵 + 2 份批次报告 |
+| 是否允许标记本轮完成 | **YES(功能批次口径)** | 稳定性门禁按合同 §14 末款如实标注「未完全满足」:P0-W1 已规避根因开放、P0-01 维持开放、交互式 soak 待 CUA 恢复 |
+
 ## 3. 阻塞与依赖记录
 
 - 无当前阻塞。旧交接文档指向的 draft-449e2e92 工作区仍存在但保持只读;本轮一切工作在新克隆内进行。
