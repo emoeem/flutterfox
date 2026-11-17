@@ -401,9 +401,12 @@ class _SearchPageState extends State<SearchPage> {
     final keyword = _controller.text.trim();
 
     if (state.loading && state.items.isEmpty) {
+      // P2-19 修复：固定 8 行骨架（≈520px）在 1136×713 窗口下超出 Expanded
+      // 视口 → 底部溢出 143px（100% 复现）。改用视口自适应变体，行数按
+      // 约束高度拟合，度量单源在组件内（§7.4 骨架受视口约束）。
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: VxSpacing.lg),
-        child: VxLoadingSkeleton.tracks(rows: 8),
+        child: VxLoadingSkeleton.tracksFitted(maxRows: 8),
       );
     }
     if (state.error != null && state.items.isEmpty) {
