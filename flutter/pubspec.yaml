@@ -4,7 +4,7 @@ publish_to: none
 environment:
   sdk: ">=3.10.0 <4.0.0"
 dependencies:
-  cached_network_image: ^4.0.6
+  cached_network_image: ^4.0.7
   # 封面下载层（cached_network_image 的缓存实现）；VxArtwork 需要其
   # BaseCacheManager 类型支持测试注入 FileService（§8.2）。
   flutter_cache_manager: ^3.4.8
