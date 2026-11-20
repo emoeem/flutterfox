@@ -38,7 +38,7 @@ ratatui = "0.30"
 realfft = "3"
 # 现成主题库：提供 16 套具名主题（Dracula / Nord / Tokyo Night / Catppuccin …）
 # 它自身依赖 ratatui ^0.30.2，与本项目同一版本，不会拉进第二份 ratatui。
-ratatui-themes = "0.3"
+ratatui-themes = "0.4"
 crossterm = "0.29"
 unicode-width = "0.2"
 image = { version = "0.25", default-features = false, features = [
