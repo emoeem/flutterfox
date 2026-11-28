@@ -358,7 +358,10 @@ void main() {
       await tester.tap(find.text('音源管理'));
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
-      expect(find.byType(MobileSettingsSectionPage), findsOneWidget);
+      expect(
+        find.byType(MobileSettingsPage, skipOffstage: false),
+        findsOneWidget,
+      );
       expect(
         // 种子推入的全屏二级路由把入口槽盖进 offstage；skipOffstage 断言
         // KeyedSubtree 仍在 IndexedStack（种子由手机设置页帧后定位二级页）。

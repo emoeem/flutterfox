@@ -34,7 +34,6 @@ import '../pages/mobile_downloads_page.dart';
 import '../pages/mobile_settings_page.dart';
 import '../pages/mobile_home_page.dart';
 import '../pages/mobile_search_page.dart';
-import '../pages/mobile_settings_page.dart';
 import '../pages/library_page.dart';
 import '../pages/local_music_page.dart';
 import '../pages/playlist_detail_page.dart';
