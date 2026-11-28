@@ -183,8 +183,15 @@ class _QueueRow extends StatelessWidget {
     final durationMs = song.durationMs.toInt();
     return Container(
       decoration: BoxDecoration(
-        color: current ? scheme.surfaceContainerHighest : null,
+        // V2 spec §4：当前行 accent-tint 底 + 描边；非当前行用透明 border
+        // 占位，避免 hover 切换时内容 1px 跳动。
+        color: current ? scheme.primary.withValues(alpha: 0.16) : null,
         borderRadius: BorderRadius.circular(VxRadius.sm),
+        border: Border.all(
+          color: current
+              ? scheme.primary.withValues(alpha: 0.24)
+              : Colors.transparent,
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(

@@ -290,8 +290,14 @@ class _CollapsedSidebar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: active ? scheme.surfaceContainerHighest : null,
+                // V2 spec §4：活跃态 accent-tint + 内描边（选中态清晰标识）。
+                color: active ? scheme.primary.withValues(alpha: 0.16) : null,
                 borderRadius: BorderRadius.circular(VxRadius.sm),
+                border: Border.all(
+                  color: active
+                      ? scheme.primary.withValues(alpha: 0.24)
+                      : Colors.transparent,
+                ),
               ),
               child: Icon(
                 data,
@@ -407,7 +413,7 @@ class _NavRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: active ? scheme.surfaceContainerHighest : Colors.transparent,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(9),
         child: InkWell(
           borderRadius: BorderRadius.circular(9),
@@ -415,6 +421,19 @@ class _NavRow extends StatelessWidget {
           child: Container(
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              // V2 spec §4：活跃态 accent-tint 底 + 内描边（左缘 3px 指示条
+              // 已在 Row 内承担「更清晰的视觉标识」；描边补 hover 外的一致性）。
+              color: active
+                  ? scheme.primary.withValues(alpha: 0.16)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: active
+                    ? scheme.primary.withValues(alpha: 0.24)
+                    : Colors.transparent,
+              ),
+            ),
             child: Row(
               children: [
                 if (active)
