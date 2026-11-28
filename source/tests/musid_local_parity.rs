@@ -407,7 +407,7 @@ fn incremental_reuse_accounting_matches() {
         .collect();
     let previous_fingerprints: HashMap<_, _> = first.fingerprints.clone();
     let second =
-        scanner::scan_directory_incremental(dir.path(), 0, &previous, &previous_fingerprints);
+        scanner::scan_directory_incremental(dir.path(), 0, &previous, &previous_fingerprints, None);
 
     // musid 增量：ScanState 折叠。
     let options = ScanOptions {
