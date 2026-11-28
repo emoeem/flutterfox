@@ -28,4 +28,9 @@ pub use services::{
     PlaybackService, PlaylistService, QueueService, SearchService, resolve_cover_url,
 };
 
+/// 桌面媒体会话桥(Batch F §9.3 引入 Linux MPRIS;SMTC 接入泛化跨平台):
+/// Linux MPRIS / Windows SMTC 注册入口,桌面引导处调用。
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+pub use services::spawn_media_session_bridge;
+
 mod services;

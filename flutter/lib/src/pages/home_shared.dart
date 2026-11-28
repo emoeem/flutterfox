@@ -73,36 +73,49 @@ class RecentShelf extends StatelessWidget {
       children: [
         VxSectionHeader(title: '最近播放', onViewAll: () => navRequest.value = 2),
         const SizedBox(height: VxSpacing.md),
-        SizedBox(
-          // 卡片高 = 封面 + 文案区（与桌面 156/244 的 88px 文案区同构）。
-          height: coverSize + 88,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: cards.length,
-            separatorBuilder: (_, _) => const SizedBox(width: VxSpacing.md),
-            itemBuilder: (context, index) {
-              final song = cards[index];
-              return GestureDetector(
-                onDoubleTap: () => _play(song),
-                child: VxAlbumCard(
-                  title: song.name,
-                  subtitle: song.singer,
-                  width: coverSize,
-                  cover: VxArtwork(
-                    url: song.coverUrl,
-                    source: song.source,
-                    entityType: 'song',
-                    entityId: song.id,
-                    entityName: song.name,
-                    size: coverSize,
-                    radius: 0,
-                    allowRetry: false,
+        // 右缘渐隐（2026-11-18 外观修复）：横滑列表在可视边缘生硬裁切
+        // 半张卡片，尾部 40px 线性渐隐给出「可继续滑动」的视觉暗示；
+        // 滚动到底时尾卡右缘轻微淡出为同一手法的既有代价（移动端书架
+        // 通用形态）。dstIn 只改 alpha，不改卡片内容色。
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            stops: [0.0, 0.93, 1.0],
+            colors: [Colors.white, Colors.white, Colors.transparent],
+          ).createShader(bounds, textDirection: TextDirection.ltr),
+          blendMode: BlendMode.dstIn,
+          child: SizedBox(
+            // 卡片高 = 封面 + 文案区（与桌面 156/244 的 88px 文案区同构）。
+            height: coverSize + 88,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: cards.length,
+              separatorBuilder: (_, _) => const SizedBox(width: VxSpacing.md),
+              itemBuilder: (context, index) {
+                final song = cards[index];
+                return GestureDetector(
+                  onDoubleTap: () => _play(song),
+                  child: VxAlbumCard(
+                    title: song.name,
+                    subtitle: song.singer,
+                    width: coverSize,
+                    cover: VxArtwork(
+                      url: song.coverUrl,
+                      source: song.source,
+                      entityType: 'song',
+                      entityId: song.id,
+                      entityName: song.name,
+                      size: coverSize,
+                      radius: 0,
+                      allowRetry: false,
+                    ),
+                    onTap: () => _play(song),
+                    onPlay: () => _play(song),
                   ),
-                  onTap: () => _play(song),
-                  onPlay: () => _play(song),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ],

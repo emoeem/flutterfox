@@ -21,7 +21,10 @@ import '../design_system/components/vx_empty_state.dart';
 import '../design_system/components/vx_hero.dart';
 import '../design_system/components/vx_playlist_card.dart';
 import '../design_system/components/vx_section_header.dart';
+import '../design_system/components/desktop_content_constraint.dart';
 import '../design_system/design_tokens.dart';
+import 'custom_playlists_page.dart'
+    show CustomPlaylistDetailPage, showCustomPlaylistCardMenu;
 import '../nav_bus.dart';
 import '../design_system/components/vx_artwork.dart';
 import 'home_shared.dart';
@@ -33,33 +36,35 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: model,
-      builder: (context, _) {
-        final history = model.state.history;
-        final greeting = homeGreeting();
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(
-            VxSpacing.pagePadding,
-            VxSpacing.lg,
-            VxSpacing.pagePadding,
-            VxSpacing.xxl,
-          ),
-          children: [
-            _PageHead(greeting: greeting, dateLabel: homeDateLabel()),
-            const SizedBox(height: VxSpacing.lg),
-            _ContinueHero(model: model, greeting: greeting),
-            const SizedBox(height: VxSpacing.sectionGap),
-            if (history.isNotEmpty) ...[
-              RecentShelf(model: model, history: history),
+    return DesktopContentConstraint(
+      child: AnimatedBuilder(
+        animation: model,
+        builder: (context, _) {
+          final history = model.state.history;
+          final greeting = homeGreeting();
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(
+              VxSpacing.pagePadding,
+              VxSpacing.lg,
+              VxSpacing.pagePadding,
+              VxSpacing.xxl,
+            ),
+            children: [
+              _PageHead(greeting: greeting, dateLabel: homeDateLabel()),
+              const SizedBox(height: VxSpacing.lg),
+              _ContinueHero(model: model, greeting: greeting),
               const SizedBox(height: VxSpacing.sectionGap),
+              if (history.isNotEmpty) ...[
+                RecentShelf(model: model, history: history),
+                const SizedBox(height: VxSpacing.sectionGap),
+              ],
+              _MyPlaylistsSection(model: model),
+              const SizedBox(height: VxSpacing.sectionGap),
+              LeaderboardSection(model: model),
             ],
-            _MyPlaylistsSection(model: model),
-            const SizedBox(height: VxSpacing.sectionGap),
-            LeaderboardSection(model: model),
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -141,6 +146,20 @@ class _ContinueHero extends StatelessWidget {
         icon: Icons.music_note_outlined,
         allowRetry: false,
       ),
+      // 背景模糊封面（2026-11-18 外观修复：宽卡右侧空梯度收口）。
+      // 同一 URL 的更大尺寸实例，走同一解析管线（UA/Referer 头与
+      // P1-15 修复族一致）；解析失败回落 VxCoverFallback 渐变，模糊后
+      // 视觉等效纯渐变，无新增失败形态。
+      backgroundArt: VxArtwork(
+        url: song.coverUrl,
+        source: song.source,
+        entityType: 'song',
+        entityId: song.id,
+        entityName: song.name,
+        size: 640,
+        radius: 0,
+        allowRetry: false,
+      ),
       fallbackSeed: song.name,
     );
   }
@@ -211,7 +230,19 @@ class _MyPlaylistsSection extends StatelessWidget {
                     icon: Icons.queue_music,
                     allowRetry: false,
                   ),
-                  onTap: () => navRequest.value = 2,
+                  // SR-15（Batch D §7.5）：自建歌单卡进详情（不再全跳曲库）。
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => CustomPlaylistDetailPage(model, playlist),
+                    ),
+                  ),
+                  // SR-11 残余收口：卡面右键 = 同一动作集菜单（桌面语义）。
+                  onSecondaryTapUp: (details) => showCustomPlaylistCardMenu(
+                    context,
+                    model,
+                    playlist,
+                    position: details.globalPosition,
+                  ),
                 );
               },
             ),

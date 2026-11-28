@@ -54,7 +54,9 @@ Future<void> _pump(
 ) async {
   final model = AppModel();
   model.debugSetDownloads(tasks);
-  await tester.pumpWidget(MaterialApp(home: DownloadsPage(model)));
+  await tester.pumpWidget(
+    MaterialApp(home: Scaffold(body: DownloadsPage(model))),
+  );
   await tester.pump();
 }
 
@@ -223,7 +225,9 @@ void main() {
       model.debugSetDispatcherForTest((command) async {
         if (command is bridge.FfiCommand_DownloadDeleteFile) dispatched += 1;
       });
-      await tester.pumpWidget(MaterialApp(home: DownloadsPage(model)));
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: DownloadsPage(model))),
+      );
       await tester.pump();
 
       final delete = tester.widget<TextButton>(
@@ -335,5 +339,115 @@ void main() {
       expect(find.text('该分组下没有任务'), findsOneWidget);
       expect(find.text('切换筛选查看其他任务'), findsOneWidget);
     });
+
+    // ── Batch E（§8.3/P3-09）：字节口径与失败详情展开 ──
+
+    testWidgets('百分比封顶 100：已收字节超过声明总量不显示 >100%（P3-09）', (tester) async {
+      await _pump(tester, [
+        _task(
+          BigInt.one,
+          '倒挂任务',
+          state: 'downloading',
+          active: true,
+          downloaded: 1500000,
+          total: 500,
+        ),
+      ]);
+      // 进度条夹取 + 百分比封顶 100（原始字节如实：体积行原样显示）。
+      expect(find.text('100%'), findsOneWidget);
+      expect(find.text('150%'), findsNothing);
+    });
+
+    testWidgets('总量信息不一致：原始字节如实展示并附说明（不篡改）', (tester) async {
+      await _pump(tester, [
+        _task(
+          BigInt.one,
+          '倒挂任务',
+          state: 'downloading',
+          active: true,
+          downloaded: 1500000,
+          total: 500,
+        ),
+      ]);
+      expect(find.textContaining('服务器总量信息不一致'), findsOneWidget);
+      expect(find.textContaining('1.4 MB'), findsOneWidget);
+      expect(find.textContaining('500 B'), findsOneWidget);
+    });
+
+    testWidgets('总量未知：显示已下载大小，不显示虚假总量与百分比', (tester) async {
+      await _pump(tester, [
+        _task(
+          BigInt.one,
+          '未知总量',
+          state: 'downloading',
+          active: true,
+          downloaded: 2048,
+        ),
+      ]);
+      expect(find.textContaining('已下载 2.0 KB'), findsOneWidget);
+      expect(find.text('100%'), findsNothing);
+    });
+
+    testWidgets('失败原因行内截断：点按展开完整原因对话框并可复制（P3-09）', (tester) async {
+      await _pump(tester, [
+        _task(
+          BigInt.one,
+          '失败任务',
+          state: 'failed',
+          error: '音频分片校验失败：分片 3/7 的 sha256 与清单不一致（完整原因文本，用于验证不截断）',
+        ),
+      ]);
+      // 行内是截断文案；点按展开对话框含完整原因（不截断）与复制按钮。
+      await tester.tap(find.textContaining('失败 · 音频分片校验失败'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('失败详情'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.textContaining('（完整原因文本，用于验证不截断）'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('复制'), findsOneWidget);
+      // 复制写剪贴板并提示。
+      await tester.tap(find.text('复制'));
+      await tester.pump();
+      expect(find.text('已复制失败原因'), findsOneWidget);
+      await tester.tap(find.text('关闭'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('失败详情'), findsNothing);
+    });
+
+    testWidgets('560 窄窗：进行中任务状态行无横向溢出（P3-09 overflow 回归）', (tester) async {
+      await _pump560(tester, [
+        _task(
+          BigInt.one,
+          '一个相当长的歌曲名称用来挤压状态行与速度文本的宽度边界',
+          state: 'downloading',
+          active: true,
+          downloaded: 700000,
+          total: 1000000,
+          error: null,
+        ),
+      ]);
+      expect(tester.takeException(), isNull, reason: '560 窄窗无溢出（P3-09）');
+    });
   });
+}
+
+Future<void> _pump560(
+  WidgetTester tester,
+  List<bridge.DownloadTaskDto> tasks,
+) async {
+  tester.view.physicalSize = const Size(560, 900);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+  final model = AppModel();
+  model.debugSetDownloads(tasks);
+  await tester.pumpWidget(
+    MaterialApp(home: Scaffold(body: DownloadsPage(model))),
+  );
+  await tester.pump();
 }

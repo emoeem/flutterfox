@@ -78,11 +78,14 @@ class _PlayerBarState extends State<PlayerBar> {
             return Container(
               height: ShellBreakpoints.playerBarHeight,
               // P1-09 → B3：Chrome 底色/分隔线统一走 ColorScheme 槽位。
+              // 2026-11-18 外观精修：Bar 上浮阴影（VxElevation.barUp，
+              // 向上投射覆盖内容区下缘），替代纯 1px 边线的平面感。
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 border: Border(
                   top: BorderSide(color: Theme.of(context).colorScheme.outline),
                 ),
+                boxShadow: VxElevation.barUp,
               ),
               child: Stack(
                 children: [

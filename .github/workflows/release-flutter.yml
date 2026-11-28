@@ -35,7 +35,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: 缓存 cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: 安装 Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -224,7 +224,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: 下载全部产物
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true

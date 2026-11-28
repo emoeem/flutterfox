@@ -10,6 +10,7 @@ lx-core = { path = "../core" }
 lx-source = { path = "../source", default-features = false }
 lx-player = { path = "../player", default-features = false }
 lx-lyric = { path = "../lyric" }
+media-session = { path = "../media-session" }
 tokio.workspace = true
 rand.workspace = true
 serde.workspace = true

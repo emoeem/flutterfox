@@ -25,6 +25,7 @@ import 'package:voicefox_flutter/src/myune/services/notification_service.dart';
 import 'package:voicefox_flutter/src/nav_bus.dart';
 import 'package:voicefox_flutter/src/pages/library_page.dart';
 import 'package:voicefox_flutter/src/player/mini_player_bar.dart';
+import 'package:voicefox_flutter/src/pages/mobile_settings_page.dart';
 import 'package:voicefox_flutter/src/player/mobile_now_playing_page.dart';
 import 'package:voicefox_flutter/src/player/now_playing_page.dart';
 import 'package:voicefox_flutter/src/shell/mobile_shell.dart';
@@ -129,9 +130,10 @@ void main() {
       navRequest.value = 7;
       await tester.pumpAndSettle();
       expect(navRequest.value, isNull);
-      // 设置槽（R6）：手机档为分组入口手机页（MobileSettingsPage，
-      // 桌面 208 双栏不照搬）；分组入口为静态卡片，无 config 依赖。
+      // 设置槽（C-D/R6）：手机档为分组入口手机页（MobileSettingsPage，
+      // 桌面 208 双栏不照搬）；分组行全部可渲染（列表不依赖 config 快照）。
       expect(find.text('播放与音效'), findsOneWidget);
+      expect(find.text('快捷键'), findsOneWidget);
       // 底部导航保持最后一个一级入口高亮（首页，settings 非主入口）。
       final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect(bar.selectedIndex, 0);
@@ -260,7 +262,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsOneWidget);
 
-      // 抽屉「设置」行 → 设置页（抽屉关闭）。
+      // 抽屉「设置」行 → 设置页（抽屉关闭）。C-D 起手机档为分组列表页
+      // （§6.3 C-06），分组行可渲染（列表不依赖 config 快照）。
       await tester.tap(
         find
             .descendant(of: find.byType(Drawer), matching: find.text('设置'))
@@ -268,8 +271,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
-      // 设置槽（R6）：手机档分组入口页渲染（静态卡片，无 config 依赖）。
+      // 设置槽（C-D/R6）：分组入口页渲染（静态卡片，无 config 依赖）。
       expect(find.text('播放与音效'), findsOneWidget);
+      expect(find.text('关于'), findsOneWidget);
 
       // 再开抽屉进「帮助」页。
       await tester.tap(find.byIcon(Icons.menu));
@@ -281,6 +285,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('功能地图'), findsOneWidget);
+      // C-07：手机形态过滤桌面键盘快捷键段（触屏无键盘），替换为触屏
+      // 操作段（真实能力：长按菜单/下拉刷新/横滑切歌/抽屉）。
+      expect(find.text('播放页快捷键'), findsNothing);
+      expect(find.text('空格'), findsNothing);
+      expect(find.text('触屏操作'), findsOneWidget);
+      expect(find.text('长按歌曲行'), findsOneWidget);
     });
 
     testWidgets('抽屉 §5.9 清单：音源状态/次级入口/音源管理落点/版本信息', (tester) async {
@@ -341,14 +351,17 @@ void main() {
           .first;
       expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
 
-      // 音源管理 → 设置页 sources 分组（真实音源开关所在）。
+      // 音源管理 → 设置目的地 sources 种子（真实音源开关所在）。C-D 起
+      // 手机档设置槽为分组列表页，种子由列表页首帧后自动推入 sources
+      // 二级页——推入的是不透明路由，其下的设置槽被 Overlay 标记为
+      // below-opaque（Visibility false），断言须 skipOffstage: false。
       await tester.tap(find.text('音源管理'));
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
+      expect(find.byType(MobileSettingsSectionPage), findsOneWidget);
       expect(
         // 种子推入的全屏二级路由把入口槽盖进 offstage；skipOffstage 断言
-        // KeyedSubtree 仍在 IndexedStack（R6：种子由 MobileSettingsPage
-        // 帧后定位二级页）。
+        // KeyedSubtree 仍在 IndexedStack（种子由手机设置页帧后定位二级页）。
         find.byKey(
           const ValueKey('mobile-settings:sources'),
           skipOffstage: false,

@@ -3,7 +3,13 @@
 /// 形态：18px 圆角面板 + 1px 边线 + 左上径向高光 + 右上强调色光斑 +
 /// 大封面（178px、radius 12、投影）+ 文案区（eyebrow / 主标题 / 说明）+
 /// 主次 pill 按钮。
+///
+/// 传入 [backgroundArt] 时（2026-11-18 外观修复：宽卡右侧 ~450px 空梯度
+/// 观感），封面经模糊放大铺满整卡作背景层，渐变/高光层降透明度叠加其上，
+/// 文案区可读性由渐变本身保证；null 时维持纯渐变形态。
 library;
+
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
@@ -23,6 +29,7 @@ class VxHero extends StatelessWidget {
     this.secondaryLabel,
     this.onSecondary,
     this.cover,
+    this.backgroundArt,
     this.fallbackSeed,
     this.minHeight = 218,
   });
@@ -51,6 +58,10 @@ class VxHero extends StatelessWidget {
   /// 大封面；null 用渐变首字母占位。
   final Widget? cover;
 
+  /// 背景模糊封面（铺满整卡，[cover] 的同一 URL 的更大尺寸实例）；
+  /// null 维持纯渐变背景。传入后渐变/高光层降透明度叠加其上。
+  final Widget? backgroundArt;
+
   /// 占位渐变取色种子；null 用 [title]。
   final String? fallbackSeed;
 
@@ -78,29 +89,51 @@ class VxHero extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // 线性渐变底（112deg）
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: const Alignment(-0.9, -0.4),
-                  end: const Alignment(1.0, 0.6),
-                  stops: const [0.0, 0.55, 1.0],
-                  colors: [start, mid, end],
+          // 背景模糊封面（P0 外观修复：宽卡右侧空梯度收口）。置于渐变层
+          // 之下；渐变/高光层降透明度后叠加，文案可读性由渐变保证。
+          // 静态内容（无动效），Flutter 栅格缓存模糊层，无逐帧开销。
+          if (backgroundArt != null)
+            Positioned.fill(
+              child: ClipRect(
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                  child: Transform.scale(scale: 1.18, child: backgroundArt),
                 ),
               ),
             ),
-          ),
-          // 左上径向高光（ellipse at 20% 20%）
+          // 线性渐变底（112deg）+ 左上径向高光：有背景封面时降透明度
+          // 叠加（深色渐变仍保证 onSurface 文案 ≥4.5:1 可读性）。
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(-0.6, -0.6),
-                  radius: 1.0,
-                  stops: const [0.0, 0.48],
-                  colors: [glow, Colors.transparent],
-                ),
+            child: Opacity(
+              opacity: backgroundArt != null ? 0.74 : 1.0,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: const Alignment(-0.9, -0.4),
+                          end: const Alignment(1.0, 0.6),
+                          stops: const [0.0, 0.55, 1.0],
+                          colors: [start, mid, end],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 左上径向高光（ellipse at 20% 20%）
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: const Alignment(-0.6, -0.6),
+                          radius: 1.0,
+                          stops: const [0.0, 0.48],
+                          colors: [glow, Colors.transparent],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

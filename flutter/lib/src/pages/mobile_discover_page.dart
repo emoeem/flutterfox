@@ -19,6 +19,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_artwork.dart';
@@ -88,7 +90,7 @@ class _MobileDiscoverPageState extends State<MobileDiscoverPage> {
           );
         }
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, mobileListBottomPadding()),
           children: [
             _head(context),
             const SizedBox(height: VxSpacing.md),
@@ -425,6 +427,7 @@ class _MobileDiscoverPageState extends State<MobileDiscoverPage> {
                 icon: Icons.queue_music,
                 allowRetry: false,
               ),
+              // 歌单详情落点（Batch C-C，C-04）：手机档推手机版歌单详情页。
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => MobilePlaylistDetailPage(_model, playlist),

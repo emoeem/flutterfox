@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../../services/artwork_resolver.dart';
+import 'vx_cover_fallback.dart';
 
 class VxArtwork extends StatefulWidget {
   /// 封面 URL（http(s)/file:// / 本地绝对路径；空/null 显示占位）。
@@ -166,38 +167,48 @@ class _VxArtworkState extends State<VxArtwork> {
     );
   }
 
-  Widget _placeholder(ColorScheme scheme) => DecoratedBox(
-    decoration: BoxDecoration(color: scheme.surfaceContainerHighest),
-    child: Center(
-      child: Icon(
-        widget.icon,
-        size: widget.expand ? 32 : widget.size * 0.4,
-        color: scheme.onSurfaceVariant,
-      ),
-    ),
+  // 占位/失败态统一走 VxCoverFallback(渐变 + 首字母)——Phase 0 V1 设计
+  // 契约「禁止单调灰音符块」;此前两分支是契约禁止的单调灰块(2026-11-18
+  // 外观巡检登记:书架大面积死灰即此来源)。
+  // 语义区分:占位态(空 URL/加载中,实体未必可知)保持音符图标中立形态
+  // (artwork_widget_test 锁定);失败态(实体已知)用首字母渐变,重试钮
+  // 叠加其上。圆角交由外层 ClipRRect/call site(radius 既有语义不变)。
+  Widget _placeholder(ColorScheme scheme) => VxCoverFallback(
+    title: '',
+    radius: widget.radius,
+    icon: widget.icon,
+    iconSize: widget.expand ? 32 : widget.size * 0.4,
   );
 
-  Widget _failed(ColorScheme scheme, String? reason) => DecoratedBox(
-    decoration: BoxDecoration(color: scheme.surfaceContainerHighest),
-    child: Center(
-      child: widget.allowRetry
-          ? IconButton(
-              tooltip: '封面加载失败，点按重试${reason == null ? '' : '：$reason'}',
-              icon: Icon(
-                Icons.refresh,
-                size: widget.expand ? 26 : widget.size * 0.4,
+  Widget _failed(ColorScheme scheme, String? reason) => Stack(
+    fit: StackFit.expand,
+    children: [
+      VxCoverFallback(
+        title: widget.entityName,
+        radius: widget.radius,
+        icon: widget.icon,
+        iconSize: widget.expand ? 32 : widget.size * 0.4,
+      ),
+      Center(
+        child: widget.allowRetry
+            ? IconButton(
+                tooltip: '封面加载失败，点按重试${reason == null ? '' : '：$reason'}',
+                icon: Icon(
+                  Icons.refresh,
+                  size: widget.expand ? 26 : widget.size * 0.4,
+                  color: scheme.onSurfaceVariant,
+                ),
+                onPressed: () {
+                  ArtworkResolver.instance.retry(_request);
+                  setState(() {});
+                },
+              )
+            : Icon(
+                widget.icon,
+                size: widget.expand ? 32 : widget.size * 0.4,
                 color: scheme.onSurfaceVariant,
               ),
-              onPressed: () {
-                ArtworkResolver.instance.retry(_request);
-                setState(() {});
-              },
-            )
-          : Icon(
-              widget.icon,
-              size: widget.expand ? 32 : widget.size * 0.4,
-              color: scheme.onSurfaceVariant,
-            ),
-    ),
+      ),
+    ],
   );
 }

@@ -47,6 +47,15 @@ pub enum ApplicationCommand {
     QueueRemove {
         index: usize,
     },
+    /// 队内移动（Batch F §9.1 P2-09）：拖拽排序真实后端语义。
+    QueueMove {
+        from: usize,
+        to: usize,
+    },
+    /// 队内跳播（Batch F §9.1）：从队列指定索引开始播放。
+    QueuePlayAt {
+        index: usize,
+    },
     QueueClear,
     Next,
     Previous,

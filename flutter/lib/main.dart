@@ -247,6 +247,12 @@ Future<void> main() async {
       windowManager.waitUntilReadyToShow(windowOptions, () async {
         if (startPos != null) await windowManager.setPosition(startPos);
         await windowManager.show();
+        // P0-W1 白屏自愈已下沉至 runner 原生层(flutter/windows/runner/
+        // flutter_window.cpp ScheduleWhiteScreenHeal):首帧回调 + 2s 后
+        // 从屏幕 DC 采样客户区合成真值,近全白才触发 ±1px WM_SIZE 往返。
+        // 检测式自愈优于启动期盲 dance:① 命中时机准确(dance 在引擎
+        // 首次呈现前跑可能无效);② 有检测判据,正常态零动作;③ 失败
+        // 可重试一次。详见 flutter_window.cpp 头注释。
       }),
     );
   }

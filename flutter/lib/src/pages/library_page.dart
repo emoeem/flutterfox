@@ -10,6 +10,10 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../design_system/components/desktop_content_constraint.dart';
+
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_album_card.dart';
@@ -23,6 +27,8 @@ import 'album_songs_page.dart';
 import 'artist_detail_page.dart';
 import 'custom_playlists_page.dart';
 import 'local_music_page.dart';
+import 'mobile_local_music_page.dart';
+import 'mobile_playlist_detail_page.dart';
 import 'playlist_detail_page.dart';
 import 'song_tile.dart' show songSourceLabel;
 
@@ -35,7 +41,17 @@ class LibraryPage extends StatefulWidget {
   /// 初始二级类别（验收截图用）；null 从歌曲开始。
   final LibraryTab? initialTab;
 
-  const LibraryPage(this.model, {super.key, this.initialTab});
+  /// 手机形态位（Batch C-C，C-04）：由 buildShellPage 曲库槽按壳形态传入，
+  /// 只驱动歌单行 push 落点（手机档推 MobilePlaylistDetailPage，桌面/平板
+  /// 维持桌面歌单详情页）；页面本体两档共用（<512 宽度补丁既有）。
+  final bool mobileForm;
+
+  const LibraryPage(
+    this.model, {
+    super.key,
+    this.initialTab,
+    this.mobileForm = false,
+  });
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -58,19 +74,21 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _model,
-      builder: (context, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _header(context),
-            if (_tab == LibraryTab.songs) _favoriteViewSwitch(context),
-            _sourceChips(context),
-            Expanded(child: _body(context)),
-          ],
-        );
-      },
+    return DesktopContentConstraint(
+      child: ListenableBuilder(
+        listenable: _model,
+        builder: (context, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header(context),
+              if (_tab == LibraryTab.songs) _favoriteViewSwitch(context),
+              _sourceChips(context),
+              Expanded(child: _body(context)),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -723,7 +741,7 @@ class _LibraryPageState extends State<LibraryPage> {
           const minCard = 156;
           final columns = (constraints.maxWidth ~/ minCard).clamp(2, 8);
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
               mainAxisSpacing: VxSpacing.lg,
@@ -738,7 +756,7 @@ class _LibraryPageState extends State<LibraryPage> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
       itemCount: groups.length,
       itemBuilder: (context, index) => _albumListRow(context, groups[index]),
     );
@@ -822,7 +840,7 @@ class _LibraryPageState extends State<LibraryPage> {
           const minCard = 156;
           final columns = (constraints.maxWidth ~/ minCard).clamp(2, 8);
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
               mainAxisSpacing: VxSpacing.lg,
@@ -837,7 +855,7 @@ class _LibraryPageState extends State<LibraryPage> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, mobileListBottomPadding()),
       itemCount: groups.length,
       itemBuilder: (context, index) => _artistListRow(context, groups[index]),
     );
@@ -872,7 +890,15 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _artistListRow(BuildContext context, _ArtistGroup group) {
     return ListTile(
-      leading: VxCoverFallback(title: group.name, radius: 999),
+      // C-08 完整性核验发现：VxCoverFallback 无尺寸参数，ListTile leading
+      // 处不受约束时会占满整行宽（窄视口触发「Leading widget consumes the
+      // entire tile width」布局断言，360-430 档歌手列表必挂）——与专辑行
+      // CoverImage(size:44) 同口径定尺寸。
+      leading: SizedBox(
+        width: 44,
+        height: 44,
+        child: VxCoverFallback(title: group.name, radius: 999),
+      ),
       title: Text(group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         '${songSourceLabel(_model, group.source)} · ${group.songs.length} 首',
@@ -933,7 +959,12 @@ class _LibraryPageState extends State<LibraryPage> {
                     message: '在歌单详情页点收藏，把远端歌单存进本地库。',
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      4,
+                      12,
+                      mobileListBottomPadding(),
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) =>
                         _favoritePlaylistRow(context, filtered[index]),
@@ -962,12 +993,20 @@ class _LibraryPageState extends State<LibraryPage> {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => PlaylistDetailPage(_model, playlist),
-        ),
-      ),
+      onTap: () => _openPlaylistDetail(context, playlist),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  /// 歌单详情 push 落点（Batch C-C，C-04）：手机形态推手机版歌单详情页
+  /// （沉浸 Hero + 移动行，§5.6），桌面/平板维持桌面页。
+  void _openPlaylistDetail(BuildContext context, bridge.PlaylistDto playlist) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => widget.mobileForm
+            ? MobilePlaylistDetailPage(_model, playlist)
+            : PlaylistDetailPage(_model, playlist),
+      ),
     );
   }
 
@@ -988,10 +1027,16 @@ class _LibraryPageState extends State<LibraryPage> {
     ).push(MaterialPageRoute<void>(builder: (_) => RecentSongsPage(_model)));
   }
 
+  /// 本地音乐 push 落点（Batch C-C，C-08 审计补 C-B 同域接线）：手机形态
+  /// 推手机版本地音乐页（C-05），桌面/平板维持桌面页。
   void _openLocalMusic(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => LocalMusicPage(_model)));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => widget.mobileForm
+            ? MobileLocalMusicPage(_model)
+            : LocalMusicPage(_model),
+      ),
+    );
   }
 }
 

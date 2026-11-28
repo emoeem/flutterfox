@@ -188,7 +188,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('当前曲高亮与 queueIndex 同步；拖动排序如实禁用并说明', (tester) async {
+    testWidgets('当前曲高亮与 queueIndex 同步；拖动排序真实启用（P2-09 关闭）', (tester) async {
       final model = _RecordingModel();
       model.debugSetPlaybackSong(
         id: 'q1',
@@ -211,57 +211,76 @@ void main() {
       // 当前曲（queueIndex=1 → 队列曲二）行内均衡器图标恰好 1 处：
       // 高亮跟随 queueIndex，不随播放位漂移。
       expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
-      // 拖动排序：后端无命令，禁用 + 说明（P2-09 口径，不伪造拖拽）。
-      // byTooltip 命中的是 Tooltip widget，其祖先才是 IconButton。
-      final dragHandle = tester.widget<IconButton>(
-        find
-            .ancestor(
-              of: find.byTooltip('后端暂无队列排序命令，暂不支持拖动排序'),
-              matching: find.byType(IconButton),
-            )
-            .first,
-      );
-      expect(dragHandle.onPressed, isNull);
+      // 拖动排序：Batch F P2-09 收口——ReorderableListView + 拖柄在树
+      // （真实启用；拖拽命令语义 = Rust queue.move_item，由其 +4 单测与
+      // queue_interaction_test 派发断言锁定，此处不重复模拟拖拽手势）。
+      expect(find.byType(ReorderableListView), findsOneWidget);
+      expect(find.byType(ReorderableDragStartListener), findsWidgets);
     });
 
-    testWidgets('移出队列 → FfiCommand.queueRemove(index)；清空二次确认 → queueClear', (
-      tester,
-    ) async {
-      final model = _RecordingModel();
-      model.debugSetPlaybackSong(
-        id: 'q1',
-        source: 'kw',
-        name: '队列曲一',
-        singer: '测试歌手',
-        state: 'paused',
-        positionMs: 42000,
-        durationMs: 244000,
-      );
-      model.debugSetQueue([_song('q1', '队列曲一'), _song('q2', '队列曲二')]);
-      await openQueuePanel(tester, model);
+    testWidgets(
+      '行菜单真实命令（Batch F）：立即播放→queuePlayAt / 下一首播放→queueMove / 移出队列→queueRemove；清空二次确认→queueClear',
+      (tester) async {
+        final model = _RecordingModel();
+        model.debugSetPlaybackSong(
+          id: 'q1',
+          source: 'kw',
+          name: '队列曲一',
+          singer: '测试歌手',
+          state: 'paused',
+          positionMs: 42000,
+          durationMs: 244000,
+        );
+        model.debugSetQueue([
+          _song('q1', '队列曲一'),
+          _song('q2', '队列曲二'),
+          _song('q3', '队列曲三'),
+        ]);
+        await openQueuePanel(tester, model);
 
-      // 首行「更多操作」→ 移出队列（真实命令，索引 0）。
-      await tester.tap(find.byTooltip('更多操作').first);
-      await tester.pumpAndSettle();
-      // 队内跳播/移动类菜单项如实禁用（后端无命令）。
-      expect(find.text('后端暂无队列跳播命令'), findsOneWidget);
-      expect(find.text('后端暂无队列移动命令'), findsOneWidget);
-      await tester.tap(find.text('移出队列'));
-      await tester.pumpAndSettle();
-      expect(
-        model.commands.contains(bridge.FfiCommand.queueRemove(index: 0)),
-        isTrue,
-      );
+        // 待播行（index 2，当前曲为 index 0）「更多操作」→ 立即播放。
+        await tester.tap(find.byTooltip('更多操作').at(2));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('立即播放'));
+        await tester.pump();
+        final plays = model.commands
+            .whereType<bridge.FfiCommand_QueuePlayAt>()
+            .toList();
+        expect(plays, hasLength(1), reason: '立即播放 = 队内跳播（Batch F）');
+        expect(plays.single.index, 2);
 
-      // 清空：二次确认对话流（确认路径；取消路径由 queue_interaction_test 锁定）。
-      await tester.tap(find.byTooltip('清空队列'));
-      await tester.pumpAndSettle();
-      expect(find.text('清空播放队列'), findsOneWidget);
-      // 确认按钮是 FilledButton(Text('清空'))，与 queue_interaction_test 同款。
-      await tester.tap(find.text('清空'));
-      await tester.pumpAndSettle();
-      expect(model.commands.contains(bridge.FfiCommand.queueClear()), isTrue);
-    });
+        // 同行菜单 → 下一首播放（移动到当前播放之后）。
+        await tester.tap(find.byTooltip('更多操作').at(2));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('下一首播放'));
+        await tester.pump();
+        final moves = model.commands
+            .whereType<bridge.FfiCommand_QueueMove>()
+            .toList();
+        expect(moves, hasLength(1), reason: '下一首播放 = 移动到当前播放之后');
+        expect(moves.single.from, 2);
+        expect(moves.single.to, 1);
+
+        // 同行菜单 → 移出队列（真实命令，索引 2）。
+        await tester.tap(find.byTooltip('更多操作').at(2));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('移出队列'));
+        await tester.pumpAndSettle();
+        expect(
+          model.commands.contains(bridge.FfiCommand.queueRemove(index: 2)),
+          isTrue,
+        );
+
+        // 清空：二次确认对话流（确认路径；取消路径由 queue_interaction_test 锁定）。
+        await tester.tap(find.byTooltip('清空队列'));
+        await tester.pumpAndSettle();
+        expect(find.text('清空播放队列'), findsOneWidget);
+        // 确认按钮是 FilledButton(Text('清空'))，与 queue_interaction_test 同款。
+        await tester.tap(find.text('清空'));
+        await tester.pumpAndSettle();
+        expect(model.commands.contains(bridge.FfiCommand.queueClear()), isTrue);
+      },
+    );
   });
 
   group('VxTrackRow 密度带登记冲突（§7.6 行高 56–64）', () {

@@ -1,4 +1,4 @@
-#ifndef RUNNER_FLUTTER_WINDOW_H_
+﻿#ifndef RUNNER_FLUTTER_WINDOW_H_
 #define RUNNER_FLUTTER_WINDOW_H_
 
 #include <flutter/dart_project.h>
@@ -28,6 +28,10 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  // P0-W1 自愈:首帧呈现后延迟检测客户区合成真值,近全白则触发一次
+  // ±1px WM_SIZE 往返强制交换链/合成重建(见 flutter_window.cpp 注释)。
+  void ScheduleWhiteScreenHeal();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

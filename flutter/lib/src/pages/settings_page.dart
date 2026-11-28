@@ -11,6 +11,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../design_system/components/desktop_content_constraint.dart';
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../config_ext.dart';
@@ -82,41 +84,43 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 640;
-        if (wide) {
-          return Row(
+    return DesktopContentConstraint(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 640;
+          if (wide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(width: 208, child: _nav(context)),
+                const VerticalDivider(width: 1),
+                Expanded(child: _content(context)),
+              ],
+            );
+          }
+          // 窄窗降级：分类变横向胶囊行。
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(width: 208, child: _nav(context)),
-              const VerticalDivider(width: 1),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: VxSpacing.lg,
+                  vertical: VxSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    for (final section in SettingsSection.values)
+                      _navChip(context, section),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
               Expanded(child: _content(context)),
             ],
           );
-        }
-        // 窄窗降级：分类变横向胶囊行。
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: VxSpacing.lg,
-                vertical: VxSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  for (final section in SettingsSection.values)
-                    _navChip(context, section),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(child: _content(context)),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 
@@ -213,6 +217,42 @@ class _SettingsBodyState extends State<_SettingsBody> {
         VxSpacing.xl,
         VxSpacing.xxl,
       ),
+      children: [SettingsSectionContent(model: _model, section: _section)],
+    );
+  }
+}
+
+/// 各分组设置项内容（桌面双栏右侧与手机二级设置页同一实现，Batch C-D
+/// 自 _SettingsBodyState 提炼；内容与业务单一出处，桌面/手机不允许第二份）。
+///
+/// [section] 决定渲染哪一组；调用方负责滚动容器与 padding（桌面双栏
+/// ListView / 手机二级页 ListView 各自消费）。
+class SettingsSectionContent extends StatefulWidget {
+  final AppModel model;
+  final SettingsSection section;
+
+  const SettingsSectionContent({
+    super.key,
+    required this.model,
+    required this.section,
+  });
+
+  @override
+  State<SettingsSectionContent> createState() => _SettingsSectionContentState();
+}
+
+/// State 化仅为本类方法沿用 State.context（原 _SettingsBodyState 语义）；
+/// 本类自身无内部状态，设置项变更全部走 AppModel.updateConfig 即时下发。
+class _SettingsSectionContentState extends State<SettingsSectionContent> {
+  AppModel get _model => widget.model;
+
+  SettingsSection get _section => widget.section;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [for (final group in _groups(context)) group],
     );
   }

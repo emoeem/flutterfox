@@ -2,12 +2,13 @@
 ///
 /// 数据只读 AppModel.state.queue / queueIndex（唯一真源，UI 不自持队列副本），
 /// 操作全部走真实命令：
+/// - 拖动排序：FfiCommand.queueMove（Batch F §9.1 P2-09 收口，真实后端
+///   语义，当前播放条目身份由 Rust move_item 保持）；
+/// - 队内跳播：点按待播行 → FfiCommand.queuePlayAt；
+/// - 行菜单「下一首播放」：FfiCommand.queueMove(index, current+1)；
 /// - 移除：FfiCommand.queueRemove；清空：FfiCommand.queueClear（二次确认，
 ///   说明当前曲是否继续播放）；
-/// - 随机开关：config.playMode 经 updateConfig 下发；
-/// - 拖动排序 / 队列内跳播、移动：Rust 后端（FfiCommand）当前没有对应命令
-///   （Phase 2 limitation 5），拖柄与「立即播放 / 下一首播放」菜单项禁用并
-///   说明原因，不伪造。
+/// - 随机开关：config.playMode 经 updateConfig 下发。
 library;
 
 import 'package:flutter/material.dart';
@@ -65,9 +66,6 @@ class QueuePanel extends StatelessWidget {
             message: '播放歌曲后会在这里显示待播列表；从搜索、曲库或歌单挑一首开始播放。',
           );
         }
-        final current = (currentIndex >= 0 && currentIndex < queue.length)
-            ? queue[currentIndex]
-            : null;
         final upcoming = queue.length - (currentIndex + 1);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,7 +76,9 @@ class QueuePanel extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '共 ${queue.length} 首',
+                      upcoming > 0
+                          ? '共 ${queue.length} 首 · 接下来 $upcoming 首'
+                          : '共 ${queue.length} 首',
                       style: VxTypography.caption.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -120,40 +120,38 @@ class QueuePanel extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: ListView(
+              // 拖动排序（Batch F §9.1 P2-09 收口）：整列 ReorderableListView，
+              // onReorderItem 直接给出换算后的目标索引（SDK 已抵消移除偏移），
+              // 命令语义 = Rust move_item（当前播放条目身份由后端保持）。
+              child: ReorderableListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                children: [
-                  if (current != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-                      child: Text(
-                        '当前播放',
-                        style: VxTypography.eyebrow.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    _QueueRow(
-                      model: model,
-                      song: current,
-                      index: currentIndex,
-                      current: true,
-                    ),
-                    const SizedBox(height: 6),
-                  ],
-                  if (upcoming > 0)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-                      child: Text(
-                        '接下来播放 · $upcoming 首',
-                        style: VxTypography.eyebrow.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  for (var i = currentIndex + 1; i < queue.length; i++)
-                    _QueueRow(model: model, song: queue[i], index: i),
-                ],
+                itemCount: queue.length,
+                onReorderItem: (oldIndex, newIndex) {
+                  if (newIndex != oldIndex) {
+                    model.queueMove(oldIndex, newIndex);
+                  }
+                },
+                proxyDecorator: (child, index, animation) => AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, _) => Material(
+                    elevation: 6 * animation.value,
+                    borderRadius: BorderRadius.circular(VxRadius.sm),
+                    color: scheme.surfaceContainerHighest,
+                    child: child,
+                  ),
+                ),
+                itemBuilder: (context, index) {
+                  final song = queue[index];
+                  final isCurrent = index == currentIndex;
+                  return _QueueRow(
+                    key: ValueKey('q-$index-${song.source}-${song.id}'),
+                    model: model,
+                    song: song,
+                    index: index,
+                    currentIndex: currentIndex,
+                    current: isCurrent,
+                  );
+                },
               ),
             ),
           ],
@@ -163,18 +161,21 @@ class QueuePanel extends StatelessWidget {
   }
 }
 
-/// 队列单行：拖柄（后端无排序命令 → 禁用说明）、封面、信息、时长、行菜单。
+/// 队列单行：拖柄（ReorderableDragStartListener）、封面、信息、时长、行菜单。
 class _QueueRow extends StatelessWidget {
   const _QueueRow({
+    super.key,
     required this.model,
     required this.song,
     required this.index,
+    required this.currentIndex,
     this.current = false,
   });
 
   final AppModel model;
   final bridge.SongDto song;
   final int index;
+  final int currentIndex;
   final bool current;
 
   @override
@@ -196,70 +197,93 @@ class _QueueRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
         children: [
-          // 拖动排序：后端暂无队列移动命令，禁用并说明（不伪造拖拽）。
-          IconButton(
-            tooltip: '后端暂无队列排序命令，暂不支持拖动排序',
-            iconSize: 16,
-            visualDensity: VisualDensity.compact,
-            onPressed: null,
-            icon: Icon(
-              Icons.drag_indicator,
-              color: scheme.onSurface.withValues(alpha: 0.38),
+          // 拖动排序：Batch F P2-09 收口，queueMove 真实后端语义。
+          ReorderableDragStartListener(
+            index: index,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.drag_indicator,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              width: 34,
-              height: 34,
-              child: CoverImage(url: song.coverUrl, size: 34, radius: 6),
-            ),
-          ),
-          const SizedBox(width: 9),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (current) ...[
-                      Icon(Icons.graphic_eq, size: 13, color: scheme.primary),
-                      const SizedBox(width: 4),
-                    ],
-                    Expanded(
-                      child: Text(
-                        song.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface,
-                        ),
+            // 队内跳播（Batch F §9.1）：点按待播行从该索引开始播放；
+            // 当前播放行不响应点按（跳到自己无意义）。
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: current ? null : () => model.queuePlayAt(index),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      width: 34,
+                      height: 34,
+                      child: CoverImage(
+                        url: song.coverUrl,
+                        size: 34,
+                        radius: 6,
                       ),
                     ),
-                  ],
-                ),
-                Text(
-                  song.singer,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: scheme.onSurfaceVariant,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            vxFormatDuration(
-              durationMs > 0 ? Duration(milliseconds: durationMs) : null,
-            ),
-            style: VxTypography.mono.copyWith(
-              fontSize: 10.5,
-              color: scheme.onSurfaceVariant,
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (current) ...[
+                              Icon(
+                                Icons.graphic_eq,
+                                size: 13,
+                                color: scheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Expanded(
+                              child: Text(
+                                song.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          song.singer,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    vxFormatDuration(
+                      durationMs > 0
+                          ? Duration(milliseconds: durationMs)
+                          : null,
+                    ),
+                    style: VxTypography.mono.copyWith(
+                      fontSize: 10.5,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           PopupMenuButton<String>(
@@ -268,15 +292,17 @@ class _QueueRow extends StatelessWidget {
             padding: EdgeInsets.zero,
             color: scheme.surfaceContainerHigh,
             itemBuilder: (context) => [
-              // 立即播放 / 下一首播放：FfiCommand 无队列跳播与移动命令，
-              // 禁用并说明（queueAdd 只会重复入列，不伪装成移动）。
-              const PopupMenuItem<String>(
-                enabled: false,
-                child: _DisabledMenuItem(label: '立即播放', reason: '后端暂无队列跳播命令'),
+              // 立即播放（Batch F）：queuePlayAt 队内跳播；当前曲不响应。
+              PopupMenuItem<String>(
+                value: 'play',
+                enabled: !current,
+                child: const Text('立即播放'),
               ),
-              const PopupMenuItem<String>(
-                enabled: false,
-                child: _DisabledMenuItem(label: '下一首播放', reason: '后端暂无队列移动命令'),
+              // 下一首播放（Batch F）：queueMove 移到当前播放之后。
+              PopupMenuItem<String>(
+                value: 'next',
+                enabled: !current,
+                child: const Text('下一首播放'),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem<String>(
@@ -286,6 +312,12 @@ class _QueueRow extends StatelessWidget {
               ),
             ],
             onSelected: (value) {
+              if (value == 'play') {
+                model.queuePlayAt(index);
+              }
+              if (value == 'next') {
+                model.queueMove(index, currentIndex + 1);
+              }
               if (value == 'remove') {
                 model.queueRemove(index);
               }
@@ -298,36 +330,6 @@ class _QueueRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 禁用菜单项：操作名 + 原因说明（§4.8「不支持的操作必须禁用并解释」）。
-class _DisabledMenuItem extends StatelessWidget {
-  const _DisabledMenuItem({required this.label, required this.reason});
-
-  final String label;
-  final String reason;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: scheme.onSurface.withValues(alpha: 0.38),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          reason,
-          style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-        ),
-      ],
     );
   }
 }

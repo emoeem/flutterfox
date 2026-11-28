@@ -18,6 +18,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../design_system/components/vx_artwork.dart';
@@ -48,7 +50,7 @@ class MobileHomePage extends StatelessWidget {
         final song = model.state.playback.song;
         final emptyLibrary = song == null && history.isEmpty;
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, mobileListBottomPadding()),
           children: [
             const _GreetingHead(),
             const SizedBox(height: 16),
@@ -212,7 +214,12 @@ class _QuickEntries extends StatelessWidget {
             MaterialPageRoute<void>(
               builder: (_) => Scaffold(
                 body: SafeArea(
-                  child: LibraryPage(model, initialTab: LibraryTab.songs),
+                  // 手机形态位（Batch C-C）：歌单行 push 手机版歌单详情页（C-04）。
+                  child: LibraryPage(
+                    model,
+                    initialTab: LibraryTab.songs,
+                    mobileForm: true,
+                  ),
                 ),
               ),
             ),
@@ -445,6 +452,7 @@ class _RecommendedSectionState extends State<_RecommendedSection> {
               radius: 0,
               allowRetry: false,
             ),
+            // 歌单详情落点（Batch C-C，C-04）：手机档推手机版歌单详情页。
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => MobilePlaylistDetailPage(_model, playlist),

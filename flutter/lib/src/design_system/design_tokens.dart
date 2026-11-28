@@ -261,6 +261,21 @@ abstract final class VxRadius {
   static const double xl = 16;
 }
 
+/// Shell 浮层阴影 Token（2026-11-18 外观精修：层次感收口）。
+///
+/// Shell 三件套（Header/Sidebar/PlayerBar）此前与内容区仅靠 1px 边线
+/// 区分，整体平面感强（验收截图排查结论）。深浅主题共用黑色低 alpha
+/// 阴影（与 VxCardShell 封面投影 0x25000000 同族做法）：
+/// - PlayerBar 位于壳层底部，`barUp` 向上投射覆盖内容区下缘；
+/// - Header 的阴影因 Column 兄弟序（Header 先绘制、阴影会被后绘的
+///   内容覆盖）不可用，维持 1px 边线（见 app_header.dart 注释）。
+abstract final class VxElevation {
+  /// PlayerBar 上浮阴影（向上投射）。
+  static const List<BoxShadow> barUp = [
+    BoxShadow(color: Color(0x40000000), blurRadius: 14, offset: Offset(0, -6)),
+  ];
+}
+
 /// TrackRow 三种密度（Phase 1 任务 4：50 / 58 / 66）。
 abstract final class VxDensities {
   /// 紧凑行高。

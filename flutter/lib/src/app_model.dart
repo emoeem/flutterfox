@@ -1519,6 +1519,14 @@ class AppModel extends ChangeNotifier {
       dispatch(bridge.FfiCommand.queueAdd(song: song, next: false));
   Future<void> queueRemove(int index) =>
       dispatch(bridge.FfiCommand.queueRemove(index: index));
+
+  /// 队内移动（Batch F §9.1 P2-09 收口）：拖拽排序真实后端语义。
+  Future<void> queueMove(int from, int to) =>
+      dispatch(bridge.FfiCommand.queueMove(from: from, to: to));
+
+  /// 队内跳播（Batch F §9.1）：从队列指定索引开始播放。
+  Future<void> queuePlayAt(int index) =>
+      dispatch(bridge.FfiCommand.queuePlayAt(index: index));
   Future<void> download(bridge.SongDto song) =>
       dispatch(bridge.FfiCommand.downloadEnqueue(song: song));
 

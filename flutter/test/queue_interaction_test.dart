@@ -9,8 +9,8 @@
 ///   列表滚动不收起）/ 点遮罩关闭，回封面层且按钮退出激活态；
 /// - 真实命令路径：清空（二次确认对话流）/ 移出队列 / 随机切换
 ///   （_RecordingModel dispatch 断言）；
-/// - 空队列态；拖拽排序如实禁用并说明（后端无命令，queue_panel.dart
-///   头注现状，不伪造拖拽）。
+/// - 空队列态；拖动排序/队内跳播/下一首播放（Batch F P2-09 收口，真实命令，
+///   原「后端无命令如实禁用」口径收口）。
 library;
 
 import 'package:flutter/material.dart';
@@ -291,7 +291,9 @@ void main() {
     expect(find.text('队列为空'), findsOneWidget);
   });
 
-  testWidgets('拖拽排序如实禁用并说明（后端无命令，不伪造拖拽）', (tester) async {
+  testWidgets('拖动排序启用（Batch F P2-09 收口）：拖柄在树 + ReorderableListView 承载', (
+    tester,
+  ) async {
     _setSize(tester, const Size(390, 844));
     final model = AppModel();
     model.debugSetPlaybackSong(
@@ -308,12 +310,74 @@ void main() {
     await tester.pumpAndSettle();
 
     await _openSheet(tester);
-    // 拖柄禁用 + 原因说明（queue_panel.dart:194）。
-    final handles = find.byTooltip('后端暂无队列排序命令，暂不支持拖动排序');
-    expect(handles, findsWidgets);
-    final iconButton = tester.widget<IconButton>(
-      find.ancestor(of: handles.first, matching: find.byType(IconButton)),
+    // 拖柄在树（ReorderableDragStartListener 承接拖拽手势）。
+    expect(find.byType(ReorderableDragStartListener), findsWidgets);
+    expect(find.byType(ReorderableListView), findsOneWidget);
+  });
+
+  testWidgets('队内跳播（Batch F）：点按待播行派发 queuePlayAt(index)', (tester) async {
+    _setSize(tester, const Size(390, 844));
+    final model = _RecordingModel();
+    model.debugSetPlaybackSong(
+      id: 's1',
+      source: 'netease',
+      name: '夜航',
+      singer: '测试歌手',
+      state: 'paused',
+      positionMs: 42000,
+      durationMs: 244000,
     );
-    expect(iconButton.onPressed, isNull);
+    model.debugSetQueue([
+      _song('q1', '队列曲一'),
+      _song('q2', '队列曲二'),
+      _song('q3', '队列曲三'),
+    ]);
+    await tester.pumpWidget(_harness(model));
+    await tester.pumpAndSettle();
+
+    await _openSheet(tester);
+    await tester.tap(find.text('队列曲三'));
+    await tester.pump();
+    final plays = model.commands
+        .whereType<bridge.FfiCommand_QueuePlayAt>()
+        .toList();
+    expect(plays, hasLength(1), reason: '点按待播行派发队内跳播');
+    expect(plays.single.index, 2);
+  });
+
+  testWidgets('行菜单「下一首播放」（Batch F）：派发 queueMove(index, current+1)', (
+    tester,
+  ) async {
+    _setSize(tester, const Size(390, 844));
+    final model = _RecordingModel();
+    model.debugSetPlaybackSong(
+      id: 's1',
+      source: 'netease',
+      name: '夜航',
+      singer: '测试歌手',
+      state: 'paused',
+      positionMs: 42000,
+      durationMs: 244000,
+    );
+    model.debugSetQueue([
+      _song('q1', '队列曲一'),
+      _song('q2', '队列曲二'),
+      _song('q3', '队列曲三'),
+    ]);
+    await tester.pumpWidget(_harness(model));
+    await tester.pumpAndSettle();
+
+    await _openSheet(tester);
+    // 打开待播行（index 2）菜单 → 下一首播放。
+    await tester.tap(find.byTooltip('更多操作').at(2));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下一首播放'));
+    await tester.pump();
+    final moves = model.commands
+        .whereType<bridge.FfiCommand_QueueMove>()
+        .toList();
+    expect(moves, hasLength(1), reason: '下一首播放 = 移动到当前播放之后');
+    expect(moves.single.from, 2);
+    expect(moves.single.to, 1);
   });
 }

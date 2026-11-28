@@ -22,6 +22,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../shell/android_insets.dart' show mobileListBottomPadding;
+
 import '../app_model.dart';
 import '../bridge/lib.dart' as bridge;
 import '../config_ext.dart';
@@ -293,7 +295,7 @@ class _MobileLocalMusicPageState extends State<MobileLocalMusicPage> {
   Widget _songList(BuildContext context, List<bridge.SongDto> songs) {
     final current = _model.state.playback.song;
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: VxSpacing.xl),
+      padding: EdgeInsets.only(bottom: mobileListBottomPadding()),
       itemCount: songs.length,
       itemBuilder: (context, index) {
         final song = songs[index];

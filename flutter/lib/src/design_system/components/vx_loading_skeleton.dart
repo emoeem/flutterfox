@@ -25,11 +25,31 @@ class VxLoadingSkeleton extends StatelessWidget {
     super.key,
     this.rows = 5,
     this.variant = VxSkeletonVariant.tracks,
+    this.fitViewport = false,
+    this.maxRows = 8,
   });
 
   /// 歌曲行骨架。
   const VxLoadingSkeleton.tracks({Key? key, int rows = 5})
     : this(key: key, rows: rows, variant: VxSkeletonVariant.tracks);
+
+  /// 歌曲行骨架的「视口自适应」变体（§7.4：骨架必须受视口约束）。
+  ///
+  /// 在父级给出的约束高度内渲染恰好放得下的行数（上限 [maxRows]、下限 1），
+  /// 行高/间距常量单源于 [_trackRowHeight]/[_trackRowGap]，调用方不需要复述
+  /// 内部度量。适用挂在 Expanded/bounded 高度内的骨架；无界高度（滚动列表
+  /// 内）请用 [VxLoadingSkeleton.tracks]。
+  ///
+  /// P2-19 回归修复：search_page 加载态原用固定 `tracks(rows: 8)`（≈520px），
+  /// 1136×713 窗口下 Expanded 视口不足 → RenderFlex 底部溢出 143px。
+  const VxLoadingSkeleton.tracksFitted({Key? key, int maxRows = 8})
+    : this(
+        key: key,
+        rows: 5,
+        variant: VxSkeletonVariant.tracks,
+        fitViewport: true,
+        maxRows: maxRows,
+      );
 
   /// 封面书架骨架。
   const VxLoadingSkeleton.shelf({Key? key, int rows = 5})
@@ -39,27 +59,70 @@ class VxLoadingSkeleton extends StatelessWidget {
   const VxLoadingSkeleton.hero({Key? key})
     : this(key: key, rows: 1, variant: VxSkeletonVariant.hero);
 
+  /// 歌曲行高度（与 [_trackRow] 布局单源）。
+  static const double _trackRowHeight = 58;
+
+  /// 歌曲行间距（与 [_trackColumn] 布局单源）。
+  static const double _trackRowGap = VxSpacing.sm;
+
   /// 行数 / 占位块数。
   final int rows;
 
   /// 骨架变体。
   final VxSkeletonVariant variant;
 
+  /// 是否按父级约束高度自适应行数（仅 tracks 变体生效）。
+  final bool fitViewport;
+
+  /// [fitViewport] 时的行数上限。
+  final int maxRows;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final blockColor = scheme.surfaceContainerHigh;
+    if (fitViewport && variant == VxSkeletonVariant.tracks) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          // 约束无界（滚动列表内误用）时退化为固定 [rows] 行，不猜测高度。
+          final available = constraints.maxHeight;
+          final fitted = available.isFinite
+              ? ((available + _trackRowGap) / (_trackRowHeight + _trackRowGap))
+                    .floor()
+                    .clamp(1, maxRows)
+              : rows;
+          return _trackColumn(blockColor, fitted);
+        },
+      );
+    }
+    return switch (variant) {
+      VxSkeletonVariant.tracks => _trackColumn(blockColor, rows),
+      VxSkeletonVariant.shelf => _shelfColumn(blockColor, rows),
+      VxSkeletonVariant.hero => _hero(blockColor),
+    };
+  }
+
+  Widget _trackColumn(Color blockColor, int rowCount) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < rows; i++) ...[
+        for (var i = 0; i < rowCount; i++) ...[
+          if (i > 0) const SizedBox(height: _trackRowGap),
+          _trackRow(blockColor),
+        ],
+      ],
+    );
+  }
+
+  Widget _shelfColumn(Color blockColor, int rowCount) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < rowCount; i++) ...[
           if (i > 0) const SizedBox(height: VxSpacing.sm),
-          switch (variant) {
-            VxSkeletonVariant.tracks => _trackRow(blockColor),
-            VxSkeletonVariant.shelf => _shelfCard(blockColor),
-            VxSkeletonVariant.hero => _hero(blockColor),
-          },
+          _shelfCard(blockColor),
         ],
       ],
     );

@@ -2194,7 +2194,7 @@ dependencies = [
  "aes 0.8.4",
  "anyhow",
  "async-trait",
- "base64 0.22.1",
+ "base64 0.23.1",
  "cbc",
  "cue-rw",
  "directories",
@@ -2214,7 +2214,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
- "sha2",
+ "sha2 0.11.2",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -2342,6 +2342,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "media-session"
+version = "0.9.0"
+dependencies = [
+ "anyhow",
+ "lx-core",
+ "souvlaki",
+ "tokio",
+ "tracing",
+ "windows-sys 0.61.2",
+ "zbus",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2459,7 +2472,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
- "sha2",
+ "sha2 0.10.9",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -3133,9 +3146,9 @@ dependencies = [
 
 [[package]]
 name = "qrcode"
-version = "0.4.0"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27da0765ec67aa59c7ad13ac3c856ae2b2306e68eef4ddf3c19f80a5f4578465"
+checksum = "d68782463e408eb1e668cf6152704bd856c78c5b6417adaee3203d8f4c1fc9ec"
 
 [[package]]
 name = "quantette"
@@ -3906,6 +3919,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha2"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b0e5c7d67bc53f435386b2130fdc900488c5703770f6d8a4633060e34288a27"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.1",
+ "digest 0.11.3",
+]
+
+[[package]]
 name = "sharded-slab"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4189,7 +4213,7 @@ dependencies = [
  "pest",
  "pest_derive",
  "phf 0.11.3",
- "sha2",
+ "sha2 0.10.9",
  "signal-hook",
  "siphasher",
  "terminfo",
@@ -4688,7 +4712,7 @@ name = "voicefox-app"
 version = "0.9.1"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
+ "base64 0.23.1",
  "block2",
  "chrono",
  "clap",
@@ -4706,6 +4730,7 @@ dependencies = [
  "lx-player",
  "lx-source",
  "md-5 0.10.6",
+ "media-session",
  "objc2",
  "objc2-app-kit",
  "objc2-core-foundation",
@@ -4747,6 +4772,7 @@ dependencies = [
  "lx-lyric",
  "lx-player",
  "lx-source",
+ "media-session",
  "rand 0.10.4",
  "serde",
  "serde_json",
@@ -4807,7 +4833,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.2",
  "tokio",
  "toml",
  "tracing",
@@ -4973,7 +4999,7 @@ checksum = "692daff6d93d94e29e4114544ef6d5c942a7ed998b37abdc19b17136ea428eb7"
 dependencies = [
  "getrandom 0.3.4",
  "mac_address",
- "sha2",
+ "sha2 0.10.9",
  "thiserror 1.0.69",
  "uuid",
 ]
