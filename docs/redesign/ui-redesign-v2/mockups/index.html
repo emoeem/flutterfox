@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voicefox UI 重设计 v2 · 六屏原型</title>
+<style>
+  :root{
+    --canvas:#101019;
+    --bg-base:#1e1e2e;
+    --bg-elevated:#181825;
+    --bg-card:#262638;
+    --bg-high:#313244;
+    --line:rgba(186,194,222,.09);
+    --line-strong:rgba(186,194,222,.16);
+    --text-1:#cdd6f4;
+    --text-2:#a6adc8;
+    --text-3:#7f849c;
+    --accent:#cba6f7;
+    --accent-strong:#dcc2ff;
+    --accent-tint:rgba(203,166,247,.16);
+    --danger:#f38ba8;
+    --badge-kuwo:#e8a15d;
+    --badge-kugou:#5da8e8;
+    --badge-qq:#6bc98a;
+    --badge-wy:#e86b6b;
+    --badge-bili:#f279a8;
+    --badge-qqqian:#b98ae0;
+    --r-sm:6px; --r-md:10px; --r-lg:14px;
+    --font:-apple-system,"Segoe UI","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--canvas);color:var(--text-1);font-family:var(--font);
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;align-items:center;padding:48px 24px 80px;
+  }
+  .board-head{max-width:760px;text-align:center;margin-bottom:44px}
+  .board-head h1{font-size:22px;font-weight:700;letter-spacing:.2px}
+  .board-head p{color:var(--text-3);font-size:13px;margin-top:8px}
+  .board-head .meta{color:var(--text-2);margin-top:4px}
+  .shot{margin-bottom:56px;width:fit-content}
+  .shot-label{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+  .shot-label .no{color:var(--accent-strong);font-weight:600;font-size:13px}
+  .shot-label .name{color:var(--text-2);font-size:13px}
+  .frame{
+    background:var(--bg-base);border-radius:14px;overflow:hidden;
+    box-shadow:0 0 0 1px var(--line-strong),0 24px 64px rgba(0,0,0,.5);
+  }
+  .frame.desktop{width:1200px;height:800px;display:flex;flex-direction:column}
+  .frame.mobile{width:390px;height:844px;display:flex;flex-direction:column;position:relative}
+  .token-strip{
+    max-width:1200px;width:100%;background:var(--bg-base);border-radius:14px;
+    box-shadow:0 0 0 1px var(--line-strong);padding:24px 28px;
+  }
+  .token-strip h2{font-size:15px;font-weight:600;margin-bottom:14px}
+  .token-row{display:flex;gap:10px;flex-wrap:wrap}
+  .tok{display:flex;align-items:center;gap:8px;background:var(--bg-elevated);border-radius:8px;padding:8px 12px 8px 8px}
+  .tok .chip{width:22px;height:22px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .tok code{font-size:12px;color:var(--text-2)}
+
+  /* ---------- icons ---------- */
+  .ic{width:18px;height:18px;flex:none;display:block}
+  .ic-s{width:15px;height:15px}
+  .ic-l{width:22px;height:22px}
+
+  /* ---------- shared app pieces ---------- */
+  .badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:500;color:var(--text-2);
+    background:var(--bg-high);border-radius:4px;padding:1.5px 6px;line-height:1.4;flex:none}
+  .badge::before{content:"";width:5px;height:5px;border-radius:50%;margin-right:5px;background:var(--bc,var(--text-3))}
+  .sec{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 14px}
+  .sec h3{font-size:16px;font-weight:600;letter-spacing:.2px}
+  .sec a{color:var(--text-3);font-size:12.5px;text-decoration:none}
+  .sec a:hover{color:var(--text-2)}
+
+  /* covers */
+  .cv{position:relative;border-radius:var(--r-md);overflow:hidden;flex:none;
+    background:radial-gradient(circle at 72% 82%,rgba(0,0,0,.30),transparent 56%),
+               radial-gradient(circle at 24% 20%,rgba(255,255,255,.22),transparent 46%),
+               linear-gradient(140deg,var(--g1) 0%,var(--g2) 100%)}
+  .cv .shape{position:absolute;border-radius:50%;filter:blur(2px);opacity:.5}
+  .cv::after{content:"";position:absolute;inset:0;opacity:.06;mix-blend-mode:overlay;pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+    background-size:140px 140px}
+  .shelf .card:nth-child(3n+2) .cv{background:radial-gradient(circle at 72% 82%,rgba(0,0,0,.30),transparent 56%),radial-gradient(circle at 24% 20%,rgba(255,255,255,.22),transparent 46%),linear-gradient(115deg,var(--g1) 0%,var(--g2) 100%)}
+  .shelf .card:nth-child(3n) .cv{background:radial-gradient(circle at 30% 76%,rgba(0,0,0,.28),transparent 58%),radial-gradient(circle at 70% 24%,rgba(255,255,255,.20),transparent 50%),linear-gradient(165deg,var(--g2) 0%,var(--g1) 100%)}
+  .shelf .card:nth-child(4n+2) .cv .shape{background:transparent!important;border:13px solid rgba(255,255,255,.16);filter:none}
+  .shelf .card:nth-child(5n+3) .cv .shape{border-radius:999px!important;height:24px!important;width:66%!important;filter:none;opacity:.75}
+  .grid .pcard:nth-child(4n+2) .cv{background:radial-gradient(circle at 72% 82%,rgba(0,0,0,.30),transparent 56%),radial-gradient(circle at 24% 20%,rgba(255,255,255,.22),transparent 46%),linear-gradient(115deg,var(--g1) 0%,var(--g2) 100%)}
+  .grid .pcard:nth-child(4n+3) .cv{background:radial-gradient(circle at 30% 76%,rgba(0,0,0,.28),transparent 58%),radial-gradient(circle at 70% 24%,rgba(255,255,255,.20),transparent 50%),linear-gradient(165deg,var(--g2) 0%,var(--g1) 100%)}
+  .grid .pcard:nth-child(6n+5) .cv .shape{background:transparent!important;border:12px solid rgba(255,255,255,.16);filter:none}
+  .m-shelf .m-card:nth-child(3n+2) .cv{background:radial-gradient(circle at 72% 82%,rgba(0,0,0,.30),transparent 56%),radial-gradient(circle at 24% 20%,rgba(255,255,255,.22),transparent 46%),linear-gradient(115deg,var(--g1) 0%,var(--g2) 100%)}
+  .m-shelf .m-card:nth-child(3n) .cv{background:radial-gradient(circle at 30% 76%,rgba(0,0,0,.28),transparent 58%),radial-gradient(circle at 70% 24%,rgba(255,255,255,.20),transparent 50%),linear-gradient(165deg,var(--g2) 0%,var(--g1) 100%)}
+  .pb-track .seek-tip{position:absolute;bottom:16px;left:43%;transform:translateX(-50%);background:var(--bg-high);
+    border:1px solid var(--line-strong);color:var(--text-1);font-size:11px;font-variant-numeric:tabular-nums;
+    border-radius:6px;padding:3px 8px;white-space:nowrap;pointer-events:none}
+
+  /* ================= desktop shell ================= */
+  .titlebar{
+    height:44px;display:flex;align-items:center;gap:10px;padding:0 12px 0 16px;
+    background:var(--bg-elevated);border-bottom:1px solid var(--line);flex:none;
+  }
+  .tb-brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:1.2px;font-size:13.5px}
+  .tb-logo{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent-strong),#5a48c8);
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px}
+  .tb-nav{display:flex;gap:2px;margin-left:6px}
+  .tb-nav .ic{color:var(--text-3);border-radius:6px;padding:3px;cursor:default}
+  .tb-search{
+    flex:1;max-width:520px;height:30px;background:var(--bg-card);border:1px solid var(--line);
+    border-radius:8px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--text-3);font-size:12.5px;
+  }
+  .tb-search .kbd{margin-left:auto;font-size:11px;color:var(--text-3);background:var(--bg-high);border-radius:4px;padding:1px 6px}
+  .tb-right{display:flex;align-items:center;gap:4px;color:var(--text-3)}
+  .tb-right .ic{padding:3px;border-radius:6px}
+  .tb-win{display:flex;gap:14px;margin-left:10px;color:var(--text-3);font-size:13px}
+  .tb-win span{width:14px;text-align:center;cursor:default}
+
+  .dsk-body{flex:1;display:flex;min-height:0}
+  .sidebar{
+    width:228px;flex:none;background:var(--bg-elevated);border-right:1px solid var(--line);
+    padding:18px 12px 12px;display:flex;flex-direction:column;gap:2px;
+  }
+  .nav-group{color:var(--text-3);font-size:11.5px;padding:14px 10px 6px;letter-spacing:.5px}
+  .nav-item{
+    display:flex;align-items:center;gap:11px;padding:8.5px 10px;border-radius:8px;
+    color:var(--text-2);font-size:13.5px;position:relative;
+  }
+  .nav-item .ic{color:var(--text-3)}
+  .nav-item.active{background:var(--accent-tint);color:var(--text-1);font-weight:700;box-shadow:inset 0 0 0 1px rgba(203,166,247,.24)}
+  .nav-item.active .ic{color:var(--accent-strong)}
+  .nav-item.active::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--accent)}
+  .nav-item .count{margin-left:auto;font-size:11.5px;color:var(--text-3)}
+  .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:10px}
+  .side-foot .nav-item{padding:7px 10px;font-size:13px}
+
+  .content{flex:1;min-width:0;padding:26px 30px 20px;overflow:hidden;display:flex;flex-direction:column}
+
+  /* player bar */
+  .pbar{
+    height:76px;flex:none;background:var(--bg-elevated);border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:16px;padding:0 20px;
+  }
+  .pb-left{display:flex;align-items:center;gap:12px;width:300px;flex:none;min-width:0}
+  .pb-left .cv{width:44px;height:44px;border-radius:8px}
+  .pb-meta{min-width:0}
+  .pb-meta .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pb-meta .a{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;margin-top:2px}
+  .pb-meta .ic-s{color:var(--accent-strong);margin-top:2px}
+  .pb-center{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+  .pb-ctrl{display:flex;align-items:center;gap:18px}
+  .pb-ctrl .ic{color:var(--text-2);cursor:default}
+  .pb-ctrl .ic.on{color:var(--accent-strong)}
+  .pb-play{width:36px;height:36px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+  .pb-play .ic{color:#191927}
+  .pb-seek{width:100%;max-width:640px;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+  .pb-track{flex:1;height:4px;border-radius:2px;background:var(--bg-high);position:relative}
+  .pb-track .fill{position:absolute;inset:0 auto 0 0;width:43%;background:var(--text-1);border-radius:2px}
+  .pb-track .fill::after{content:"";position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:11px;height:11px;border-radius:50%;background:var(--text-1);opacity:0}
+  .pb-right{display:flex;align-items:center;gap:14px;width:220px;flex:none;justify-content:flex-end}
+  .pb-right .ic{color:var(--text-2)}
+  .pb-right .ic.on{color:var(--accent-strong)}
+  .pb-vol{width:92px;height:4px;border-radius:2px;background:var(--bg-high);position:relative}
+  .pb-vol .fill{position:absolute;inset:0 auto 0 0;width:64%;background:var(--text-2);border-radius:2px}
+
+  /* ================= desktop home ================= */
+  .hero{
+    display:flex;align-items:center;gap:24px;background:var(--bg-card);border-radius:var(--r-lg);
+    padding:22px 24px;margin-bottom:30px;position:relative;overflow:hidden;
+  }
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(560px 200px at 88% 10%,rgba(139,121,246,.10),transparent 60%)}
+  .hero .cv{width:136px;height:136px;border-radius:12px}
+  .hero-body{position:relative;min-width:0}
+  .hero-body .hint{font-size:13px;color:var(--text-2)}
+  .hero-body h2{font-size:25px;font-weight:700;margin:6px 0 8px;letter-spacing:.2px}
+  .hero-body .sub{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:13.5px}
+  .hero-actions{margin-left:auto;display:flex;gap:10px;position:relative;flex:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:9px;font-size:13.5px;font-weight:600;border:none;cursor:default}
+  .btn-primary{background:var(--accent);color:#191927}
+  .btn-ghost{background:var(--bg-high);color:var(--text-1)}
+  .shelf{display:flex;gap:14px}
+  .card{width:158px;flex:none}
+  .card .cv{width:158px;height:158px}
+  .card .t{font-size:13.5px;font-weight:600;margin-top:10px;line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .a{font-size:12px;color:var(--text-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.now .t{color:var(--accent-strong)}
+  .empty-panel{
+    margin-top:26px;background:var(--bg-card);border-radius:var(--r-lg);padding:22px 24px;
+    display:flex;align-items:center;gap:16px;
+  }
+  .empty-panel .ic{color:var(--text-3)}
+  .empty-panel .tx{flex:1}
+  .empty-panel .tx b{font-size:14px;font-weight:600;display:block}
+  .empty-panel .tx span{font-size:12.5px;color:var(--text-2)}
+  .empty-panel .btn{height:36px;padding:0 14px}
+
+  /* ================= desktop discover ================= */
+  .disc-tabs{display:flex;gap:22px;margin-bottom:16px}
+  .disc-tabs span{font-size:15px;color:var(--text-2);padding-bottom:8px;cursor:default}
+  .disc-tabs span.on{color:var(--text-1);font-weight:600;border-bottom:2px solid var(--accent)}
+  .chip-row{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+  .chip{height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:16px;font-size:13px;
+    background:var(--bg-card);color:var(--text-2);cursor:default}
+  .chip.on{background:var(--accent-tint);color:var(--accent-strong);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+  .pcard .cv{width:100%;aspect-ratio:1;border-radius:10px}
+  .pcard .cv .count{
+    position:absolute;right:7px;bottom:7px;font-size:11px;color:#fff;
+    background:rgba(0,0,0,.55);border-radius:4px;padding:2px 7px;backdrop-filter:blur(4px);font-variant-numeric:tabular-nums;
+  }
+  .pcard .cv .playfab{position:absolute;right:9px;bottom:9px;width:38px;height:38px;border-radius:50%;
+    background:var(--accent);display:grid;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+  .pcard .cv .playfab .ic{color:#191927;width:17px;height:17px}
+  .pcard .t{font-size:13px;font-weight:600;margin-top:9px;line-height:1.45;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pcard .s{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11.5px;color:var(--text-3)}
+
+  /* ================= desktop nowplaying ================= */
+  .np{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;background:var(--bg-base)}
+  .np .wash{position:absolute;inset:0;pointer-events:none}
+  .np .wash i{position:absolute;border-radius:50%;filter:blur(90px)}
+  .np .wash .w1{width:640px;height:640px;left:-140px;top:-220px;background:rgba(203,166,247,.16)}
+  .np .wash .w2{width:520px;height:520px;right:-120px;bottom:-200px;background:rgba(137,180,250,.11)}
+  .np-top{height:56px;display:flex;align-items:center;padding:0 18px;position:relative;flex:none}
+  .np-top .ic{color:var(--text-2)}
+  .np-top .cap{position:absolute;left:50%;transform:translateX(-50%);font-size:12px;color:var(--text-3);letter-spacing:.3px}
+  .np-top .right{margin-left:auto;display:flex;gap:16px}
+  .np-main{flex:1;display:flex;gap:44px;padding:10px 48px 30px;min-height:0;position:relative}
+  .np-left{width:42%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .np-left .cv{width:360px;height:360px;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 0 1px var(--line)}
+  .np-left .cv .shape.big{width:190px;height:190px;right:-40px;bottom:-46px;background:rgba(255,255,255,.09);filter:blur(6px)}
+  .np-title{margin-top:30px;font-size:26px;font-weight:700;text-align:center;letter-spacing:.2px}
+  .np-artist{margin-top:8px;display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:14.5px}
+  .np-actions{display:flex;gap:26px;margin-top:18px}
+  .np-actions .ic{width:21px;height:21px;color:var(--text-2)}
+  .np-actions .ic.faved{color:var(--accent-strong)}
+  .np-transport{width:100%;max-width:560px;margin-top:26px}
+  .np-ctrl{display:flex;align-items:center;justify-content:center;gap:26px}
+  .np-ctrl .ic{width:22px;height:22px;color:var(--text-2)}
+  .np-ctrl .ic.on{color:var(--accent-strong)}
+  .np-play{width:54px;height:54px;border-radius:50%;background:var(--accent);display:grid;place-items:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.45)}
+  .np-play .ic{width:24px;height:24px;color:#191927}
+  .np-seek{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+  .np-seek .pb-track{height:5px}
+  .np-right{flex:1;min-width:0;display:flex;flex-direction:column;padding-top:6px}
+  .lyr-head{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .lyr-head b{font-size:15px;font-weight:600}
+  .lyr-head .re{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2);
+    background:var(--bg-card);border-radius:8px;padding:6px 12px}
+  .lyr-body{flex:1;position:relative;overflow:hidden;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 82%,transparent 100%);
+    mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 82%,transparent 100%)}
+  .lyr-line{font-size:16px;color:var(--text-3);padding:11px 0;transition:color .25s ease,opacity .25s ease}
+  .lyr-line.cur{font-size:19px;font-weight:600;color:var(--accent-strong)}
+  .lyr-line.near{color:var(--text-2)}
+  .lyr-line .tr{display:block;font-size:12.5px;color:var(--text-3);margin-top:2px;font-weight:400}
+  .lyr-line.cur .tr{color:var(--text-2)}
+
+  /* ================= queue panel screen ================= */
+  .qlayout{flex:1;display:flex;min-height:0}
+  .q-dim{flex:1;background:var(--bg-base);position:relative;overflow:hidden}
+  .q-skel{position:absolute;left:44px;right:44px;background:var(--bg-card);border-radius:14px;opacity:.4}
+  .q-skel.s1{top:44px;height:170px}
+  .q-skel.s2{top:244px;height:58px}
+  .q-skel.s3{top:322px;height:58px}
+  .qpanel{
+    width:330px;flex:none;background:var(--bg-elevated);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;
+  }
+  .q-head{padding:18px 18px 12px;display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line)}
+  .q-head b{font-size:15px;font-weight:600}
+  .q-head span{font-size:12px;color:var(--text-3)}
+  .q-head .clr{margin-left:auto;font-size:12px;color:var(--text-3)}
+  .q-list{flex:1;overflow:hidden;padding:8px}
+  .q-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;position:relative}
+  .q-row .cv{width:34px;height:34px;border-radius:6px}
+  .q-row .ix{width:20px;text-align:center;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;flex:none}
+  .q-row .m{min-width:0;flex:1}
+  .q-row .t{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .q-row .a{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;margin-top:1px}
+  .q-row .du{font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums;flex:none}
+  .q-row.cur{background:var(--accent-tint)}
+  .q-row.cur::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--accent)}
+  .q-row.cur .t{color:var(--accent-strong)}
+  .q-row.cur .ix{color:var(--accent-strong)}
+  .q-row.cur .ic-s{color:var(--accent-strong)}
+  .q-row .playing-bars{display:flex;align-items:flex-end;gap:2px;height:14px;width:16px;flex:none}
+  .q-row .playing-bars i{flex:1;background:var(--accent-strong);border-radius:1px;animation:bar 1s ease-in-out infinite}
+  .q-row .playing-bars i:nth-child(2){animation-delay:.2s}
+  .q-row .playing-bars i:nth-child(3){animation-delay:.4s}
+  @keyframes bar{0%,100%{height:30%}50%{height:100%}}
+  @media (prefers-reduced-motion:reduce){.q-row .playing-bars i{animation:none;height:60%}}
+
+  /* ================= mobile ================= */
+  .m-status{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+    font-size:12.5px;font-weight:600;flex:none}
+  .m-status .r{display:flex;gap:6px;align-items:center;font-size:11px}
+  .m-body{flex:1;min-height:0;padding:6px 18px 0;display:flex;flex-direction:column}
+  .m-greet{display:flex;align-items:center;justify-content:space-between;margin:8px 0 18px}
+  .m-greet h2{font-size:22px;font-weight:700}
+  .m-greet .d{font-size:12.5px;color:var(--text-3);margin-top:3px}
+  .m-greet .acts{display:flex;gap:6px}
+  .m-greet .acts .ic{color:var(--text-2);background:var(--bg-card);border-radius:50%;padding:9px;width:40px;height:40px}
+  .m-hero{
+    display:flex;align-items:center;gap:14px;background:var(--bg-card);border-radius:var(--r-lg);
+    padding:14px;margin-bottom:26px;position:relative;overflow:hidden;
+  }
+  .m-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(300px 120px at 92% 0%,rgba(139,121,246,.12),transparent 60%)}
+  .m-hero .cv{width:64px;height:64px;border-radius:10px}
+  .m-hero .m{min-width:0;position:relative;flex:1}
+  .m-hero .hint{font-size:11.5px;color:var(--text-2)}
+  .m-hero .t{font-size:15px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-hero .a{font-size:12px;color:var(--text-2);margin-top:2px}
+  .m-hero .go{position:relative;width:42px;height:42px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex:none}
+  .m-hero .go .ic{color:#191927;width:18px;height:18px}
+  .m-shelf{display:flex;gap:12px;overflow:hidden;margin:0 -18px;padding:0 18px}
+  .m-card{width:118px;flex:none}
+  .m-card .cv{width:118px;height:118px}
+  .m-card .t{font-size:12.5px;font-weight:600;margin-top:8px;line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .m-card .a{font-size:11px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-wide{display:flex;flex-direction:column;gap:10px}
+  .m-wide .wrow{display:flex;align-items:center;gap:12px;background:var(--bg-card);border-radius:10px;padding:9px 12px}
+  .m-wide .wrow .cv{width:46px;height:46px;border-radius:8px}
+  .m-wide .wrow .rk{width:26px;text-align:center;font-size:15px;font-weight:700;color:var(--text-3);font-style:italic;flex:none}
+  .m-wide .wrow .m{min-width:0;flex:1}
+  .m-wide .wrow .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-wide .wrow .a{font-size:11.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-mini{
+    margin:0 12px;background:var(--bg-elevated);border:1px solid var(--line);border-radius:12px;
+    display:flex;align-items:center;gap:10px;padding:8px 12px;flex:none;
+  }
+  .m-mini .cv{width:36px;height:36px;border-radius:7px}
+  .m-mini .m{flex:1;min-width:0}
+  .m-mini .t{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-mini .a{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-mini .ic{color:var(--text-2)}
+  .m-nav{flex:none;background:var(--bg-elevated);border-top:1px solid var(--line);
+    display:flex;padding:8px 6px 22px;margin-top:10px}
+  .m-nav .it{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-3)}
+  .m-nav .it.on{color:var(--accent-strong)}
+  .m-nav .it.on::before{content:"";width:16px;height:3px;border-radius:2px;background:var(--accent);margin-bottom:2px}
+
+  /* mobile nowplaying */
+  .mnp{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--bg-base)}
+  .mnp .wash{position:absolute;inset:0;pointer-events:none}
+  .mnp .wash i{position:absolute;border-radius:50%;filter:blur(70px)}
+  .mnp .wash .w1{width:420px;height:420px;left:-120px;top:-140px;background:rgba(203,166,247,.18)}
+  .mnp .wash .w2{width:380px;height:380px;right:-110px;bottom:40px;background:rgba(137,180,250,.11)}
+  .mnp .inner{position:relative;flex:1;display:flex;flex-direction:column;padding:0 22px}
+  .mnp-top{height:48px;display:flex;align-items:center}
+  .mnp-top .cap{flex:1;text-align:center;font-size:11.5px;color:var(--text-3);letter-spacing:.3px}
+  .mnp .cv-main{width:262px;height:262px;border-radius:16px;margin:14px auto 0;
+    box-shadow:0 26px 60px rgba(0,0,0,.5),0 0 0 1px var(--line)}
+  .mnp .cv-main .shape.big{width:150px;height:150px;right:-34px;bottom:-38px;background:rgba(255,255,255,.09);filter:blur(5px)}
+  .mnp-title{margin-top:24px;font-size:21px;font-weight:700}
+  .mnp-artist{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);margin-top:6px}
+  .mnp-lyr{margin-top:16px;height:66px;overflow:hidden;
+    -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 100%);mask-image:linear-gradient(180deg,#000 55%,transparent 100%)}
+  .mnp-lyr .lyr-line{font-size:14.5px;padding:5px 0}
+  .mnp-lyr .lyr-line.cur{font-size:16px}
+  .mnp-seek{display:flex;align-items:center;gap:9px;margin-top:18px;font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+  .mnp-ctrl{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:0 8px}
+  .mnp-ctrl .ic{width:23px;height:23px;color:var(--text-2)}
+  .mnp-play{width:60px;height:60px;border-radius:50%;background:var(--accent);display:grid;place-items:center;
+    box-shadow:0 12px 28px rgba(0,0,0,.45)}
+  .mnp-play .ic{width:26px;height:26px;color:#191927}
+  .mnp-foot{display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding:0 10px}
+  .mnp-foot .ic{width:20px;height:20px;color:var(--text-3)}
+  .mnp-foot .ic.faved{color:var(--accent-strong)}
+  .m-home-ind{width:130px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);margin:18px auto 8px;flex:none}
+</style>
+</head>
+<body>
+
+<header class="board-head">
+  <h1>Voicefox UI 重设计 v2 · 六屏原型</h1>
+  <p class="meta">现代简洁风 —— 近黑分层底色 · 大封面卡片 · 单一强调色 · 音源徽标系统 · 氛围渐变仅限播放页</p>
+  <p>R0 评审稿 · 确认观感后进入 Flutter 实施（R1 token 基线起）</p>
+</header>
+
+<!-- ================= R1 桌面 · 首页 ================= -->
+<section class="shot">
+  <div class="shot-label"><span class="no">R-01</span><span class="name">桌面 · 首页（1200×800）</span></div>
+  <div class="frame desktop">
+    <div class="titlebar">
+      <div class="tb-brand"><span class="tb-logo">V</span>VOICEFOX</div>
+      <div class="tb-nav">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="tb-search">
+        <svg class="ic ic-s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        搜索歌曲、专辑、歌手或歌单
+        <span class="kbd">Ctrl K</span>
+      </div>
+      <div class="tb-right">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </div>
+      <div class="tb-win"><span>—</span><span>□</span><span>×</span></div>
+    </div>
+    <div class="dsk-body">
+      <aside class="sidebar">
+        <div class="nav-group">探索</div>
+        <div class="nav-item active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>首页</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 8-4-2 2-8z" fill="currentColor" stroke="none" opacity=".9"/><path d="M15 9l4-1"/></svg>发现</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>搜索</div>
+        <div class="nav-group">我的音乐</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 15l-5-4-9 7"/></svg>我的音乐</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>下载<span class="count">3</span></div>
+        <div class="side-foot">
+          <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></svg>设置</div>
+          <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 115.1.8c-.5 1.3-2.1 1.6-2.1 3"/><path d="M12 17h.01"/></svg>帮助</div>
+        </div>
+      </aside>
+      <main class="content">
+        <div class="hero">
+          <div class="cv" style="--g1:#7c68e0;--g2:#46386e"><span class="shape" style="width:70px;height:70px;right:-14px;bottom:-20px;background:rgba(255,255,255,.10)"></span></div>
+          <div class="hero-body">
+            <div class="hint">继续播放</div>
+            <h2>Hong Kong (feat. 王菲季候风)</h2>
+            <div class="sub">The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div>
+          </div>
+          <div class="hero-actions">
+            <button class="btn btn-primary"><svg class="ic ic-s" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>播放</button>
+            <button class="btn btn-ghost"><svg class="ic ic-s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>加入队列</button>
+          </div>
+        </div>
+        <div class="sec"><h3>最近播放</h3><a>查看全部</a></div>
+        <div class="shelf">
+          <div class="card now"><div class="cv" style="--g1:#7c68e0;--g2:#46386e"><span class="shape" style="width:56px;height:56px;right:-10px;bottom:-16px;background:rgba(255,255,255,.10)"></span></div><div class="t" style="color:var(--accent-strong)">Hong Kong (feat. 王菲季候风)</div><div class="a">The Weeknd</div></div>
+          <div class="card"><div class="cv" style="--g1:#6b8ad8;--g2:#33426b"><span class="shape" style="width:52px;height:52px;left:-12px;top:26px;background:rgba(255,255,255,.12)"></span></div><div class="t">时光你等等我</div><div class="a">郭芊彤</div></div>
+          <div class="card"><div class="cv" style="--g1:#d6718f;--g2:#5e3049"><span class="shape" style="width:60px;height:60px;right:-16px;top:-12px;background:rgba(255,255,255,.12)"></span></div><div class="t">Phoenix（涅槃）</div><div class="a">英雄联盟 · Lil Marron</div></div>
+          <div class="card"><div class="cv" style="--g1:#54b0a6;--g2:#26524d"><span class="shape" style="width:48px;height:48px;right:20px;bottom:30px;background:rgba(255,255,255,.13)"></span></div><div class="t">Outside</div><div class="a">Calvin Harris · Ellie Goulding</div></div>
+          <div class="card"><div class="cv" style="--g1:#d4b563;--g2:#5e4c26"><span class="shape" style="width:54px;height:54px;left:-14px;bottom:-14px;background:rgba(255,255,255,.11)"></span></div><div class="t">クリティカルヒット</div><div class="a">赫丽万象</div></div>
+          <div class="card"><div class="cv" style="--g1:#b272d1;--g2:#4b2a58"><span class="shape" style="width:58px;height:58px;right:-12px;top:40px;background:rgba(255,255,255,.11)"></span></div><div class="t">Oopsie Daisy</div><div class="a">JubyPhonic</div></div>
+          <div class="card"><div class="cv" style="--g1:#7590c0;--g2:#323c52"><span class="shape" style="width:50px;height:50px;left:30px;top:-10px;background:rgba(255,255,255,.12)"></span></div><div class="t">only my railgun</div><div class="a">fripSide</div></div>
+        </div>
+        <div class="sec" style="margin-top:30px"><h3>我的歌单</h3><a>查看全部</a></div>
+        <div class="empty-panel">
+          <svg class="ic ic-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+          <div class="tx"><b>还没有自建歌单</b><span>歌单可以把不同来源的歌曲收进同一个列表，收藏的歌单会显示在曲库页。</span></div>
+          <button class="btn btn-ghost"><svg class="ic ic-s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新建歌单</button>
+        </div>
+      </main>
+    </div>
+    <div class="pbar">
+      <div class="pb-left">
+        <div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div>
+        <div class="pb-meta">
+          <div class="t">Hong Kong (feat. 王菲季候风)</div>
+          <div class="a"><svg class="ic ic-s" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9A5.4 5.4 0 0112 6.2 5.4 5.4 0 0121.5 12c-2 4.4-9.5 9-9.5 9z"/></svg>The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div>
+        </div>
+      </div>
+      <div class="pb-center">
+        <div class="pb-ctrl">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l7 7"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2.5v14H6zM20 5v14l-10-7z"/></svg>
+          <span class="pb-play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h-2.5v14H18zM4 5v14l10-7z"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 01-4 4H3"/></svg>
+        </div>
+        <div class="pb-seek"><span>01:11</span><div class="pb-track"><div class="fill"></div><span class="seek-tip">01:32</span></div><span>02:34</span></div>
+      </div>
+      <div class="pb-right">
+        <svg class="ic on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6l-5 4H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></svg>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 10h10M4 14h7"/><path d="M17 4v12"/><path d="M17 16a2 2 0 102 2v-2z"/></svg>
+        <div class="pb-vol"><div class="fill"></div></div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= R2 桌面 · 发现 ================= -->
+<section class="shot">
+  <div class="shot-label"><span class="no">R-02</span><span class="name">桌面 · 发现（音源筛选 + 歌单网格）</span></div>
+  <div class="frame desktop" style="height:760px">
+    <div class="titlebar">
+      <div class="tb-brand"><span class="tb-logo">V</span>VOICEFOX</div>
+      <div class="tb-search">
+        <svg class="ic ic-s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        搜索歌曲、专辑、歌手或歌单
+        <span class="kbd">Ctrl K</span>
+      </div>
+      <div class="tb-right"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg></div>
+      <div class="tb-win"><span>—</span><span>□</span><span>×</span></div>
+    </div>
+    <div class="dsk-body">
+      <aside class="sidebar">
+        <div class="nav-group">探索</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>首页</div>
+        <div class="nav-item active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 8-4-2 2-8z" fill="currentColor" stroke="none" opacity=".9"/><path d="M15 9l4-1"/></svg>发现</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>搜索</div>
+        <div class="nav-group">我的音乐</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 15l-5-4-9 7"/></svg>我的音乐</div>
+        <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>下载<span class="count">3</span></div>
+        <div class="side-foot">
+          <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/></svg>设置</div>
+          <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 115.1.8c-.5 1.3-2.1 1.6-2.1 3"/><path d="M12 17h.01"/></svg>帮助</div>
+        </div>
+      </aside>
+      <main class="content">
+        <div class="disc-tabs"><span class="on">歌单</span><span>排行榜</span><span>新歌</span><span>分类</span></div>
+        <div class="chip-row">
+          <span class="chip on">全部音源</span><span class="chip">酷我</span><span class="chip">酷狗</span><span class="chip">QQ</span><span class="chip">网易云</span><span class="chip">B站</span><span class="chip">千千</span>
+        </div>
+        <div class="grid">
+          <div class="pcard"><div class="cv" style="--g1:#7c68e0;--g2:#46386e"><span class="shape" style="width:80px;height:80px;right:-20px;bottom:-26px;background:rgba(255,255,255,.10)"></span><span class="playfab"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span></div><div class="t">华语慢歌私人雷达 · 循环一整天</div><div class="s"><span class="badge" style="--bc:var(--badge-kuwo)">酷我</span>28 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#54b0a6;--g2:#26524d"><span class="shape" style="width:70px;height:70px;left:-16px;top:30px;background:rgba(255,255,255,.11)"></span><span class="count">12.4万</span></div><div class="t">深夜写代码 BGM · 无人声专注</div><div class="s"><span class="badge" style="--bc:var(--badge-wy)">网易云</span>96 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#d6718f;--g2:#5e3049"><span class="shape" style="width:76px;height:76px;right:-18px;top:-14px;background:rgba(255,255,255,.12)"></span><span class="count">3.8万</span></div><div class="t">每日新歌速递 · 官方精选</div><div class="s"><span class="badge" style="--bc:var(--badge-kugou)">酷狗</span>30 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#6b8ad8;--g2:#33426b"><span class="shape" style="width:72px;height:72px;left:24px;bottom:-18px;background:rgba(255,255,255,.11)"></span><span class="count">8902</span></div><div class="t">粤语经典 200 首 · 从黄金年代唱到今天</div><div class="s"><span class="badge" style="--bc:var(--badge-qq)">QQ</span>201 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#d4b563;--g2:#5e4c26"><span class="shape" style="width:66px;height:66px;right:26px;top:34px;background:rgba(255,255,255,.12)"></span><span class="count">21.6万</span></div><div class="t">ACG 神曲全收录 · 二次元浓度超标</div><div class="s"><span class="badge" style="--bc:var(--badge-bili)">B站</span>150 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#b272d1;--g2:#4b2a58"><span class="shape" style="width:74px;height:74px;left:-18px;bottom:-20px;background:rgba(255,255,255,.11)"></span><span class="count">1.2万</span></div><div class="t">90 年代金曲 · 磁带 A 面全回顾</div><div class="s"><span class="badge" style="--bc:var(--badge-qqqian)">千千</span>88 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#7590c0;--g2:#323c52"><span class="shape" style="width:70px;height:70px;right:-14px;top:40px;background:rgba(255,255,255,.12)"></span><span class="count">5.4万</span></div><div class="t">雨天窗边 · 慢拍器乐与白噪音</div><div class="s"><span class="badge" style="--bc:var(--badge-wy)">网易云</span>64 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#cdb88c;--g2:#5e5233"><span class="shape" style="width:64px;height:64px;left:30px;top:-12px;background:rgba(255,255,255,.13)"></span><span class="count">7788</span></div><div class="t">咖啡店爵士 · 午后慵懒精选</div><div class="s"><span class="badge" style="--bc:var(--badge-kuwo)">酷我</span>52 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#82a05f;--g2:#3a4d28"><span class="shape" style="width:72px;height:72px;right:-16px;bottom:-22px;background:rgba(255,255,255,.10)"></span><span class="count">2.9万</span></div><div class="t">通勤电音 · 上班路上的 45 分钟</div><div class="s"><span class="badge" style="--bc:var(--badge-kugou)">酷狗</span>45 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#d68160;--g2:#54291c"><span class="shape" style="width:68px;height:68px;left:-14px;top:36px;background:rgba(255,255,255,.12)"></span><span class="count">6402</span></div><div class="t">摇滚现场 · Livehouse 气味</div><div class="s"><span class="badge" style="--bc:var(--badge-bili)">B站</span>73 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#94a4b2;--g2:#333a44"><span class="shape" style="width:66px;height:66px;right:24px;bottom:26px;background:rgba(255,255,255,.11)"></span><span class="count">9331</span></div><div class="t">纯器乐写稿间 · 键盘声之外</div><div class="s"><span class="badge" style="--bc:var(--badge-qq)">QQ</span>40 首</div></div>
+          <div class="pcard"><div class="cv" style="--g1:#c46bd0;--g2:#52305e"><span class="shape" style="width:70px;height:70px;left:20px;bottom:-16px;background:rgba(255,255,255,.11)"></span><span class="count">4.1万</span></div><div class="t">日语city pop · 昭和尾声的霓虹</div><div class="s"><span class="badge" style="--bc:var(--badge-kuwo)">酷我</span>66 首</div></div>
+        </div>
+      </main>
+    </div>
+    <div class="pbar">
+      <div class="pb-left">
+        <div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div>
+        <div class="pb-meta">
+          <div class="t">Hong Kong (feat. 王菲季候风)</div>
+          <div class="a"><svg class="ic ic-s" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9A5.4 5.4 0 0112 6.2 5.4 5.4 0 0121.5 12c-2 4.4-9.5 9-9.5 9z"/></svg>The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div>
+        </div>
+      </div>
+      <div class="pb-center">
+        <div class="pb-ctrl">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l7 7"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2.5v14H6zM20 5v14l-10-7z"/></svg>
+          <span class="pb-play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h-2.5v14H18zM4 5v14l10-7z"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 01-4 4H3"/></svg>
+        </div>
+        <div class="pb-seek"><span>01:11</span><div class="pb-track"><div class="fill"></div><span class="seek-tip">01:32</span></div><span>02:34</span></div>
+      </div>
+      <div class="pb-right">
+        <svg class="ic on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6l-5 4H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></svg>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 10h10M4 14h7"/><path d="M17 4v12"/><path d="M17 16a2 2 0 102 2v-2z"/></svg>
+        <div class="pb-vol"><div class="fill"></div></div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= R3 桌面 · 全屏播放页 ================= -->
+<section class="shot">
+  <div class="shot-label"><span class="no">R-03</span><span class="name">桌面 · 全屏播放页（有歌词双栏 · 氛围取色）</span></div>
+  <div class="frame desktop" style="height:800px">
+    <div class="np">
+      <div class="wash"><i class="w1"></i><i class="w2"></i></div>
+      <div class="np-top">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        <span class="cap">正在播放</span>
+        <div class="right">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </div>
+      </div>
+      <div class="np-main">
+        <div class="np-left">
+          <div class="cv" style="--g1:#7c68e0;--g2:#46386e"><span class="shape big"></span></div>
+          <div class="np-title">Hong Kong (feat. 王菲季候风)</div>
+          <div class="np-artist">The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div>
+          <div class="np-actions">
+            <svg class="ic faved" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9A5.4 5.4 0 0112 6.2 5.4 5.4 0 0121.5 12c-2 4.4-9.5 9-9.5 9z"/></svg>
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+          </div>
+          <div class="np-transport">
+            <div class="np-ctrl">
+              <svg class="ic on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l7 7"/></svg>
+              <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2.5v14H6zM20 5v14l-10-7z"/></svg>
+              <span class="np-play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+              <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h-2.5v14H18zM4 5v14l10-7z"/></svg>
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 01-4 4H3"/></svg>
+            </div>
+            <div class="np-seek"><span>01:11</span><div class="pb-track"><div class="fill"></div><span class="seek-tip">01:32</span></div><span>02:34</span></div>
+          </div>
+        </div>
+        <div class="np-right">
+          <div class="lyr-head">
+            <b>歌词</b>
+            <span class="re"><svg class="ic ic-s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-2.6-6.3"/><path d="M21 3v6h-6"/></svg>重新获取</span>
+          </div>
+          <div class="lyr-body">
+            <div class="lyr-line near">I met her in the city rain</div>
+            <div class="lyr-line cur">她说着粤语口音的晚安
+              <span class="tr">She said goodnight in a Cantonese tone</span>
+            </div>
+            <div class="lyr-line near">霓虹落在她肩膀</div>
+            <div class="lyr-line">维港的风替我回答</div>
+            <div class="lyr-line">夜色刚好不必说话</div>
+            <div class="lyr-line">而我只想再多听一遍</div>
+            <div class="lyr-line">多听一遍这港岛月色</div>
+            <div class="lyr-line">把心事留在渡轮上</div>
+            <div class="lyr-line">海面倒映着两句无言</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= R4 桌面 · 播放栏 + 队列 ================= -->
+<section class="shot">
+  <div class="shot-label"><span class="no">R-04</span><span class="name">桌面 · 队列面板展开（播放栏常驻）</span></div>
+  <div class="frame desktop" style="height:800px">
+    <div class="qlayout">
+      <div class="q-dim"><span class="q-skel s1"></span><span class="q-skel s2"></span><span class="q-skel s3"></span></div>
+      <aside class="qpanel">
+        <div class="q-head"><b>队列</b><span>256 首</span><a class="clr">清空</a></div>
+        <div class="q-list">
+          <div class="q-row cur">
+            <span class="playing-bars"><i></i><i></i><i></i></span>
+            <div class="m"><div class="t">Hong Kong (feat. 王菲季候风)</div><div class="a">The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div></div>
+          </div>
+          <div class="q-row"><span class="ix">2</span><div class="cv" style="--g1:#6b8ad8;--g2:#33426b"></div><div class="m"><div class="t">时光你等等我</div><div class="a">郭芊彤 <span class="badge" style="--bc:var(--badge-kugou)">酷狗</span></div></div><span class="du">03:45</span></div>
+          <div class="q-row"><span class="ix">3</span><div class="cv" style="--g1:#d6718f;--g2:#5e3049"></div><div class="m"><div class="t">Phoenix（涅槃）</div><div class="a">英雄联盟 <span class="badge" style="--bc:var(--badge-qq)">QQ</span></div></div><span class="du">03:20</span></div>
+          <div class="q-row"><span class="ix">4</span><div class="cv" style="--g1:#54b0a6;--g2:#26524d"></div><div class="m"><div class="t">Outside</div><div class="a">Calvin Harris <span class="badge" style="--bc:var(--badge-wy)">网易云</span></div></div><span class="du">03:58</span></div>
+          <div class="q-row"><span class="ix">5</span><div class="cv" style="--g1:#d4b563;--g2:#5e4c26"></div><div class="m"><div class="t">クリティカルヒット</div><div class="a">赫丽万象 <span class="badge" style="--bc:var(--badge-bili)">B站</span></div></div><span class="du">03:12</span></div>
+          <div class="q-row"><span class="ix">6</span><div class="cv" style="--g1:#b272d1;--g2:#4b2a58"></div><div class="m"><div class="t">Oopsie Daisy</div><div class="a">JubyPhonic <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div></div><span class="du">04:05</span></div>
+          <div class="q-row"><span class="ix">7</span><div class="cv" style="--g1:#7590c0;--g2:#323c52"></div><div class="m"><div class="t">only my railgun</div><div class="a">fripSide <span class="badge" style="--bc:var(--badge-qqqian)">千千</span></div></div><span class="du">04:18</span></div>
+          <div class="q-row"><span class="ix">8</span><div class="cv" style="--g1:#cdb88c;--g2:#5e5233"></div><div class="m"><div class="t">City of Stars</div><div class="a">Ryan Gosling <span class="badge" style="--bc:var(--badge-kugou)">酷狗</span></div></div><span class="du">02:41</span></div>
+          <div class="q-row"><span class="ix">9</span><div class="cv" style="--g1:#82a05f;--g2:#3a4d28"></div><div class="m"><div class="t">山丘</div><div class="a">李宗盛 <span class="badge" style="--bc:var(--badge-wy)">网易云</span></div></div><span class="du">05:46</span></div>
+          <div class="q-row"><span class="ix">10</span><div class="cv" style="--g1:#d68160;--g2:#54291c"></div><div class="m"><div class="t">海阔天空</div><div class="a">Beyond <span class="badge" style="--bc:var(--badge-qq)">QQ</span></div></div><span class="du">05:24</span></div>
+          <div class="q-row"><span class="ix">11</span><div class="cv" style="--g1:#94a4b2;--g2:#333a44"></div><div class="m"><div class="t">平凡之路</div><div class="a">朴树 <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div></div><span class="du">04:46</span></div>
+          <div class="q-row"><span class="ix">12</span><div class="cv" style="--g1:#c46bd0;--g2:#52305e"></div><div class="m"><div class="t">夜空中最亮的星</div><div class="a">逃跑计划 <span class="badge" style="--bc:var(--badge-bili)">B站</span></div></div><span class="du">04:12</span></div>
+        </div>
+      </aside>
+    </div>
+    <div class="pbar">
+      <div class="pb-left">
+        <div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div>
+        <div class="pb-meta">
+          <div class="t">Hong Kong (feat. 王菲季候风)</div>
+          <div class="a"><svg class="ic ic-s" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9A5.4 5.4 0 0112 6.2 5.4 5.4 0 0121.5 12c-2 4.4-9.5 9-9.5 9z"/></svg>The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div>
+        </div>
+      </div>
+      <div class="pb-center">
+        <div class="pb-ctrl">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l7 7"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2.5v14H6zM20 5v14l-10-7z"/></svg>
+          <span class="pb-play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h-2.5v14H18zM4 5v14l10-7z"/></svg>
+          <svg class="ic on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 01-4 4H3"/></svg>
+        </div>
+        <div class="pb-seek"><span>01:11</span><div class="pb-track"><div class="fill"></div><span class="seek-tip">01:32</span></div><span>02:34</span></div>
+      </div>
+      <div class="pb-right">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6l-5 4H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></svg>
+        <svg class="ic on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 10h10M4 14h7"/><path d="M17 4v12"/><path d="M17 16a2 2 0 102 2v-2z"/></svg>
+        <div class="pb-vol"><div class="fill"></div></div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= R5 手机 · 首页 ================= -->
+<section class="shot">
+  <div class="shot-label"><span class="no">R-05</span><span class="name">手机 · 首页（390×844）</span></div>
+  <div class="frame mobile">
+    <div class="m-status"><span>23:41</span><span class="r">5G ▮▮▮ 87%</span></div>
+    <div class="m-body">
+      <div class="m-greet">
+        <div><h2>夜深了</h2><div class="d">11月28日 · 周六</div></div>
+        <div class="acts">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </div>
+      </div>
+      <div class="m-hero">
+        <div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div>
+        <div class="m">
+          <div class="hint">继续播放</div>
+          <div class="t">Hong Kong (feat. 王菲季候风)</div>
+          <div class="a">The Weeknd</div>
+        </div>
+        <span class="go"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+      </div>
+      <div class="sec"><h3>最近播放</h3><a>查看全部</a></div>
+      <div class="m-shelf">
+        <div class="m-card"><div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div><div class="t" style="color:var(--accent-strong)">Hong Kong (feat. 王菲季候风)</div><div class="a">The Weeknd</div></div>
+        <div class="m-card"><div class="cv" style="--g1:#6b8ad8;--g2:#33426b"></div><div class="t">时光你等等我</div><div class="a">郭芊彤</div></div>
+        <div class="m-card"><div class="cv" style="--g1:#d6718f;--g2:#5e3049"></div><div class="t">Phoenix（涅槃）</div><div class="a">英雄联盟</div></div>
+        <div class="m-card"><div class="cv" style="--g1:#54b0a6;--g2:#26524d"></div><div class="t">Outside</div><div class="a">Calvin Harris</div></div>
+      </div>
+      <div class="sec" style="margin-top:26px"><h3>热门榜单</h3><a>全部榜单</a></div>
+      <div class="m-wide">
+        <div class="wrow"><span class="rk">1</span><div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div><div class="m"><div class="t">飙升榜</div><div class="a">酷我 · 每日更新</div></div><svg class="ic ic-s" style="color:var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="wrow"><span class="rk">2</span><div class="cv" style="--g1:#d6718f;--g2:#5e3049"></div><div class="m"><div class="t">热歌榜</div><div class="a">QQ · 实时更新</div></div><svg class="ic ic-s" style="color:var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="wrow"><span class="rk">3</span><div class="cv" style="--g1:#54b0a6;--g2:#26524d"></div><div class="m"><div class="t">新歌榜</div><div class="a">网易云 · 周更</div></div><svg class="ic ic-s" style="color:var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+    </div>
+    <div class="m-mini">
+      <div class="cv" style="--g1:#7c68e0;--g2:#46386e"></div>
+      <div class="m"><div class="t">Hong Kong (feat. 王菲季候风)</div><div class="a">The Weeknd · 01:11</div></div>
+      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+      <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h-2.5v14H18zM4 5v14l10-7z"/></svg>
+    </div>
+    <div class="m-nav">
+      <div class="it on"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>首页</div>
+      <div class="it"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 8-4-2 2-8z" fill="currentColor" stroke="none" opacity=".9"/><path d="M15 9l4-1"/></svg>发现</div>
+      <div class="it"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>搜索</div>
+      <div class="it"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 15l-5-4-9 7"/></svg>我的音乐</div>
+      <div class="it"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>下载</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= R6 手机 · 全屏播放页 ================= -->
+<section class="shot">
+  <div class="shot-label"><span class="no">R-06</span><span class="name">手机 · 全屏播放页（390×844）</span></div>
+  <div class="frame mobile">
+    <div class="m-status"><span>23:41</span><span class="r">5G ▮▮▮ 87%</span></div>
+    <div class="mnp">
+      <div class="wash"><i class="w1"></i><i class="w2"></i></div>
+      <div class="inner">
+        <div class="mnp-top">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          <span class="cap">正在播放</span>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </div>
+        <div class="cv cv-main" style="--g1:#7c68e0;--g2:#46386e"><span class="shape big"></span></div>
+        <div class="mnp-title">Hong Kong (feat. 王菲季候风)</div>
+        <div class="mnp-artist">The Weeknd <span class="badge" style="--bc:var(--badge-kuwo)">酷我</span></div>
+        <div class="mnp-lyr">
+          <div class="lyr-line cur">她说着粤语口音的晚安</div>
+          <div class="lyr-line">霓虹落在她肩膀</div>
+          <div class="lyr-line">维港的风替我回答</div>
+        </div>
+        <div class="mnp-seek"><span>01:11</span><div class="pb-track"><div class="fill"></div></div><span>02:34</span></div>
+        <div class="mnp-ctrl">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l7 7"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2.5v14H6zM20 5v14l-10-7z"/></svg>
+          <span class="mnp-play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h-2.5v14H18zM4 5v14l10-7z"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 01-4 4H3"/></svg>
+        </div>
+        <div class="mnp-foot">
+          <svg class="ic faved" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.5-9A5.4 5.4 0 0112 6.2 5.4 5.4 0 0121.5 12c-2 4.4-9.5 9-9.5 9z"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 10h10M4 14h7"/><path d="M17 4v12"/><path d="M17 16a2 2 0 102 2v-2z"/></svg>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="M8.3 10.8l6.9-4M8.3 13.2l6.9 4"/></svg>
+        </div>
+      </div>
+      <div class="m-home-ind"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= token 摘要 ================= -->
+<section class="token-strip">
+  <h2>核心 token（→ Flutter VxTokens 映射见 design-spec.md）</h2>
+  <div class="token-row">
+    <span class="tok"><span class="chip" style="background:#1e1e2e"></span><code>base #1E1E2E</code></span>
+    <span class="tok"><span class="chip" style="background:#181825"></span><code>elevated #181825</code></span>
+    <span class="tok"><span class="chip" style="background:#262638"></span><code>card #262638</code></span>
+    <span class="tok"><span class="chip" style="background:#313244"></span><code>high #313244</code></span>
+    <span class="tok"><span class="chip" style="background:#cba6f7"></span><code>accent #CBA6F7</code></span>
+    <span class="tok"><span class="chip" style="background:#cdd6f4"></span><code>text-1 #CDD6F4</code></span>
+    <span class="tok"><span class="chip" style="background:#a6adc8"></span><code>text-2 #A6ADC8</code></span>
+    <span class="tok"><span class="chip" style="background:#7f849c"></span><code>text-3 #7F849C</code></span>
+  </div>
+</section>
+
+</body>
+</html>

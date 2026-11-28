@@ -292,9 +292,15 @@ class _CollapsedSidebar extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                // 选中态主色 tint（外观精修：灰底 → 主色 16% 叠加）。
+                // V2 spec §4：活跃态 accent-tint + 内描边（选中态清晰标识；
+                // 与 2026-11-18 外观精修批的主色 tint 同源）。
                 color: active ? scheme.primary.withValues(alpha: 0.16) : null,
                 borderRadius: BorderRadius.circular(VxRadius.sm),
+                border: Border.all(
+                  color: active
+                      ? scheme.primary.withValues(alpha: 0.24)
+                      : Colors.transparent,
+                ),
               ),
               child: Icon(
                 data,
@@ -410,11 +416,9 @@ class _NavRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        // 2026-11-18 外观精修：选中态主色 tint（灰底 → 主色 16% 叠加，
-        // 与折叠态同源）；hover 走 InkWell hoverColor 反馈。
-        color: active
-            ? scheme.primary.withValues(alpha: 0.16)
-            : Colors.transparent,
+        // 底色走下方 Container decoration（V2 spec accent-tint + 内描边）；
+        // hover 反馈走 InkWell hoverColor（外观精修批口径）。
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(9),
         child: InkWell(
           borderRadius: BorderRadius.circular(9),
@@ -423,6 +427,19 @@ class _NavRow extends StatelessWidget {
           child: Container(
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              // V2 spec §4：活跃态 accent-tint 底 + 内描边（左缘 3px 指示条
+              // 已在 Row 内承担「更清晰的视觉标识」；描边补 hover 外的一致性）。
+              color: active
+                  ? scheme.primary.withValues(alpha: 0.16)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: active
+                    ? scheme.primary.withValues(alpha: 0.24)
+                    : Colors.transparent,
+              ),
+            ),
             child: Row(
               children: [
                 if (active)

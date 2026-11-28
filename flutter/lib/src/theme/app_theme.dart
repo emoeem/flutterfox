@@ -319,10 +319,10 @@ TextTheme _appTextTheme(ColorScheme scheme) {
       base.copyWith(color: color ?? scheme.onSurface, fontSize: size);
   return TextTheme(
     displayLarge: s(VxTypography.display),
-    displayMedium: s(VxTypography.display, size: 30),
-    displaySmall: s(VxTypography.display, size: 26),
+    displayMedium: s(VxTypography.display, size: 24),
+    displaySmall: s(VxTypography.display, size: 22),
     headlineLarge: s(VxTypography.h1),
-    headlineMedium: s(VxTypography.h1, size: 24),
+    headlineMedium: s(VxTypography.h1, size: 20),
     headlineSmall: s(VxTypography.h2),
     titleLarge: s(VxTypography.title),
     titleMedium: s(VxTypography.title, size: 14),

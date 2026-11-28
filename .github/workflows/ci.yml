@@ -10,8 +10,8 @@ env:
   CARGO_TERM_COLOR: always
   # audio-only 的 libmpv 构建，随 sha256 一同固定
   # 升级时同时改这两行：https://github.com/Uyanide/mpv-winbuild-audio/releases
-  LIBMPV_TAG: v0.41.0-1
-  LIBMPV_SHA256: 4cbc2f77c1380b0fb4d7d1f0373d881038f5f974f1c4799d0405eda54a488ee5
+  LIBMPV_TAG: v0.42.0-1
+  LIBMPV_SHA256: 1da3d28d5b4c68fdb9ad7ef5c70f151e1e78da07d3fdea50394d7cb38b30c475
 
 jobs:
   # ── Lint：fmt + clippy 零警告门禁 ──
@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Rust build cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Install dependencies
         run: |
@@ -36,6 +39,13 @@ jobs:
       # `Pin<Box<dyn Future>>` 撞在一起，源码层面消除不掉。其余 lint 仍是零容忍。
       - name: Clippy (zero warnings)
         run: cargo clippy --workspace --all-targets -- -D warnings -A clippy::double_must_use
+
+      # V5（docs/MUSID_DLI_ADAPTER.md §15）：adapter 全特性编译过 lint——
+      # default 只带 joox 子 feature，netease/qqmusic 等九个子 feature 的
+      # 装配分支与 musid cfg 代码由本步覆盖（与 musid-stack job 的测试步
+      # 互补：lint 是零警告口径，测试是行为口径）。
+      - name: Clippy (adapter feature, zero warnings)
+        run: cargo clippy -p lx-source --features musid-dli-adapter --all-targets -- -D warnings -A clippy::double_must_use
 
   # ── FRB codegen 一致性（Batch A #17/A-3）：再生成后必须零 diff。
   #    生成文件（frb_generated.rs/.dart、lib.dart、lib.freezed.dart、
@@ -90,6 +100,143 @@ jobs:
             exit 1
           fi
 
+  # ── musid-dli 双栈（V1，opt-in feature 门；docs/MUSID_DLI_ADAPTER.md §11）──
+  # 覆盖全部 musid cfg 代码（manager 双栈路径 / adapter_musid / parity /
+  # musid_bootstrap）与 musid_dual_stack / musid_parity 集成测试；默认树
+  # 「恰带 joox 适配边」由 tree 门锁死（V4-s1 §14.1，--no-default-features
+  # 保持零 musid）。§0 登记的 cover_cache flaky 与既有 workspace 测试 job
+  # 同口径（release/全量下未复现）。
+  musid-stack:
+    name: musid dual-stack (adapter features)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Rust build cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (adapter feature, zero warnings)
+        run: cargo clippy -p lx-source --all-targets --features musid-dli-adapter -- -D warnings -A clippy::double_must_use
+
+      - name: Clippy (lyrics variant, zero warnings)
+        run: cargo clippy -p lx-source --all-targets --features musid-dli-adapter-lyrics -- -D warnings -A clippy::double_must_use
+
+      # V4-s1（docs/MUSID_DLI_ADAPTER.md §14.1）起的新不变式：default 树携
+      # 带且仅携带 joox 适配边（legacy joox 已删，适配面是唯一实现）；
+      # --no-default-features 保持零 musid 边（opt-out 不变）。
+      - name: Default build carries exactly the joox adapter edge
+        run: |
+          if ! cargo tree -p lx-source -e normal | grep -q musid-dli; then
+            echo "default feature tree must carry musid-dli (joox adapter is the sole joox implementation)" >&2
+            exit 1
+          fi
+          enabled_sources=$(cargo tree -p lx-source -e features -i musid-dli | grep -oE 'musid-dli feature "source-[a-z-]+"' | sort -u)
+          expected=$(printf 'musid-dli feature "source-joox"\nmusid-dli feature "source-qianqian"')
+          if [ "$enabled_sources" != "$expected" ]; then
+            echo "default tree must enable only musid-dli/source-joox + source-qianqian, got: $enabled_sources" >&2
+            exit 1
+          fi
+          if cargo tree -p lx-source --no-default-features -e normal | grep -q musid-dli; then
+            echo "--no-default-features must stay free of musid-dli" >&2
+            exit 1
+          fi
+          echo "default carries exactly the joox adapter edge; opt-out tree stays musid-free"
+
+      - name: Tests (adapter feature)
+        run: cargo test -p lx-source --features musid-dli-adapter
+
+      - name: Tests (lyrics variant)
+        run: cargo test -p lx-source --features musid-dli-adapter-lyrics
+
+      # V2 逐源迁移（docs/MUSID_DLI_ADAPTER.md §12，评审 P1）：按源子
+      # feature 的装配分支（musid_bootstrap 各 cfg 分支，内含
+      # musid_dli::source_<x> 路径引用）此前不在任何门禁里——写错路径不会
+      # 红。11 个子 feature 逐个编译；已落地切片（jamendo = 切片 1、
+      # fivesing = 切片 2、apple = 切片 3、bilibili = 切片 4、migu = 切片 5、
+      # kuwo = 切片 6、kugou = 切片 7、qqmusic = 切片 8、netease = 切片 9、
+      # qianqian = 切片 10、joox = 切片 11）另跑全量测试
+      # （musid_<source>_slice.rs 用真实 provider 对账）。
+      - name: Per-source sub-feature compile coverage (bootstrap branches)
+        run: |
+          for feature in netease qqmusic kugou kuwo migu jamendo apple fivesing bilibili qianqian joox; do
+            echo "== musid-dli-adapter-$feature =="
+            cargo check -p lx-source --features "musid-dli-adapter-$feature"
+          done
+
+      - name: Tests (jamendo slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-jamendo --test musid_jamendo_slice
+
+      - name: Tests (fivesing slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-fivesing --test musid_fivesing_slice
+
+      - name: Tests (apple slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-apple --test musid_apple_slice
+
+      - name: Tests (bilibili slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-bilibili --test musid_bilibili_slice
+
+      - name: Tests (migu slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-migu --test musid_migu_slice
+
+      - name: Tests (kuwo slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-kuwo --test musid_kuwo_slice
+
+      - name: Tests (kugou slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-kugou --test musid_kugou_slice
+
+      - name: Tests (qqmusic slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-qqmusic --test musid_qqmusic_slice
+
+      - name: Tests (netease slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-netease --test musid_netease_slice
+
+      - name: Tests (qianqian slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-qianqian --test musid_qianqian_slice
+
+      - name: Tests (joox slice sub-feature, real provider)
+        run: cargo test -p lx-source --features musid-dli-adapter-joox --test musid_joox_slice
+
+      # 已落地切片歌词面的指纹 parity（fivesing/apple/kugou/kuwo）与歌词面
+      # stub 路由用例（qianqian/joox）+ 全量 Migrated 账面组合（切片 1-11
+      # 共 11 源）的账面/构建零脱节断言都在 musid-dli-adapter-lyrics 组合
+      # 下才编译。
+      # 全量组合步收窄到 musid 测试目标（musid_dual_stack 的账面/构建零脱节
+      # 断言与歌词 stub 路由用例在此组合下才编译）：js_user_api 不再随组合
+      # 步全量暴露——其 Node 子进程在重组合构建下 flake 频发（已单步单次）。
+      - name: Tests (all migrated slices + lyrics conversions combo)
+        run: cargo test -p lx-source --features musid-dli-adapter-fivesing,musid-dli-adapter-jamendo,musid-dli-adapter-apple,musid-dli-adapter-bilibili,musid-dli-adapter-migu,musid-dli-adapter-kuwo,musid-dli-adapter-kugou,musid-dli-adapter-qqmusic,musid-dli-adapter-netease,musid-dli-adapter-qianqian,musid-dli-adapter-joox,musid-dli-adapter-lyrics --test musid_dual_stack --test musid_parity
+
+      # js_user_api（JS 引擎子进程端到端）独立步：这些测试此前随每个逐源
+      # 步重复运行（11× flake 暴露面）；其 Node 子进程偶发即退（exit 0）是
+      # runner 环境抖动，与 musid 无关——收窄后单次运行。
+      - name: Tests (js user api, JS engine subprocess)
+        run: cargo test -p lx-source --test js_user_api
+
+      # V3 本地库对账（docs/MUSID_DLI_ADAPTER.md §13.1）：musid local_scan /
+      # read_lyrics 与 voicefox 本仓实现的运行期语料对账 + 本地歌词读委托
+      # （musid-dli-adapter-local 下 LocalSource::read_local_lyric 走 musid）。
+      - name: Tests (V3 local library parity slice)
+        run: cargo test -p lx-source --features musid-dli-adapter-local --test musid_local_parity
+
+      # V3 歌词文档缓存（docs/MUSID_DLI_ADAPTER.md §13.2）：LyricsCache 文档
+      # 域接入 adapter 歌词面，命中/确认无词/错误不缓存三用例随 --lib 门进。
+      - name: Tests (V3 lyrics document cache slice)
+        run: cargo test -p lx-source --features musid-dli-adapter-lyrics-cache --lib
+
+      # V3 本地封面对账（docs/MUSID_DLI_ADAPTER.md §13.3）：内嵌缓存键配方
+      # 双栈同源、外挂封面检出回落、模型封面优先级不变、双缺 NotFound、
+      # EmbeddedFirst 次序钉住。
+      - name: Tests (V3 local cover parity slice)
+        run: cargo test -p lx-source --features musid-dli-adapter-artwork-local --test musid_local_cover_parity
+
+      - name: Default baseline
+        run: cargo test -p lx-source
+
   # ── Linux 构建 ──
   build-linux:
     name: Build Linux x86_64
@@ -98,6 +245,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Rust build cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Install dependencies
         run: |
@@ -127,12 +277,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Rust build cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Install MinGW toolchain
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
           install: mingw-w64-x86_64-toolchain
+          # V5（docs/MUSID_DLI_ADAPTER.md §15）：CI 注解 [msystem-mingw64]
+          # 「MINGW64 is deprecated. Migrate to UCRT64 or CLANG64」——迁移到
+          # UCRT64 涉及 libmpv DLL 的 ABI/导入表校验与全部 mingw64 路径绑定
+          # （sha256 固定的音频构建包按 MINGW64 ABI 出包），非平凡变更，按
+          # 注解自带的确认口径显式抑制并延后；真实迁移需重验 import table
+          # 检查与三平台打包。
+          suppress-deprecation-warnings: msystem-mingw64
 
       - name: Install MinGW and libmpv
         shell: pwsh
@@ -182,6 +342,29 @@ jobs:
             }
           }
 
+          $buildInfo = Get-ChildItem -Path libmpv-extract -Recurse -File -Filter BUILDINFO.txt |
+            Select-Object -First 1
+
+          if ($null -eq $buildInfo) {
+            throw "BUILDINFO.txt is missing from the libmpv archive"
+          }
+
+          $licenses = Join-Path $buildInfo.Directory.FullName "licenses"
+
+          if (-not (Test-Path (Join-Path $licenses "mpv/LICENSE.LGPL"))) {
+            throw "licenses/mpv/LICENSE.LGPL is missing from the libmpv archive"
+          }
+
+          $dllHash = (Get-FileHash mpv-source/64/libmpv-2.dll -Algorithm SHA256).Hash.ToLowerInvariant()
+
+          if (-not (Select-String -Path $buildInfo.FullName -SimpleMatch -Quiet $dllHash)) {
+            throw "BUILDINFO.txt does not describe the bundled libmpv-2.dll ($dllHash)"
+          }
+
+          New-Item -ItemType Directory -Force -Path mpv-source/notices | Out-Null
+          Copy-Item $buildInfo.FullName mpv-source/notices/BUILDINFO.txt
+          Copy-Item $licenses mpv-source/notices/licenses -Recurse
+
           "MPV_SOURCE=$((Get-Location).Path)\mpv-source" |
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -206,6 +389,9 @@ jobs:
           Copy-Item `
             mpv-source/64/libmpv-2.dll `
             dist/libmpv-2.dll
+
+          New-Item -ItemType Directory -Force -Path dist/third_party | Out-Null
+          Copy-Item mpv-source/notices dist/third_party/libmpv -Recurse
 
           Push-Location dist
 
@@ -277,7 +463,8 @@ jobs:
 
             7z a voicefox-windows-x86_64.zip `
               voicefox.exe `
-              libmpv-2.dll | Out-Host
+              libmpv-2.dll `
+              third_party | Out-Host
 
             if ($LASTEXITCODE -ne 0) {
               throw "Packaging Windows artifact failed with exit code $LASTEXITCODE"
@@ -319,6 +506,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Rust build cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Install dependencies
         env:

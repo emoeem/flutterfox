@@ -13,6 +13,7 @@ voicefox 将多音源音乐搜索、在线播放、本地音乐库、歌词、�
 
 ## 主要功能
 
+- **musid-dli 统一音源引擎**：独立 Rust 库 `musid-dli` 直接编译进程序，承载音源数据面（搜索/流解析/歌词/歌单/专辑/链接解析）——joox 与千千已完全运行在 musid 实现上，其余音源为双栈（musid 影子 + 内置实现），宿主可注入代理/超时预算
 - 多音源聚合搜索与失败换源
 - libmpv 播放、ReplayGain、EQ、A-B 循环、淡入淡出
 - 队列键盘/鼠标排序、筛选、全屏歌词
@@ -27,6 +28,8 @@ voicefox 将多音源音乐搜索、在线播放、本地音乐库、歌词、�
 - 跨音源歌单/收藏同步：Diff 预览、双向增量、持久化歌单映射与未匹配提示
 
 ## 当前音源
+
+> 引擎架构：11 个在线源的数据面已迁移到 musid-dli 统一引擎（V2 逐源迁移）；joox 与千千自 0.9.0 起完全运行在 musid 实现上（legacy 实现已删）；其余源的歌单/专辑/分类等集合面与登录链路仍走本仓实现，musid 缺口见适配层文档 §14.0 账本。播放队列、源切换策略、JS 自定义音源由 voicefox 自有。
 
 | 音源 | 主要能力 |
 |---|---|
@@ -88,6 +91,8 @@ voicefox 将多音源音乐搜索、在线播放、本地音乐库、歌词、�
 
 Release 提供包含 `voicefox.exe` 与 `libmpv-2.dll` 的压缩包。
 
+`libmpv-2.dll` 来自 [mpv-winbuild-audio](https://github.com/Uyanide/mpv-winbuild-audio)，以 LGPL-2.1-or-later 授权。压缩包内附带许可证文本与记录构建信息的 `BUILDINFO.txt`。
+
 ### Linux
 
 Release 提供仅包含 `voicefox` 可执行文件的压缩包。
@@ -137,6 +142,7 @@ cd flutter && flutter build apk --release --target-platform android-arm64
 - [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — 功能、音源与平台说明
 - [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — 配置
 - [`docs/SYNC.md`](docs/SYNC.md) — 跨音源同步、Diff、匹配与登录限制
+- [`docs/MUSID_DLI_ADAPTER.md`](docs/MUSID_DLI_ADAPTER.md)：musid-dli 适配层设计与 V0-V5 落地全记录（映射契约 45 对、V2 逐源迁移 11 源、V3 本地库/歌词缓存/封面接入、V4 joox/qianqian legacy 删除与逐源删除账本、V5 CI 强化、parity 对账口径、门禁结果）
 - [`flutter/README.md`](flutter/README.md) — Flutter/Rust 新架构开发线
 - [`docs/SESSION-HANDOFF.md`](docs/SESSION-HANDOFF.md) — 跨会话交接（当前状态、待办队列、工程事实）
 - [`docs/PHASE8-REPORT.md`](docs/PHASE8-REPORT.md) 等 PHASE 报告 — UI 重构各阶段交付与验收记录

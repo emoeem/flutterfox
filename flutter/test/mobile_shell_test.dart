@@ -130,8 +130,8 @@ void main() {
       navRequest.value = 7;
       await tester.pumpAndSettle();
       expect(navRequest.value, isNull);
-      // 设置目的地在 IndexedStack 中呈现；C-D 起手机档为分组列表页
-      //（§6.3 C-06），分组行全部可渲染（列表不依赖 config 快照）。
+      // 设置槽（C-D/R6）：手机档为分组入口手机页（MobileSettingsPage，
+      // 桌面 208 双栏不照搬）；分组行全部可渲染（列表不依赖 config 快照）。
       expect(find.text('播放与音效'), findsOneWidget);
       expect(find.text('快捷键'), findsOneWidget);
       // 底部导航保持最后一个一级入口高亮（首页，settings 非主入口）。
@@ -271,6 +271,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
+      // 设置槽（C-D/R6）：分组入口页渲染（静态卡片，无 config 依赖）。
       expect(find.text('播放与音效'), findsOneWidget);
       expect(find.text('关于'), findsOneWidget);
 
@@ -357,8 +358,13 @@ void main() {
       await tester.tap(find.text('音源管理'));
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
-      expect(find.byType(MobileSettingsSectionPage), findsOneWidget);
       expect(
+        find.byType(MobileSettingsPage, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        // 种子推入的全屏二级路由把入口槽盖进 offstage；skipOffstage 断言
+        // KeyedSubtree 仍在 IndexedStack（种子由手机设置页帧后定位二级页）。
         find.byKey(
           const ValueKey('mobile-settings:sources'),
           skipOffstage: false,

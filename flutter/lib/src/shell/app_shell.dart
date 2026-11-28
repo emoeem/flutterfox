@@ -31,9 +31,9 @@ import '../pages/help_page.dart';
 import '../pages/home_page.dart';
 import '../pages/mobile_discover_page.dart';
 import '../pages/mobile_downloads_page.dart';
+import '../pages/mobile_settings_page.dart';
 import '../pages/mobile_home_page.dart';
 import '../pages/mobile_search_page.dart';
-import '../pages/mobile_settings_page.dart';
 import '../pages/library_page.dart';
 import '../pages/local_music_page.dart';
 import '../pages/playlist_detail_page.dart';
@@ -873,12 +873,15 @@ Widget buildShellPage(
       form == ShellFormFactor.mobile
           ? MobileDownloadsPage(model)
           : DownloadsPage(model),
-    // 设置槽（Batch C-D）：手机档用分组列表页（/6.3 C-06「分组列表与独立二级设置页」），桌面/平板档维持桌面双栏页；settingsSection 种子（抽屉「音源管理」）由手机列表页首帧后自动推入对应二级页。
+    // 设置槽（Batch C-D / R6）：手机档用分组入口手机页（桌面 208 双栏
+    // 不照搬，spec §5；initialSection 种子由手机页帧后定位二级页），桌面/
+    // 平板档维持桌面页。
     ShellDestination.settings =>
       form == ShellFormFactor.mobile
-          ? MobileSettingsPage(model, initialSection: settingsSection)
+          ? MobileSettingsPage(model: model, initialSection: settingsSection)
           : SettingsPage(model, initialSection: settingsSection),
-    // 帮助槽（Batch C-C）：手机档过滤桌面键盘快捷键段（C-07）。
+    // 帮助槽（Batch C-C）：手机档过滤桌面键盘快捷键段（槽页无自带
+    // Scaffold，开关由 help_page.dart showDesktopShortcuts 承担）。
     ShellDestination.help =>
       form == ShellFormFactor.mobile
           ? const HelpPage(showDesktopShortcuts: false)

@@ -65,24 +65,24 @@ void main() {
     expect(find.byType(VxPlayerControls), findsNWidgets(3));
   });
 
-  test('深色 Token 与概念稿 CSS 变量一致', () {
-    expect(VxColors.background, const Color(0xFF15141A)); // --bg
-    expect(VxColors.surface1, const Color(0xFF191820)); // --side
-    expect(VxColors.surface2, const Color(0xFF201F28)); // --surface
-    expect(VxColors.surface3, const Color(0xFF292733)); // --surface2
-    expect(VxColors.hover, const Color(0xFF34313F)); // --surface3
-    expect(VxColors.divider, const Color(0xFF33303B)); // --line
-    expect(VxColors.textPrimary, const Color(0xFFF1EEF5)); // --text
-    expect(VxColors.textSecondary, const Color(0xFFB5AFBF)); // --muted
-    expect(VxColors.textMuted, const Color(0xFF85808F)); // --dim
-    expect(VxColors.accent, const Color(0xFFCBA6F7)); // --accent
-    expect(VxColors.accentDeep, const Color(0xFFA98BDD)); // --accent2
-    expect(VxColors.success, const Color(0xFFA6D189)); // --green
-    expect(VxColors.error, const Color(0xFFE78284)); // --red
-    expect(VxDarkHero.gradientStart, const Color(0xFF373042)); // .hero 渐变
-    expect(VxDarkHero.gradientMid, const Color(0xFF272532));
-    expect(VxDarkHero.gradientEnd, const Color(0xFF1E1D26));
-    expect(VxDarkSurface.seekTrack, const Color(0xFF45404E)); // .seekbar
+  test('深色 Token 与 V2 冻结 spec v1.0 色板一致（docs/redesign/ui-redesign-v2）', () {
+    expect(VxColors.background, const Color(0xFF1E1E2E)); // base（Mocha base）
+    expect(VxColors.surface1, const Color(0xFF181825)); // elevated（mantle）
+    expect(VxColors.surface2, const Color(0xFF262638)); // card
+    expect(VxColors.surface3, const Color(0xFF313244)); // high（surface0）
+    expect(VxColors.hover, const Color(0xFF45475A)); // Mocha surface1
+    expect(VxColors.divider, const Color(0xFF3A3D54)); // 低对比灰紫
+    expect(VxColors.textPrimary, const Color(0xFFCDD6F4)); // text-1
+    expect(VxColors.textSecondary, const Color(0xFFA6ADC8)); // text-2
+    expect(VxColors.textMuted, const Color(0xFF7F849C)); // text-3
+    expect(VxColors.accent, const Color(0xFFCBA6F7)); // accent（Mauve）
+    expect(VxColors.accentDeep, const Color(0xFFA98BDD)); // 次强调
+    expect(VxColors.success, const Color(0xFFA6D189)); // Mocha green
+    expect(VxColors.error, const Color(0xFFE78284)); // Mocha red
+    expect(VxDarkHero.gradientStart, const Color(0xFF2B2C40)); // Hero 渐变
+    expect(VxDarkHero.gradientMid, const Color(0xFF262638));
+    expect(VxDarkHero.gradientEnd, const Color(0xFF1E1E2E));
+    expect(VxDarkSurface.seekTrack, const Color(0xFF313244)); // 进度轨
   });
 
   test('标题层级保留（禁止全 w400）；浅色 accent 独立调校', () {
@@ -97,8 +97,8 @@ void main() {
     expect(dark.scaffoldBackgroundColor, VxColors.background);
 
     final light = buildLightTheme();
-    // 浅色不是反转：accent 为独立调校的深紫，深色 accent 在白底对比不足。
-    expect(light.colorScheme.primary, const Color(0xFF7C4DC0));
+    // 浅色不是反转：accent 为 Latte Mauve（深紫加深），深色 Mauve 在白底对比不足。
+    expect(light.colorScheme.primary, const Color(0xFF8839EF));
     expect(light.colorScheme.primary, isNot(VxColors.accent));
     expect(light.textTheme.displayLarge!.fontWeight, FontWeight.w700);
     expect(light.scaffoldBackgroundColor, VxLightColors.background);

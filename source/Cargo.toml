@@ -3,10 +3,6 @@ name = "lx-source"
 version.workspace = true
 edition.workspace = true
 
-[features]
-default = ["js-sources"]
-js-sources = []
-
 [dependencies]
 lx-core = { path = "../core" }
 
@@ -39,6 +35,91 @@ walkdir.workspace = true
 notify.workspace = true
 cue-rw.workspace = true
 tracing.workspace = true
+
+# musid-dli 适配层（V0）：纯模型映射 + fixture 测试，不接业务路径。
+# 仅 feature `musid-dli-adapter` 启用时进入依赖图；默认构建（V4 起）带 joox/qianqian 适配边。
+# `=0.2.0` 精确 pin：V0 映射断言对模型 serde wire 形状敏感，禁 semver 漂移。
+# `default-features = false`：模型层不需要 lofty/walkdir/cue-rw/tempfile。
+musid-dli = { version = "=0.2.1", optional = true, default-features = false }
+
+[features]
+# GUI：js 引擎模块门（lib.rs `#[cfg(feature = "js-sources")]`）。Android
+# FFI 构建 `--no-default-features` 时排除 Node 子进程依赖；桌面/TUI 默认树
+# 依旧带 js（与上游无条件编译行为等价，仅多了 opt-out 能力）。
+js-sources = []
+# V4-s1（docs/MUSID_DLI_ADAPTER.md §14.1）：joox legacy 实现已删，适配面是
+# 唯一实现——joox 子 feature 进 default（--no-default-features 仍可构建零
+# musid 树，此时 joox 源整体缺席）。
+# V4 的两源 default flip 带来的歌词面缺口（优化轮 P1-1）：legacy 歌词面
+# 已删，适配面歌词依赖 lyrics-conversions 变体——不进 default 的话默认
+# 构建的 joox/qianqian 恒报「需要 lyrics 变体」。lyrics-cache 是其上的
+# 文档域缓存（V3-s2）。
+default = [
+    "js-sources",
+    "musid-dli-adapter-joox",
+    "musid-dli-adapter-qianqian",
+    "musid-dli-adapter-lyrics",
+    "musid-dli-adapter-lyrics-cache",
+]
+musid-dli-adapter = ["dep:musid-dli"]
+# 歌词往返映射变体：启用 musid-dli 的 lyrics-conversions（含 lyrics-helper，
+# default-features=false）。V1 起歌词面双栈运行时需要它（缺它时 musid 歌词
+# 面不生效 + 启动 warn）；不开则只有映射/测试面。
+musid-dli-adapter-lyrics = ["musid-dli-adapter", "musid-dli/lyrics-conversions"]
+# V1 按源子 feature：provider 实现与 transport 面随子 feature 进入 feature
+# 树（musid-dli src/lib.rs:70-104 的 #[cfg(feature = "source-*")] 模块门），
+# 连带把 reqwest/aes/md-5/... 拉进 feature 树（不是默认树）。子 feature 名
+# 对照 musid-dli Cargo.toml 的 source-*（注意 apple 是 source-apple，不是
+# source-applemusic）。默认构建（不开任何 adapter feature）依旧零 musid 边；
+# musid-dli 保持 "=0.2.0" 精确 pin（wire 形状测试即 pin，放宽到 "0.2" 随外层
+# CI feature 矩阵落地后执行）。bilibili 子 feature 随 V2 切片 4 落地增设
+# （docs/MUSID_DLI_ADAPTER.md §12.4）：搜索/流地址两面路由，登录/会话/
+# 用户数据恒旧路径（影子源恒匿名 new()，SESSDATA 扫码链路不接 musid）。
+musid-dli-adapter-netease = ["musid-dli-adapter", "musid-dli/source-netease"]
+musid-dli-adapter-qqmusic = ["musid-dli-adapter", "musid-dli/source-qqmusic"]
+musid-dli-adapter-kugou = ["musid-dli-adapter", "musid-dli/source-kugou"]
+musid-dli-adapter-kuwo = ["musid-dli-adapter", "musid-dli/source-kuwo"]
+musid-dli-adapter-migu = ["musid-dli-adapter", "musid-dli/source-migu"]
+musid-dli-adapter-jamendo = ["musid-dli-adapter", "musid-dli/source-jamendo"]
+musid-dli-adapter-apple = ["musid-dli-adapter", "musid-dli/source-apple"]
+musid-dli-adapter-fivesing = ["musid-dli-adapter", "musid-dli/source-fivesing"]
+musid-dli-adapter-bilibili = ["musid-dli-adapter", "musid-dli/source-bilibili"]
+musid-dli-adapter-qianqian = ["musid-dli-adapter", "musid-dli/source-qianqian"]
+musid-dli-adapter-joox = ["musid-dli-adapter", "musid-dli/source-joox"]
+# 登记切片（reg-soda，docs/MUSID_DLI_ADAPTER.md §12.4 末段）：soda 是
+# voicefox-only 源（musid-dli 0.2.0 的 12 个 source 模块无 source_soda，
+# §1 命名表显式拒绝）——没有 musid-dli/source-* 可挂，本 feature 只作为
+# 门禁/账面载体启用 adapter 基座，承载"无注册表行 + 命名表拒绝"的登记
+# 断言（adapter_musid.rs 的 reg-soda 测试）。四面恒旧路径，运行行为零变化。
+musid-dli-adapter-reg-soda = ["musid-dli-adapter"]
+# 登记切片（reg-ytm，docs/MUSID_DLI_ADAPTER.md §12.4 末段）：youtube-music
+# 是 musid-dli-only 源（voicefox SourceId 无对应变体；musid 侧
+# RustyPipeProvider 走自己的 rustypipe 栈，`source-youtube-music` feature
+# 依赖 rustypipe）——voicefox 侧不启用该 source feature（rustypipe 不进
+# voicefox feature 树），本 feature 同样只作为门禁/账面载体，承载
+# UnmappedProvider 拒绝路径的登记断言。若 voicefox 未来引入 ytm 源，属
+# 新源接入（扩 SourceId + 命名表 + 评估 rustypipe 依赖），不在迁移序列。
+musid-dli-adapter-reg-ytm = ["musid-dli-adapter"]
+# V3 切片 s1（docs/MUSID_DLI_ADAPTER.md §13.1）：本地库能力接入——musid-dli
+# `local` 面（本地扫描核心 local_scan / 歌词读 read_lyrics / 标签写
+# tag_write）。本地源歌词读委托 musid `local::read_lyrics`（parity L17/L18
+# 全量，逐字移植已由 LOCAL_LIBRARY_PARITY.md 记录），扫描/诊断面由
+# source/tests/musid_local_parity.rs 双栈对账（对比迁移前后，master plan
+# §13.5）；voicefox 库状态/索引 schema/Watcher 调度/UI 全部留在本仓
+# （§13.3 SourceManager 边界）。
+musid-dli-adapter-local = ["musid-dli-adapter", "musid-dli/local"]
+# V3 切片 s2（docs/MUSID_DLI_ADAPTER.md §13.2）：歌词文档缓存——musid
+# `LyricsCache` 文档域接入 adapter 歌词面（命中词/确认无词省重复取词）。
+# 依赖歌词转换变体（文档域存 LyricDocument，归一转换复用其产物）；负域
+# 不接——manager 链级负缓存（网络错误不投毒、全链确认无词才记）在 adapter
+# 之上承担策略。
+musid-dli-adapter-lyrics-cache = ["musid-dli-adapter-lyrics", "musid-dli/lyrics-cache"]
+# V3 切片 s3（docs/MUSID_DLI_ADAPTER.md §13.3）：本地封面解析回落——
+# `song.cover_url` 缺席时本地源经 musid `local_cover::read_cover` 解析
+# （内嵌优先、同目录外挂封面检出 folder.jpg/cover.png 等，L19 全量）。
+# artwork-local 是 musid 的 union feature（artwork + local-cover），
+# `local-cover` 自带 `local`。
+musid-dli-adapter-artwork-local = ["musid-dli-adapter", "musid-dli/artwork-local"]
 
 [dev-dependencies]
 # 仅测试目标需要：用虚拟时间验证"每源超时"而不用真的等 8 秒。

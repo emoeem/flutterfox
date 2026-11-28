@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../app_model.dart';
 import '../design_system/components/vx_seek_bar.dart';
+import '../design_system/design_tokens.dart';
 import '../widgets/live_progress.dart';
 
 /// 「时间 + 可拖动进度条 + 时间」实时行。
@@ -42,6 +43,9 @@ class LiveSeekRow extends StatefulWidget {
 class _LiveSeekRowState extends State<LiveSeekRow> {
   /// 拖动会话内的临时值（0..1）；null = 未在拖动。
   double? _drag;
+
+  /// 悬停位置（0..1）；null = 指针不在进度条上（V2 spec §4：悬停时间气泡）。
+  double? _hover;
 
   bool _hasDuration(BigInt durationMs) => durationMs > BigInt.zero;
 
@@ -85,6 +89,8 @@ class _LiveSeekRowState extends State<LiveSeekRow> {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
+                final hoverFraction = _drag ?? _hover;
+                final scheme = Theme.of(context).colorScheme;
                 return SizedBox(
                   height: 16,
                   child: Row(
@@ -92,47 +98,100 @@ class _LiveSeekRowState extends State<LiveSeekRow> {
                       VxTimeLabel(shownPosition),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Stack(
-                          children: [
-                            VxSeekBar(value: shown),
-                            Positioned.fill(
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTapDown: _hasDuration(durationMs)
-                                    ? (details) {
-                                        final f =
-                                            (details.localPosition.dx / width)
-                                                .clamp(0.0, 1.0);
-                                        _preview(f);
-                                        _commit(f, durationMs);
-                                      }
-                                    : null,
-                                onHorizontalDragStart: _hasDuration(durationMs)
-                                    ? (details) => _preview(
-                                        (details.localPosition.dx / width)
-                                            .clamp(0.0, 1.0),
-                                      )
-                                    : null,
-                                onHorizontalDragUpdate: _hasDuration(durationMs)
-                                    ? (details) {
-                                        final current = _drag ?? 0.0;
-                                        _preview(
-                                          current + details.delta.dx / width,
-                                        );
-                                      }
-                                    : null,
-                                onHorizontalDragEnd: _hasDuration(durationMs)
-                                    ? (_) => _commit(_drag, durationMs)
-                                    : null,
-                                onHorizontalDragCancel: _hasDuration(durationMs)
-                                    ? () {
-                                        widget.onDragPreview?.call(null);
-                                        setState(() => _drag = null);
-                                      }
-                                    : null,
+                        child: MouseRegion(
+                          onHover: (event) {
+                            if (!_hasDuration(durationMs)) return;
+                            setState(() {
+                              _hover = (event.localPosition.dx / width).clamp(
+                                0.0,
+                                1.0,
+                              );
+                            });
+                          },
+                          onExit: (_) => setState(() => _hover = null),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              VxSeekBar(value: shown),
+                              // 悬停时间气泡（spec §4）：拖动会话内不叠加，
+                              // 预览时间已由左侧时间标签承载。
+                              if (hoverFraction != null &&
+                                  _drag == null &&
+                                  _hasDuration(durationMs))
+                                Positioned(
+                                  bottom: 15,
+                                  left: (width * hoverFraction - 26).clamp(
+                                    0.0,
+                                    width - 52,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: scheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: scheme.outlineVariant,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      vxFormatDuration(
+                                        Duration(
+                                          milliseconds: (total * hoverFraction)
+                                              .round(),
+                                        ),
+                                      ),
+                                      style: VxTypography.mono.copyWith(
+                                        fontSize: 11,
+                                        color: scheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              Positioned.fill(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.translucent,
+                                  onTapDown: _hasDuration(durationMs)
+                                      ? (details) {
+                                          final f =
+                                              (details.localPosition.dx / width)
+                                                  .clamp(0.0, 1.0);
+                                          _preview(f);
+                                          _commit(f, durationMs);
+                                        }
+                                      : null,
+                                  onHorizontalDragStart:
+                                      _hasDuration(durationMs)
+                                      ? (details) => _preview(
+                                          (details.localPosition.dx / width)
+                                              .clamp(0.0, 1.0),
+                                        )
+                                      : null,
+                                  onHorizontalDragUpdate:
+                                      _hasDuration(durationMs)
+                                      ? (details) {
+                                          final current = _drag ?? 0.0;
+                                          _preview(
+                                            current + details.delta.dx / width,
+                                          );
+                                        }
+                                      : null,
+                                  onHorizontalDragEnd: _hasDuration(durationMs)
+                                      ? (_) => _commit(_drag, durationMs)
+                                      : null,
+                                  onHorizontalDragCancel:
+                                      _hasDuration(durationMs)
+                                      ? () {
+                                          widget.onDragPreview?.call(null);
+                                          setState(() => _drag = null);
+                                        }
+                                      : null,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),

@@ -15,6 +15,7 @@ class VxPlaylistCard extends StatelessWidget {
     this.subtitle,
     this.cover,
     this.width = 156,
+    this.badge,
     this.onTap,
     this.onPlay,
     this.onSecondaryTapUp,
@@ -25,6 +26,9 @@ class VxPlaylistCard extends StatelessWidget {
 
   /// 歌曲数；提供时副标题自动拼为 "N 首歌曲"。
   final int? trackCount;
+
+  /// 封面右下角计数胶囊（V2 spec §4，如播放数「12.4万」）。
+  final String? badge;
 
   /// 来源（如 网易云 / 本地）。
   final String? source;
@@ -62,6 +66,7 @@ class VxPlaylistCard extends StatelessWidget {
       subtitle: sub,
       cover: cover,
       width: width,
+      badge: badge,
       onTap: onTap,
       onPlay: onPlay,
       onSecondaryTapUp: onSecondaryTapUp,

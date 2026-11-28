@@ -3,7 +3,11 @@
 /// AlbumCard / PlaylistCard / ArtistCard 共用本基座，保证封面比例、
 /// 标题行数、hover 规则全应用一致（Phase 1 任务 5）。
 /// 形态取自概念稿 `.album-art`（1:1、radius 12、轻阴影）与 `.track-name` / `.track-meta`。
+/// V2 spec §4（`docs/redesign/ui-redesign-v2/design-spec.md`）：计数胶囊 +
+/// 播放钮右下浮现；SR-11/15（Batch D）整卡可点 + 卡面右键。
 library;
+
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -22,6 +26,7 @@ class VxCardShell extends StatelessWidget {
     this.width = 156,
     this.circle = false,
     this.centered = false,
+    this.badge,
     this.onTap,
     this.onPlay,
     this.onSecondaryTapUp,
@@ -47,6 +52,10 @@ class VxCardShell extends StatelessWidget {
 
   /// true 时文字居中（歌手卡常用）。
   final bool centered;
+
+  /// 封面右下角计数胶囊（如「12.4万」「28 首」）；hover 播放钮出现时隐藏
+  /// （V2 spec §4：非 hover 态的信息位与 hover 播放钮同位互斥）。
+  final String? badge;
 
   /// 单击卡片。
   final VoidCallback? onTap;
@@ -91,6 +100,37 @@ class VxCardShell extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     _cover(shadowColor),
+                    if (badge != null)
+                      // 计数胶囊（V2 spec §4）：深色底 + 模糊 + 白字，右下
+                      // 角；hover 播放钮出现时隐藏（同位互斥防重叠）。
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: AnimatedOpacity(
+                          opacity: hovering && onPlay != null ? 0 : 1,
+                          duration: VxMotion.hoverFade,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                color: Colors.black.withValues(alpha: 0.55),
+                                child: Text(
+                                  badge!,
+                                  style: VxTypography.mono.copyWith(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (onPlay != null)
                       AnimatedOpacity(
                         opacity: hovering ? 1 : 0,
@@ -104,17 +144,27 @@ class VxCardShell extends StatelessWidget {
                               colors: [Color(0x00000000), Color(0x73000000)],
                             ),
                           ),
-                          child: Center(
+                          child: Align(
+                            // V2 spec §4：播放钮右下浮现（非居中）。
+                            alignment: Alignment.bottomRight,
                             child: Container(
-                              width: 40,
-                              height: 40,
+                              margin: const EdgeInsets.all(9),
+                              width: 38,
+                              height: 38,
                               decoration: BoxDecoration(
                                 color: scheme.primary,
                                 shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
                               child: Icon(
                                 Icons.play_arrow,
-                                size: 22,
+                                size: 21,
                                 color: scheme.onPrimary,
                               ),
                             ),

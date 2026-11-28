@@ -357,8 +357,9 @@ class _NowPlayingBody extends StatelessWidget {
               builder: (context, constraints) {
                 final bodyH = constraints.maxHeight;
                 if (!hasLyrics) {
-                  // 无歌词：单列居中，封面边长按可用高度自适应（320–500）。
-                  final byHeight = (bodyH - 372).clamp(320.0, 500.0);
+                  // 无歌词：单列居中，封面边长按可用高度自适应（320-380，
+                  // V2 spec §4 封面正方形最大约 380px）。
+                  final byHeight = (bodyH - 372).clamp(320.0, 380.0);
                   return _LeftColumn(
                     model: model,
                     song: song,
@@ -368,15 +369,16 @@ class _NowPlayingBody extends StatelessWidget {
                     onToggleQueue: onToggleQueue,
                   );
                 }
-                final leftWidth = (constraints.maxWidth - 48) * 0.46;
-                // 封面边长按可用高度自适应（320–500）；高度不足时左列滚动。
-                final byHeight = (bodyH - 372).clamp(320.0, 500.0);
+                // V2 spec §4：左封面列 42% + 右歌词列 58%（用户确认决策）。
+                final leftWidth = (constraints.maxWidth - 48) * 0.42;
+                // 封面边长按可用高度自适应（320-380）；高度不足时左列滚动。
+                final byHeight = (bodyH - 372).clamp(320.0, 380.0);
                 final coverSize = math.min(byHeight, leftWidth - 8);
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(
-                      flex: 46,
+                      flex: 42,
                       child: _LeftColumn(
                         model: model,
                         song: song,
@@ -387,7 +389,7 @@ class _NowPlayingBody extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 48),
-                    Expanded(flex: 54, child: LyricsPanel(model: model)),
+                    Expanded(flex: 58, child: LyricsPanel(model: model)),
                   ],
                 );
               },

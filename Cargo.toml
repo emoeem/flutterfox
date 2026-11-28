@@ -15,7 +15,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.9.0"
+version = "0.9.1"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/emoeem/voicefox"
@@ -54,8 +54,10 @@ palette = "0.7"
 ratatui-image = { version = "11", default-features = false, features = ["crossterm"] }
 
 # HTTP
-# 跨平台（含 Android）统一走 rustls：禁用默认特性避免 native-tls 拖入 OpenSSL；
+# 跨平台（含 Android）统一走 rustls：禁用默认特性避免 native-tls 拖入 OpenSSL
+# （openssl-sys 把构建机的 OpenSSL SONAME 烧进二进制，跨环境即拒载）；
 # 手动补 charset（非 UTF-8 页面解码，国内音源需要）与 http2（默认特性原本就有）。
+# feature 是加法合成：musid-dli 的 rustls-tls 口径由本超集一并满足。
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "rustls-tls",
