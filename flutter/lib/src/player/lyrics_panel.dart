@@ -594,7 +594,8 @@ class _LyricLine extends StatelessWidget {
               fontSize: current ? currentFontSize : lineFontSize,
               fontWeight: current ? FontWeight.w600 : FontWeight.w400,
               height: 1.4,
-              color: scheme.onSurface,
+              // V2 spec §6：当前播放行用强调紫（Mauve），前后行按距离降透明。
+              color: current ? scheme.primary : scheme.onSurface,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
