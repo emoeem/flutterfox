@@ -147,3 +147,28 @@ Batch A 全部收口（审计 + A-1/A-1b/A-2/A-3）。下一批 Batch B 主题�
 | B3+B5 | c5ae5d5 | chrome 14 消费点切 scheme/VxPalette + VxChrome 删除（SR-03 收口）+ misansTextTheme 退役（SR-08 字级层级收口） |
 
 结论：SR-03/04/05/07/08 代码+测试面全部关闭（SR-05 44×2 亮度可构建锁定、SR-08 w700/w600/w400 层级+fallback 测试锁定）；全量 414 passed 0 failed。未做项：人工视觉走查截图（默认主题像素由测试锚点锁定，页面级视觉证据待运行时验证批次/Golden）；44 预设的人工目检（仅自动化构建+锚点断言）。
+
+
+## 12. UI 重设计 V2（2026-11-28，R0-R6 七批全推送，feat/ui-redesign 分支）
+
+前提：上游 voicefox v0.9.1（musid-dli 库化音源实现）先合入（merge 625c54e，cargo 959 passed 0 failed），随后按用户确认的 `docs/redesign/ui-redesign-v2/design-spec.md` v1.0（Catppuccin Mocha 蓝灰 + Mauve 冻结稿）逐批实施。
+
+| 批 | commit | 内容 |
+| --- | --- | --- |
+| R0 | 114000a | 六屏高保真 HTML 原型 + design-spec v1.0 冻结（用户确认方向 + 打磨轮：蓝灰底/封面差异化/42:58/进度悬停气泡/侧栏选中态） |
+| R1 | 48a319a | token 与主题基线：VxColors 表面层换 Mocha 分层（base #1E1E2E/elevated/card/high）+ Latte 浅色镜像 + Hero 渐变 + 封面 6 方向槽位 + 字阶（display 28/h1 22/h2 18）+ Radius/Motion 对齐；视觉锁定测试按 spec 重写 |
+| R2 | 1eb9ea9 | 侧栏活跃态 accent-tint+内描边（折叠/展开两处）+ 队列当前行同款 + LiveSeekRow 悬停时间气泡（拖动不叠加/时长未知不显示） |
+| R3 | 78aefa1 | 全屏播放页 42:58（用户决策）+ 封面上限 380 + 歌词当前行 Mauve 强调；P2-17/18 维持收口 |
+| R4 | d36bbff | VxCardShell 计数胶囊（blur+深底，hover 播放钮右下浮现同位互斥）+ 播放钮居中改右下；P1-20 核验收口（哨兵值方案+回归测试在位）；首页空态孤浮按钮确认已清 |
+| R5 | 464c727 | 视口矩阵 390/430 补齐（三档空态/有歌）+ SR-16 契约裁决关闭（android_insets 分层下固定 24 为内容尾距，页面再吃 inset 即双重 padding） |
+| R6 | 2e14d28 | 手机三页新语言重建：歌单详情（AppModel 槽直消费，PlaylistKey 隔离零复制）/帮助（桌面快捷键段过滤）/设置分组（二级页复用桌面窄宽形态）；app_shell settings/help 槽 form 分叉；SR-03 8/8 收齐 |
+
+实测（每批全量门禁，CI 同款命令）：dart format exit 0；flutter analyze --fatal-infos 零问题；flutter test 466 → 481 passed 0 failed（+3 视口 +12 新页）；cargo 侧经 merge 全量 959 passed 0 failed、clippy 零告警。
+
+未做项（如实登记）：
+- 运行时 Xvfb 实拍未执行（本机 Xvfb 缺失，不侵入真实桌面 :1），视觉证据为 widget 层 481 项 + R1 gallery 渲染断言；实拍核验待环境补齐。
+- 真机项（P1-06 口径）：edge-to-edge/手势导航/刘海/Android 后台播放维持未验证。
+- P2-16（特定曲封面灰占位）：运行时数据面问题，widget 层无法复现，维持开放待真实播放定位。
+- 播放页氛围背景：spec 原型 wash 方案按已调校 NowPlayingBackdrop（封面取色低饱和暗化）等价实现，不再改。
+- VxPlaylistCard badge 播放数数据面：PlaylistDto 无 playCount 字段，扩展需 Rust FFI 变更，参数已就绪待后续批次。
+- SettingsPage 二级页真机触控走查未做（窄宽形态为桌面既有实现）。
