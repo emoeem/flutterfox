@@ -41,7 +41,10 @@ import 'voicefox_theme.dart' as vx_theme show GappedSliderTrackShape;
 
 /// 默认主题家族：Vx 设计稿色板对应的注册表 key（未知 key 回退 mocha，
 /// 因此同样落入本家族）。
-const List<String> _kDefaultFamilyKeys = ['catppuccin-mocha', 'catppuccin-latte'];
+const List<String> _kDefaultFamilyKeys = [
+  'catppuccin-mocha',
+  'catppuccin-latte',
+];
 
 /// 运行时统一主题：44 套注册表 key × 明暗全部可构建。
 ///
@@ -75,8 +78,9 @@ ThemeData buildAppTheme(
     textTheme: textTheme,
     // Vx 设计稿（默认家族）：页面底 = surface，两种模式一致；
     // 其余主题沿用 buildVoicefoxTheme 规则（§2：浅色页面底用 surfaceContainer）。
-    scaffoldBackgroundColor:
-        (isDefault || dark) ? scheme.surface : scheme.surfaceContainer,
+    scaffoldBackgroundColor: (isDefault || dark)
+        ? scheme.surface
+        : scheme.surfaceContainer,
     canvasColor: scheme.surface,
     hoverColor: scheme.onSurface.withValues(alpha: 0.04),
     splashColor: scheme.onSurface.withValues(alpha: 0.06),
@@ -99,7 +103,11 @@ ThemeData buildAppTheme(
       backgroundColor: scheme.surfaceContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
     ),
-    dividerTheme: DividerThemeData(color: scheme.outline, thickness: 1, space: 1),
+    dividerTheme: DividerThemeData(
+      color: scheme.outline,
+      thickness: 1,
+      space: 1,
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: scheme.primary,
@@ -148,7 +156,9 @@ ThemeData buildAppTheme(
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: scheme.surfaceContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VxRadius.md)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(VxRadius.md),
+      ),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
@@ -257,7 +267,11 @@ ColorScheme _vxLightScheme() => const ColorScheme.light(
 );
 
 /// 按 entry 类别构建显式 ColorScheme。
-ColorScheme _schemeFor(ThemeEntry entry, Brightness brightness, Color? dynamicSeed) {
+ColorScheme _schemeFor(
+  ThemeEntry entry,
+  Brightness brightness,
+  Color? dynamicSeed,
+) {
   // 动态种子优先（系统调色板 / 封面取色）；bg 分层个性仅在明暗兼容时保留。
   if (dynamicSeed != null) {
     final bgHex = entry.bgHex;
@@ -305,10 +319,10 @@ TextTheme _appTextTheme(ColorScheme scheme) {
       base.copyWith(color: color ?? scheme.onSurface, fontSize: size);
   return TextTheme(
     displayLarge: s(VxTypography.display),
-    displayMedium: s(VxTypography.display, size: 30),
-    displaySmall: s(VxTypography.display, size: 26),
+    displayMedium: s(VxTypography.display, size: 24),
+    displaySmall: s(VxTypography.display, size: 22),
     headlineLarge: s(VxTypography.h1),
-    headlineMedium: s(VxTypography.h1, size: 24),
+    headlineMedium: s(VxTypography.h1, size: 20),
     headlineSmall: s(VxTypography.h2),
     titleLarge: s(VxTypography.title),
     titleMedium: s(VxTypography.title, size: 14),
@@ -318,20 +332,33 @@ TextTheme _appTextTheme(ColorScheme scheme) {
     bodySmall: s(VxTypography.caption),
     labelLarge: s(VxTypography.title, color: scheme.onSurfaceVariant, size: 13),
     labelMedium: s(VxTypography.caption, color: scheme.onSurfaceVariant),
-    labelSmall: s(VxTypography.caption, color: scheme.onSurfaceVariant, size: 11),
+    labelSmall: s(
+      VxTypography.caption,
+      color: scheme.onSurfaceVariant,
+      size: 11,
+    ),
   );
 }
 
 /// 无 M3 槽位的 token 下发：默认主题取 design_tokens.dart 常量（像素不变），
 /// 其他主题从 ColorScheme 派生（hero 层次同 flclash 中性 tone 阶梯）或用
 /// 中性默认（success/warning/textMuted 沿用 Vx 语义色）。
-VxPalette _paletteFor(ThemeEntry entry, ColorScheme scheme, bool dark, bool dynamic) {
+VxPalette _paletteFor(
+  ThemeEntry entry,
+  ColorScheme scheme,
+  bool dark,
+  bool dynamic,
+) {
   final isDefault = !dynamic && _kDefaultFamilyKeys.contains(entry.key);
   if (isDefault) {
     return dark ? VxPalette.darkDefaults : VxPalette.lightDefaults;
   }
   return VxPalette(
-    seekTrack: Color.lerp(scheme.surface, scheme.onSurface, dark ? 0.20 : 0.16)!,
+    seekTrack: Color.lerp(
+      scheme.surface,
+      scheme.onSurface,
+      dark ? 0.20 : 0.16,
+    )!,
     onPlayIcon: scheme.onPrimary,
     heroBorder: scheme.outline,
     heroGradientStart: scheme.surfaceContainerHigh,
@@ -470,7 +497,11 @@ class VxPalette extends ThemeExtension<VxPalette> {
       seekTrack: Color.lerp(seekTrack, other.seekTrack, t)!,
       onPlayIcon: Color.lerp(onPlayIcon, other.onPlayIcon, t)!,
       heroBorder: Color.lerp(heroBorder, other.heroBorder, t)!,
-      heroGradientStart: Color.lerp(heroGradientStart, other.heroGradientStart, t)!,
+      heroGradientStart: Color.lerp(
+        heroGradientStart,
+        other.heroGradientStart,
+        t,
+      )!,
       heroGradientMid: Color.lerp(heroGradientMid, other.heroGradientMid, t)!,
       heroGradientEnd: Color.lerp(heroGradientEnd, other.heroGradientEnd, t)!,
       heroGlow: Color.lerp(heroGlow, other.heroGlow, t)!,

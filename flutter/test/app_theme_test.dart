@@ -60,9 +60,9 @@ void main() {
       expect(dark.textTheme.bodySmall!.fontWeight, FontWeight.w400);
     });
 
-    test('字号层级照 VxTypography 映射', () {
-      expect(dark.textTheme.displayLarge!.fontSize, 36);
-      expect(dark.textTheme.headlineLarge!.fontSize, 28);
+    test('字号层级照 VxTypography 映射（V2 spec：display 28 / h1 22）', () {
+      expect(dark.textTheme.displayLarge!.fontSize, 28);
+      expect(dark.textTheme.headlineLarge!.fontSize, 22);
       expect(dark.textTheme.titleLarge!.fontSize, 16);
       expect(dark.textTheme.bodyLarge!.fontSize, 15);
       expect(dark.textTheme.bodyMedium!.fontSize, 14);
@@ -124,9 +124,7 @@ void main() {
   });
 
   group('VxPalette ThemeExtension', () {
-    testWidgets('VxPalette.of 可从主题读取（默认主题取 design_tokens 常量）', (
-      tester,
-    ) async {
+    testWidgets('VxPalette.of 可从主题读取（默认主题取 design_tokens 常量）', (tester) async {
       VxPalette? palette;
       await tester.pumpWidget(
         MaterialApp(
