@@ -172,6 +172,49 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    // 360/390/430 三视口矩阵验收（V2 spec §4 + handoff C-D）：三个主流
+    // Android 旗舰宽度逐档核验底部导航与迷你播放栏形态、无溢出。
+    testWidgets('390×844 手机 · 空态：底部导航五入口、迷你栏不进树', (tester) async {
+      _setSize(tester, const Size(390, 844));
+      final model = AppModel();
+      await tester.pumpWidget(_shellHarness(model, MobileShell(model: model)));
+      await tester.pumpAndSettle();
+
+      final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.destinations.length, 5);
+      expect(find.byType(MiniPlayerBar), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('430×932 手机 · 空态：底部导航五入口、迷你栏不进树', (tester) async {
+      _setSize(tester, const Size(430, 932));
+      final model = AppModel();
+      await tester.pumpWidget(_shellHarness(model, MobileShell(model: model)));
+      await tester.pumpAndSettle();
+
+      final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.destinations.length, 5);
+      expect(find.byType(MiniPlayerBar), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('430×932 手机 · 有歌：迷你播放栏可见无溢出', (tester) async {
+      _setSize(tester, const Size(430, 932));
+      final model = _songModel();
+      await tester.pumpWidget(_shellHarness(model, MobileShell(model: model)));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MiniPlayerBar), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(MiniPlayerBar),
+          matching: find.text('夜航'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('600×900 平板 · 空态：图标 Rail 档', (tester) async {
       _setSize(tester, const Size(600, 900));
       final model = AppModel();
