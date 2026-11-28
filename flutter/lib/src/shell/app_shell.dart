@@ -31,6 +31,8 @@ import '../pages/help_page.dart';
 import '../pages/home_page.dart';
 import '../pages/mobile_discover_page.dart';
 import '../pages/mobile_downloads_page.dart';
+import '../pages/mobile_help_page.dart';
+import '../pages/mobile_settings_page.dart';
 import '../pages/mobile_home_page.dart';
 import '../pages/mobile_search_page.dart';
 import '../pages/library_page.dart';
@@ -833,10 +835,18 @@ Widget buildShellPage(
       form == ShellFormFactor.mobile
           ? MobileDownloadsPage(model)
           : DownloadsPage(model),
-    ShellDestination.settings => SettingsPage(
-      model,
-      initialSection: settingsSection,
-    ),
-    ShellDestination.help => const HelpPage(),
+    // 设置槽（Batch C-C→C-D / R6）：手机档用分组入口手机页（桌面 208
+    // 双栏不照搬，spec §5；initialSection 种子由手机页帧后定位二级页），
+    // 桌面/平板档维持桌面页。
+    ShellDestination.settings =>
+      form == ShellFormFactor.mobile
+          ? MobileSettingsPage(model: model, initialSection: settingsSection)
+          : SettingsPage(model, initialSection: settingsSection),
+    // 帮助槽（Batch C-C / R6）：手机档内容按移动端能力过滤（去桌面键盘
+    // 快捷键段），桌面/平板档维持桌面页。
+    ShellDestination.help =>
+      form == ShellFormFactor.mobile
+          ? MobileHelpPage(model: model)
+          : const HelpPage(),
   };
 }

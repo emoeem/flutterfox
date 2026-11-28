@@ -32,7 +32,7 @@ import 'home_shared.dart';
 import 'library_page.dart';
 import 'local_music_page.dart' show importLocalMusicDirectory;
 import 'mobile_local_music_page.dart';
-import 'playlist_detail_page.dart';
+import 'mobile_playlist_detail_page.dart';
 
 class MobileHomePage extends StatelessWidget {
   final AppModel model;
@@ -447,12 +447,12 @@ class _RecommendedSectionState extends State<_RecommendedSection> {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => PlaylistDetailPage(_model, playlist),
+                builder: (_) => MobilePlaylistDetailPage(_model, playlist),
               ),
             ),
             onPlay: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => PlaylistDetailPage(_model, playlist),
+                builder: (_) => MobilePlaylistDetailPage(_model, playlist),
               ),
             ),
           );

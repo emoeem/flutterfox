@@ -129,9 +129,9 @@ void main() {
       navRequest.value = 7;
       await tester.pumpAndSettle();
       expect(navRequest.value, isNull);
-      // 设置页在 IndexedStack 中呈现；无 Rust 控制器时 config 未加载，
-      // 页面如实显示加载态（不伪造设置项）。
-      expect(find.text('配置加载中…'), findsOneWidget);
+      // 设置槽（R6）：手机档为分组入口手机页（MobileSettingsPage，
+      // 桌面 208 双栏不照搬）；分组入口为静态卡片，无 config 依赖。
+      expect(find.text('播放与音效'), findsOneWidget);
       // 底部导航保持最后一个一级入口高亮（首页，settings 非主入口）。
       final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect(bar.selectedIndex, 0);
@@ -268,8 +268,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
-      // 无控制器时设置页如实显示加载态（不伪造设置项）。
-      expect(find.text('配置加载中…'), findsOneWidget);
+      // 设置槽（R6）：手机档分组入口页渲染（静态卡片，无 config 依赖）。
+      expect(find.text('播放与音效'), findsOneWidget);
 
       // 再开抽屉进「帮助」页。
       await tester.tap(find.byIcon(Icons.menu));
@@ -346,7 +346,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(Drawer), findsNothing);
       expect(
-        find.byKey(const ValueKey('mobile-settings:sources')),
+        // 种子推入的全屏二级路由把入口槽盖进 offstage；skipOffstage 断言
+        // KeyedSubtree 仍在 IndexedStack（R6：种子由 MobileSettingsPage
+        // 帧后定位二级页）。
+        find.byKey(
+          const ValueKey('mobile-settings:sources'),
+          skipOffstage: false,
+        ),
         findsOneWidget,
       );
     });
